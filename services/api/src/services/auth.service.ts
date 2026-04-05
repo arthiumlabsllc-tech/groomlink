@@ -1,0 +1,198 @@
+import prisma from '../config/database';
+import logger from '../config/logger';
+import { generateToken, generateRefreshToken, verifyRefreshToken, rotateRefreshToken, revokeAllUserRefreshTokens } from '../utils/jwt';
+import { hashPassword, verifyPassword } from '../utils/password';
+import { createOTP, verifyOTP } from '../utils/otp';
+import { UserRole, UserStatus } from '@prisma/client';
+
+export interface RegisterData {
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  password?: string;
+}
+
+export interface LoginData {
+  phoneNumber: string;
+  password?: string;
+}
+
+export interface AuthResponse {
+  user: {
+    id: string;
+    phoneNumber: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    role: UserRole;
+    isVerified: boolean;
+  };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
+
+export async function requestOTP(phoneNumber: string): Promise<void> {
+  // Validate phone number format (Ghana)
+  const ghanaPhoneRegex = /^\+233[0-9]{9}$/;
+  if (!ghanaPhoneRegex.test(phoneNumber)) {
+    throw new Error('Invalid phone number format. Use +233XXXXXXXXX');
+  }
+
+  await createOTP(phoneNumber);
+  logger.info(`OTP requested for ${phoneNumber}`);
+}
+
+export async function verifyPhoneOTP(phoneNumber: string, code: string): Promise<boolean> {
+  return verifyOTP(phoneNumber, code);
+}
+
+export async function register(data: RegisterData): Promise<AuthResponse> {
+  const { phoneNumber, firstName, lastName, email, password } = data;
+
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (existingUser) {
+    throw new Error('User already exists with this phone number');
+  }
+
+  // Hash password if provided
+  const hashedPassword = password ? await hashPassword(password) : null;
+
+  // Create user
+  const user = await prisma.user.create({
+    data: {
+      phoneNumber,
+      firstName,
+      lastName,
+      email: email || null,
+      password: hashedPassword,
+      isVerified: true, // Since they verified OTP
+      role: UserRole.CUSTOMER,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  // Generate tokens
+  const accessToken = generateToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  const refreshToken = await generateRefreshToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  logger.info(`User registered: ${user.id}`);
+
+  return {
+    user: {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    },
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+  };
+}
+
+export async function login(data: LoginData): Promise<AuthResponse> {
+  const { phoneNumber, password } = data;
+
+  const user = await prisma.user.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (!user) {
+    throw new Error('Invalid phone number or password');
+  }
+
+  if (user.status === UserStatus.SUSPENDED) {
+    throw new Error('Account has been suspended');
+  }
+
+  // If password is set, verify it
+  if (user.password && password) {
+    const isValid = await verifyPassword(password, user.password);
+    if (!isValid) {
+      throw new Error('Invalid phone number or password');
+    }
+  }
+
+  // Update last login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+  });
+
+  // Generate tokens
+  const accessToken = generateToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  const refreshToken = await generateRefreshToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  logger.info(`User logged in: ${user.id}`);
+
+  return {
+    user: {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    },
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+  };
+}
+
+export async function refreshAccessToken(token: string): Promise<{ accessToken: string; refreshToken: string }> {
+  try {
+    // Verify the refresh token and check if it's not revoked
+    const decoded = await verifyRefreshToken(token);
+    
+    // Rotate the refresh token (revoke old, generate new)
+    const { newAccessToken, newRefreshToken } = await rotateRefreshToken(decoded.tokenId, {
+      userId: decoded.userId,
+      phoneNumber: decoded.phoneNumber,
+      role: decoded.role,
+    });
+    
+    logger.info(`Token refreshed for user: ${decoded.userId}`);
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  } catch (error) {
+    logger.error('Token refresh failed', { error });
+    throw new Error('Invalid or expired refresh token');
+  }
+}
+
+export async function logout(userId: string): Promise<void> {
+  // Revoke all refresh tokens for the user
+  await revokeAllUserRefreshTokens(userId);
+  logger.info(`User logged out: ${userId}`);
+}

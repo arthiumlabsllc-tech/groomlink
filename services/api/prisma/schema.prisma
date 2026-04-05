@@ -1,0 +1,468 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  SALON_OWNER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum SalonType {
+  BARBERSHOP
+  HAIR_SALON
+  PEDICURE_SALON
+  NAIL_SALON
+  SPA
+  BEAUTY_SALON
+}
+
+enum SalonStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  MTN_MOMO
+  VODAFONE_CASH
+  AIRTELTIGO_MONEY
+  CASH
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_REMINDER
+  PAYMENT_RECEIVED
+  PROMOTION
+  SYSTEM
+}
+
+model User {
+  id            String     @id @default(uuid())
+  phoneNumber   String     @unique @map("phone_number")
+  password      String?
+  firstName     String     @map("first_name")
+  lastName      String     @map("last_name")
+  email         String?
+  avatar        String?
+  role          UserRole   @default(CUSTOMER)
+  status        UserStatus @default(ACTIVE)
+  isVerified    Boolean    @default(false) @map("is_verified")
+  
+  // Location
+  latitude      Float?
+  longitude     Float?
+  address       String?
+  ghanaPostGPS  String?    @map("ghana_post_gps")
+  city          String?
+  region        String?
+  
+  // Timestamps
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  lastLoginAt   DateTime?  @map("last_login_at")
+  
+  // Relations
+  salons        Salon[]
+  bookings      Booking[]  @relation("CustomerBookings")
+  reviews       Review[]
+  favorites     Favorite[]
+  favoriteStaff FavoriteStaff[] @relation("FavoriteStaffUser")
+  notifications Notification[]
+  payments      Payment[]
+  
+  @@index([phoneNumber])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model Salon {
+  id            String      @id @default(uuid())
+  businessName  String      @map("business_name")
+  description   String?
+  type          SalonType
+  status        SalonStatus @default(PENDING)
+  
+  // Registration
+  registrationNumber String? @map("registration_number")
+  
+  // Contact
+  phoneNumber   String      @map("phone_number")
+  email         String?
+  website       String?
+  
+  // Location
+  address       String
+  ghanaPostGPS  String?     @map("ghana_post_gps")
+  city          String
+  region        String      @default("Greater Accra")
+  latitude      Float
+  longitude     Float
+  
+  // Media
+  logo          String?
+  coverImage    String?     @map("cover_image")
+  images        String[]
+  
+  // Business Hours
+  openingTime   String      @map("opening_time")
+  closingTime   String      @map("closing_time")
+  workingDays   String[]    @map("working_days")
+  
+  // Features
+  hasParking    Boolean     @default(false) @map("has_parking")
+  hasWifi       Boolean     @default(false) @map("has_wifi")
+  hasAC         Boolean     @default(false) @map("has_ac")
+  acceptsWalkIns Boolean    @default(true) @map("accepts_walk_ins")
+  
+  // Ratings
+  rating        Float       @default(0)
+  reviewCount   Int         @default(0) @map("review_count")
+  
+  // Timestamps
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  ownerId       String      @map("owner_id")
+  owner         User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  workers       Worker[]
+  services      Service[]
+  bookings      Booking[]
+  reviews       Review[]
+  favorites     Favorite[]
+  documents     Document[]
+  
+  @@index([ownerId])
+  @@index([type])
+  @@index([status])
+  @@index([city])
+  @@index([latitude, longitude])
+  @@map("salons")
+}
+
+model Worker {
+  id            String    @id @default(uuid())
+  fullName      String    @map("full_name")
+  phoneNumber   String?   @map("phone_number")
+  email         String?
+  bio           String?
+  avatar        String?
+  specialties   String[]
+  
+  // Experience
+  yearsOfExperience Int   @default(0) @map("years_of_experience")
+  
+  // Stats
+  rating        Float     @default(0)
+  reviewCount   Int       @default(0) @map("review_count")
+  totalBookings Int       @default(0) @map("total_bookings")
+  
+  // Status
+  isActive      Boolean   @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  salonId       String    @map("salon_id")
+  salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  bookings      Booking[]
+  availabilities Availability[]
+  reviews       Review[]
+  workerServices WorkerService[]
+  favoritedBy   FavoriteStaff[]
+  
+  @@index([salonId])
+  @@map("workers")
+}
+
+model WorkerService {
+  workerId      String    @map("worker_id")
+  worker        Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  serviceId     String    @map("service_id")
+  service       Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  priceOverride Decimal?  @map("price_override") @db.Decimal(10, 2)
+  
+  @@id([workerId, serviceId])
+  @@index([workerId])
+  @@index([serviceId])
+  @@map("worker_services")
+}
+
+model Service {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?
+  category      String
+  duration      Int       // in minutes
+  price         Decimal   @db.Decimal(10, 2)
+  discountPrice Decimal?  @map("discount_price") @db.Decimal(10, 2)
+  image         String?
+  isActive      Boolean   @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  salonId       String    @map("salon_id")
+  salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  bookings      Booking[]
+  workerServices WorkerService[]
+  
+  @@index([salonId])
+  @@index([category])
+  @@map("services")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  reference     String        @unique @default(dbgenerated("'GL-' || substr(md5(random()::text), 1, 8)"))
+  status        BookingStatus @default(PENDING)
+  
+  // Date & Time
+  date          DateTime
+  startTime     String        @map("start_time")
+  endTime       String        @map("end_time")
+  
+  // Pricing
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  discountAmount Decimal?     @map("discount_amount") @db.Decimal(10, 2)
+  finalAmount   Decimal       @map("final_amount") @db.Decimal(10, 2)
+  
+  // Notes
+  customerNotes String?       @map("customer_notes")
+  salonNotes    String?       @map("salon_notes")
+  
+  // Timestamps
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  confirmedAt   DateTime?     @map("confirmed_at")
+  completedAt   DateTime?     @map("completed_at")
+  cancelledAt   DateTime?     @map("cancelled_at")
+  
+  // Relations
+  customerId    String        @map("customer_id")
+  customer      User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  salonId       String        @map("salon_id")
+  salon         Salon         @relation(fields: [salonId], references: [id])
+  workerId      String?       @map("worker_id")
+  worker        Worker?       @relation(fields: [workerId], references: [id])
+  serviceId     String        @map("service_id")
+  service       Service       @relation(fields: [serviceId], references: [id])
+  payment       Payment?
+  review        Review?
+  
+  @@index([customerId])
+  @@index([salonId])
+  @@index([workerId])
+  @@index([status])
+  @@index([date])
+  @@map("bookings")
+}
+
+model Payment {
+  id            String          @id @default(uuid())
+  provider      PaymentProvider
+  amount        Decimal         @db.Decimal(10, 2)
+  currency      String          @default("GHS")
+  status        PaymentStatus   @default(PENDING)
+  
+  // Provider specific
+  providerRef   String?         @map("provider_ref")
+  providerData  Json?           @map("provider_data")
+  
+  // Timestamps
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  completedAt   DateTime?       @map("completed_at")
+  
+  // Relations
+  bookingId     String          @unique @map("booking_id")
+  booking       Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId        String          @map("user_id")
+  user          User            @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Review {
+  id            String    @id @default(uuid())
+  rating        Int       // 1-5
+  comment       String?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  customerId    String    @map("customer_id")
+  customer      User      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salonId       String    @map("salon_id")
+  salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  workerId      String?   @map("worker_id")
+  worker        Worker?   @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  bookingId     String    @unique @map("booking_id")
+  booking       Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  @@index([salonId])
+  @@index([workerId])
+  @@index([customerId])
+  @@map("reviews")
+}
+
+model Favorite {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salonId       String    @map("salon_id")
+  salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, salonId])
+  @@index([userId])
+  @@map("favorites")
+}
+
+model FavoriteStaff {
+  userId        String    @map("user_id")
+  user          User      @relation("FavoriteStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+  workerId      String    @map("worker_id")
+  worker        Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  @@id([userId, workerId])
+  @@index([userId])
+  @@index([workerId])
+  @@map("favorite_staff")
+}
+
+model Availability {
+  id            String    @id @default(uuid())
+  dayOfWeek     Int       @map("day_of_week") // 0-6 (Sunday-Saturday)
+  startTime     String    @map("start_time") // HH:mm format
+  endTime       String    @map("end_time")   // HH:mm format
+  isAvailable   Boolean   @default(true) @map("is_available")
+  
+  // Specific date overrides (for holidays, time off)
+  specificDate  DateTime? @map("specific_date")
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  workerId      String    @map("worker_id")
+  worker        Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  
+  @@index([workerId])
+  @@index([dayOfWeek])
+  @@map("availabilities")
+}
+
+model Document {
+  id            String    @id @default(uuid())
+  type          String    // business_license, id_proof, etc.
+  name          String
+  url           String
+  verified      Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  salonId       String    @map("salon_id")
+  salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  
+  @@index([salonId])
+  @@map("documents")
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  type          NotificationType
+  title         String
+  message       String
+  data          Json?
+  isRead        Boolean          @default(false) @map("is_read")
+  
+  createdAt     DateTime         @default(now()) @map("created_at")
+  
+  // Relations
+  userId        String           @map("user_id")
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model Otp {
+  id            String    @id @default(uuid())
+  phoneNumber   String    @map("phone_number")
+  code          String
+  expiresAt     DateTime  @map("expires_at")
+  verified      Boolean   @default(false)
+  attempts      Int       @default(0)
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  @@index([phoneNumber])
+  @@index([expiresAt])
+  @@map("otps")
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  discountType  String    @map("discount_type") // percentage, fixed
+  discountValue Decimal   @map("discount_value") @db.Decimal(10, 2)
+  validFrom     DateTime? @map("valid_from")
+  validUntil    DateTime? @map("valid_until")
+  usageLimit    Int?      @map("usage_limit")
+  usedCount     Int       @default(0) @map("used_count")
+  isActive      Boolean   @default(true) @map("is_active")
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  @@map("coupons")
+}

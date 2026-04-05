@@ -1,0 +1,172 @@
+import { Server as HttpServer } from 'http';
+import { Server as SocketIOServer, Socket } from 'socket.io';
+import logger from './logger';
+import * as bookingService from '../services/booking.service';
+
+let io: SocketIOServer;
+
+export function initializeSocket(server: HttpServer): SocketIOServer {
+  io = new SocketIOServer(server, {
+    cors: {
+      origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:8081'],
+      credentials: true,
+    },
+  });
+
+  io.on('connection', (socket: Socket) => {
+    logger.info(`Socket connected: ${socket.id}`);
+
+    // Join user-specific room for targeted notifications
+    socket.on('join:user', (userId: string) => {
+      socket.join(`user:${userId}`);
+      logger.info(`Socket ${socket.id} joined user room: ${userId}`);
+    });
+
+    // Join salon room for salon owners
+    socket.on('join:salon', (salonId: string) => {
+      socket.join(`salon:${salonId}`);
+      logger.info(`Socket ${socket.id} joined salon room: ${salonId}`);
+    });
+
+    // Handle booking requests
+    socket.on('book:request', async (data: {
+      salonId: string;
+      workerId?: string;
+      serviceId: string;
+      date: string;
+      startTime: string;
+      customerId: string;
+    }) => {
+      try {
+        const booking = await bookingService.createBooking(data.customerId, {
+          salonId: data.salonId,
+          workerId: data.workerId,
+          serviceId: data.serviceId,
+          date: new Date(data.date),
+          startTime: data.startTime,
+        });
+
+        // Emit confirmation to customer
+        socket.emit('book:confirmed', {
+          success: true,
+          booking,
+        });
+
+        // Notify salon room
+        io.to(`salon:${data.salonId}`).emit('booking:new', {
+          booking,
+        });
+
+        logger.info(`Booking created via socket: ${booking.id}`);
+      } catch (error) {
+        socket.emit('book:confirmed', {
+          success: false,
+          error: (error as Error).message,
+        });
+      }
+    });
+
+    // Check availability in real-time
+    socket.on('check:availability', async (data: {
+      salonId: string;
+      workerId?: string;
+      date: string;
+    }) => {
+      try {
+        const slots = await bookingService.getAvailableSlots(
+          data.salonId,
+          data.workerId,
+          new Date(data.date)
+        );
+
+        socket.emit('availability:result', {
+          salonId: data.salonId,
+          workerId: data.workerId,
+          date: data.date,
+          slots,
+        });
+      } catch (error) {
+        socket.emit('availability:result', {
+          error: (error as Error).message,
+        });
+      }
+    });
+
+    // Cancel booking
+    socket.on('cancel:booking', async (data: {
+      bookingId: string;
+      userId: string;
+      userRole: string;
+      reason?: string;
+    }) => {
+      try {
+        const booking = await bookingService.cancelBooking(
+          data.bookingId,
+          data.userId,
+          data.userRole,
+          data.reason
+        );
+
+        socket.emit('cancel:confirmed', {
+          success: true,
+          booking,
+        });
+
+        // Notify relevant rooms
+        io.to(`user:${booking.customerId}`).emit('booking:cancelled', { booking });
+        io.to(`salon:${booking.salonId}`).emit('booking:cancelled', { booking });
+      } catch (error) {
+        socket.emit('cancel:confirmed', {
+          success: false,
+          error: (error as Error).message,
+        });
+      }
+    });
+
+    socket.on('disconnect', () => {
+      logger.info(`Socket disconnected: ${socket.id}`);
+    });
+  });
+
+  return io;
+}
+
+export function getIO(): SocketIOServer {
+  if (!io) {
+    throw new Error('Socket.io not initialized');
+  }
+  return io;
+}
+
+// Helper functions for emitting events
+export function emitToUser(userId: string, event: string, data: any) {
+  if (io) {
+    io.to(`user:${userId}`).emit(event, data);
+  }
+}
+
+export function emitToSalon(salonId: string, event: string, data: any) {
+  if (io) {
+    io.to(`salon:${salonId}`).emit(event, data);
+  }
+}
+
+export function emitSlotUpdated(salonId: string, workerId: string | undefined, date: Date, slots: any[]) {
+  if (io) {
+    io.emit('slot:updated', {
+      salonId,
+      workerId,
+      date: date.toISOString(),
+      slots,
+    });
+  }
+}
+
+export function emitReminder(userId: string, booking: any) {
+  if (io) {
+    io.to(`user:${userId}`).emit('reminder:upcoming', {
+      booking,
+      message: 'Your appointment is in 2 hours',
+    });
+  }
+}

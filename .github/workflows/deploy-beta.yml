@@ -1,0 +1,55 @@
+name: Deploy to Beta
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: Add host to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.BETA_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Deploy to Beta Server
+      run: |
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.BETA_HOST }} << 'EOF'
+          cd /opt/groomlink
+          git fetch origin
+          git checkout develop
+          git pull origin develop
+          
+          # Create env file from secrets
+          cat > .env.beta << 'ENVFILE'
+          NODE_ENV=production
+          DB_USER=${{ secrets.BETA_DB_USER }}
+          DB_PASSWORD=${{ secrets.BETA_DB_PASSWORD }}
+          DB_NAME=${{ secrets.BETA_DB_NAME }}
+          REDIS_PASSWORD=${{ secrets.BETA_REDIS_PASSWORD }}
+          JWT_SECRET=${{ secrets.BETA_JWT_SECRET }}
+          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+          ENVFILE
+          
+          # Deploy
+          ./deploy.sh beta
+        EOF
+        
+    - name: Health Check
+      run: |
+        sleep 30
+        curl -f http://${{ secrets.BETA_HOST }}/api/health || exit 1
+        echo "Beta deployment successful!"
