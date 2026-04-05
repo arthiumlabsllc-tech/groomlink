@@ -1,11 +1,13 @@
 import { Response } from 'express';
-import { Prisma } from '@prisma/client';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import { revokeAllUserRefreshTokens } from '../utils/jwt';
+
+// Define TransactionClient type locally
+type TransactionClient = typeof prisma;
 
 const updateProfileSchema = z.object({
   firstName: z.string().min(2).optional(),
@@ -430,7 +432,7 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
     const userId = req.user.id;
 
     // Start a transaction to delete all user data
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx: TransactionClient) => {
       // Delete user's reviews
       await tx.review.deleteMany({
         where: { customerId: userId },
@@ -576,7 +578,7 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
     }
 
     // Start a transaction to delete all user data
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx: TransactionClient) => {
       // Delete user's reviews
       await tx.review.deleteMany({
         where: { customerId: id },

@@ -1,13 +1,20 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import * as paymentService from '../services/payment.service';
 import { AuthenticatedRequest } from '../types';
-import { PaymentProvider } from '@prisma/client';
 import { z } from 'zod';
+
+// Define PaymentProvider enum locally since Prisma client may not export it correctly
+enum PaymentProvider {
+  MTN_MOMO = 'MTN_MOMO',
+  VODAFONE_CASH = 'VODAFONE_CASH',
+  AIRTELTIGO_MONEY = 'AIRTELTIGO_MONEY',
+  CASH = 'CASH',
+}
 
 const initializePaymentSchema = z.object({
   bookingId: z.string().uuid(),
-  provider: z.nativeEnum(PaymentProvider),
+  provider: z.enum(['MTN_MOMO', 'VODAFONE_CASH', 'AIRTELTIGO_MONEY', 'CASH']),
   phoneNumber: z.string().regex(/^\+233[0-9]{9}$/, 'Invalid phone number format'),
 });
 

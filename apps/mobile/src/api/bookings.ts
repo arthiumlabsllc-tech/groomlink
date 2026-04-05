@@ -21,6 +21,11 @@ interface CreateBookingData {
 }
 
 export const bookingsApi = {
+  create: async (data: CreateBookingData): Promise<Booking> => {
+    const response = await apiClient.post('/bookings', data);
+    return response.data.data;
+  },
+
   createBooking: async (data: CreateBookingData): Promise<Booking> => {
     const response = await apiClient.post('/bookings', data);
     return response.data.data;
@@ -30,9 +35,9 @@ export const bookingsApi = {
     page?: number;
     limit?: number;
     status?: string;
-  }): Promise<PaginatedResponse<Booking>> => {
+  }): Promise<Booking[]> => {
     const response = await apiClient.get('/bookings/my', { params });
-    return response.data;
+    return response.data.data || response.data;
   },
 
   getBookingById: async (id: string): Promise<Booking> => {

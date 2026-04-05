@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { successResponse, errorResponse } from '../utils/response';
+import prisma from '../config/database';
 import { z } from 'zod';
-
-const prisma = new PrismaClient();
 
 const availabilityQuerySchema = z.object({
   startDate: z.string().datetime().optional(),

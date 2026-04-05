@@ -30,7 +30,7 @@ export const authApi = {
   login: async (data: {
     phoneNumber: string;
     password?: string;
-  }): Promise<AuthResponse> {
+  }): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/login', data);
     return response.data.data;
   },

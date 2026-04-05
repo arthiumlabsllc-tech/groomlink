@@ -2,7 +2,19 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest, AuthenticatedUser } from '../types';
 import { verifyToken } from '../utils/jwt';
 import { errorResponse } from '../utils/response';
-import { UserRole, UserStatus } from '@prisma/client';
+
+// Define enums locally since Prisma client may not export them correctly
+enum UserRole {
+  CUSTOMER = 'CUSTOMER',
+  SALON_OWNER = 'SALON_OWNER',
+  ADMIN = 'ADMIN',
+}
+
+enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED',
+}
 
 export function authenticateToken(
   req: AuthenticatedRequest,

@@ -3,7 +3,6 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import prisma from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
-import { BookingStatus } from '@prisma/client';
 
 // Staff Management Schemas
 const addStaffSchema = z.object({

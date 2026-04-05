@@ -19,6 +19,15 @@ interface PaymentResult {
 }
 
 export const paymentsApi = {
+  initiatePayment: async (data: {
+    bookingId: string;
+    provider: string;
+    phoneNumber?: string;
+  }): Promise<PaymentResult> => {
+    const response = await apiClient.post('/payments/initialize', data);
+    return response.data.data;
+  },
+
   initializePayment: async (data: {
     bookingId: string;
     provider: string;

@@ -2,13 +2,22 @@ import { Request, Response } from 'express';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import * as salonService from '../services/salon.service';
 import { AuthenticatedRequest } from '../types';
-import { SalonType } from '@prisma/client';
 import { z } from 'zod';
+
+// Define SalonType enum locally
+enum SalonType {
+  BARBERSHOP = 'BARBERSHOP',
+  HAIR_SALON = 'HAIR_SALON',
+  PEDICURE_SALON = 'PEDICURE_SALON',
+  NAIL_SALON = 'NAIL_SALON',
+  SPA = 'SPA',
+  BEAUTY_SALON = 'BEAUTY_SALON',
+}
 
 const createSalonSchema = z.object({
   name: z.string().min(2),
   description: z.string().optional(),
-  type: z.nativeEnum(SalonType),
+  type: z.enum(['BARBERSHOP', 'HAIR_SALON', 'PEDICURE_SALON', 'NAIL_SALON', 'SPA', 'BEAUTY_SALON']),
   phoneNumber: z.string(),
   email: z.string().email().optional(),
   website: z.string().url().optional(),
@@ -162,7 +171,7 @@ export async function getMySalons(req: AuthenticatedRequest, res: Response): Pro
     );
     
     // Filter by owner
-    const mySalons = salons.filter(s => (s as any).ownerId === req.user!.id);
+    const mySalons = salons.filter((s: any) => s.ownerId === req.user!.id);
     paginatedResponse(res, mySalons, page, limit, mySalons.length);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
