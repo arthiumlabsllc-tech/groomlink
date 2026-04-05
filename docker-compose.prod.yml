@@ -89,6 +89,18 @@ services:
     networks:
       - groomlink-network
 
+  # Landing Page
+  landing:
+    build:
+      context: ./apps/landing
+      dockerfile: Dockerfile
+    container_name: groomlink-landing
+    restart: always
+    ports:
+      - "8081:80"
+    networks:
+      - groomlink-network
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
