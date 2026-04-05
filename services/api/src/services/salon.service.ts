@@ -3,7 +3,7 @@ import logger from '../config/logger';
 import { SalonType, SalonStatus, Prisma } from '@prisma/client';
 
 export interface CreateSalonData {
-  name: string;
+  businessName: string;
   description?: string;
   type: SalonType;
   phoneNumber: string;
@@ -66,11 +66,10 @@ export async function getSalonById(id: string) {
         },
       },
       workers: {
-        where: { isActive: undefined }, // All workers
+        where: { isActive: true },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          fullName: true,
           avatar: true,
           specialties: true,
           rating: true,
@@ -115,7 +114,7 @@ export async function getSalons(filters: SalonFilters, page: number = 1, limit: 
 
   if (filters.search) {
     where.OR = [
-      { name: { contains: filters.search, mode: 'insensitive' } },
+      { businessName: { contains: filters.search, mode: 'insensitive' } },
       { description: { contains: filters.search, mode: 'insensitive' } },
       { address: { contains: filters.search, mode: 'insensitive' } },
     ];

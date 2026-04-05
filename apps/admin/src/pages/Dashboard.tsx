@@ -25,7 +25,7 @@ import {
 import { useDashboardStats, useDashboardMetrics } from '../hooks';
 import { formatCurrency } from '../lib/utils';
 
-const COLORS = ['#28a745', '#ffc107', '#dc3545', '#6c757d'];
+const _COLORS = ['#28a745', '#ffc107', '#dc3545', '#6c757d'];
 
 export function Dashboard() {
   const [period, setPeriod] = useState(30);

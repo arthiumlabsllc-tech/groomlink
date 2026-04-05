@@ -88,7 +88,7 @@ export async function createBooking(customerId: string, data: CreateBookingData)
       salon: {
         select: {
           id: true,
-          name: true,
+          businessName: true,
           address: true,
           phoneNumber: true,
         },
@@ -97,8 +97,7 @@ export async function createBooking(customerId: string, data: CreateBookingData)
       worker: {
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          fullName: true,
           avatar: true,
         },
       },
@@ -117,7 +116,7 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     await smsService.sendBookingConfirmation(
       customer.phoneNumber,
       booking.id,
-      booking.salon.name,
+      booking.salon.businessName,
       date,
       startTime
     );
@@ -125,7 +124,7 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     // Schedule 2-hour reminder
     await smsService.scheduleBookingReminder(
       customer.phoneNumber,
-      booking.salon.name,
+      booking.salon.businessName,
       date,
       startTime
     );
@@ -151,7 +150,7 @@ export async function getBookingById(id: string, userId: string, userRole: strin
       salon: {
         select: {
           id: true,
-          name: true,
+          businessName: true,
           address: true,
           phoneNumber: true,
           logo: true,
@@ -161,8 +160,8 @@ export async function getBookingById(id: string, userId: string, userRole: strin
       worker: {
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          fullName: true,
+          
           avatar: true,
         },
       },
@@ -217,7 +216,7 @@ export async function getBookings(filters: BookingFilters, page: number = 1, lim
         salon: {
           select: {
             id: true,
-            name: true,
+            businessName: true,
             logo: true,
           },
         },
@@ -231,8 +230,8 @@ export async function getBookings(filters: BookingFilters, page: number = 1, lim
         worker: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            fullName: true,
+            
           },
         },
         payment: {
@@ -337,9 +336,13 @@ export async function cancelBooking(id: string, userId: string, userRole: string
   }
 
   // If payment was made, mark for refund
-  if (booking.payment) {
-    await prisma.payment.updateMany({
-      where: { bookingId: id },
+  const payment = await prisma.payment.findFirst({
+    where: { bookingId: id, status: PaymentStatus.SUCCESS },
+  });
+  
+  if (payment) {
+    await prisma.payment.update({
+      where: { id: payment.id },
       data: { status: PaymentStatus.REFUNDED },
     });
   }

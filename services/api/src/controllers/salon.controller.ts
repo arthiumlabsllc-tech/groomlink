@@ -15,7 +15,7 @@ enum SalonType {
 }
 
 const createSalonSchema = z.object({
-  name: z.string().min(2),
+  businessName: z.string().min(2),
   description: z.string().optional(),
   type: z.enum(['BARBERSHOP', 'HAIR_SALON', 'PEDICURE_SALON', 'NAIL_SALON', 'SPA', 'BEAUTY_SALON']),
   phoneNumber: z.string(),

@@ -7,8 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (using npm install since package-lock.json may not exist)
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -24,15 +24,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+# Install wget for healthcheck and openssl for Prisma
+RUN apk add --no-cache wget openssl
 
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install production dependencies only
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Generate Prisma client for production
 RUN npx prisma generate

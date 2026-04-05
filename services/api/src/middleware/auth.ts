@@ -3,14 +3,14 @@ import { AuthenticatedRequest, AuthenticatedUser } from '../types';
 import { verifyToken } from '../utils/jwt';
 import { errorResponse } from '../utils/response';
 
-// Define enums locally since Prisma client may not export them correctly
-enum UserRole {
+// Export enums for use in routes and controllers
+export enum UserRole {
   CUSTOMER = 'CUSTOMER',
   SALON_OWNER = 'SALON_OWNER',
   ADMIN = 'ADMIN',
 }
 
-enum UserStatus {
+export enum UserStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
   SUSPENDED = 'SUSPENDED',
@@ -43,14 +43,14 @@ export function authenticateToken(
   }
 }
 
-export function requireRole(...roles: UserRole[]) {
+export function requireRole(...roles: string[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role as string)) {
       errorResponse(res, 'FORBIDDEN', 'Insufficient permissions', 403);
       return;
     }

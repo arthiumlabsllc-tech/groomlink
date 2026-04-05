@@ -6,8 +6,8 @@ import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import { revokeAllUserRefreshTokens } from '../utils/jwt';
 
-// Define TransactionClient type locally
-type TransactionClient = typeof prisma;
+// Transaction client type for Prisma transactions
+type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 const updateProfileSchema = z.object({
   firstName: z.string().min(2).optional(),
@@ -145,7 +145,7 @@ export async function getFavorites(req: AuthenticatedRequest, res: Response): Pr
           salon: {
             select: {
               id: true,
-              name: true,
+              businessName: true,
               type: true,
               address: true,
               city: true,
@@ -188,7 +188,7 @@ export async function addFavorite(req: AuthenticatedRequest, res: Response): Pro
         salon: {
           select: {
             id: true,
-            name: true,
+            businessName: true,
             type: true,
             logo: true,
             rating: true,
@@ -457,7 +457,7 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
       await tx.booking.updateMany({
         where: { customerId: userId },
         data: {
-          notes: '[DELETED]',
+          customerNotes: '[DELETED]',
         },
       });
 
@@ -603,7 +603,7 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
       await tx.booking.updateMany({
         where: { customerId: id },
         data: {
-          notes: '[DELETED BY ADMIN]',
+          customerNotes: '[DELETED BY ADMIN]',
         },
       });
 

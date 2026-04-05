@@ -3,10 +3,11 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import prisma from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
+import { NotificationType } from '@prisma/client';
 
 const sendNotificationSchema = z.object({
   userId: z.string().uuid(),
-  type: z.string(),
+  type: z.nativeEnum(NotificationType),
   title: z.string(),
   message: z.string(),
   data: z.record(z.any()).optional(),
@@ -41,7 +42,10 @@ export async function getNotifications(req: AuthenticatedRequest, res: Response)
       }),
     ]);
 
-    paginatedResponse(res, notifications, page, limit, total, { unreadCount });
+    // Use successResponse directly to include unreadCount
+    const totalPages = Math.ceil(total / limit);
+    const pagination = { page, limit, total, totalPages };
+    successResponse(res, { notifications, unreadCount, pagination }, 200);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }

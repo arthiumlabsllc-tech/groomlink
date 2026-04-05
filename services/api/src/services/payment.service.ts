@@ -246,7 +246,7 @@ export async function getPaymentHistory(userId: string, page: number = 1, limit:
             salon: {
               select: {
                 id: true,
-                name: true,
+                businessName: true,
                 logo: true,
               },
             },
@@ -278,7 +278,7 @@ export async function getPaymentById(paymentId: string, userId: string) {
           salon: {
             select: {
               id: true,
-              name: true,
+              businessName: true,
               logo: true,
               address: true,
             },

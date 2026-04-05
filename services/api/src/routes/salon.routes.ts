@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import * as salonController from '../controllers/salon.controller';
-import { authenticateToken, requireRole } from '../middleware/auth';
-import { UserRole } from '@prisma/client';
+import { authenticateToken, requireRole, UserRole } from '../middleware/auth';
 import { salonValidations } from '../middleware/validation';
 
 const router = Router();
