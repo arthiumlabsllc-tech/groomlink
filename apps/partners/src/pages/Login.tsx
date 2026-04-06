@@ -1,22 +1,84 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Scissors, Eye, EyeOff, Phone, ArrowRight } from 'lucide-react'
+import { Scissors, Eye, EyeOff, Phone, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react'
+import { api } from '../lib/api'
+
+type LoginMethod = 'phone' | 'email'
+type Step = 'input' | 'otp'
 
 export default function Login() {
   const navigate = useNavigate()
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>('phone')
+  const [step, setStep] = useState<Step>('input')
   const [showPassword, setShowPassword] = useState(false)
-  const [isRegister, setIsRegister] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  
   const [formData, setFormData] = useState({
+    phoneNumber: '',
     email: '',
     password: '',
-    businessName: '',
-    phone: '',
+    otp: '',
   })
+
+  const handleRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      await api.requestOtp(formData.phoneNumber)
+      setStep('otp')
+    } catch (err: any) {
+      setError(err.message || 'Failed to send OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await api.verifyOtp(formData.phoneNumber, formData.otp)
+      if (response.success) {
+        navigate('/')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Invalid OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await api.loginWithEmail(formData.email, formData.password)
+      if (response.success) {
+        navigate('/')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Invalid credentials')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement actual auth
-    navigate('/')
+    if (loginMethod === 'phone' && step === 'input') {
+      handleRequestOtp(e)
+    } else if (loginMethod === 'phone' && step === 'otp') {
+      handleVerifyOtp(e)
+    } else {
+      handleEmailLogin(e)
+    }
   }
 
   return (
@@ -38,24 +100,46 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            {isRegister ? 'Register Your Salon' : 'Welcome Back'}
-          </h2>
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          {/* Login Method Tabs */}
+          <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => { setLoginMethod('phone'); setStep('input'); setError(''); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
+                loginMethod === 'phone'
+                  ? 'bg-white text-partner-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Phone className="w-4 h-4" />
+              Phone
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMethod('email'); setStep('input'); setError(''); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
+                loginMethod === 'email'
+                  ? 'bg-white text-partner-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              Email
+            </button>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegister && (
+            {/* Phone Login Flow */}
+            {loginMethod === 'phone' && step === 'input' && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Your Salon Name"
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                  />
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                   <div className="relative">
@@ -64,73 +148,136 @@ export default function Login() {
                       type="tel"
                       className="input-field pl-10"
                       placeholder="+233 24 123 4567"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Send OTP'
+                  )}
+                </button>
               </>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                className="input-field"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="input-field pr-10"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
+            {/* OTP Verification Step */}
+            {loginMethod === 'phone' && step === 'otp' && (
+              <>
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => { setStep('input'); setError(''); }}
+                  className="flex items-center text-sm text-gray-500 hover:text-gray-700"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Back
                 </button>
-              </div>
-            </div>
-
-            {!isRegister && (
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input type="checkbox" className="rounded border-gray-300 text-partner-500 focus:ring-partner-500" />
-                  <span className="ml-2 text-sm text-gray-600">Remember me</span>
-                </label>
-                <a href="#" className="text-sm text-partner-600 hover:text-partner-500">Forgot password?</a>
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      className="input-field pl-10 text-center tracking-widest"
+                      placeholder="123456"
+                      maxLength={6}
+                      value={formData.otp}
+                      onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Code sent to {formData.phoneNumber}
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Verify & Sign In'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestOtp}
+                  disabled={loading}
+                  className="w-full text-sm text-partner-600 hover:text-partner-500"
+                >
+                  Resend OTP
+                </button>
+              </>
             )}
 
-            <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2">
-              {isRegister ? 'Create Account' : 'Sign In'}
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {/* Email Login */}
+            {loginMethod === 'email' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      className="input-field pl-10"
+                      placeholder="you@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="input-field pl-10 pr-10"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center">
+                    <input type="checkbox" className="rounded border-gray-300 text-partner-500 focus:ring-partner-500" />
+                    <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                  </label>
+                  <a href="#" className="text-sm text-partner-600 hover:text-partner-500">Forgot password?</a>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+              </>
+            )}
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-              <button
-                type="button"
-                className="text-partner-600 font-medium hover:text-partner-500"
-                onClick={() => setIsRegister(!isRegister)}
-              >
-                {isRegister ? 'Sign In' : 'Register'}
-              </button>
-            </p>
-          </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-center text-gray-500">
