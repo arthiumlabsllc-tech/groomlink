@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile
     container_name: groomlink-api
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgresql://groomlink:groomlink123@postgres:5432/groomlink
       REDIS_URL: redis://redis:6379
       JWT_SECRET: groomlink-dev-secret-key-change-in-production
@@ -45,14 +45,13 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./services/api:/app
-      - /app/node_modules
+      - ./services/api/prisma:/app/prisma
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && npm run dev"
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
 
 volumes:
   postgres-data:
