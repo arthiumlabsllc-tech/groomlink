@@ -10,7 +10,9 @@ datasource db {
 enum UserRole {
   CUSTOMER
   SALON_OWNER
-  ADMIN
+  ADMIN      // Platform admin (hidden from users)
+  SUPPORT    // Support staff who can impersonate users
+  SUPER_ADMIN // Root admin - full system access
 }
 
 enum UserStatus {
@@ -81,6 +83,9 @@ model User {
   status        UserStatus @default(ACTIVE)
   isVerified    Boolean    @default(false) @map("is_verified")
   
+  // Impersonation support
+  impersonatedBy String?   @map("impersonated_by") // ID of support staff who impersonated this user
+  
   // Location
   latitude      Float?
   longitude     Float?
@@ -102,6 +107,8 @@ model User {
   favoriteStaff FavoriteStaff[] @relation("FavoriteStaffUser")
   notifications Notification[]
   payments      Payment[]
+  impersonationLogs ImpersonationLog[] @relation("ImpersonatedBy")
+  performedImpersonations ImpersonationLog[] @relation("PerformedBy")
   
   @@index([phoneNumber])
   @@index([role])
@@ -465,4 +472,25 @@ model Coupon {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   
   @@map("coupons")
+}
+
+// Audit log for support staff impersonating users
+model ImpersonationLog {
+  id            String    @id @default(uuid())
+  staffId       String    @map("staff_id")
+  targetUserId  String    @map("target_user_id")
+  reason        String?   // Why the impersonation was needed
+  startedAt     DateTime  @default(now()) @map("started_at")
+  endedAt       DateTime? @map("ended_at")
+  ipAddress     String?   @map("ip_address")
+  userAgent     String?   @map("user_agent")
+  
+  // Relations
+  staff         User      @relation("PerformedBy", fields: [staffId], references: [id])
+  targetUser    User      @relation("ImpersonatedBy", fields: [targetUserId], references: [id])
+  
+  @@index([staffId])
+  @@index([targetUserId])
+  @@index([startedAt])
+  @@map("impersonation_logs")
 }

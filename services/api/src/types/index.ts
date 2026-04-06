@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   phoneNumber: string;
   role: UserRole;
   status: UserStatus;
+  impersonatedBy?: string; // ID of support staff if impersonating
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -32,6 +33,7 @@ export interface TokenPayload {
   userId: string;
   phoneNumber: string;
   role: UserRole;
+  impersonatedBy?: string; // ID of support staff if impersonating
 }
 
 export interface Coordinates {

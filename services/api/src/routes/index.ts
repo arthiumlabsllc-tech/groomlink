@@ -9,6 +9,7 @@ import paymentRoutes from './payment.routes';
 import notificationRoutes from './notification.routes';
 import adminRoutes from './admin.routes';
 import uploadRoutes from './upload.routes';
+import impersonationRoutes from './impersonation.routes';
 
 const router: RouterType = Router();
 
@@ -28,5 +29,6 @@ router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin', adminRoutes);
 router.use('/uploads', uploadRoutes);
+router.use('/impersonation', impersonationRoutes);
 
 export default router;

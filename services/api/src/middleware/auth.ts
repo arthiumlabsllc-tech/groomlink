@@ -8,6 +8,8 @@ export enum UserRole {
   CUSTOMER = 'CUSTOMER',
   SALON_OWNER = 'SALON_OWNER',
   ADMIN = 'ADMIN',
+  SUPPORT = 'SUPPORT',
+  SUPER_ADMIN = 'SUPER_ADMIN',
 }
 
 export enum UserStatus {
@@ -36,6 +38,7 @@ export function authenticateToken(
       phoneNumber: decoded.phoneNumber,
       role: decoded.role,
       status: UserStatus.ACTIVE, // Will be verified in DB
+      impersonatedBy: decoded.impersonatedBy, // Support for impersonation
     };
     next();
   } catch (error) {
@@ -57,6 +60,65 @@ export function requireRole(...roles: string[]) {
 
     next();
   };
+}
+
+// Check if user is support staff or higher (SUPPORT, ADMIN, SUPER_ADMIN)
+export function requireSupportOrHigher(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) {
+    errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+    return;
+  }
+
+  const allowedRoles = [UserRole.SUPPORT, UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  if (!allowedRoles.includes(req.user.role as UserRole)) {
+    errorResponse(res, 'FORBIDDEN', 'Support staff access required', 403);
+    return;
+  }
+
+  next();
+}
+
+// Check if user is admin or super admin
+export function requireAdminOrHigher(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) {
+    errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+    return;
+  }
+
+  const allowedRoles = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  if (!allowedRoles.includes(req.user.role as UserRole)) {
+    errorResponse(res, 'FORBIDDEN', 'Admin access required', 403);
+    return;
+  }
+
+  next();
+}
+
+// Check if user is super admin only
+export function requireSuperAdmin(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) {
+    errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+    return;
+  }
+
+  if (req.user.role !== UserRole.SUPER_ADMIN) {
+    errorResponse(res, 'FORBIDDEN', 'Super admin access required', 403);
+    return;
+  }
+
+  next();
 }
 
 export function requireActiveUser(
