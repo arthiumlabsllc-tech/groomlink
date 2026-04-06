@@ -51,18 +51,18 @@ export function Salons() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">Salon Management</h1>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
-            <span className="text-sm text-gray-500">Total:</span>
-            <span className="text-lg font-semibold">{totalCount}</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Salon Management</h1>
+        <div className="flex gap-2 md:gap-4 overflow-x-auto">
+          <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white rounded-lg shadow-sm flex-shrink-0">
+            <span className="text-xs md:text-sm text-gray-500">Total:</span>
+            <span className="text-sm md:text-lg font-semibold">{totalCount}</span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 rounded-lg shadow-sm">
-            <span className="text-sm text-yellow-600">Pending:</span>
-            <span className="text-lg font-semibold text-yellow-600">
+          <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-yellow-50 rounded-lg shadow-sm flex-shrink-0">
+            <span className="text-xs md:text-sm text-yellow-600">Pending:</span>
+            <span className="text-sm md:text-lg font-semibold text-yellow-600">
               {pendingCount}
             </span>
           </div>
@@ -70,23 +70,23 @@ export function Salons() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 bg-white p-4 rounded-xl shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-3 md:gap-4 bg-white p-3 md:p-4 rounded-xl shadow-sm">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search salons or owners..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter size={20} className="text-gray-400" />
+          <Filter size={18} className="text-gray-400" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'PENDING' | 'APPROVED' | 'REJECTED')}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
+            className="px-3 md:px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CE1126] focus:border-transparent w-full sm:w-auto"
           >
             <option value="all">All Status</option>
             <option value="PENDING">Pending</option>
@@ -96,77 +96,139 @@ export function Salons() {
         </div>
       </div>
 
-      {/* Salons Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Salon</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Owner</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Location</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Rating</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredSalons.map((salon) => (
-              <tr key={salon.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div>
-                    <p className="font-medium text-gray-800">{salon.businessName}</p>
-                    <p className="text-sm text-gray-500">{formatDate(salon.createdAt)}</p>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div>
-                    <p className="text-sm text-gray-800">{salon.owner.firstName} {salon.owner.lastName}</p>
-                    <div className="flex items-center gap-2">
-                      <Phone size={16} className="text-gray-400" />
-                      <span className="text-sm text-gray-600">{formatPhoneNumber(salon.phoneNumber)}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-600">{salon.city}, {salon.region}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">{getStatusBadge(salon.status)}</td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-gray-500">-</span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
-                      <Eye size={18} />
-                    </button>
-                    {salon.status === 'PENDING' && (
-                      <>
-                        <button 
-                          onClick={() => handleApprove(salon.id)}
-                          disabled={approveSalon.isPending}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50"
-                        >
-                          <CheckCircle size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleReject(salon.id)}
-                          disabled={rejectSalon.isPending}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
-                        >
-                          <XCircle size={18} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {filteredSalons.map((salon) => (
+          <div key={salon.id} className="bg-white rounded-xl shadow-sm p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="font-medium text-gray-800">{salon.businessName}</p>
+                <p className="text-xs text-gray-500">{formatDate(salon.createdAt)}</p>
+              </div>
+              {getStatusBadge(salon.status)}
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-gray-600">
+                <span className="font-medium w-16">Owner:</span>
+                <span>{salon.owner.firstName} {salon.owner.lastName}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <Phone size={14} className="text-gray-400" />
+                <span>{formatPhoneNumber(salon.phoneNumber)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <MapPin size={14} className="text-gray-400" />
+                <span>{salon.city}, {salon.region}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
+              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                <Eye size={18} />
+              </button>
+              {salon.status === 'PENDING' && (
+                <>
+                  <button 
+                    onClick={() => handleApprove(salon.id)}
+                    disabled={approveSalon.isPending}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50"
+                  >
+                    <CheckCircle size={18} />
+                  </button>
+                  <button 
+                    onClick={() => handleReject(salon.id)}
+                    disabled={rejectSalon.isPending}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                  >
+                    <XCircle size={18} />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Salon</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Owner</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Location</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Rating</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredSalons.map((salon) => (
+                <tr key={salon.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div>
+                      <p className="font-medium text-gray-800">{salon.businessName}</p>
+                      <p className="text-sm text-gray-500">{formatDate(salon.createdAt)}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <p className="text-sm text-gray-800">{salon.owner.firstName} {salon.owner.lastName}</p>
+                      <div className="flex items-center gap-2">
+                        <Phone size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">{formatPhoneNumber(salon.phoneNumber)}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <span className="text-sm text-gray-600">{salon.city}, {salon.region}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">{getStatusBadge(salon.status)}</td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-500">-</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                        <Eye size={18} />
+                      </button>
+                      {salon.status === 'PENDING' && (
+                        <>
+                          <button 
+                            onClick={() => handleApprove(salon.id)}
+                            disabled={approveSalon.isPending}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50"
+                          >
+                            <CheckCircle size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleReject(salon.id)}
+                            disabled={rejectSalon.isPending}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Empty State */}
+      {filteredSalons.length === 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <AlertCircle size={48} className="mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500">No salons found</p>
+        </div>
+      )}
     </div>
   );
 }
