@@ -40,6 +40,7 @@ export const commonValidations = {
 
   // OTP
   otp: body('otp').isLength({ min: 6, max: 6 }).isNumeric().withMessage('OTP must be 6 digits'),
+  code: body('code').isLength({ min: 6, max: 6 }).isNumeric().withMessage('OTP must be 6 digits'),
 
   // Email
   email: body('email').optional().isEmail().normalizeEmail().withMessage('Invalid email format'),
@@ -79,7 +80,7 @@ export const authValidations = {
 
   verifyOTP: validate([
     commonValidations.phoneNumber,
-    commonValidations.otp,
+    commonValidations.code,
   ]),
 
   updateProfile: validate([
