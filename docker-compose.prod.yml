@@ -101,6 +101,18 @@ services:
     networks:
       - groomlink-network
 
+  # Partners Dashboard (Salon Owners)
+  partners:
+    build:
+      context: ./apps/partners
+      dockerfile: Dockerfile
+    container_name: groomlink-partners
+    restart: always
+    ports:
+      - "8082:80"
+    networks:
+      - groomlink-network
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
