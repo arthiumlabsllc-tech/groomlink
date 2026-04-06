@@ -2,7 +2,8 @@ import apiClient from './client';
 
 export interface LoginCredentials {
   phoneNumber: string;
-  otp: string;
+  password?: string;
+  otp?: string;
 }
 
 export interface AdminUser {
@@ -12,17 +13,27 @@ export interface AdminUser {
   lastName: string;
   email: string | null;
   role: 'ADMIN' | 'SALON_OWNER' | 'CUSTOMER';
+  isVerified: boolean;
 }
 
 export interface AuthResponse {
   success: boolean;
   data: {
     user: AdminUser;
-    token: string;
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+    };
   };
 }
 
 export const authApi = {
+  // Login with phone and password
+  login: async (phoneNumber: string, password: string): Promise<AuthResponse> => {
+    const response = await apiClient.post('/auth/login', { phoneNumber, password });
+    return response.data;
+  },
+
   // Request OTP for login
   requestOTP: async (phoneNumber: string) => {
     const response = await apiClient.post('/auth/otp/request', { phoneNumber });
@@ -31,19 +42,31 @@ export const authApi = {
 
   // Verify OTP and login
   verifyOTP: async (phoneNumber: string, otp: string): Promise<AuthResponse> => {
-    const response = await apiClient.post('/auth/otp/verify', { phoneNumber, otp });
+    const response = await apiClient.post('/auth/otp/verify', { phoneNumber, code: otp });
+    return response.data;
+  },
+
+  // Refresh token
+  refreshToken: async (refreshToken: string) => {
+    const response = await apiClient.post('/auth/refresh', { refreshToken });
     return response.data;
   },
 
   // Get current user profile
-  getProfile: async (): Promise<AuthResponse> => {
-    const response = await apiClient.get('/auth/me');
+  getProfile: async () => {
+    const response = await apiClient.get('/user/profile');
     return response.data;
   },
 
   // Logout
   logout: async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (e) {
+      // Ignore logout errors
+    }
     localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_refresh_token');
     localStorage.removeItem('admin_user');
   },
 };

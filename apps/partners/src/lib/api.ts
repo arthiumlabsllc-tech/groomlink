@@ -1,5 +1,5 @@
 // API Configuration for Partners Dashboard
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://partners.groomlinkgh.com/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://groomlinkgh.com/api';
 
 // Types
 export interface Salon {
