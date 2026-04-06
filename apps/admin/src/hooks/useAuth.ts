@@ -36,6 +36,21 @@ export function useAuth() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Login with password mutation
+  const login = useMutation({
+    mutationFn: ({ phoneNumber, password }: { phoneNumber: string; password: string }) =>
+      authApi.login(phoneNumber, password),
+    onSuccess: (response) => {
+      if (response.success) {
+        localStorage.setItem('admin_token', response.data.tokens.accessToken);
+        localStorage.setItem('admin_refresh_token', response.data.tokens.refreshToken);
+        localStorage.setItem('admin_user', JSON.stringify(response.data.user));
+        queryClient.setQueryData([AUTH_KEY, 'user'], response.data.user);
+        navigate('/dashboard');
+      }
+    },
+  });
+
   // Request OTP mutation
   const requestOTP = useMutation({
     mutationFn: authApi.requestOTP,
@@ -47,7 +62,8 @@ export function useAuth() {
       authApi.verifyOTP(phoneNumber, otp),
     onSuccess: (response) => {
       if (response.success) {
-        localStorage.setItem('admin_token', response.data.token);
+        localStorage.setItem('admin_token', response.data.tokens.accessToken);
+        localStorage.setItem('admin_refresh_token', response.data.tokens.refreshToken);
         localStorage.setItem('admin_user', JSON.stringify(response.data.user));
         queryClient.setQueryData([AUTH_KEY, 'user'], response.data.user);
         navigate('/dashboard');
@@ -70,6 +86,7 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated,
+    login,
     requestOTP,
     verifyOTP,
     logout,
