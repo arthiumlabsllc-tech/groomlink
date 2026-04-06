@@ -52,7 +52,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: sh -c "npx prisma migrate dev && npm run dev"
+    command: sh -c "npx prisma migrate deploy && npm run dev"
 
 volumes:
   postgres-data:
