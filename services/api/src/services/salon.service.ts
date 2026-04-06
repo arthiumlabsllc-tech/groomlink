@@ -147,6 +147,15 @@ export async function getSalons(filters: SalonFilters, page: number = 1, limit: 
         { createdAt: 'desc' },
       ],
       include: {
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+            email: true,
+          },
+        },
         services: {
           where: { isActive: true },
           take: 3,
