@@ -42,10 +42,10 @@ export async function requestOTP(req: Request, res: Response): Promise<void> {
 export async function verifyOTP(req: Request, res: Response): Promise<void> {
   try {
     const { phoneNumber, code } = verifyOTPSchema.parse(req.body);
-    const isValid = await authService.verifyPhoneOTP(phoneNumber, code);
+    const result = await authService.verifyOTPAndLogin(phoneNumber, code);
     
-    if (isValid) {
-      successResponse(res, { verified: true, message: 'OTP verified successfully' });
+    if (result) {
+      successResponse(res, result);
     } else {
       errorResponse(res, 'INVALID_OTP', 'Invalid or expired OTP', 400);
     }

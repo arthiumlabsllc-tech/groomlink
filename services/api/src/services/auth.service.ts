@@ -49,6 +49,105 @@ export async function verifyPhoneOTP(phoneNumber: string, code: string): Promise
   return verifyOTP(phoneNumber, code);
 }
 
+export interface OTPVerifyResponse {
+  user: {
+    id: string;
+    phoneNumber: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    role: UserRole;
+    isVerified: boolean;
+  };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
+  isNewUser: boolean;
+}
+
+export async function verifyOTPAndLogin(phoneNumber: string, code: string): Promise<OTPVerifyResponse | null> {
+  // First verify the OTP
+  const isValid = await verifyOTP(phoneNumber, code);
+  if (!isValid) {
+    return null;
+  }
+
+  // Find the user
+  const user = await prisma.user.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (!user) {
+    // User doesn't exist - they need to register
+    // Return a temporary verification token for registration
+    const tempToken = generateToken({
+      userId: 'pending',
+      phoneNumber,
+      role: UserRole.CUSTOMER,
+    });
+    
+    return {
+      user: {
+        id: '',
+        phoneNumber,
+        firstName: '',
+        lastName: '',
+        email: null,
+        role: UserRole.CUSTOMER,
+        isVerified: true,
+      },
+      tokens: {
+        accessToken: tempToken,
+        refreshToken: '',
+      },
+      isNewUser: true,
+    };
+  }
+
+  if (user.status === UserStatus.SUSPENDED) {
+    throw new Error('Account has been suspended');
+  }
+
+  // Update last login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date(), isVerified: true },
+  });
+
+  // Generate tokens
+  const accessToken = generateToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  const refreshToken = await generateRefreshToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  logger.info(`User logged in via OTP: ${user.id}`);
+
+  return {
+    user: {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    },
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+    isNewUser: false,
+  };
+}
+
 export async function register(data: RegisterData): Promise<AuthResponse> {
   const { phoneNumber, firstName, lastName, email, password } = data;
 
