@@ -151,8 +151,8 @@ importers:
         specifier: ~3.22.0
         version: 3.22.1(react-native@0.72.6(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0)
       react-native-vector-icons:
-        specifier: ^10.0.3
-        version: 10.3.0
+        specifier: ^9.2.0
+        version: 9.2.0
       zustand:
         specifier: ^4.4.7
         version: 4.5.7(@types/react@18.2.79)(react@18.2.0)
@@ -398,8 +398,8 @@ importers:
         specifier: 13.9.0
         version: 13.9.0(react-native@0.72.6(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0)
       react-native-vector-icons:
-        specifier: ^10.0.3
-        version: 10.3.0
+        specifier: ^9.2.0
+        version: 9.2.0
       zustand:
         specifier: ^4.4.7
         version: 4.5.7(@types/react@18.2.79)(react@18.2.0)
@@ -5953,6 +5953,11 @@ packages:
 
   react-native-vector-icons@10.3.0:
     resolution: {integrity: sha512-IFQ0RE57819hOUdFvgK4FowM5aMXg7C7XKsuGLevqXkkIJatc3QopN0wYrb2IrzUgmdpfP+QVIbI3S6h7M0btw==}
+    deprecated: react-native-vector-icons package has moved to a new model of per-icon-family packages. See the https://github.com/oblador/react-native-vector-icons/blob/master/MIGRATION.md on how to migrate
+    hasBin: true
+
+  react-native-vector-icons@9.2.0:
+    resolution: {integrity: sha512-wKYLaFuQST/chH3AJRjmOLoLy3JEs1JR6zMNgTaemFpNoXs0ztRnTxcxFD9xhX7cJe1/zoN5BpQYe7kL0m5yyA==}
     deprecated: react-native-vector-icons package has moved to a new model of per-icon-family packages. See the https://github.com/oblador/react-native-vector-icons/blob/master/MIGRATION.md on how to migrate
     hasBin: true
 
@@ -13601,6 +13606,11 @@ snapshots:
   react-native-swipe-gestures@1.0.5: {}
 
   react-native-vector-icons@10.3.0:
+    dependencies:
+      prop-types: 15.8.1
+      yargs: 16.2.0
+
+  react-native-vector-icons@9.2.0:
     dependencies:
       prop-types: 15.8.1
       yargs: 16.2.0
