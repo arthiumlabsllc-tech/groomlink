@@ -459,9 +459,9 @@ export default function Register() {
 
               <p className="text-center text-gray-600 mt-6">
                 Already have an account?{' '}
-                <a href="https://partners.groomlinkgh.com/login" className="text-primary-500 hover:text-primary-600 font-medium">
+                <Link to="/login" className="text-primary-500 hover:text-primary-600 font-medium">
                   Sign In
-                </a>
+                </Link>
               </p>
             </div>
           )}

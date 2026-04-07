@@ -20,16 +20,16 @@ const footerLinks = {
     { name: 'Terms of Service', href: '/terms' },
   ],
   forSalons: [
-    { name: 'Partner With Us', href: 'https://partners.groomlinkgh.com/register' },
-    { name: 'Salon Login', href: 'https://partners.groomlinkgh.com/login' },
+    { name: 'Partner With Us', href: '/register' },
+    { name: 'Salon Login', href: '/login' },
     { name: 'Business Resources', href: '#' },
     { name: 'Success Stories', href: '#' },
   ],
   account: [
     { name: 'Customer Login', href: '/login' },
     { name: 'Customer Register', href: '/register' },
-    { name: 'Salon Login', href: 'https://partners.groomlinkgh.com/login' },
-    { name: 'Salon Register', href: 'https://partners.groomlinkgh.com/register' },
+    { name: 'Salon Owner Login', href: '/login' },
+    { name: 'Partner Registration', href: '/register' },
   ],
 }
 
