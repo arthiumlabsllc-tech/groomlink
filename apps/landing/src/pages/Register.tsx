@@ -312,7 +312,7 @@ export default function Register() {
 
   const handleGetStarted = () => {
     if (userType === 'salon-owner') {
-      window.location.href = 'https://dash.groomlinkgh.com'
+      window.location.href = 'https://partners.groomlinkgh.com'
     } else {
       window.location.href = 'https://app.groomlinkgh.com'
     }
@@ -459,7 +459,7 @@ export default function Register() {
 
               <p className="text-center text-gray-600 mt-6">
                 Already have an account?{' '}
-                <a href="https://dash.groomlinkgh.com/login" className="text-primary-500 hover:text-primary-600 font-medium">
+                <a href="https://partners.groomlinkgh.com/login" className="text-primary-500 hover:text-primary-600 font-medium">
                   Sign In
                 </a>
               </p>

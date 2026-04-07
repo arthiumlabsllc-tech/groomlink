@@ -20,8 +20,8 @@ const footerLinks = {
     { name: 'Terms of Service', href: '/terms' },
   ],
   forSalons: [
-    { name: 'Partner With Us', href: 'https://dash.groomlinkgh.com/register' },
-    { name: 'Salon Dashboard', href: 'https://dash.groomlinkgh.com/login' },
+    { name: 'Partner With Us', href: 'https://partners.groomlinkgh.com/register' },
+    { name: 'Salon Dashboard', href: 'https://partners.groomlinkgh.com/login' },
     { name: 'Business Resources', href: '#' },
     { name: 'Success Stories', href: '#' },
   ],
