@@ -1,0 +1,21 @@
+{
+  "appName": "GroomLink Partners",
+  "subtitle": "Manage Your Barbershop Business",
+  "description": {
+    "short": "The complete business management app for barbershop and salon owners in Ghana.",
+    "full": "GroomLink Partners is the ultimate business management tool for barbershop and salon owners. Manage your appointments, staff, services, and grow your business all from one powerful app.\n\nKEY FEATURES:\n• Dashboard with business analytics and insights\n• Manage appointments - view, confirm, and track bookings\n• Add and manage services with pricing\n• Manage staff schedules and assignments\n• Update your salon profile and business hours\n• Receive notifications for new bookings\n• Track revenue and performance metrics\n\nTake control of your barbershop business with GroomLink Partners. Streamline operations, delight customers, and grow your revenue."
+  },
+  "keywords": ["barbershop", "salon", "business", "management", "booking", "appointments", "Ghana", "owner"],
+  "categories": {
+    "primary": "Business",
+    "secondary": "Lifestyle"
+  },
+  "contact": {
+    "website": "https://partners.groomlinkgh.com",
+    "email": "partners@groomlinkgh.com",
+    "phone": "+233 XX XXX XXXX"
+  },
+  "privacyPolicyUrl": "https://groomlinkgh.com/privacy",
+  "termsOfServiceUrl": "https://groomlinkgh.com/terms",
+  "supportUrl": "https://partners.groomlinkgh.com/support"
+}

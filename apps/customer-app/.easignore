@@ -1,0 +1,6 @@
+# Ignore monorepo root files that might cause issues
+../pnpm-workspace.yaml
+../pnpm-lock.yaml
+../package.json
+../.npmrc
+../.pnpmfile.cjs

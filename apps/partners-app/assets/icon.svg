@@ -1,0 +1,37 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#006B3F"/>
+  
+  <!-- Store/Shop Icon -->
+  <g transform="translate(512, 420)">
+    <!-- Building base -->
+    <rect x="-180" y="-100" width="360" height="240" rx="20" fill="white"/>
+    
+    <!-- Roof -->
+    <path d="M-220 -100 L0 -220 L220 -100 Z" fill="white"/>
+    
+    <!-- Awning stripes -->
+    <rect x="-180" y="-100" width="40" height="40" fill="#006B3F"/>
+    <rect x="-100" y="-100" width="40" height="40" fill="white"/>
+    <rect x="-20" y="-100" width="40" height="40" fill="#006B3F"/>
+    <rect x="60" y="-100" width="40" height="40" fill="white"/>
+    <rect x="140" y="-100" width="40" height="40" fill="#006B3F"/>
+    
+    <!-- Door -->
+    <rect x="-40" y="20" width="80" height="120" rx="10" fill="#006B3F"/>
+    
+    <!-- Windows -->
+    <rect x="-160" y="20" width="80" height="60" rx="8" fill="#006B3F"/>
+    <rect x="80" y="20" width="80" height="60" rx="8" fill="#006B3F"/>
+    
+    <!-- Scissors above door -->
+    <g transform="translate(0, -180) scale(0.4)">
+      <path d="M-120 -200 L-80 -80 L80 -80 L120 -200" fill="none" stroke="#006B3F" stroke-width="24" stroke-linecap="round"/>
+      <path d="M-120 200 L-80 80 L80 80 L120 200" fill="none" stroke="#006B3F" stroke-width="24" stroke-linecap="round"/>
+      <circle cx="0" cy="0" r="40" fill="#006B3F"/>
+    </g>
+  </g>
+  
+  <!-- App name -->
+  <text x="512" y="900" text-anchor="middle" fill="white" font-size="56" font-weight="bold" font-family="Arial, sans-serif">GroomLink Partners</text>
+</svg>

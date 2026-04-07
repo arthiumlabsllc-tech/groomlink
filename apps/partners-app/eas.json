@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "version": ">= 5.9.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview-device": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "node": "18.19.0"
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./service-account-key.json",
+        "track": "production"
+      },
+      "ios": {
+        "ascAppId": "YOUR_APPLE_APP_ID",
+        "ascApiKeyPath": "./AuthKey.p8",
+        "ascApiKeyIssuerId": "YOUR_ISSUER_ID",
+        "ascApiKeyId": "YOUR_KEY_ID"
+      }
+    }
+  }
+}

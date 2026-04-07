@@ -1,0 +1,21 @@
+{
+  "appName": "GroomLink",
+  "subtitle": "Book Your Next Grooming Session",
+  "description": {
+    "short": "Discover and book appointments with top barbershops and salons in Ghana.",
+    "full": "GroomLink is Ghana's premier grooming appointment booking app. Find the best barbershops and salons near you, browse services, read reviews, and book appointments with your favorite barbers in just a few taps.\n\nKEY FEATURES:\n• Discover top-rated barbershops and salons in your area\n• Browse services, prices, and read authentic reviews\n• Book appointments with your preferred barber\n• Get directions to your appointment\n• Manage your bookings and receive reminders\n• Save your favorite salons for quick access\n\nWhether you need a fresh haircut, beard trim, or full grooming session, GroomLink connects you with skilled professionals who will have you looking your best."
+  },
+  "keywords": ["barbershop", "salon", "haircut", "booking", "grooming", "beauty", "Ghana", "appointment"],
+  "categories": {
+    "primary": "Lifestyle",
+    "secondary": "Health & Fitness"
+  },
+  "contact": {
+    "website": "https://groomlinkgh.com",
+    "email": "support@groomlinkgh.com",
+    "phone": "+233 XX XXX XXXX"
+  },
+  "privacyPolicyUrl": "https://groomlinkgh.com/privacy",
+  "termsOfServiceUrl": "https://groomlinkgh.com/terms",
+  "supportUrl": "https://groomlinkgh.com/support"
+}

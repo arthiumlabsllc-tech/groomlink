@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "GroomLink Partners",
+    "slug": "groomlink-partners",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#006B3F"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.groomlink.partners",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "GroomLink Partners uses your location for your salon address.",
+        "NSCameraUsageDescription": "GroomLink Partners needs camera access to upload salon photos.",
+        "NSPhotoLibraryUsageDescription": "GroomLink Partners needs photo library access to upload salon photos."
+      }
+    },
+    "android": {
+      "package": "com.groomlink.partners",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#006B3F"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0c94a806-7dcb-42fe-935f-8c577b83e053"
+      }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#006B3F"
+        }
+      ]
+    ],
+    "owner": "gr3enink"
+  }
+}

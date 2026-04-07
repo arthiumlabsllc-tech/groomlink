@@ -1,0 +1,22 @@
+<svg width="1242" height="2436" viewBox="0 0 1242 2436" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1242" height="2436" fill="#CE1126"/>
+  
+  <!-- Logo centered -->
+  <g transform="translate(621, 1100)">
+    <!-- Scissors Icon -->
+    <path d="M-150 -250 L-100 -100 L100 -100 L150 -250" 
+          fill="none" stroke="white" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-150 250 L-100 100 L100 100 L150 250" 
+          fill="none" stroke="white" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="0" cy="0" r="50" fill="white"/>
+    <circle cx="-200" cy="-320" r="75" fill="none" stroke="white" stroke-width="25"/>
+    <circle cx="-200" cy="320" r="75" fill="none" stroke="white" stroke-width="25"/>
+    <line x1="-125" y1="-250" x2="-200" y2="-245" stroke="white" stroke-width="30" stroke-linecap="round"/>
+    <line x1="-125" y1="250" x2="-200" y2="245" stroke="white" stroke-width="30" stroke-linecap="round"/>
+  </g>
+  
+  <!-- App name -->
+  <text x="621" y="1500" text-anchor="middle" fill="white" font-size="80" font-weight="bold" font-family="Arial, sans-serif">GroomLink</text>
+  <text x="621" y="1580" text-anchor="middle" fill="white" font-size="36" font-family="Arial, sans-serif">Book Your Next Grooming Session</text>
+</svg>

@@ -1,0 +1,28 @@
+<svg width="1242" height="2436" viewBox="0 0 1242 2436" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1242" height="2436" fill="#006B3F"/>
+  
+  <!-- Logo centered -->
+  <g transform="translate(621, 1050)">
+    <!-- Store/Shop Icon -->
+    <rect x="-200" y="-100" width="400" height="280" rx="25" fill="white"/>
+    <path d="M-250 -100 L0 -250 L250 -100 Z" fill="white"/>
+    
+    <!-- Awning stripes -->
+    <rect x="-200" y="-100" width="50" height="50" fill="#006B3F"/>
+    <rect x="-100" y="-100" width="50" height="50" fill="white"/>
+    <rect x="0" y="-100" width="50" height="50" fill="#006B3F"/>
+    <rect x="100" y="-100" width="50" height="50" fill="white"/>
+    
+    <!-- Door -->
+    <rect x="-50" y="30" width="100" height="150" rx="12" fill="#006B3F"/>
+    
+    <!-- Windows -->
+    <rect x="-180" y="30" width="100" height="80" rx="10" fill="#006B3F"/>
+    <rect x="80" y="30" width="100" height="80" rx="10" fill="#006B3F"/>
+  </g>
+  
+  <!-- App name -->
+  <text x="621" y="1500" text-anchor="middle" fill="white" font-size="70" font-weight="bold" font-family="Arial, sans-serif">GroomLink Partners</text>
+  <text x="621" y="1580" text-anchor="middle" fill="white" font-size="36" font-family="Arial, sans-serif">Manage Your Barbershop Business</text>
+</svg>
