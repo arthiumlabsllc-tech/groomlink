@@ -4,3 +4,4 @@
 ../package.json
 ../.npmrc
 ../.pnpmfile.cjs
+../package-lock.json
