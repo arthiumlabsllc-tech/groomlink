@@ -12,7 +12,7 @@ export interface AdminUser {
   firstName: string;
   lastName: string;
   email: string | null;
-  role: 'ADMIN' | 'SALON_OWNER' | 'CUSTOMER';
+  role: 'ADMIN' | 'SUPER_ADMIN' | 'SUPPORT' | 'SALON_OWNER' | 'CUSTOMER';
   isVerified: boolean;
 }
 

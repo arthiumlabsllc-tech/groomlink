@@ -623,3 +623,108 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
     errorResponse(res, 'DELETE_FAILED', (error as Error).message, 500);
   }
 }
+
+// Schema for creating support staff
+const createSupportStaffSchema = z.object({
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number'),
+  email: z.string().email('Invalid email address').optional().nullable(),
+});
+
+// Create support staff account
+export async function createSupportStaff(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = createSupportStaffSchema.parse(req.body);
+
+    // Check if phone number already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { phoneNumber: data.phoneNumber },
+    });
+
+    if (existingUser) {
+      errorResponse(res, 'PHONE_EXISTS', 'A user with this phone number already exists', 400);
+      return;
+    }
+
+    // Check if email exists (if provided)
+    if (data.email) {
+      const existingEmail = await prisma.user.findFirst({
+        where: { email: data.email },
+      });
+
+      if (existingEmail) {
+        errorResponse(res, 'EMAIL_EXISTS', 'A user with this email already exists', 400);
+        return;
+      }
+    }
+
+    // Create support staff user
+    const user = await prisma.user.create({
+      data: {
+        phoneNumber: data.phoneNumber,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        role: 'SUPPORT' as any, // Cast to bypass TypeScript
+        status: 'ACTIVE' as any,
+        isVerified: true, // Auto-verify support staff
+      },
+      select: {
+        id: true,
+        phoneNumber: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        status: true,
+        isVerified: true,
+        createdAt: true,
+      },
+    });
+
+    logger.info(`Support staff created by admin: ${user.id}`);
+    successResponse(res, user, 201);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    logger.error('Failed to create support staff', { error });
+    errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Get all support staff
+export async function getSupportStaff(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: { role: 'SUPPORT' as any },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          phoneNumber: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          status: true,
+          isVerified: true,
+          createdAt: true,
+        },
+      }),
+      prisma.user.count({ where: { role: 'SUPPORT' as any } }),
+    ]);
+
+    paginatedResponse(res, users, page, limit, total);
+  } catch (error) {
+    logger.error('Failed to fetch support staff', { error });
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}

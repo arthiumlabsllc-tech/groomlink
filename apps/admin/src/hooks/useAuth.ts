@@ -80,7 +80,7 @@ export function useAuth() {
     },
   });
 
-  const isAuthenticated = !!user && user.role === 'ADMIN';
+  const isAuthenticated = !!user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
 
   return {
     user,

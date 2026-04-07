@@ -31,4 +31,8 @@ router.get('/', authenticateToken, requireRole(UserRole.ADMIN), userController.g
 router.put('/:id/status', authenticateToken, requireRole(UserRole.ADMIN), userController.updateUserStatus);
 router.delete('/:id', authenticateToken, requireRole(UserRole.ADMIN), userController.adminDeleteUser);
 
+// Support staff management (ADMIN only)
+router.post('/support-staff', authenticateToken, requireRole(UserRole.ADMIN), userController.createSupportStaff);
+router.get('/support-staff', authenticateToken, requireRole(UserRole.ADMIN), userController.getSupportStaff);
+
 export default router;

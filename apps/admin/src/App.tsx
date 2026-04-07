@@ -7,6 +7,7 @@ import { Users } from './pages/Users';
 import { Transactions } from './pages/Transactions';
 import { Promotions } from './pages/Promotions';
 import { Support } from './pages/Support';
+import { SupportStaff } from './pages/SupportStaff';
 import { Login } from './pages/Login';
 import './App.css';
 
@@ -33,6 +34,7 @@ function App() {
             <Route path="transactions" element={<Transactions />} />
             <Route path="promotions" element={<Promotions />} />
             <Route path="support" element={<Support />} />
+            <Route path="support-staff" element={<SupportStaff />} />
           </Route>
         </Routes>
       </BrowserRouter>

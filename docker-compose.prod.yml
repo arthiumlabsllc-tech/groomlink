@@ -113,6 +113,18 @@ services:
     networks:
       - groomlink-network
 
+  # Support Dashboard
+  support:
+    build:
+      context: ./apps/support
+      dockerfile: Dockerfile
+    container_name: groomlink-support
+    restart: always
+    ports:
+      - "8083:80"
+    networks:
+      - groomlink-network
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine

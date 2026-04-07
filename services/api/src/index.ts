@@ -43,11 +43,13 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:8081',
   'http://localhost:8082',
+  'http://localhost:8083',
   'http://localhost:3000',
   'https://groomlinkgh.com',
   'https://www.groomlinkgh.com',
   'https://dash.groomlinkgh.com',
   'https://partners.groomlinkgh.com',
+  'https://support.groomlinkgh.com',
 ];
 
 app.use(cors({

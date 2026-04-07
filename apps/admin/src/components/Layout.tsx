@@ -6,11 +6,12 @@ import {
   CreditCard,
   Gift,
   Headphones,
+  UserPlus,
   LogOut,
   Menu,
   X,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks';
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { path: '/transactions', label: 'Transactions', icon: CreditCard },
   { path: '/promotions', label: 'Promotions', icon: Gift },
   { path: '/support', label: 'Support', icon: Headphones },
+  { path: '/support-staff', label: 'Support Staff', icon: UserPlus },
 ];
 
 export function Layout() {

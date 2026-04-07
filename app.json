@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "5b3115e6-5318-4165-a006-7dab6aa756ac"
+      }
+    },
+    "android": {
+      "package": "com.gr3enink.groomlink"
+    }
+  }
+}

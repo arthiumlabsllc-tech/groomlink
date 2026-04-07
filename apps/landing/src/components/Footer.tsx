@@ -16,8 +16,8 @@ const footerLinks = {
   support: [
     { name: 'Help Center', href: '#' },
     { name: 'Contact Us', href: '#' },
-    { name: 'Privacy Policy', href: '#' },
-    { name: 'Terms of Service', href: '#' },
+    { name: 'Privacy Policy', href: '/privacy' },
+    { name: 'Terms of Service', href: '/terms' },
   ],
   forSalons: [
     { name: 'Partner With Us', href: 'https://dash.groomlinkgh.com/register' },
