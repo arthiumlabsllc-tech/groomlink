@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.9.0"
+    "version": ">= 5.9.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -14,7 +15,8 @@
       },
       "ios": {
         "simulator": true
-      }
+      },
+      "node": "18.19.0"
     },
     "preview-device": {
       "distribution": "internal",
