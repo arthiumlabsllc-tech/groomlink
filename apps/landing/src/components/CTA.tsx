@@ -1,4 +1,5 @@
 import { ArrowRight, Play } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export default function CTA() {
   return (
@@ -23,13 +24,13 @@ export default function CTA() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <a 
-                  href="https://dash.groomlinkgh.com/register" 
+                <Link 
+                  to="/register" 
                   className="btn-gold flex items-center justify-center gap-2"
                 >
                   Get Started Free
                   <ArrowRight className="w-5 h-5" />
-                </a>
+                </Link>
                 <a 
                   href="#how-it-works" 
                   className="flex items-center justify-center gap-2 text-white font-semibold hover:text-ghana-gold transition-colors"

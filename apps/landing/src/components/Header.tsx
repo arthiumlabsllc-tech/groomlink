@@ -1,5 +1,6 @@
 import { Menu, X, Scissors } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 interface HeaderProps {
   scrolled: boolean
@@ -44,18 +45,18 @@ export default function Header({ scrolled }: HeaderProps) {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <a 
-              href="https://dash.groomlinkgh.com/login" 
+            <Link 
+              to="/register" 
               className={`font-medium transition-colors ${scrolled ? 'text-gray-700 hover:text-primary-500' : 'text-white/90 hover:text-white'}`}
             >
               Sign In
-            </a>
-            <a 
-              href="https://dash.groomlinkgh.com/register" 
+            </Link>
+            <Link 
+              to="/register" 
               className="btn-gold text-sm"
             >
               Get Started
-            </a>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -80,8 +81,8 @@ export default function Header({ scrolled }: HeaderProps) {
               <a href="#pricing" className="text-gray-700 font-medium">Pricing</a>
               <a href="https://dash.groomlinkgh.com" className="text-gray-700 font-medium">For Salons</a>
               <hr />
-              <a href="https://dash.groomlinkgh.com/login" className="text-gray-700 font-medium">Sign In</a>
-              <a href="https://dash.groomlinkgh.com/register" className="btn-primary text-center">Get Started</a>
+              <Link to="/register" className="text-gray-700 font-medium">Sign In</Link>
+              <Link to="/register" className="btn-primary text-center">Get Started</Link>
             </div>
           </div>
         )}

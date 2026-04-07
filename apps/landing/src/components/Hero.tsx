@@ -1,4 +1,5 @@
 import { Star, MapPin, Clock, Shield } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export default function Hero() {
   return (
@@ -37,9 +38,9 @@ export default function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <a href="https://dash.groomlinkgh.com/register" className="btn-gold text-lg">
+              <Link to="/register" className="btn-gold text-lg">
                 Book Appointment
-              </a>
+              </Link>
               <a href="#how-it-works" className="btn-secondary text-lg">
                 Learn More
               </a>
