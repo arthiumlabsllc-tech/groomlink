@@ -56,7 +56,7 @@ export default function Register() {
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout
+    let interval: ReturnType<typeof setInterval>
     if (timerActive && timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1)
