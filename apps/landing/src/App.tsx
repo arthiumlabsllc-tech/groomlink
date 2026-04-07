@@ -11,6 +11,7 @@ import Footer from './components/Footer'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 import Register from './pages/Register'
+import Login from './pages/Login'
 
 function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -47,6 +48,7 @@ function App() {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   )

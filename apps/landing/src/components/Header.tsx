@@ -46,7 +46,7 @@ export default function Header({ scrolled }: HeaderProps) {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <Link 
-              to="/register" 
+              to="/login" 
               className={`font-medium transition-colors ${scrolled ? 'text-gray-700 hover:text-primary-500' : 'text-white/90 hover:text-white'}`}
             >
               Sign In
@@ -81,7 +81,7 @@ export default function Header({ scrolled }: HeaderProps) {
               <a href="#pricing" className="text-gray-700 font-medium">Pricing</a>
               <a href="https://partners.groomlinkgh.com" className="text-gray-700 font-medium">For Salons</a>
               <hr />
-              <Link to="/register" className="text-gray-700 font-medium">Sign In</Link>
+              <Link to="/login" className="text-gray-700 font-medium">Sign In</Link>
               <Link to="/register" className="btn-primary text-center">Get Started</Link>
             </div>
           </div>

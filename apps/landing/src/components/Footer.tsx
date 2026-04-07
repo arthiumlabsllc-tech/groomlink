@@ -21,9 +21,15 @@ const footerLinks = {
   ],
   forSalons: [
     { name: 'Partner With Us', href: 'https://partners.groomlinkgh.com/register' },
-    { name: 'Salon Dashboard', href: 'https://partners.groomlinkgh.com/login' },
+    { name: 'Salon Login', href: 'https://partners.groomlinkgh.com/login' },
     { name: 'Business Resources', href: '#' },
     { name: 'Success Stories', href: '#' },
+  ],
+  account: [
+    { name: 'Customer Login', href: '/login' },
+    { name: 'Customer Register', href: '/register' },
+    { name: 'Salon Login', href: 'https://partners.groomlinkgh.com/login' },
+    { name: 'Salon Register', href: 'https://partners.groomlinkgh.com/register' },
   ],
 }
 
@@ -39,7 +45,7 @@ export default function Footer() {
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer */}
-        <div className="py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="py-12 grid grid-cols-2 md:grid-cols-6 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <a href="#" className="flex items-center space-x-2 mb-4">
@@ -116,6 +122,20 @@ export default function Footer() {
             <h4 className="font-semibold text-white mb-4">For Salons</h4>
             <ul className="space-y-2">
               {footerLinks.forSalons.map((link, i) => (
+                <li key={i}>
+                  <a href={link.href} className="text-gray-400 hover:text-white text-sm transition-colors">
+                    {link.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Account Links */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Account</h4>
+            <ul className="space-y-2">
+              {footerLinks.account.map((link, i) => (
                 <li key={i}>
                   <a href={link.href} className="text-gray-400 hover:text-white text-sm transition-colors">
                     {link.name}
