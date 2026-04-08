@@ -2,7 +2,7 @@
   "name": "groomlink-customer",
   "version": "1.0.0",
   "description": "GroomLink Customer App - Book your next grooming session",
-  "main": "expo/AppEntry.js",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -16,6 +16,7 @@
     "submit:ios": "eas submit --platform ios"
   },
   "dependencies": {
+    "@babel/runtime": "^7.29.0",
     "@react-navigation/bottom-tabs": "^6.5.11",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/native-stack": "^6.9.17",
