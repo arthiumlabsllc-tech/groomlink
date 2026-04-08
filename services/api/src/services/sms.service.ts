@@ -1,9 +1,28 @@
 import logger from '../config/logger';
+import AfricasTalking from 'africastalking';
 
-// SMS Provider configuration
-const SMS_PROVIDER = process.env.SMS_PROVIDER || 'twilio';
-const SMS_API_KEY = process.env.SMS_API_KEY;
-const SMS_FROM = process.env.SMS_FROM_NUMBER || 'GroomLink';
+// Africa's Talking configuration
+const AT_USERNAME = process.env.AT_USERNAME || 'sandbox';
+const AT_API_KEY = process.env.AT_API_KEY;
+const SMS_FROM = process.env.SMS_FROM || 'GroomLink';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sms: any = null;
+
+if (AT_API_KEY) {
+  try {
+    const at = AfricasTalking({
+      apiKey: AT_API_KEY,
+      username: AT_USERNAME,
+    });
+    sms = at.SMS;
+    logger.info(`Africa's Talking initialized with username: ${AT_USERNAME}`);
+  } catch (error) {
+    logger.error('Failed to initialize Africa\'s Talking:', error);
+  }
+} else {
+  logger.warn('AT_API_KEY not set. SMS will be logged only.');
+}
 
 export interface SMSMessage {
   to: string;
@@ -11,7 +30,7 @@ export interface SMSMessage {
 }
 
 /**
- * Send SMS using configured provider
+ * Send SMS using Africa's Talking
  */
 export async function sendSMS({ to, message }: SMSMessage): Promise<boolean> {
   try {
@@ -21,28 +40,38 @@ export async function sendSMS({ to, message }: SMSMessage): Promise<boolean> {
     // Log for development
     logger.info(`SMS to ${formattedNumber}: ${message}`);
 
-    // In production, integrate with actual SMS provider
-    // Examples: Twilio, Africa's Talking, Hubtel SMS, etc.
-    if (process.env.NODE_ENV === 'production' && SMS_API_KEY) {
-      // TODO: Implement actual SMS provider integration
-      // Example for Twilio:
-      // await twilioClient.messages.create({
-      //   body: message,
-      //   from: SMS_FROM,
-      //   to: formattedNumber,
-      // });
+    // In development mode, just log the message (don't send real SMS)
+    if (process.env.NODE_ENV === 'development') {
+      logger.info(`[DEV MODE] SMS would be sent to ${formattedNumber}: ${message}`);
+      return true;
+    }
 
-      // Example for Africa's Talking:
-      // await africasTalking.SMS.send({
-      //   to: formattedNumber,
-      //   message,
-      //   from: SMS_FROM,
-      // });
+    // Send via Africa's Talking in production/sandbox mode
+    if (sms && AT_API_KEY) {
+      const sendOptions: {
+        to: string[];
+        message: string;
+        from?: string;
+      } = {
+        to: [formattedNumber],
+        message,
+      };
+
+      // Only include 'from' for production (sandbox doesn't support custom sender IDs)
+      if (AT_USERNAME !== 'sandbox' && SMS_FROM) {
+        sendOptions.from = SMS_FROM;
+      }
+
+      const response = await sms.send(sendOptions);
+      logger.info(`SMS sent successfully to ${formattedNumber}`, { response });
+    } else {
+      logger.warn(`SMS not sent: Africa's Talking not configured`);
     }
 
     return true;
   } catch (error) {
     logger.error('SMS sending failed:', error);
+    // Don't throw - return false to allow graceful handling
     return false;
   }
 }

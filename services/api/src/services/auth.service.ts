@@ -3,6 +3,7 @@ import logger from '../config/logger';
 import { generateToken, generateRefreshToken, verifyRefreshToken, rotateRefreshToken, revokeAllUserRefreshTokens } from '../utils/jwt';
 import { hashPassword, verifyPassword } from '../utils/password';
 import { createOTP, verifyOTP } from '../utils/otp';
+import { sendOTPSMS } from './sms.service';
 import { UserRole, UserStatus } from '@prisma/client';
 
 export interface RegisterData {
@@ -41,8 +42,14 @@ export async function requestOTP(phoneNumber: string): Promise<void> {
     throw new Error('Invalid phone number format. Use +233XXXXXXXXX');
   }
 
-  await createOTP(phoneNumber);
+  const otp = await createOTP(phoneNumber);
   logger.info(`OTP requested for ${phoneNumber}`);
+
+  // Send OTP via SMS (don't await - let it happen in background)
+  // If SMS fails, the OTP is still in the database and can be retrieved
+  sendOTPSMS(phoneNumber, otp).catch((error) => {
+    logger.error(`Failed to send OTP SMS to ${phoneNumber}:`, error);
+  });
 }
 
 export async function verifyPhoneOTP(phoneNumber: string, code: string): Promise<boolean> {
