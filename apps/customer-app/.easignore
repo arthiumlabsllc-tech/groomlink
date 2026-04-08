@@ -20,3 +20,10 @@ deploy.sh
 docker-compose*.yml
 hostinger-*
 *.example
+
+# Native build directories and large SDK files - never upload to EAS
+android-sdk/
+../android-sdk/
+android/
+ios/
+.gradle/
