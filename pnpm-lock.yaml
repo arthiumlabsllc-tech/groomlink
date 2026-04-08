@@ -160,6 +160,9 @@ importers:
       expo-image-picker:
         specifier: ~14.3.2
         version: 14.3.2(expo@49.0.23(@babel/core@7.29.0))
+      expo-modules-autolinking:
+        specifier: ~1.5.0
+        version: 1.5.1
       expo-notifications:
         specifier: ~0.20.1
         version: 0.20.1(expo@49.0.23(@babel/core@7.29.0))
@@ -407,6 +410,9 @@ importers:
       expo-image-picker:
         specifier: ~14.3.2
         version: 14.3.2(expo@49.0.23(@babel/core@7.29.0))
+      expo-modules-autolinking:
+        specifier: ~1.5.0
+        version: 1.5.1
       expo-notifications:
         specifier: ~0.20.1
         version: 0.20.1(expo@49.0.23(@babel/core@7.29.0))
