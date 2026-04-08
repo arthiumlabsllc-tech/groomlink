@@ -191,7 +191,6 @@ export default function AddStaffScreen() {
       fullName: fullName.trim(),
       phoneNumber: formatPhoneNumber(phoneNumber.trim()),
       email: email.trim() || undefined,
-      specialty: role,
       specialties: [role],
     };
 

@@ -4,19 +4,24 @@ import { verifyToken } from '../utils/jwt';
 import { errorResponse } from '../utils/response';
 
 // Export enums for use in routes and controllers
-export enum UserRole {
-  CUSTOMER = 'CUSTOMER',
-  SALON_OWNER = 'SALON_OWNER',
-  ADMIN = 'ADMIN',
-  SUPPORT = 'SUPPORT',
-  SUPER_ADMIN = 'SUPER_ADMIN',
-}
+// Using const object with `as const` to create a type-compatible pattern with Prisma
+export const UserRole = {
+  CUSTOMER: 'CUSTOMER',
+  SALON_OWNER: 'SALON_OWNER',
+  ADMIN: 'ADMIN',
+  SUPPORT: 'SUPPORT',
+  SUPER_ADMIN: 'SUPER_ADMIN',
+} as const;
 
-export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  SUSPENDED = 'SUSPENDED',
-}
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+export const UserStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  SUSPENDED: 'SUSPENDED',
+} as const;
+
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
 export function authenticateToken(
   req: AuthenticatedRequest,
@@ -73,8 +78,8 @@ export function requireSupportOrHigher(
     return;
   }
 
-  const allowedRoles = [UserRole.SUPPORT, UserRole.ADMIN, UserRole.SUPER_ADMIN];
-  if (!allowedRoles.includes(req.user.role as UserRole)) {
+  const allowedRoles: UserRole[] = [UserRole.SUPPORT, UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  if (!allowedRoles.includes(req.user.role)) {
     errorResponse(res, 'FORBIDDEN', 'Support staff access required', 403);
     return;
   }
@@ -93,8 +98,8 @@ export function requireAdminOrHigher(
     return;
   }
 
-  const allowedRoles = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
-  if (!allowedRoles.includes(req.user.role as UserRole)) {
+  const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  if (!allowedRoles.includes(req.user.role)) {
     errorResponse(res, 'FORBIDDEN', 'Admin access required', 403);
     return;
   }

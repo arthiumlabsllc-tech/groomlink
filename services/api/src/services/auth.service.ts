@@ -4,7 +4,7 @@ import { generateToken, generateRefreshToken, verifyRefreshToken, rotateRefreshT
 import { hashPassword, verifyPassword } from '../utils/password';
 import { createOTP, verifyOTP } from '../utils/otp';
 import { sendOTPSMS } from './sms.service';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus } from '../middleware/auth';
 
 export interface RegisterData {
   phoneNumber: string;
