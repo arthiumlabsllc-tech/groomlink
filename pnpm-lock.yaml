@@ -85,6 +85,49 @@ importers:
         specifier: ^5.1.0
         version: 5.4.21(@types/node@20.19.39)(terser@5.46.1)
 
+  apps/customer:
+    dependencies:
+      date-fns:
+        specifier: ^3.0.0
+        version: 3.6.0
+      lucide-react:
+        specifier: ^0.263.1
+        version: 0.263.1(react@18.2.0)
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.2.0)
+      react-router-dom:
+        specifier: ^6.20.0
+        version: 6.30.3(react-dom@18.3.1(react@18.2.0))(react@18.2.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.0
+        version: 18.2.79
+      '@types/react-dom':
+        specifier: ^18.2.0
+        version: 18.3.7(@types/react@18.2.79)
+      '@vitejs/plugin-react':
+        specifier: ^4.0.0
+        version: 4.7.0(vite@4.5.14(@types/node@20.19.39)(terser@5.46.1))
+      autoprefixer:
+        specifier: ^10.4.14
+        version: 10.4.27(postcss@8.5.8)
+      postcss:
+        specifier: ^8.4.24
+        version: 8.5.8
+      tailwindcss:
+        specifier: ^3.3.2
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vite:
+        specifier: ^4.3.9
+        version: 4.5.14(@types/node@20.19.39)(terser@5.46.1)
+
   apps/customer-app:
     dependencies:
       '@react-navigation/bottom-tabs':
@@ -160,6 +203,12 @@ importers:
       '@babel/core':
         specifier: ^7.20.0
         version: 7.29.0
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.29.0)
+      '@babel/plugin-transform-private-methods':
+        specifier: ^7.28.6
+        version: 7.28.6(@babel/core@7.29.0)
       '@types/react':
         specifier: ~18.2.14
         version: 18.2.79
@@ -196,7 +245,7 @@ importers:
         version: 18.3.7(@types/react@18.2.79)
       '@vitejs/plugin-react':
         specifier: ^4.0.0
-        version: 4.7.0(vite@4.5.14(@types/node@20.19.39)(terser@5.46.1))
+        version: 4.7.0(vite@5.4.21(@types/node@20.19.39)(terser@5.46.1))
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.27(postcss@8.5.8)
@@ -210,8 +259,8 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
       vite:
-        specifier: ^4.3.9
-        version: 4.5.14(@types/node@20.19.39)(terser@5.46.1)
+        specifier: ^5.1.0
+        version: 5.4.21(@types/node@20.19.39)(terser@5.46.1)
 
   apps/mobile:
     dependencies:
@@ -404,6 +453,12 @@ importers:
       '@babel/core':
         specifier: ^7.20.0
         version: 7.29.0
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.29.0)
+      '@babel/plugin-transform-private-methods':
+        specifier: ^7.28.6
+        version: 7.28.6(@babel/core@7.29.0)
       '@types/react':
         specifier: ~18.2.14
         version: 18.2.79
