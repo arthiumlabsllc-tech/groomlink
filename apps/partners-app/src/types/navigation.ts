@@ -12,10 +12,46 @@ export type MainStackParamList = {
   EditSalon: undefined;
   BookingsMain: undefined;
   ServicesMain: undefined;
-  AddService: undefined;
+  AddService: { serviceId?: string; service?: Service } | undefined;
   StaffMain: undefined;
-  AddStaff: undefined;
+  AddStaff: { staffId?: string; staff?: StaffMember } | undefined;
 };
+
+export interface Service {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  duration: number;
+  category: string;
+  isActive: boolean;
+  discountPrice?: number | null;
+  image?: string | null;
+  workerServices?: Array<{
+    worker: {
+      id: string;
+      fullName: string;
+    };
+  }>;
+}
+
+export interface StaffMember {
+  id: string;
+  fullName: string;
+  phoneNumber?: string | null;
+  email?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+  specialty?: string | null;
+  yearsOfExperience?: number | null;
+  specialties?: string[];
+  isActive: boolean;
+  rating?: number;
+  workerServices?: Array<{
+    service: Service;
+    priceOverride?: number | null;
+  }>;
+}
 
 export type TabParamList = {
   Dashboard: undefined;

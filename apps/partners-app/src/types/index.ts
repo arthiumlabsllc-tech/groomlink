@@ -58,32 +58,52 @@ export interface Worker {
   services: Service[];
 }
 
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
 export interface Booking {
   id: string;
-  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  scheduledDate: string;
-  scheduledTime: string;
+  status: BookingStatus;
+  date: string;
+  startTime: string;
+  endTime: string;
   totalAmount: number;
-  notes: string | null;
+  finalAmount: number;
+  customerNotes: string | null;
+  salonNotes: string | null;
   customer: {
     id: string;
     firstName: string;
     lastName: string;
     phoneNumber: string;
   };
-  worker: Worker;
-  services: Service[];
+  worker: {
+    id: string;
+    fullName: string;
+    avatar: string | null;
+  } | null;
+  service: {
+    id: string;
+    name: string;
+    price: number;
+    duration: number;
+  };
+  salon: {
+    id: string;
+    businessName: string;
+    logo: string | null;
+  };
   createdAt: string;
+  confirmedAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
 }
 
 export interface DashboardStats {
   totalBookings: number;
-  todayBookings: number;
-  pendingBookings: number;
+  completedBookings: number;
   totalRevenue: number;
-  todayRevenue: number;
-  rating: number;
-  reviewCount: number;
+  averageRating: number;
+  totalReviews: number;
 }
 
 export interface AuthResponse {
@@ -97,3 +117,6 @@ export interface AuthResponse {
     isNewUser: boolean;
   };
 }
+
+// Re-export navigation types
+export type { MainStackParamList, AuthStackParamList, TabParamList } from './navigation';

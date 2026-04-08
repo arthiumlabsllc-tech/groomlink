@@ -20,6 +20,7 @@ function HomeStack() {
       <Stack.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
       <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
       <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="BookingDetail" component={BookingConfirmationScreen} options={{ title: 'Booking Details' }} />
     </Stack.Navigator>
   );
 }

@@ -13,6 +13,8 @@ export type MainStackParamList = {
   SalonDetail: { salonId: string };
   Booking: { salonId: string; workerId?: string; services?: string[] };
   BookingConfirmation: { bookingId: string };
+  BookingDetail: { bookingId: string };
+  RateBooking: { bookingId: string };
 };
 
 export type TabParamList = {

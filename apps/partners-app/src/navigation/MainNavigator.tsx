@@ -11,9 +11,10 @@ import BookingDetailScreen from '../screens/main/BookingDetailScreen';
 import EditSalonScreen from '../screens/main/EditSalonScreen';
 import AddServiceScreen from '../screens/main/AddServiceScreen';
 import AddStaffScreen from '../screens/main/AddStaffScreen';
+import { MainStackParamList, TabParamList } from '../types/navigation';
 
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
+const Stack = createNativeStackNavigator<MainStackParamList>();
 
 function DashboardStack() {
   return (
@@ -38,7 +39,13 @@ function ServicesStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="ServicesMain" component={ServicesScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="AddService" component={AddServiceScreen} options={{ title: 'Add Service' }} />
+      <Stack.Screen 
+        name="AddService" 
+        component={AddServiceScreen} 
+        options={({ route }) => ({ 
+          title: route.params?.serviceId ? 'Edit Service' : 'Add Service' 
+        })} 
+      />
     </Stack.Navigator>
   );
 }
@@ -47,7 +54,13 @@ function StaffStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="StaffMain" component={StaffScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="AddStaff" component={AddStaffScreen} options={{ title: 'Add Staff' }} />
+      <Stack.Screen 
+        name="AddStaff" 
+        component={AddStaffScreen} 
+        options={({ route }) => ({ 
+          title: route.params?.staffId ? 'Edit Staff' : 'Add Staff' 
+        })} 
+      />
     </Stack.Navigator>
   );
 }
