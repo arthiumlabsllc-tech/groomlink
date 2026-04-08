@@ -1,0 +1,28 @@
+name: Create Development Builds
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+
+jobs:
+  build_android:
+    name: Build Android Development
+    type: build
+    params:
+      platform: android
+      profile: development
+    if: ${{ inputs.platform == 'all' || inputs.platform == 'android' }}
+
+  build_ios:
+    name: Build iOS Development
+    type: build
+    params:
+      platform: ios
+      profile: development
+    if: ${{ inputs.platform == 'all' || inputs.platform == 'ios' }}

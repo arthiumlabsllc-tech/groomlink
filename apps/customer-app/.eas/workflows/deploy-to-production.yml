@@ -1,0 +1,46 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+
+jobs:
+  build_android:
+    name: Build Android Production
+    type: build
+    params:
+      platform: android
+      profile: production
+    if: ${{ inputs.platform == 'all' || inputs.platform == 'android' }}
+
+  build_ios:
+    name: Build iOS Production
+    type: build
+    params:
+      platform: ios
+      profile: production
+    if: ${{ inputs.platform == 'all' || inputs.platform == 'ios' }}
+
+  submit_android:
+    name: Submit to Google Play
+    type: submit
+    needs: [build_android]
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+      profile: production
+    if: ${{ inputs.platform == 'all' || inputs.platform == 'android' }}
+
+  submit_ios:
+    name: Submit to App Store
+    type: submit
+    needs: [build_ios]
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+      profile: production
+    if: ${{ inputs.platform == 'all' || inputs.platform == 'ios' }}

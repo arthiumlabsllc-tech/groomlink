@@ -1,0 +1,41 @@
+name: Publish Preview Update
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+  workflow_dispatch:
+
+jobs:
+  fingerprint:
+    name: Check Fingerprint
+    type: fingerprint
+    params:
+      profile: preview
+
+  build_if_needed_android:
+    name: Build Android if Native Changed
+    type: build
+    needs: [fingerprint]
+    if: ${{ needs.fingerprint.outputs.fingerprint_is_matched == 'false' }}
+    params:
+      platform: android
+      profile: preview
+
+  build_if_needed_ios:
+    name: Build iOS if Native Changed
+    type: build
+    needs: [fingerprint]
+    if: ${{ needs.fingerprint.outputs.fingerprint_is_matched == 'false' }}
+    params:
+      platform: ios
+      profile: preview
+
+  publish_update:
+    name: Publish OTA Update
+    type: update
+    needs: [fingerprint]
+    if: ${{ needs.fingerprint.outputs.fingerprint_is_matched == 'true' }}
+    params:
+      branch: ${{ github.ref_name }}
