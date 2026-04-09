@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  axios: 1.6.8
+
 importers:
 
   .:
@@ -19,7 +22,7 @@ importers:
     dependencies:
       '@tanstack/react-query':
         specifier: ^5.18.0
-        version: 5.96.2(react@18.2.0)
+        version: 5.97.0(react@18.2.0)
       axios:
         specifier: 1.6.8
         version: 1.6.8
@@ -144,7 +147,7 @@ importers:
         version: 6.11.0(@react-navigation/native@6.1.18(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0))(react-native-safe-area-context@4.6.3(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0))(react-native-screens@3.22.1(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0))(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0)
       '@tanstack/react-query':
         specifier: ^5.17.0
-        version: 5.96.2(react@18.2.0)
+        version: 5.97.0(react@18.2.0)
       axios:
         specifier: 1.6.8
         version: 1.6.8
@@ -391,7 +394,7 @@ importers:
         version: 6.11.0(@react-navigation/native@6.1.18(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0))(react-native-safe-area-context@4.6.3(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0))(react-native-screens@3.22.1(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0))(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0)
       '@tanstack/react-query':
         specifier: ^5.17.0
-        version: 5.96.2(react@18.2.0)
+        version: 5.97.0(react@18.2.0)
       axios:
         specifier: 1.6.8
         version: 1.6.8
@@ -482,7 +485,7 @@ importers:
     dependencies:
       '@tanstack/react-query':
         specifier: ^5.18.0
-        version: 5.96.2(react@18.2.0)
+        version: 5.97.0(react@18.2.0)
       axios:
         specifier: 1.6.8
         version: 1.6.8
@@ -2590,11 +2593,11 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@tanstack/query-core@5.96.2':
-    resolution: {integrity: sha512-hzI6cTVh4KNRk8UtoIBS7Lv9g6BnJPXvBKsvYH1aGWvv0347jT3BnSvztOE+kD76XGvZnRC/t6qdW1CaIfwCeA==}
+  '@tanstack/query-core@5.97.0':
+    resolution: {integrity: sha512-QdpLP5VzVMgo4VtaPppRA2W04UFjIqX+bxke/ZJhE5cfd5UPkRzqIAJQt9uXkQJjqE8LBOMbKv7f8HCsZltXlg==}
 
-  '@tanstack/react-query@5.96.2':
-    resolution: {integrity: sha512-sYyzzJT4G0g02azzJ8o55VFFV31XvFpdUpG+unxS0vSaYsJnSPKGoI6WdPwUucJL1wpgGfwfmntNX/Ub1uOViA==}
+  '@tanstack/react-query@5.97.0':
+    resolution: {integrity: sha512-y4So4eGcQoK2WVMAcDNZE9ofB/p5v1OlKvtc1F3uqHwrtifobT7q+ZnXk2mRkc8E84HKYSlAE9z6HXl2V0+ySQ==}
     peerDependencies:
       react: ^18 || ^19
 
@@ -3115,9 +3118,6 @@ packages:
   available-typed-arrays@1.0.7:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
-
-  axios@1.13.5:
-    resolution: {integrity: sha512-cz4ur7Vb0xS4/KUN0tPWe44eqxrIu31me+fbang3ijiNscE129POzipJJA6zniq2C/Z6sJCjMimjS8Lc/GAs8Q==}
 
   axios@1.6.8:
     resolution: {integrity: sha512-v/ZHtJDU39mDpyBoFVkETcd/uNdxrWRrg3bKpOKzXFA6Bvqopts6ALSMU3y6ijYxbw2B+wPrIv46egTzJXCLGQ==}
@@ -9849,11 +9849,11 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tanstack/query-core@5.96.2': {}
+  '@tanstack/query-core@5.97.0': {}
 
-  '@tanstack/react-query@5.96.2(react@18.2.0)':
+  '@tanstack/react-query@5.97.0(react@18.2.0)':
     dependencies:
-      '@tanstack/query-core': 5.96.2
+      '@tanstack/query-core': 5.97.0
       react: 18.2.0
 
   '@tybys/wasm-util@0.10.1':
@@ -10269,7 +10269,7 @@ snapshots:
 
   africastalking@0.7.9:
     dependencies:
-      axios: 1.13.5
+      axios: 1.6.8
       dotenv: 17.2.4
       google-libphonenumber: 3.2.44
       joi: 18.0.2
@@ -10403,14 +10403,6 @@ snapshots:
   available-typed-arrays@1.0.7:
     dependencies:
       possible-typed-array-names: 1.1.0
-
-  axios@1.13.5:
-    dependencies:
-      follow-redirects: 1.15.11
-      form-data: 4.0.5
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
 
   axios@1.6.8:
     dependencies:

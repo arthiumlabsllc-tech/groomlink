@@ -13,6 +13,25 @@ const isPnpmMonorepo = fs.existsSync(pnpmVirtualStore);
 
 const config = getDefaultConfig(projectRoot);
 
+// Block Node.js built-in modules that shouldn't be in React Native
+// This prevents backend packages (like africastalking) from breaking mobile builds
+const nodeBuiltins = ['crypto', 'fs', 'path', 'os', 'http', 'https', 'net', 'tls', 'stream', 'zlib', 'dns', 'child_process', 'cluster', 'dgram', 'module', 'process', 'readline', 'repl', 'vm'];
+const originalResolveRequest = config.resolver.resolveRequest;
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Block Node.js built-in modules
+  if (nodeBuiltins.includes(moduleName)) {
+    console.warn(`[Metro] Blocking Node.js built-in module: ${moduleName}`);
+    return { type: 'empty' };
+  }
+  
+  // Use original resolver if available, otherwise default
+  if (originalResolveRequest) {
+    return originalResolveRequest(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 // Exclude test standalone directory from Metro
 config.resolver.blockList = [
   new RegExp(path.resolve(projectRoot, 'eas-test-standalone').replace(/[/\\]/g, '[/\\\\]') + '.*$'),
