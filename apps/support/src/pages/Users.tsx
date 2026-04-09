@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Search, User, Store, LogIn } from 'lucide-react';
+import { Search, User, Store, LogIn, Users as UsersIcon, X } from 'lucide-react';
 import { useImpersonation } from '../hooks/useImpersonation';
 import { api } from '../api';
-import { formatPhoneNumber, getStatusColor, getRoleColor, cn } from '../lib';
+import { formatPhoneNumber, getStatusColor, cn } from '../lib';
 
 interface UserResult {
   id: string;
@@ -15,6 +15,25 @@ interface UserResult {
   createdAt: string;
   salons?: { id: string; businessName: string }[];
 }
+
+const roleFilters = [
+  { value: '', label: 'All', icon: UsersIcon },
+  { value: 'CUSTOMER', label: 'Customers', icon: User },
+  { value: 'SALON_OWNER', label: 'Salon Owners', icon: Store },
+];
+
+const getRoleBadge = (role: string) => {
+  switch (role) {
+    case 'CUSTOMER':
+      return 'bg-blue-50 text-blue-700 border border-blue-200';
+    case 'SALON_OWNER':
+      return 'bg-purple-50 text-purple-700 border border-purple-200';
+    case 'SUPPORT':
+      return 'bg-ghana-green/10 text-ghana-green border border-ghana-green/20';
+    default:
+      return 'bg-gray-50 text-gray-700 border border-gray-200';
+  }
+};
 
 export default function Users() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,83 +78,100 @@ export default function Users() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">User Search</h1>
+        <h1 className="text-2xl font-bold text-gray-900 font-heading">User Search</h1>
         <p className="text-gray-500 mt-1">Search for users and impersonate them to provide support.</p>
       </div>
 
       {/* Search Card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Search by name, phone, or email..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-support-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex gap-4">
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-support-500 focus:border-transparent"
-            >
-              <option value="">All Roles</option>
-              <option value="CUSTOMER">Customers</option>
-              <option value="SALON_OWNER">Salon Owners</option>
-            </select>
-            <button
-              onClick={handleSearch}
-              disabled={isSearching}
-              className="btn-primary flex items-center gap-2"
-            >
-              {isSearching ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Search className="w-5 h-5" />
-              )}
-              Search
-            </button>
-          </div>
+        {/* Prominent Search Bar */}
+        <div className="relative mb-4">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder="Search by name, phone, or email..."
+            className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green text-lg transition-all"
+          />
+        </div>
+        
+        {/* Role Filter Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-gray-500 mr-2">Filter by role:</span>
+          {roleFilters.map((role) => {
+            const Icon = role.icon;
+            const isActive = selectedRole === role.value;
+            return (
+              <button
+                key={role.value}
+                onClick={() => setSelectedRole(role.value)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                  isActive
+                    ? "bg-ghana-green text-white shadow-md shadow-ghana-green/20"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                {role.label}
+              </button>
+            );
+          })}
+          <button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="ml-auto bg-ghana-green text-white px-6 py-2.5 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all duration-200 disabled:opacity-50 flex items-center gap-2 shadow-md shadow-ghana-green/20"
+          >
+            {isSearching ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Search className="w-5 h-5" />
+            )}
+            Search
+          </button>
         </div>
       </div>
 
       {/* Results */}
       {hasSearched && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 font-heading">
               {results.length} user{results.length !== 1 ? 's' : ''} found
             </h2>
           </div>
           
           {results.length > 0 ? (
-            <div className="divide-y divide-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {results.map((user) => (
-                <div key={user.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
+                <div 
+                  key={user.id} 
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-gray-400" />
+                      <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 font-bold text-lg">
+                          {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                        </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-semibold text-gray-900 text-lg">
                           {user.firstName} {user.lastName}
                         </p>
-                        <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-2 mt-1">
                           <span className="text-sm text-gray-500">
                             {formatPhoneNumber(user.phoneNumber)}
                           </span>
-                          {user.email && (
-                            <span className="text-sm text-gray-400">• {user.email}</span>
-                          )}
                         </div>
+                        {user.email && (
+                          <p className="text-sm text-gray-400 mt-0.5">{user.email}</p>
+                        )}
                         {user.salons && user.salons.length > 0 && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <Store className="w-4 h-4 text-gray-400" />
+                          <div className="flex items-center gap-2 mt-2">
+                            <Store className="w-4 h-4 text-ghana-green" />
                             <span className="text-sm text-gray-600">
                               {user.salons.map(s => s.businessName).join(', ')}
                             </span>
@@ -143,35 +179,38 @@ export default function Users() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col items-end gap-2">
-                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getRoleColor(user.role))}>
-                          {user.role}
-                        </span>
-                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getStatusColor(user.status))}>
-                          {user.status}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowImpersonateModal(true);
-                          }}
-                          className="p-2 text-support-600 hover:bg-support-50 rounded-lg"
-                          title="Impersonate user"
-                        >
-                          <LogIn className="w-5 h-5" />
-                        </button>
-                      </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={cn('px-3 py-1 rounded-full text-xs font-medium', getRoleBadge(user.role))}>
+                        {user.role}
+                      </span>
                     </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium', getStatusColor(user.status))}>
+                      {user.status}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowImpersonateModal(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-ghana-yellow text-ghana-dark rounded-lg font-medium hover:bg-yellow-400 active:bg-yellow-500 transition-all duration-200"
+                      title="Impersonate user"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Impersonate
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center text-gray-500">
-              No users found matching your search criteria.
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 text-lg">No users found matching your search criteria.</p>
             </div>
           )}
         </div>
@@ -179,53 +218,70 @@ export default function Users() {
 
       {/* Impersonation Modal */}
       {showImpersonateModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Impersonate User</h3>
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-gray-500" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 font-heading">Impersonate User</h3>
+              <button 
+                onClick={() => {
+                  setShowImpersonateModal(false);
+                  setSelectedUser(null);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Yellow Warning Banner */}
+            <div className="bg-ghana-yellow/15 border border-ghana-yellow/30 rounded-xl p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-ghana-yellow to-yellow-400 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="w-5 h-5 text-ghana-dark" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-semibold text-gray-900">
                     {selectedUser.firstName} {selectedUser.lastName}
                   </p>
-                  <p className="text-sm text-gray-500">{selectedUser.phoneNumber}</p>
+                  <p className="text-sm text-gray-500">{formatPhoneNumber(selectedUser.phoneNumber)}</p>
                 </div>
               </div>
             </div>
+            
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Reason for Impersonation
               </label>
               <textarea
                 value={impersonationReason}
                 onChange={(e) => setImpersonationReason(e.target.value)}
                 placeholder="e.g., Customer reported booking issue..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-support-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green resize-none transition-all"
                 rows={3}
               />
             </div>
-            <div className="bg-yellow-50 text-yellow-700 text-sm rounded-lg p-3 mb-4">
-              <strong>Warning:</strong> You will be logged in as this user. All actions will be logged for audit purposes.
+            
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl p-4 mb-6">
+              <strong className="block mb-1">⚠️ Warning</strong>
+              You will be logged in as this user. All actions will be logged for audit purposes.
             </div>
+            
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowImpersonateModal(false);
                   setSelectedUser(null);
                 }}
-                className="btn-secondary flex-1"
+                className="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 active:bg-gray-300 transition-all duration-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleImpersonate}
-                disabled={isImpersonating}
-                className="btn-primary flex-1"
+                disabled={isImpersonating || !impersonationReason.trim()}
+                className="flex-1 py-2.5 px-4 bg-ghana-yellow text-ghana-dark rounded-xl font-semibold hover:bg-yellow-400 active:bg-yellow-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-yellow-200"
               >
-                {isImpersonating ? 'Impersonating...' : 'Start Impersonation'}
+                {isImpersonating ? 'Impersonating...' : 'Impersonate'}
               </button>
             </div>
           </div>

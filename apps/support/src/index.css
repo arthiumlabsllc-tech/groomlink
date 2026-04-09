@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,20 +16,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+}
+
 /* Custom input styling */
 .input-field {
-  @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-support-500 focus:border-transparent outline-none transition-all;
+  @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-support-600 focus:border-support-600 outline-none transition-all;
 }
 
 /* Custom button styling */
 .btn-primary {
-  @apply bg-support-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-support-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply bg-support-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-support-700 active:bg-support-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .btn-secondary {
-  @apply bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors;
+  @apply bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-200 active:bg-gray-300 transition-all duration-200;
 }
 
 .btn-danger {
-  @apply bg-red-500 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-red-600 transition-colors;
+  @apply bg-ghana-red text-white py-2.5 px-4 rounded-lg font-medium hover:bg-red-700 active:bg-red-800 transition-all duration-200;
+}
+
+.btn-ghana-gold {
+  @apply bg-ghana-yellow text-ghana-dark py-2.5 px-4 rounded-lg font-semibold hover:bg-yellow-400 active:bg-yellow-500 transition-all duration-200;
 }

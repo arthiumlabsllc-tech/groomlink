@@ -5,17 +5,18 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
-        {/* Ghana-inspired pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-1/4 bg-ghana-red"></div>
-          <div className="absolute top-1/4 left-0 w-full h-1/4 bg-ghana-gold"></div>
-          <div className="absolute top-2/4 left-0 w-full h-1/4 bg-ghana-green"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-ghana-green via-[#005a34] to-[#004d2d]">
+        {/* Subtle Ghana flag gradient overlay */}
+        <div className="absolute inset-0 opacity-[0.07]">
+          <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-ghana-red to-transparent"></div>
+          <div className="absolute top-1/3 left-0 w-full h-1/3 bg-gradient-to-b from-ghana-gold/50 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-ghana-green to-transparent"></div>
         </div>
         
         {/* Decorative elements */}
         <div className="absolute top-20 right-10 w-72 h-72 bg-ghana-gold/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-ghana-red/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-ghana-gold/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
       </div>
 
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -23,42 +24,52 @@ export default function Hero() {
           {/* Left Content */}
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <Star className="w-4 h-4 text-ghana-gold mr-2" />
-              <span className="text-white/90 text-sm font-medium">Ghana's #1 Beauty Platform</span>
+              <Star className="w-4 h-4 text-ghana-gold mr-2 fill-ghana-gold" />
+              <span className="text-white/90 text-sm font-medium">Ghana's #1 Salon & Barbershop Platform</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-display leading-tight mb-6">
-              Book Your Next{' '}
-              <span className="text-ghana-gold">Beauty</span>{' '}
-              Experience
+              Connect with the Best{' '}
+              <span className="text-ghana-gold">Salons & Barbershops</span>{' '}
+              in Ghana
             </h1>
             
             <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto lg:mx-0">
-              Discover and book appointments with top-rated salons, barbershops, and beauty professionals across Ghana. Quality grooming, just a tap away.
+              GroomLink makes it easy to discover, book, and pay for haircuts, braids, styling, and more at verified salons near you.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link to="/register" className="btn-gold text-lg">
-                Book Appointment
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+              <Link 
+                to="/register" 
+                className="bg-ghana-green hover:bg-ghana-green/90 text-white font-semibold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl text-center"
+              >
+                Find a Salon
               </Link>
-              <a href="#how-it-works" className="btn-secondary text-lg">
-                Learn More
-              </a>
+              <Link 
+                to="/register" 
+                className="border-2 border-ghana-gold text-ghana-gold hover:bg-ghana-gold hover:text-gray-900 font-semibold px-8 py-4 rounded-xl transition-all text-center"
+              >
+                List Your Business
+              </Link>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/20">
+            {/* Stats Bar */}
+            <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/20">
               <div>
-                <div className="text-3xl font-bold text-white">500+</div>
-                <div className="text-white/70 text-sm">Partner Salons</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white font-display">500+</div>
+                <div className="text-white/70 text-sm">Salons</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-white">50K+</div>
-                <div className="text-white/70 text-sm">Happy Customers</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white font-display">10,000+</div>
+                <div className="text-white/70 text-sm">Bookings</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-white">4.9</div>
-                <div className="text-white/70 text-sm">Average Rating</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white font-display flex items-center justify-center lg:justify-start gap-1">
+                  4.8
+                  <Star className="w-6 h-6 text-ghana-gold fill-ghana-gold" />
+                </div>
+                <div className="text-white/70 text-sm">Rating</div>
               </div>
             </div>
           </div>
@@ -66,26 +77,34 @@ export default function Hero() {
           {/* Right Content - Feature Cards */}
           <div className="hidden lg:grid grid-cols-2 gap-4">
             <div className="space-y-4">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 transform hover:scale-105 transition-transform">
-                <MapPin className="w-10 h-10 text-ghana-gold mb-4" />
-                <h3 className="text-white font-semibold text-lg mb-2">Find Nearby</h3>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 transform hover:scale-[1.02] transition-all duration-300 hover:bg-white/15">
+                <div className="w-12 h-12 bg-ghana-gold/20 rounded-xl flex items-center justify-center mb-4">
+                  <MapPin className="w-6 h-6 text-ghana-gold" />
+                </div>
+                <h3 className="text-white font-semibold text-lg mb-2 font-display">Find Nearby</h3>
                 <p className="text-white/70 text-sm">Discover salons near you with GPS-enabled search</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 transform hover:scale-105 transition-transform">
-                <Shield className="w-10 h-10 text-ghana-gold mb-4" />
-                <h3 className="text-white font-semibold text-lg mb-2">Verified Professionals</h3>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 transform hover:scale-[1.02] transition-all duration-300 hover:bg-white/15">
+                <div className="w-12 h-12 bg-ghana-gold/20 rounded-xl flex items-center justify-center mb-4">
+                  <Shield className="w-6 h-6 text-ghana-gold" />
+                </div>
+                <h3 className="text-white font-semibold text-lg mb-2 font-display">Verified Salons</h3>
                 <p className="text-white/70 text-sm">All service providers are vetted and certified</p>
               </div>
             </div>
             <div className="space-y-4 mt-8">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 transform hover:scale-105 transition-transform">
-                <Clock className="w-10 h-10 text-ghana-gold mb-4" />
-                <h3 className="text-white font-semibold text-lg mb-2">Real-time Booking</h3>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 transform hover:scale-[1.02] transition-all duration-300 hover:bg-white/15">
+                <div className="w-12 h-12 bg-ghana-gold/20 rounded-xl flex items-center justify-center mb-4">
+                  <Clock className="w-6 h-6 text-ghana-gold" />
+                </div>
+                <h3 className="text-white font-semibold text-lg mb-2 font-display">Real-time Booking</h3>
                 <p className="text-white/70 text-sm">Book instantly with live availability</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 transform hover:scale-105 transition-transform">
-                <Star className="w-10 h-10 text-ghana-gold mb-4" />
-                <h3 className="text-white font-semibold text-lg mb-2">Reviews & Ratings</h3>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 transform hover:scale-[1.02] transition-all duration-300 hover:bg-white/15">
+                <div className="w-12 h-12 bg-ghana-gold/20 rounded-xl flex items-center justify-center mb-4">
+                  <Star className="w-6 h-6 text-ghana-gold" />
+                </div>
+                <h3 className="text-white font-semibold text-lg mb-2 font-display">Reviews & Ratings</h3>
                 <p className="text-white/70 text-sm">Read authentic reviews from real customers</p>
               </div>
             </div>

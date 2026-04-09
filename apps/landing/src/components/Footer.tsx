@@ -1,35 +1,30 @@
 import { Scissors, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const footerLinks = {
-  product: [
-    { name: 'Features', href: '#features' },
-    { name: 'Pricing', href: '#pricing' },
-    { name: 'How It Works', href: '#how-it-works' },
-    { name: 'Download App', href: '#' },
-  ],
   company: [
     { name: 'About Us', href: '#' },
     { name: 'Careers', href: '#' },
     { name: 'Blog', href: '#' },
     { name: 'Press', href: '#' },
   ],
+  forCustomers: [
+    { name: 'Find a Salon', href: '/register' },
+    { name: 'How It Works', href: '#how-it-works' },
+    { name: 'Pricing', href: '#pricing' },
+    { name: 'Customer Login', href: '/login' },
+  ],
+  forSalons: [
+    { name: 'Partner With Us', href: '/register' },
+    { name: 'Salon Login', href: '/login' },
+    { name: 'Success Stories', href: '#' },
+    { name: 'Business Resources', href: '#' },
+  ],
   support: [
     { name: 'Help Center', href: '#' },
     { name: 'Contact Us', href: '#' },
     { name: 'Privacy Policy', href: '/privacy' },
     { name: 'Terms of Service', href: '/terms' },
-  ],
-  forSalons: [
-    { name: 'Partner With Us', href: '/register' },
-    { name: 'Salon Login', href: '/login' },
-    { name: 'Business Resources', href: '#' },
-    { name: 'Success Stories', href: '#' },
-  ],
-  account: [
-    { name: 'Customer Login', href: '/login' },
-    { name: 'Customer Register', href: '/register' },
-    { name: 'Salon Owner Login', href: '/login' },
-    { name: 'Partner Registration', href: '/register' },
   ],
 }
 
@@ -42,29 +37,29 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-[#1a1a2e] text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer */}
-        <div className="py-12 grid grid-cols-2 md:grid-cols-6 gap-8">
+        <div className="py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <a href="#" className="flex items-center space-x-2 mb-4">
+            <Link to="/" className="flex items-center space-x-2 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-full flex items-center justify-center">
                 <Scissors className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold font-display">GroomLink</span>
-            </a>
+              <span className="text-xl font-bold font-display text-white">GroomLink</span>
+            </Link>
             <p className="text-gray-400 text-sm mb-4">
-              Ghana's premier beauty and grooming platform. Book appointments with top salons and barbershops.
+              Ghana's premier salon and barbershop booking platform.
             </p>
             
             {/* Contact Info */}
             <div className="space-y-2 text-sm">
-              <a href="mailto:hello@groomlinkgh.com" className="flex items-center gap-2 text-gray-400 hover:text-white">
+              <a href="mailto:hello@groomlinkgh.com" className="flex items-center gap-2 text-gray-400 hover:text-ghana-gold transition-colors">
                 <Mail className="w-4 h-4" />
                 hello@groomlinkgh.com
               </a>
-              <a href="tel:+233241234567" className="flex items-center gap-2 text-gray-400 hover:text-white">
+              <a href="tel:+233241234567" className="flex items-center gap-2 text-gray-400 hover:text-ghana-gold transition-colors">
                 <Phone className="w-4 h-4" />
                 +233 24 123 4567
               </a>
@@ -75,13 +70,13 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Product Links */}
+          {/* Company Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Product</h4>
+            <h4 className="font-semibold text-white mb-4 font-display">Company</h4>
             <ul className="space-y-2">
-              {footerLinks.product.map((link, i) => (
+              {footerLinks.company.map((link, i) => (
                 <li key={i}>
-                  <a href={link.href} className="text-gray-400 hover:text-white text-sm transition-colors">
+                  <a href={link.href} className="text-gray-400 hover:text-ghana-gold text-sm transition-colors">
                     {link.name}
                   </a>
                 </li>
@@ -89,13 +84,27 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Company Links */}
+          {/* For Customers Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Company</h4>
+            <h4 className="font-semibold text-white mb-4 font-display">For Customers</h4>
             <ul className="space-y-2">
-              {footerLinks.company.map((link, i) => (
+              {footerLinks.forCustomers.map((link, i) => (
                 <li key={i}>
-                  <a href={link.href} className="text-gray-400 hover:text-white text-sm transition-colors">
+                  <a href={link.href} className="text-gray-400 hover:text-ghana-gold text-sm transition-colors">
+                    {link.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* For Salon Owners Links */}
+          <div>
+            <h4 className="font-semibold text-white mb-4 font-display">For Salons</h4>
+            <ul className="space-y-2">
+              {footerLinks.forSalons.map((link, i) => (
+                <li key={i}>
+                  <a href={link.href} className="text-gray-400 hover:text-ghana-gold text-sm transition-colors">
                     {link.name}
                   </a>
                 </li>
@@ -105,39 +114,11 @@ export default function Footer() {
 
           {/* Support Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Support</h4>
+            <h4 className="font-semibold text-white mb-4 font-display">Contact</h4>
             <ul className="space-y-2">
               {footerLinks.support.map((link, i) => (
                 <li key={i}>
-                  <a href={link.href} className="text-gray-400 hover:text-white text-sm transition-colors">
-                    {link.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* For Salons Links */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">For Salons</h4>
-            <ul className="space-y-2">
-              {footerLinks.forSalons.map((link, i) => (
-                <li key={i}>
-                  <a href={link.href} className="text-gray-400 hover:text-white text-sm transition-colors">
-                    {link.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Account Links */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Account</h4>
-            <ul className="space-y-2">
-              {footerLinks.account.map((link, i) => (
-                <li key={i}>
-                  <a href={link.href} className="text-gray-400 hover:text-white text-sm transition-colors">
+                  <a href={link.href} className="text-gray-400 hover:text-ghana-gold text-sm transition-colors">
                     {link.name}
                   </a>
                 </li>
@@ -147,21 +128,27 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="py-6 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} GroomLink. All rights reserved. Made with ❤️ in Ghana.
-          </p>
+        <div className="py-6 border-t border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} GroomLink. All rights reserved.
+            </p>
+            <span className="hidden sm:inline text-gray-600">•</span>
+            <p className="text-gray-400 text-sm flex items-center gap-1">
+              Made with <span className="text-ghana-red">❤</span> in Ghana 🇬🇭
+            </p>
+          </div>
           
           {/* Social Links */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {socialLinks.map((social, i) => (
               <a 
                 key={i}
                 href={social.href}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:bg-primary-500 hover:text-white transition-colors"
+                className="w-9 h-9 bg-white/5 rounded-lg flex items-center justify-center text-gray-400 hover:bg-ghana-green hover:text-white transition-all"
                 aria-label={social.name}
               >
-                <social.icon className="w-5 h-5" />
+                <social.icon className="w-4 h-4" />
               </a>
             ))}
           </div>

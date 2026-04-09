@@ -5,14 +5,14 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-50">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] via-[#FCD116] to-[#CE1126] rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-lg flex items-center justify-center">
                 <Scissors className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">GroomLink</span>
+              <span className="text-xl font-bold text-gray-900 font-display">GroomLink</span>
             </Link>
             <Link 
               to="/" 
@@ -28,12 +28,12 @@ export default function PrivacyPolicy() {
       {/* Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4 font-display">Privacy Policy</h1>
           <p className="text-gray-600 mb-8">Last updated: April 2026</p>
 
           <div className="prose prose-lg max-w-none">
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Introduction</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">1. Introduction</h2>
               <p className="text-gray-700 mb-4">
                 GroomLink ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile applications ("GroomLink Customer App" and "GroomLink Partners App") and website (groomlinkgh.com).
               </p>
@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Information We Collect</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">2. Information We Collect</h2>
               
               <h3 className="text-xl font-medium text-gray-800 mb-3">Personal Information</h3>
               <ul className="list-disc list-inside text-gray-700 mb-4 space-y-2">
@@ -68,7 +68,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. How We Use Your Information</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">3. How We Use Your Information</h2>
               <p className="text-gray-700 mb-4">We use the collected information for:</p>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
                 <li>Providing and improving our services</li>
@@ -82,7 +82,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Information Sharing</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">4. Information Sharing</h2>
               <p className="text-gray-700 mb-4">We do not sell your personal information. We may share your information with:</p>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
                 <li><strong>Salon Partners:</strong> When you make a booking, relevant information is shared with the salon</li>
@@ -93,14 +93,14 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Data Security</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">5. Data Security</h2>
               <p className="text-gray-700">
                 We implement appropriate technical and organizational measures to protect your personal information, including encryption, secure servers, and regular security assessments. However, no method of transmission over the internet is 100% secure.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Your Rights</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">6. Your Rights</h2>
               <p className="text-gray-700 mb-4">You have the right to:</p>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
                 <li>Access your personal information</li>
@@ -115,30 +115,30 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Data Retention</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">7. Data Retention</h2>
               <p className="text-gray-700">
                 We retain your personal information for as long as your account is active or as needed to provide services. You can request account deletion at any time. Some data may be retained for legal or legitimate business purposes.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Children's Privacy</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">8. Children's Privacy</h2>
               <p className="text-gray-700">
                 Our services are not intended for children under 18. We do not knowingly collect personal information from children under 18.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Changes to This Policy</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">9. Changes to This Policy</h2>
               <p className="text-gray-700">
                 We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the "Last updated" date.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Contact Us</h2>
+              <h2 className="text-2xl font-semibold text-ghana-green mb-4 font-display">10. Contact Us</h2>
               <p className="text-gray-700 mb-4">If you have questions about this Privacy Policy, contact us:</p>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-ghana-green/5 p-4 rounded-lg border border-ghana-green/20">
                 <p className="text-gray-700"><strong>Email:</strong> privacy@groomlinkgh.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +233 24 123 4567</p>
                 <p className="text-gray-700"><strong>Address:</strong> Accra, Ghana</p>
@@ -149,10 +149,10 @@ export default function PrivacyPolicy() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-[#1a1a2e] text-white py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-400">
-            © {new Date().getFullYear()} GroomLink. All rights reserved.
+            © {new Date().getFullYear()} GroomLink. All rights reserved. Made with ❤️ in Ghana.
           </p>
         </div>
       </footer>

@@ -1,46 +1,54 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6">
-      {/* Search */}
-      <div className="flex-1 max-w-xl">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search users, salons, tickets..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-support-500 focus:border-transparent"
-          />
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
+      {/* Left: Mobile menu button + Search */}
+      <div className="flex items-center gap-4 flex-1">
+        {/* Mobile hamburger - visible only on mobile */}
+        <button className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+          <Menu className="h-5 w-5" />
+        </button>
+        
+        {/* Search */}
+        <div className="flex-1 max-w-xl">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search users, salons, tickets..."
+              className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-support-600 focus:border-support-600 focus:bg-white transition-all"
+            />
+          </div>
         </div>
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4 ml-4">
         {/* Notifications */}
-        <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+        <button className="relative p-2.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
           <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-ghana-red rounded-full border-2 border-white"></span>
         </button>
 
         {/* User menu */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-3"
+            className="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
           >
-            <div className="w-8 h-8 bg-support-100 rounded-full flex items-center justify-center">
-              <span className="text-support-600 font-medium text-sm">
+            <div className="w-9 h-9 bg-gradient-to-br from-ghana-green to-support-700 rounded-full flex items-center justify-center shadow-md">
+              <span className="text-white font-semibold text-sm">
                 {user?.firstName?.charAt(0) || 'S'}
               </span>
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-gray-900">
+            <div className="hidden md:block text-left pr-2">
+              <p className="text-sm font-semibold text-gray-900 leading-tight">
                 {user?.firstName} {user?.lastName}
               </p>
               <p className="text-xs text-gray-500">Support</p>
@@ -53,13 +61,17 @@ export default function Header() {
                 className="fixed inset-0 z-10"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-gray-900">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-gray-500">{user?.email || 'support@groomlinkgh.com'}</p>
+                </div>
+                <a href="#" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                   Profile Settings
                 </a>
                 <button
                   onClick={logout}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                  className="flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm text-ghana-red hover:bg-red-50 transition-colors"
                 >
                   Sign out
                 </button>

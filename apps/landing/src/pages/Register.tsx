@@ -317,16 +317,16 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-ghana-gold/10">
+    <div className="min-h-screen bg-gradient-to-br from-ghana-green/5 via-white to-ghana-gold/10">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-lg flex items-center justify-center">
                 <Scissors className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">GroomLink</span>
+              <span className="text-xl font-bold text-gray-900 font-display">GroomLink</span>
             </Link>
             <Link 
               to="/" 
@@ -363,15 +363,15 @@ export default function Register() {
                 <div 
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
                     step >= s 
-                      ? 'bg-primary-500 text-white' 
+                      ? 'bg-ghana-green text-white shadow-md' 
                       : 'bg-gray-100 text-gray-400'
                   }`}
                 >
                   {step > s ? <CheckCircle className="w-5 h-5" /> : s}
                 </div>
                 {s < 3 && (
-                  <div className={`w-12 md:w-20 h-1 mx-2 rounded ${
-                    step > s ? 'bg-primary-500' : 'bg-gray-200'
+                  <div className={`w-12 md:w-20 h-1 mx-2 rounded transition-colors ${
+                    step > s ? 'bg-ghana-green' : 'bg-gray-200'
                   }`} />
                 )}
               </div>
@@ -380,8 +380,8 @@ export default function Register() {
 
           {/* Step 1: User Type Selection */}
           {step === 1 && (
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 md:p-8 border border-white/50">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-2">
+            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-2 font-display">
                 Create Your Account
               </h1>
               <p className="text-gray-600 text-center mb-8">
@@ -398,24 +398,24 @@ export default function Register() {
                   onClick={() => handleUserTypeSelect('customer')}
                   className={`w-full p-6 rounded-xl border-2 transition-all text-left ${
                     userType === 'customer'
-                      ? 'border-primary-500 bg-primary-50 shadow-lg'
-                      : 'border-gray-200 hover:border-primary-300 hover:shadow-md'
+                      ? 'border-ghana-green bg-ghana-green/5 shadow-lg'
+                      : 'border-gray-200 hover:border-ghana-green/50 hover:shadow-md'
                   }`}
                 >
                   <div className="flex items-start gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      userType === 'customer' ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-600'
+                      userType === 'customer' ? 'bg-ghana-green text-white' : 'bg-gray-100 text-gray-600'
                     }`}>
                       <User className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">I'm a Customer</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 font-display">I'm a Customer</h3>
                       <p className="text-gray-600 text-sm mt-1">
                         Book appointments with top salons and barbershops in Ghana. Discover new styles, read reviews, and schedule your next visit.
                       </p>
                     </div>
                     {userType === 'customer' && (
-                      <CheckCircle className="w-6 h-6 text-primary-500 flex-shrink-0" />
+                      <CheckCircle className="w-6 h-6 text-ghana-green flex-shrink-0" />
                     )}
                   </div>
                 </button>
@@ -425,7 +425,7 @@ export default function Register() {
                   onClick={() => handleUserTypeSelect('salon-owner')}
                   className={`w-full p-6 rounded-xl border-2 transition-all text-left ${
                     userType === 'salon-owner'
-                      ? 'border-ghana-gold bg-yellow-50 shadow-lg'
+                      ? 'border-ghana-gold bg-ghana-gold/10 shadow-lg'
                       : 'border-gray-200 hover:border-ghana-gold hover:shadow-md'
                   }`}
                 >
@@ -436,7 +436,7 @@ export default function Register() {
                       <Store className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">I'm a Salon Owner</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 font-display">I'm a Salon Owner</h3>
                       <p className="text-gray-600 text-sm mt-1">
                         Manage your salon business with our powerful dashboard. Handle bookings, staff, inventory, and grow your customer base.
                       </p>
@@ -450,14 +450,14 @@ export default function Register() {
 
               <button
                 onClick={handleStep1Next}
-                className="w-full mt-8 btn-primary text-center"
+                className="w-full mt-8 bg-ghana-green hover:bg-ghana-green/90 text-white font-semibold py-3 rounded-xl transition-all shadow-md text-center"
               >
                 Continue
               </button>
 
               <p className="text-center text-gray-600 mt-6">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary-500 hover:text-primary-600 font-medium">
+                <Link to="/login" className="text-ghana-green hover:text-ghana-green/80 font-medium transition-colors">
                   Sign In
                 </Link>
               </p>
@@ -466,16 +466,16 @@ export default function Register() {
 
           {/* Step 2: Phone + Details */}
           {step === 2 && (
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 md:p-8 border border-white/50">
+            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
               <button
                 onClick={() => setStep(1)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </button>
 
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-2 font-display">
                 {userType === 'salon-owner' ? 'Salon Details' : 'Your Details'}
               </h1>
               <p className="text-gray-600 text-center mb-8">
@@ -626,7 +626,7 @@ export default function Register() {
               <button
                 onClick={handleSendOtp}
                 disabled={isLoading}
-                className="w-full mt-8 btn-primary text-center flex items-center justify-center gap-2"
+                className="w-full mt-8 bg-ghana-green hover:bg-ghana-green/90 text-white font-semibold py-3 rounded-xl transition-all shadow-md text-center flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
@@ -645,20 +645,20 @@ export default function Register() {
 
           {/* Step 3: OTP Verification */}
           {step === 3 && !isRegistered && (
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 md:p-8 border border-white/50">
+            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
               <button
                 onClick={() => setStep(2)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </button>
 
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Mail className="w-8 h-8 text-primary-500" />
+                <div className="w-16 h-16 bg-ghana-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-8 h-8 text-ghana-green" />
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 font-display">
                   Verify Your Email
                 </h1>
                 <p className="text-gray-600">
@@ -693,13 +693,13 @@ export default function Register() {
               <div className="text-center mb-6">
                 {timerActive && timer > 0 ? (
                   <p className="text-gray-600">
-                    Code expires in <span className="font-medium text-primary-500">{formatTime(timer)}</span>
+                    Code expires in <span className="font-medium text-ghana-green">{formatTime(timer)}</span>
                   </p>
                 ) : (
                   <button
                     onClick={handleResendOtp}
                     disabled={isLoading}
-                    className="text-primary-500 hover:text-primary-600 font-medium"
+                    className="text-ghana-green hover:text-ghana-green/80 font-medium transition-colors"
                   >
                     Resend OTP
                   </button>
@@ -709,7 +709,7 @@ export default function Register() {
               <button
                 onClick={handleVerifyOtp}
                 disabled={isLoading || otp.join('').length !== 6}
-                className="w-full btn-primary text-center flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-ghana-green hover:bg-ghana-green/90 text-white font-semibold py-3 rounded-xl transition-all shadow-md text-center flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -725,11 +725,11 @@ export default function Register() {
 
           {/* Success State */}
           {step === 3 && isRegistered && (
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 md:p-8 border border-white/50 text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-500" />
+            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 text-center">
+              <div className="w-20 h-20 bg-ghana-green/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-ghana-green" />
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 font-display">
                 Welcome to GroomLink!
               </h1>
               <p className="text-gray-600 mb-8">
@@ -739,7 +739,7 @@ export default function Register() {
               </p>
               <button
                 onClick={handleGetStarted}
-                className="w-full btn-primary text-center"
+                className="w-full bg-ghana-green hover:bg-ghana-green/90 text-white font-semibold py-3 rounded-xl transition-all shadow-md text-center"
               >
                 Get Started
               </button>
@@ -749,10 +749,10 @@ export default function Register() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-auto">
+      <footer className="bg-[#1a1a2e] text-white py-8 mt-auto">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-400">
-            © {new Date().getFullYear()} GroomLink. All rights reserved.
+            © {new Date().getFullYear()} GroomLink. All rights reserved. Made with ❤️ in Ghana.
           </p>
         </div>
       </footer>

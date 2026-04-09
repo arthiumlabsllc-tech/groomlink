@@ -210,7 +210,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100">
+    <div className="min-h-screen bg-gradient-to-br from-ghana-green/5 via-white to-ghana-gold/10">
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${
@@ -230,14 +230,14 @@ export default function Login() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
-                <Scissors className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-lg flex items-center justify-center">
+                <Scissors className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">GroomLink</span>
+              <span className="text-xl font-bold text-gray-900 font-display">GroomLink</span>
             </Link>
             <Link
               to="/register"
-              className="text-primary-600 hover:text-primary-700 font-medium"
+              className="text-ghana-green hover:text-ghana-green/80 font-medium transition-colors"
             >
               Create Account
             </Link>
@@ -265,9 +265,9 @@ export default function Login() {
 
         {/* Step 1: User Type & Contact */}
         {step === 1 && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2 font-display">Welcome Back</h1>
               <p className="text-gray-600">Sign in to your account</p>
             </div>
 
@@ -282,15 +282,15 @@ export default function Login() {
                   onClick={() => handleUserTypeSelect('customer')}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     userType === 'customer'
-                      ? 'border-primary-500 bg-primary-50'
+                      ? 'border-ghana-green bg-ghana-green/5'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <User className={`w-8 h-8 mx-auto mb-2 ${
-                    userType === 'customer' ? 'text-primary-500' : 'text-gray-400'
+                    userType === 'customer' ? 'text-ghana-green' : 'text-gray-400'
                   }`} />
                   <span className={`font-medium ${
-                    userType === 'customer' ? 'text-primary-600' : 'text-gray-700'
+                    userType === 'customer' ? 'text-ghana-green' : 'text-gray-700'
                   }`}>Customer</span>
                   <p className="text-xs text-gray-500 mt-1">Book appointments</p>
                 </button>
@@ -300,15 +300,15 @@ export default function Login() {
                   onClick={() => handleUserTypeSelect('salon-owner')}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     userType === 'salon-owner'
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-ghana-gold bg-ghana-gold/10'
+                      : 'border-gray-200 hover:border-ghana-gold'
                   }`}
                 >
                   <Store className={`w-8 h-8 mx-auto mb-2 ${
-                    userType === 'salon-owner' ? 'text-primary-500' : 'text-gray-400'
+                    userType === 'salon-owner' ? 'text-ghana-gold' : 'text-gray-400'
                   }`} />
                   <span className={`font-medium ${
-                    userType === 'salon-owner' ? 'text-primary-600' : 'text-gray-700'
+                    userType === 'salon-owner' ? 'text-gray-900' : 'text-gray-700'
                   }`}>Salon Owner</span>
                   <p className="text-xs text-gray-500 mt-1">Manage your salon</p>
                 </button>
@@ -347,7 +347,7 @@ export default function Login() {
             <button
               onClick={sendOtp}
               disabled={isLoading}
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-ghana-green hover:bg-ghana-green/90 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
             >
               {isLoading ? (
                 <>
@@ -371,7 +371,7 @@ export default function Login() {
 
             <Link
               to="/register"
-              className="block text-center text-primary-600 hover:text-primary-700 font-medium"
+              className="block text-center text-ghana-green hover:text-ghana-green/80 font-medium transition-colors"
             >
               Create an account
             </Link>
@@ -380,12 +380,12 @@ export default function Login() {
 
         {/* Step 2: OTP Verification */}
         {step === 2 && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-8 h-8 text-primary-500" />
+              <div className="w-16 h-16 bg-ghana-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-8 h-8 text-ghana-green" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2 font-display">
                 Verify Your Email
               </h1>
               <p className="text-gray-600">
@@ -425,13 +425,13 @@ export default function Login() {
             <div className="text-center mb-6">
               {timerActive ? (
                 <p className="text-gray-500">
-                  Code expires in <span className="font-medium text-primary-600">{formatTime(timer)}</span>
+                  Code expires in <span className="font-medium text-ghana-green">{formatTime(timer)}</span>
                 </p>
               ) : (
                 <button
                   onClick={resendOtp}
                   disabled={isLoading}
-                  className="text-primary-600 hover:text-primary-700 font-medium"
+                  className="text-ghana-green hover:text-ghana-green/80 font-medium transition-colors"
                 >
                   Resend Code
                 </button>
@@ -442,7 +442,7 @@ export default function Login() {
             <button
               onClick={verifyOtp}
               disabled={isLoading || otp.join('').length !== 6}
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-ghana-green hover:bg-ghana-green/90 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
             >
               {isLoading ? (
                 <>
@@ -460,7 +460,7 @@ export default function Login() {
               <button
                 onClick={resendOtp}
                 disabled={isLoading || timerActive}
-                className="text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
+                className="text-ghana-green hover:text-ghana-green/80 font-medium disabled:opacity-50 transition-colors"
               >
                 Resend
               </button>

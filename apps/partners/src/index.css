@@ -18,18 +18,26 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply bg-partner-500 hover:bg-partner-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300;
+    @apply bg-ghana-green hover:bg-ghana-green/90 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg;
   }
   
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-partner-600 font-semibold py-3 px-6 rounded-lg border-2 border-partner-500 transition-all duration-300;
+    @apply bg-white hover:bg-gray-50 text-ghana-green font-semibold py-3 px-6 rounded-lg border-2 border-ghana-green transition-all duration-300;
+  }
+  
+  .btn-gold {
+    @apply bg-ghana-gold hover:bg-ghana-gold/90 text-gray-900 font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg;
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-partner-500 focus:border-transparent outline-none transition-all;
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-transparent outline-none transition-all;
   }
   
   .card {
     @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+  }
+  
+  .stat-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md;
   }
 }
