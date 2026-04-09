@@ -12,7 +12,6 @@ import {
   Button,
   Divider,
   ActivityIndicator,
-  Avatar,
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -20,6 +19,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { bookingApi } from '../../api/booking';
 import { MainStackParamList } from '../../types/navigation';
+
+// Design System Colors
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  dark: '#1a1a2e',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+};
 
 type BookingConfirmationRouteProp = RouteProp<MainStackParamList, 'BookingConfirmation'>;
 
@@ -78,7 +90,7 @@ export default function BookingConfirmationScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#006B3F" />
+          <ActivityIndicator size="large" color={COLORS.primaryGreen} />
         </View>
       </SafeAreaView>
     );
@@ -88,7 +100,7 @@ export default function BookingConfirmationScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#CE1126" />
+          <Ionicons name="alert-circle-outline" size={64} color={COLORS.accentRed} />
           <Text variant="titleMedium" style={styles.errorTitle}>Failed to load booking</Text>
           <Button mode="contained" onPress={() => navigation.goBack()} style={styles.backButton}>
             Go Back
@@ -104,10 +116,10 @@ export default function BookingConfirmationScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Success Animation/Icon */}
+        {/* Success Section */}
         <View style={styles.successContainer}>
-          <View style={styles.successIcon}>
-            <Ionicons name="checkmark-circle" size={80} color="#006B3F" />
+          <View style={styles.successCircle}>
+            <Ionicons name="checkmark" size={48} color="#fff" />
           </View>
           <Text variant="headlineSmall" style={styles.successTitle}>
             Booking Confirmed!
@@ -117,7 +129,7 @@ export default function BookingConfirmationScreen() {
           </Text>
         </View>
 
-        {/* Reference Number */}
+        {/* Reference Card */}
         <Card style={styles.referenceCard}>
           <Card.Content style={styles.referenceContent}>
             <Text variant="labelMedium" style={styles.referenceLabel}>Booking Reference</Text>
@@ -125,23 +137,25 @@ export default function BookingConfirmationScreen() {
               {generateReference()}
             </Text>
             <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
-              <Ionicons name="share-outline" size={20} color="#006B3F" />
-              <Text variant="bodyMedium" style={styles.shareText}>Share</Text>
+              <Ionicons name="share-outline" size={20} color={COLORS.accentGold} />
+              <Text variant="bodyMedium" style={styles.shareText}>Share Booking</Text>
             </TouchableOpacity>
           </Card.Content>
         </Card>
 
-        {/* Booking Summary */}
-        <Card style={styles.summaryCard}>
+        {/* Booking Details Card */}
+        <Card style={styles.detailsCard}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.sectionTitle}>Booking Details</Text>
             
             {/* Salon Info */}
-            <View style={styles.summaryRow}>
-              <Ionicons name="storefront-outline" size={22} color="#666" />
-              <View style={styles.summaryItemContent}>
-                <Text variant="bodySmall" style={styles.summaryLabel}>Salon</Text>
-                <Text variant="bodyLarge" style={styles.summaryValue}>
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="storefront-outline" size={20} color={COLORS.primaryGreen} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text variant="bodySmall" style={styles.detailLabel}>Salon</Text>
+                <Text variant="bodyLarge" style={styles.detailValue}>
                   {booking.salon.businessName}
                 </Text>
               </View>
@@ -150,11 +164,13 @@ export default function BookingConfirmationScreen() {
             <Divider style={styles.divider} />
 
             {/* Services */}
-            <View style={styles.summaryRow}>
-              <Ionicons name="cut-outline" size={22} color="#666" />
-              <View style={styles.summaryItemContent}>
-                <Text variant="bodySmall" style={styles.summaryLabel}>Services</Text>
-                {booking.services.map((service: any, index: number) => (
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="cut-outline" size={20} color={COLORS.primaryGreen} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text variant="bodySmall" style={styles.detailLabel}>Services</Text>
+                {booking.services.map((service: any) => (
                   <Text key={service.id} variant="bodyMedium" style={styles.serviceText}>
                     {service.name}
                   </Text>
@@ -165,11 +181,13 @@ export default function BookingConfirmationScreen() {
             <Divider style={styles.divider} />
 
             {/* Date */}
-            <View style={styles.summaryRow}>
-              <Ionicons name="calendar-outline" size={22} color="#666" />
-              <View style={styles.summaryItemContent}>
-                <Text variant="bodySmall" style={styles.summaryLabel}>Date</Text>
-                <Text variant="bodyLarge" style={styles.summaryValue}>
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="calendar-outline" size={20} color={COLORS.primaryGreen} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text variant="bodySmall" style={styles.detailLabel}>Date</Text>
+                <Text variant="bodyLarge" style={styles.detailValue}>
                   {formatDate(booking.scheduledDate)}
                 </Text>
               </View>
@@ -178,11 +196,13 @@ export default function BookingConfirmationScreen() {
             <Divider style={styles.divider} />
 
             {/* Time */}
-            <View style={styles.summaryRow}>
-              <Ionicons name="time-outline" size={22} color="#666" />
-              <View style={styles.summaryItemContent}>
-                <Text variant="bodySmall" style={styles.summaryLabel}>Time</Text>
-                <Text variant="bodyLarge" style={styles.summaryValue}>
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="time-outline" size={20} color={COLORS.primaryGreen} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text variant="bodySmall" style={styles.detailLabel}>Time</Text>
+                <Text variant="bodyLarge" style={styles.detailValue}>
                   {formatTime(booking.scheduledTime)}
                 </Text>
               </View>
@@ -191,13 +211,13 @@ export default function BookingConfirmationScreen() {
             {booking.worker && (
               <>
                 <Divider style={styles.divider} />
-                
-                {/* Stylist */}
-                <View style={styles.summaryRow}>
-                  <Ionicons name="person-outline" size={22} color="#666" />
-                  <View style={styles.summaryItemContent}>
-                    <Text variant="bodySmall" style={styles.summaryLabel}>Stylist</Text>
-                    <Text variant="bodyLarge" style={styles.summaryValue}>
+                <View style={styles.detailRow}>
+                  <View style={styles.detailIconContainer}>
+                    <Ionicons name="person-outline" size={20} color={COLORS.primaryGreen} />
+                  </View>
+                  <View style={styles.detailContent}>
+                    <Text variant="bodySmall" style={styles.detailLabel}>Stylist</Text>
+                    <Text variant="bodyLarge" style={styles.detailValue}>
                       {booking.worker.name}
                     </Text>
                   </View>
@@ -208,10 +228,12 @@ export default function BookingConfirmationScreen() {
             <Divider style={styles.divider} />
 
             {/* Total */}
-            <View style={styles.summaryRow}>
-              <Ionicons name="wallet-outline" size={22} color="#666" />
-              <View style={styles.summaryItemContent}>
-                <Text variant="bodySmall" style={styles.summaryLabel}>Total</Text>
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="wallet-outline" size={20} color={COLORS.primaryGreen} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text variant="bodySmall" style={styles.detailLabel}>Total Amount</Text>
                 <Text variant="titleLarge" style={styles.totalAmount}>
                   GH₵ {booking.totalAmount.toFixed(2)}
                 </Text>
@@ -220,20 +242,20 @@ export default function BookingConfirmationScreen() {
           </Card.Content>
         </Card>
 
-        {/* Location Info */}
+        {/* Location Card */}
         <Card style={styles.locationCard}>
-          <Card.Content style={styles.locationContent}>
+          <Card.Content>
             <View style={styles.locationRow}>
-              <View style={styles.locationInfo}>
-                <Ionicons name="location-outline" size={22} color="#666" />
-                <View style={styles.locationText}>
-                  <Text variant="bodySmall" style={styles.summaryLabel}>Address</Text>
-                  <Text variant="bodyMedium">{booking.salon.address}</Text>
-                  <Text variant="bodyMedium">{booking.salon.city}</Text>
-                </View>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="location-outline" size={20} color={COLORS.primaryGreen} />
+              </View>
+              <View style={styles.locationText}>
+                <Text variant="bodySmall" style={styles.detailLabel}>Address</Text>
+                <Text variant="bodyMedium" style={styles.detailValue}>{booking.salon.address}</Text>
+                <Text variant="bodyMedium" style={styles.detailValue}>{booking.salon.city}</Text>
               </View>
               <TouchableOpacity style={styles.directionsButton}>
-                <Ionicons name="navigate" size={20} color="#006B3F" />
+                <Ionicons name="navigate" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
           </Card.Content>
@@ -247,6 +269,7 @@ export default function BookingConfirmationScreen() {
           onPress={() => navigation.navigate('Bookings')}
           style={styles.primaryButton}
           contentStyle={styles.buttonContent}
+          buttonColor={COLORS.primaryGreen}
         >
           View My Bookings
         </Button>
@@ -255,7 +278,7 @@ export default function BookingConfirmationScreen() {
           onPress={() => navigation.navigate('HomeMain')}
           style={styles.secondaryButton}
           contentStyle={styles.buttonContent}
-          textColor="#006B3F"
+          textColor={COLORS.primaryGreen}
         >
           Back to Home
         </Button>
@@ -267,13 +290,13 @@ export default function BookingConfirmationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   errorContainer: {
     flex: 1,
@@ -283,141 +306,185 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     marginTop: 16,
-    color: '#CE1126',
+    color: COLORS.accentRed,
     marginBottom: 16,
   },
   backButton: {
-    backgroundColor: '#006B3F',
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 12,
   },
   scrollContent: {
     padding: 16,
     paddingBottom: 200,
   },
+  // Success Section
   successContainer: {
     alignItems: 'center',
     paddingVertical: 32,
   },
-  successIcon: {
+  successCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primaryGreen,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   successTitle: {
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   successSubtitle: {
-    color: '#666',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
+  // Reference Card
   referenceCard: {
     marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: '#006B3F',
+    borderRadius: 16,
+    backgroundColor: COLORS.primaryGreen,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   referenceContent: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
   referenceLabel: {
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   referenceNumber: {
     fontWeight: 'bold',
     color: '#fff',
-    letterSpacing: 2,
+    letterSpacing: 3,
   },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    padding: 8,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
+    gap: 6,
   },
   shareText: {
-    color: '#FCD116',
-    marginLeft: 4,
+    color: COLORS.accentGold,
+    fontWeight: '600',
   },
-  summaryCard: {
+  // Details Card
+  detailsCard: {
     marginBottom: 16,
-    borderRadius: 12,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   sectionTitle: {
     fontWeight: '600',
-    marginBottom: 16,
-    color: '#006B3F',
+    marginBottom: 20,
+    color: COLORS.textPrimary,
   },
-  summaryRow: {
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
-  summaryItemContent: {
+  detailIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailContent: {
     marginLeft: 12,
     flex: 1,
   },
-  summaryLabel: {
-    color: '#888',
+  detailLabel: {
+    color: COLORS.textSecondary,
+    marginBottom: 2,
   },
-  summaryValue: {
+  detailValue: {
     fontWeight: '500',
-    marginTop: 2,
+    color: COLORS.textPrimary,
   },
   serviceText: {
     marginTop: 4,
+    color: COLORS.textPrimary,
   },
   divider: {
     marginVertical: 4,
+    backgroundColor: COLORS.border,
   },
   totalAmount: {
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: COLORS.primaryGreen,
     marginTop: 2,
   },
+  // Location Card
   locationCard: {
     marginBottom: 16,
-    borderRadius: 12,
-  },
-  locationContent: {
-    padding: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   locationRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  locationInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    flex: 1,
   },
   locationText: {
     marginLeft: 12,
+    flex: 1,
   },
   directionsButton: {
-    padding: 12,
-    backgroundColor: '#E8F5EE',
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  // Footer
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: COLORS.border,
   },
   primaryButton: {
-    backgroundColor: '#006B3F',
     marginBottom: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   secondaryButton: {
-    borderColor: '#006B3F',
-    borderRadius: 8,
+    borderColor: COLORS.primaryGreen,
+    borderRadius: 12,
+    borderWidth: 2,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
 });

@@ -37,6 +37,19 @@ const verifyEmailOTPSchema = z.object({
   code: z.string().length(6, 'OTP must be 6 digits'),
 });
 
+const completeRegistrationSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  phoneNumber: z.string().regex(/^\+233[0-9]{9}$/, 'Invalid phone number format. Use +233XXXXXXXXX').optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  region: z.string().optional(),
+  role: z.enum(['CUSTOMER', 'SALON_OWNER']).optional(),
+});
+
 export async function requestOTP(req: Request, res: Response): Promise<void> {
   try {
     const { phoneNumber } = phoneSchema.parse(req.body);
@@ -156,5 +169,19 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
       return;
     }
     errorResponse(res, 'VERIFICATION_FAILED', (error as Error).message, 400);
+  }
+}
+
+export async function completeRegistration(req: Request, res: Response): Promise<void> {
+  try {
+    const data = completeRegistrationSchema.parse(req.body);
+    const result = await authService.completeRegistration(data);
+    successResponse(res, result, 201);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'REGISTRATION_FAILED', (error as Error).message, 400);
   }
 }

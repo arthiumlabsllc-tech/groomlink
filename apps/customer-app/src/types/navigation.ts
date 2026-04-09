@@ -5,7 +5,7 @@ import { User } from '.';
 export type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
-  ProfileSetup: { email: string; user: User } | undefined;
+  ProfileSetup: { email: string };
 };
 
 export type MainStackParamList = {

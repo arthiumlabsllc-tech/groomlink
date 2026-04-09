@@ -55,6 +55,29 @@ export const authApi = {
     return response.data;
   },
 
+  // Complete registration for new users
+  completeRegistration: async (data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+    city?: string;
+    region?: string;
+  }) => {
+    const response = await apiClient.post('/auth/complete-registration', data);
+    if (response.data?.data?.tokens?.accessToken) {
+      await SecureStore.setItemAsync('accessToken', response.data.data.tokens.accessToken);
+      if (response.data.data.tokens.refreshToken) {
+        await SecureStore.setItemAsync('refreshToken', response.data.data.tokens.refreshToken);
+      }
+      await SecureStore.setItemAsync('user', JSON.stringify(response.data.data.user));
+    }
+    return response.data;
+  },
+
   // Logout
   logout: async () => {
     try {

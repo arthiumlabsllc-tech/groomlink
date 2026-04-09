@@ -16,10 +16,12 @@ import {
   TextInput,
   Button,
   Menu,
-  Divider,
   ActivityIndicator,
   HelperText,
+  Surface,
+  Chip,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { servicesApi, CreateServiceData, UpdateServiceData, Service } from '../../api/services';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
@@ -27,22 +29,22 @@ import { MainStackParamList } from '../../types/navigation';
 type AddServiceRouteProp = RouteProp<MainStackParamList, 'AddService'>;
 
 const DURATION_OPTIONS = [
-  { label: '15 minutes', value: 15 },
-  { label: '30 minutes', value: 30 },
-  { label: '45 minutes', value: 45 },
+  { label: '15 min', value: 15 },
+  { label: '30 min', value: 30 },
+  { label: '45 min', value: 45 },
   { label: '1 hour', value: 60 },
   { label: '1.5 hours', value: 90 },
   { label: '2 hours', value: 120 },
 ];
 
 const CATEGORY_OPTIONS = [
-  { label: 'Haircut', value: 'HAIRCUT' },
-  { label: 'Styling', value: 'STYLING' },
-  { label: 'Coloring', value: 'COLORING' },
-  { label: 'Treatment', value: 'TREATMENT' },
-  { label: 'Nails', value: 'NAILS' },
-  { label: 'Facial', value: 'FACIAL' },
-  { label: 'Other', value: 'OTHER' },
+  { label: 'Haircut', value: 'HAIRCUT', icon: 'cut' },
+  { label: 'Styling', value: 'STYLING', icon: 'scissors' },
+  { label: 'Coloring', value: 'COLORING', icon: 'color-palette' },
+  { label: 'Treatment', value: 'TREATMENT', icon: 'medkit' },
+  { label: 'Nails', value: 'NAILS', icon: 'hand-left' },
+  { label: 'Facial', value: 'FACIAL', icon: 'happy' },
+  { label: 'Other', value: 'OTHER', icon: 'ellipsis-horizontal' },
 ];
 
 interface FormErrors {
@@ -77,7 +79,6 @@ export default function AddServiceScreen() {
 
   // Menu visibility
   const [durationMenuVisible, setDurationMenuVisible] = useState(false);
-  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
   // Form validation
   const [errors, setErrors] = useState<FormErrors>({});
@@ -196,8 +197,8 @@ export default function AddServiceScreen() {
         >
           {/* Service Name */}
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Service Name *</Text>
             <TextInput
-              label="Service Name *"
               value={name}
               onChangeText={(text) => {
                 setName(text);
@@ -206,10 +207,11 @@ export default function AddServiceScreen() {
               onBlur={() => setTouched({ ...touched, name: true })}
               error={touched.name && !!errors.name}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               style={styles.input}
               placeholder="e.g., Haircut, Manicure"
+              theme={{ roundness: 12 }}
             />
             {touched.name && errors.name && (
               <HelperText type="error">{errors.name}</HelperText>
@@ -218,8 +220,8 @@ export default function AddServiceScreen() {
 
           {/* Price */}
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Price *</Text>
             <TextInput
-              label="Price (GHS) *"
               value={price}
               onChangeText={(text) => {
                 setPrice(text);
@@ -228,97 +230,94 @@ export default function AddServiceScreen() {
               onBlur={() => setTouched({ ...touched, price: true })}
               error={touched.price && !!errors.price}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               style={styles.input}
               keyboardType="decimal-pad"
               placeholder="0.00"
-              left={<TextInput.Affix text="GHS " />}
+              left={<TextInput.Affix text="GH₵ " />}
+              theme={{ roundness: 12 }}
             />
             {touched.price && errors.price && (
               <HelperText type="error">{errors.price}</HelperText>
             )}
           </View>
 
-          {/* Duration Dropdown */}
+          {/* Category */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Duration *</Text>
-            <Menu
-              visible={durationMenuVisible}
-              onDismiss={() => setDurationMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  style={styles.menuAnchor}
-                  onPress={() => setDurationMenuVisible(true)}
-                >
-                  <Text style={styles.menuAnchorText}>
-                    {DURATION_OPTIONS.find((o) => o.value === duration)?.label || 'Select duration'}
-                  </Text>
-                </TouchableOpacity>
-              }
-            >
-              {DURATION_OPTIONS.map((option) => (
-                <Menu.Item
-                  key={option.value}
-                  onPress={() => {
-                    setDuration(option.value);
-                    setDurationMenuVisible(false);
-                  }}
-                  title={option.label}
-                />
-              ))}
-            </Menu>
-            {errors.duration && (
-              <HelperText type="error">{errors.duration}</HelperText>
-            )}
+            <Text style={styles.inputLabel}>Category *</Text>
+            <View style={styles.categoryGrid}>
+              {CATEGORY_OPTIONS.map((cat) => {
+                const isSelected = category === cat.value;
+                return (
+                  <TouchableOpacity
+                    key={cat.value}
+                    style={[
+                      styles.categoryChip,
+                      isSelected && styles.categoryChipSelected,
+                    ]}
+                    onPress={() => setCategory(cat.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={cat.icon as any}
+                      size={18}
+                      color={isSelected ? '#FFFFFF' : '#6B7280'}
+                    />
+                    <Text style={[
+                      styles.categoryChipText,
+                      isSelected && styles.categoryChipTextSelected,
+                    ]}>
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
-          {/* Category Dropdown */}
+          {/* Duration */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Category *</Text>
-            <Menu
-              visible={categoryMenuVisible}
-              onDismiss={() => setCategoryMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  style={styles.menuAnchor}
-                  onPress={() => setCategoryMenuVisible(true)}
-                >
-                  <Text style={styles.menuAnchorText}>
-                    {CATEGORY_OPTIONS.find((o) => o.value === category)?.label || 'Select category'}
-                  </Text>
-                </TouchableOpacity>
-              }
-            >
-              {CATEGORY_OPTIONS.map((option) => (
-                <Menu.Item
-                  key={option.value}
-                  onPress={() => {
-                    setCategory(option.value);
-                    setCategoryMenuVisible(false);
-                  }}
-                  title={option.label}
-                />
-              ))}
-            </Menu>
-            {errors.category && (
-              <HelperText type="error">{errors.category}</HelperText>
-            )}
+            <Text style={styles.inputLabel}>Duration *</Text>
+            <View style={styles.durationGrid}>
+              {DURATION_OPTIONS.map((opt) => {
+                const isSelected = duration === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.durationChip,
+                      isSelected && styles.durationChipSelected,
+                    ]}
+                    onPress={() => setDuration(opt.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.durationChipText,
+                      isSelected && styles.durationChipTextSelected,
+                    ]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Description */}
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Description (Optional)</Text>
             <TextInput
-              label="Description (Optional)"
               value={description}
               onChangeText={setDescription}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               style={[styles.input, styles.textArea]}
               multiline
               numberOfLines={4}
               placeholder="Describe your service..."
+              theme={{ roundness: 12 }}
             />
           </View>
 
@@ -331,6 +330,8 @@ export default function AddServiceScreen() {
               disabled={isLoading || !salonId}
               style={styles.saveButton}
               buttonColor="#006B3F"
+              theme={{ roundness: 12 }}
+              contentStyle={styles.buttonContent}
             >
               {isEditMode ? 'Update Service' : 'Save Service'}
             </Button>
@@ -342,7 +343,9 @@ export default function AddServiceScreen() {
                 loading={deleteMutation.isPending}
                 disabled={isLoading}
                 style={styles.deleteButton}
-                textColor="#D32F2F"
+                textColor="#CE1126"
+                theme={{ roundness: 12 }}
+                contentStyle={styles.buttonContent}
               >
                 Delete Service
               </Button>
@@ -357,20 +360,21 @@ export default function AddServiceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  label: {
-    fontSize: 12,
-    color: '#757575',
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 8,
   },
   input: {
@@ -379,30 +383,71 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 120,
   },
-  menuAnchor: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  menuAnchorText: {
-    fontSize: 16,
-    color: '#212121',
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 8,
+  },
+  categoryChipSelected: {
+    backgroundColor: '#006B3F',
+    borderColor: '#006B3F',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  categoryChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  durationGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  durationChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  durationChipSelected: {
+    backgroundColor: '#006B3F',
+    borderColor: '#006B3F',
+  },
+  durationChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  durationChipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   buttonContainer: {
-    marginTop: 24,
+    marginTop: 16,
     marginBottom: 32,
   },
   saveButton: {
-    paddingVertical: 6,
-    borderRadius: 8,
+    marginBottom: 12,
   },
   deleteButton: {
-    marginTop: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderColor: '#D32F2F',
+    borderColor: '#CE1126',
+  },
+  buttonContent: {
+    paddingVertical: 8,
   },
 });

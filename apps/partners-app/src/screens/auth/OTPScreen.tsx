@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput } from 'react-native';
-import { Text, Button, HelperText } from 'react-native-paper';
+import { Text, Button, HelperText, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 
@@ -141,15 +142,25 @@ export default function OTPScreen() {
       style={styles.container}
     >
       <View style={styles.content}>
+        {/* Icon Header */}
+        <View style={styles.iconContainer}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="mail-unread" size={32} color="#006B3F" />
+          </View>
+        </View>
+
         <Text variant="headlineMedium" style={styles.title}>
-          Enter OTP
+          Verify Email
         </Text>
-        <Text variant="bodyLarge" style={styles.subtitle}>
-          Enter the 6-digit code sent to{'\n'}
-          <Text style={styles.emailText}>{maskEmail(email)}</Text>
+        <Text variant="bodyMedium" style={styles.subtitle}>
+          Enter the 6-digit code sent to
+        </Text>
+        <Text variant="bodyLarge" style={styles.emailText}>
+          {maskEmail(email)}
         </Text>
 
-        <View style={styles.otpContainer}>
+        {/* OTP Input Container */}
+        <Surface style={styles.otpContainer} elevation={0}>
           {otp.map((digit, index) => (
             <RNTextInput
               key={index}
@@ -168,12 +179,15 @@ export default function OTPScreen() {
               editable={!loading}
             />
           ))}
-        </View>
+        </Surface>
 
         {error ? (
-          <HelperText type="error" visible={true} style={styles.error}>
-            {error}
-          </HelperText>
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={16} color="#CE1126" />
+            <HelperText type="error" visible={true} style={styles.error}>
+              {error}
+            </HelperText>
+          </View>
         ) : null}
 
         <Button
@@ -184,8 +198,9 @@ export default function OTPScreen() {
           style={styles.button}
           contentStyle={styles.buttonContent}
           buttonColor="#006B3F"
+          theme={{ roundness: 12 }}
         >
-          {loading ? 'Verifying...' : 'Verify'}
+          {loading ? 'Verifying...' : 'Verify Code'}
         </Button>
 
         <View style={styles.resendContainer}>
@@ -195,23 +210,28 @@ export default function OTPScreen() {
               onPress={handleResend}
               disabled={loading}
               textColor="#006B3F"
+              labelStyle={styles.resendButton}
             >
-              Resend OTP
+              Resend Code
             </Button>
           ) : (
-            <Text variant="bodyMedium" style={styles.timerText}>
-              Resend OTP in <Text style={styles.timerCount}>{resendTimer}s</Text>
-            </Text>
+            <View style={styles.timerContainer}>
+              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <Text variant="bodyMedium" style={styles.timerText}>
+                Resend code in <Text style={styles.timerCount}>{resendTimer}s</Text>
+              </Text>
+            </View>
           )}
         </View>
 
         <Button
           mode="text"
           onPress={() => navigation.navigate('Email')}
-          textColor="#666"
+          textColor="#6B7280"
           style={styles.backButton}
+          labelStyle={styles.backButtonLabel}
         >
-          Change Email
+          <Ionicons name="arrow-back" size={16} color="#6B7280" /> Change Email
         </Button>
       </View>
     </KeyboardAvoidingView>
@@ -221,76 +241,111 @@ export default function OTPScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
   content: {
     flex: 1,
     padding: 24,
     justifyContent: 'center',
   },
+  iconContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: {
     textAlign: 'center',
     marginBottom: 8,
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: '#111827',
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 32,
-    color: '#666',
+    color: '#6B7280',
   },
   emailText: {
-    fontWeight: 'bold',
-    color: '#333',
+    textAlign: 'center',
+    marginBottom: 32,
+    fontWeight: '600',
+    color: '#006B3F',
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
     marginBottom: 24,
+    backgroundColor: 'transparent',
   },
   otpInput: {
-    width: 48,
-    height: 56,
+    width: 50,
+    height: 60,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
     textAlign: 'center',
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-    backgroundColor: '#f9f9f9',
+    color: '#111827',
+    backgroundColor: '#F9FAFB',
   },
   otpInputFilled: {
     borderColor: '#006B3F',
-    backgroundColor: '#f0fff4',
+    backgroundColor: '#F0FDF4',
+    color: '#006B3F',
   },
   otpInputError: {
     borderColor: '#CE1126',
+    backgroundColor: '#FEF2F2',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   error: {
     textAlign: 'center',
-    marginBottom: 16,
+    marginLeft: 4,
   },
   button: {
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 20,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   resendContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+  },
+  resendButton: {
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   timerText: {
-    color: '#666',
+    color: '#6B7280',
   },
   timerCount: {
     fontWeight: 'bold',
     color: '#FCD116',
+    fontSize: 16,
   },
   backButton: {
     alignSelf: 'center',
+  },
+  backButtonLabel: {
+    fontSize: 14,
   },
 });

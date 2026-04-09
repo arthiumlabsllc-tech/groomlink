@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, FAB, IconButton, ActivityIndicator, Surface, Chip } from 'react-native-paper';
+import { FAB, IconButton, ActivityIndicator, Surface, Chip } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { staffApi, StaffMember } from '../../api/staff';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
@@ -80,82 +81,110 @@ export default function StaffScreen() {
     navigation.navigate('AddStaff');
   };
 
+  const getInitials = (name: string) => {
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   const renderStaffItem = ({ item }: { item: StaffMember }) => (
-    <TouchableOpacity onPress={() => handleEditStaff(item)} onLongPress={() => handleDeleteStaff(item)}>
-      <Card style={[styles.staffCard, !item.isActive && styles.inactiveCard]}>
-        <Card.Content>
-          <View style={styles.staffHeader}>
+    <TouchableOpacity onPress={() => handleEditStaff(item)} activeOpacity={0.7}>
+      <Surface style={[styles.staffCard, !item.isActive && styles.inactiveCard]} elevation={0}>
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarSection}>
             <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>
-                {item.fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
-              </Text>
+              <Text style={styles.avatarText}>{getInitials(item.fullName)}</Text>
             </View>
-            <View style={styles.staffInfo}>
-              <Text style={styles.staffName}>{item.fullName}</Text>
-              {item.specialty && (
-                <Text style={styles.staffRole}>{item.specialty}</Text>
-              )}
-              {item.phoneNumber && (
-                <Text style={styles.staffPhone}>{item.phoneNumber}</Text>
-              )}
-            </View>
-            <IconButton
-              icon="delete-outline"
-              size={20}
-              iconColor="#D32F2F"
-              onPress={() => handleDeleteStaff(item)}
-            />
-          </View>
-
-          {item.workerServices && item.workerServices.length > 0 && (
-            <View style={styles.servicesContainer}>
-              <Text style={styles.servicesLabel}>Services:</Text>
-              <View style={styles.servicesList}>
-                {item.workerServices.slice(0, 4).map((ws, index) => (
-                  <Chip
-                    key={index}
-                    style={styles.serviceChip}
-                    textStyle={styles.serviceChipText}
-                    compact
-                  >
-                    {ws.service.name}
-                  </Chip>
-                ))}
-                {item.workerServices.length > 4 && (
-                  <Chip style={styles.serviceChip} textStyle={styles.serviceChipText} compact>
-                    +{item.workerServices.length - 4} more
-                  </Chip>
-                )}
-              </View>
-            </View>
-          )}
-
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{item._count?.bookings || 0}</Text>
-              <Text style={styles.statLabel}>Bookings</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{item._count?.reviews || 0}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
-            {item.rating !== undefined && item.rating > 0 && (
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{item.rating.toFixed(1)}</Text>
-                <Text style={styles.statLabel}>Rating</Text>
+            {item.isActive && (
+              <View style={styles.activeDot}>
+                <View style={styles.activeDotInner} />
               </View>
             )}
           </View>
-        </Card.Content>
-      </Card>
+          <View style={styles.staffInfo}>
+            <Text style={styles.staffName}>{item.fullName}</Text>
+            {item.specialty && (
+              <Text style={styles.staffRole}>{item.specialty}</Text>
+            )}
+            {item.phoneNumber && (
+              <View style={styles.phoneRow}>
+                <Ionicons name="call-outline" size={12} color="#9CA3AF" />
+                <Text style={styles.staffPhone}>{item.phoneNumber}</Text>
+              </View>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteStaff(item)}
+          >
+            <Ionicons name="trash-outline" size={18} color="#CE1126" />
+          </TouchableOpacity>
+        </View>
+
+        {item.workerServices && item.workerServices.length > 0 && (
+          <View style={styles.servicesSection}>
+            <Text style={styles.servicesLabel}>Services</Text>
+            <View style={styles.servicesList}>
+              {item.workerServices.slice(0, 4).map((ws, index) => (
+                <Chip
+                  key={index}
+                  style={styles.serviceChip}
+                  textStyle={styles.serviceChipText}
+                  compact
+                >
+                  {ws.service.name}
+                </Chip>
+              ))}
+              {item.workerServices.length > 4 && (
+                <Chip style={styles.moreChip} textStyle={styles.moreChipText} compact>
+                  +{item.workerServices.length - 4}
+                </Chip>
+              )}
+            </View>
+          </View>
+        )}
+
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Ionicons name="calendar-outline" size={16} color="#006B3F" />
+            <Text style={styles.statValue}>{item._count?.bookings || 0}</Text>
+            <Text style={styles.statLabel}>Bookings</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="star-outline" size={16} color="#FCD116" />
+            <Text style={styles.statValue}>{item._count?.reviews || 0}</Text>
+            <Text style={styles.statLabel}>Reviews</Text>
+          </View>
+          {item.rating !== undefined && item.rating > 0 && (
+            <>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Ionicons name="star" size={16} color="#FCD116" />
+                <Text style={styles.statValue}>{item.rating.toFixed(1)}</Text>
+                <Text style={styles.statLabel}>Rating</Text>
+              </View>
+            </>
+          )}
+        </View>
+
+        <View style={styles.editHint}>
+          <Text style={styles.editHintText}>Tap to edit</Text>
+          <Ionicons name="chevron-forward" size={16} color="#006B3F" />
+        </View>
+      </Surface>
     </TouchableOpacity>
   );
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <IconButton icon="account-group-outline" size={64} iconColor="#BDBDBD" />
-      <Text style={styles.emptyStateText}>No staff members yet.</Text>
-      <Text style={styles.emptyStateSubtext}>Add your team!</Text>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="people-outline" size={48} color="#9CA3AF" />
+      </View>
+      <Text style={styles.emptyStateTitle}>No team members yet</Text>
+      <Text style={styles.emptyStateSubtext}>Add your first team member to start assigning services</Text>
+      <TouchableOpacity style={styles.emptyButton} onPress={handleAddStaff}>
+        <Ionicons name="add" size={20} color="#FFFFFF" />
+        <Text style={styles.emptyButtonText}>Add Staff</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -173,10 +202,13 @@ export default function StaffScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <IconButton icon="alert-circle-outline" size={64} iconColor="#D32F2F" />
+          <View style={styles.errorIcon}>
+            <Ionicons name="alert-circle" size={48} color="#CE1126" />
+          </View>
           <Text style={styles.errorText}>Failed to load staff</Text>
           <Text style={styles.errorSubtext}>{(error as Error)?.message}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <Ionicons name="refresh" size={18} color="#FFFFFF" />
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -186,11 +218,19 @@ export default function StaffScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Surface style={styles.header}>
-        <Text style={styles.headerTitle}>Staff</Text>
-        <Text style={styles.headerSubtitle}>
-          {staff.length} team member{staff.length !== 1 ? 's' : ''}
-        </Text>
+      {/* Header */}
+      <Surface style={styles.header} elevation={0}>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.headerTitle}>Staff</Text>
+            <Text style={styles.headerSubtitle}>
+              {staff.length} team member{staff.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddStaff}>
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </Surface>
 
       <FlatList
@@ -215,6 +255,7 @@ export default function StaffScreen() {
         style={styles.fab}
         color="#FFFFFF"
         onPress={handleAddStaff}
+        theme={{ roundness: 16 }}
       />
     </SafeAreaView>
   );
@@ -223,7 +264,7 @@ export default function StaffScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F9FAFB',
   },
   loadingContainer: {
     flex: 1,
@@ -236,24 +277,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  errorIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   errorText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#D32F2F',
-    marginTop: 16,
+    color: '#111827',
+    marginTop: 8,
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#757575',
+    color: '#6B7280',
     marginTop: 8,
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: '#006B3F',
-    borderRadius: 8,
+    borderRadius: 10,
   },
   retryButtonText: {
     color: '#FFFFFF',
@@ -261,20 +314,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#212121',
+    color: '#111827',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#757575',
-    marginTop: 4,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#006B3F',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContent: {
     padding: 16,
@@ -282,22 +349,31 @@ const styles = StyleSheet.create({
   },
   staffCard: {
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    elevation: 2,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inactiveCard: {
-    opacity: 0.7,
+    opacity: 0.6,
     backgroundColor: '#FAFAFA',
   },
-  staffHeader: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  avatarSection: {
+    position: 'relative',
+    marginRight: 12,
+  },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#006B3F',
     justifyContent: 'center',
     alignItems: 'center',
@@ -307,35 +383,66 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  activeDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#10B981',
+  },
   staffInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   staffName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
+    color: '#111827',
   },
   staffRole: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#006B3F',
     marginTop: 2,
+    fontWeight: '500',
   },
-  staffPhone: {
-    fontSize: 14,
-    color: '#757575',
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: 4,
   },
-  servicesContainer: {
-    marginTop: 12,
-    paddingTop: 12,
+  staffPhone: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  servicesSection: {
+    marginTop: 14,
+    paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: '#F3F4F6',
   },
   servicesLabel: {
     fontSize: 12,
-    color: '#757575',
+    color: '#6B7280',
     marginBottom: 8,
+    fontWeight: '500',
   },
   servicesList: {
     flexDirection: 'row',
@@ -344,48 +451,98 @@ const styles = StyleSheet.create({
   },
   serviceChip: {
     backgroundColor: '#E8F5E9',
+    height: 28,
   },
   serviceChipText: {
     fontSize: 12,
     color: '#006B3F',
   },
+  moreChip: {
+    backgroundColor: '#F3F4F6',
+    height: 28,
+  },
+  moreChipText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
   statsContainer: {
     flexDirection: 'row',
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 14,
+    paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: '#F3F4F6',
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
+    gap: 4,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#F3F4F6',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#212121',
+    color: '#111827',
   },
   statLabel: {
-    fontSize: 12,
-    color: '#757575',
-    marginTop: 2,
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  editHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    gap: 4,
+  },
+  editHintText: {
+    fontSize: 13,
+    color: '#006B3F',
+    fontWeight: '500',
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 80,
   },
-  emptyStateText: {
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#757575',
-    marginTop: 16,
+    color: '#111827',
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#9E9E9E',
+    color: '#6B7280',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#006B3F',
+    borderRadius: 10,
+  },
+  emptyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
@@ -393,6 +550,5 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#006B3F',
-    borderRadius: 30,
   },
 });

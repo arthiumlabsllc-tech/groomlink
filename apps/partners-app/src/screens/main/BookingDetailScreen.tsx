@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import {
   Text,
-  Card,
   Button,
   Chip,
   Surface,
@@ -20,6 +19,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { bookingsApi, BookingDetail } from '../../api/bookings';
 import { MainStackParamList } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -98,6 +98,10 @@ export default function BookingDetailScreen() {
     }
   };
 
+  const getStatusTextColor = (status: string) => {
+    return status === 'PENDING' ? '#111827' : '#FFFFFF';
+  };
+
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
@@ -131,6 +135,8 @@ export default function BookingDetailScreen() {
               style={styles.confirmButton}
               buttonColor="#006B3F"
               contentStyle={styles.buttonContent}
+              theme={{ roundness: 12 }}
+              icon="check"
             >
               Confirm Booking
             </Button>
@@ -138,8 +144,10 @@ export default function BookingDetailScreen() {
               mode="outlined"
               onPress={() => setCancelDialogVisible(true)}
               style={styles.cancelButton}
-              textColor="#EF4444"
+              textColor="#CE1126"
               contentStyle={styles.buttonContent}
+              theme={{ roundness: 12 }}
+              icon="close"
             >
               Decline
             </Button>
@@ -156,6 +164,8 @@ export default function BookingDetailScreen() {
               style={styles.completeButton}
               buttonColor="#10B981"
               contentStyle={styles.buttonContent}
+              theme={{ roundness: 12 }}
+              icon="check-circle"
             >
               Mark Complete
             </Button>
@@ -163,8 +173,9 @@ export default function BookingDetailScreen() {
               mode="outlined"
               onPress={() => setCancelDialogVisible(true)}
               style={styles.cancelButton}
-              textColor="#EF4444"
+              textColor="#CE1126"
               contentStyle={styles.buttonContent}
+              theme={{ roundness: 12 }}
             >
               Cancel Booking
             </Button>
@@ -173,6 +184,7 @@ export default function BookingDetailScreen() {
       case 'COMPLETED':
         return (
           <View style={styles.readOnlyNotice}>
+            <Ionicons name="checkmark-circle" size={24} color="#10B981" />
             <Text variant="bodyMedium" style={styles.readOnlyText}>
               This booking has been completed.
             </Text>
@@ -180,8 +192,9 @@ export default function BookingDetailScreen() {
         );
       case 'CANCELLED':
         return (
-          <View style={styles.readOnlyNotice}>
-            <Text variant="bodyMedium" style={styles.readOnlyText}>
+          <View style={[styles.readOnlyNotice, { backgroundColor: '#FEF2F2' }]}>
+            <Ionicons name="close-circle" size={24} color="#EF4444" />
+            <Text variant="bodyMedium" style={[styles.readOnlyText, { color: '#EF4444' }]}>
               This booking has been cancelled.
             </Text>
           </View>
@@ -202,6 +215,7 @@ export default function BookingDetailScreen() {
   if (error || !booking) {
     return (
       <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
         <Text variant="titleMedium" style={styles.errorText}>
           Failed to load booking details.
         </Text>
@@ -209,6 +223,7 @@ export default function BookingDetailScreen() {
           mode="outlined"
           onPress={() => navigation.goBack()}
           textColor="#006B3F"
+          theme={{ roundness: 10 }}
         >
           Go Back
         </Button>
@@ -221,113 +236,125 @@ export default function BookingDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Status Badge */}
         <View style={styles.statusContainer}>
-          <Chip
-            mode="flat"
-            style={[styles.statusChip, { backgroundColor: getStatusColor(booking.status) }]}
-            textStyle={styles.statusText}
-          >
-            {booking.status}
-          </Chip>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) }]}>
+            <Text style={[styles.statusText, { color: getStatusTextColor(booking.status) }]}>
+              {booking.status}
+            </Text>
+          </View>
         </View>
 
         {/* Customer Info */}
-        <Surface style={styles.section} elevation={1}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Customer Information
-          </Text>
-          <Divider style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.infoLabel}>Name:</Text>
-            <Text variant="bodyMedium" style={styles.infoValue}>
-              {booking.customer.firstName} {booking.customer.lastName}
+        <Surface style={styles.section} elevation={0}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="person" size={20} color="#006B3F" />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Customer Information
             </Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.infoLabel}>Phone:</Text>
-            <Text variant="bodyMedium" style={styles.infoValue}>
-              {booking.customer.phoneNumber}
-            </Text>
+          <Divider style={styles.divider} />
+          <View style={styles.customerRow}>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>
+                {booking.customer.firstName[0]}{booking.customer.lastName[0]}
+              </Text>
+            </View>
+            <View style={styles.customerDetails}>
+              <Text style={styles.customerName}>
+                {booking.customer.firstName} {booking.customer.lastName}
+              </Text>
+              <View style={styles.contactRow}>
+                <Ionicons name="call-outline" size={14} color="#6B7280" />
+                <Text style={styles.contactText}>{booking.customer.phoneNumber}</Text>
+              </View>
+            </View>
           </View>
         </Surface>
 
         {/* Service Details */}
-        <Surface style={styles.section} elevation={1}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Service Details
-          </Text>
+        <Surface style={styles.section} elevation={0}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="cut" size={20} color="#006B3F" />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Service Details
+            </Text>
+          </View>
           <Divider style={styles.divider} />
           <View style={styles.serviceItem}>
             <View style={styles.serviceRow}>
-              <Text variant="bodyLarge" style={styles.serviceName}>
-                {booking.service.name}
-              </Text>
-              <Text variant="bodyLarge" style={styles.servicePrice}>
-                GH₵{booking.service.price.toLocaleString()}
-              </Text>
+              <Text style={styles.serviceName}>{booking.service.name}</Text>
+              <Text style={styles.servicePrice}>GH₵{booking.service.price.toLocaleString()}</Text>
             </View>
-            <Text variant="bodySmall" style={styles.serviceDuration}>
-              Duration: {booking.service.duration} minutes
+            <Text style={styles.serviceDuration}>
+              <Ionicons name="time-outline" size={14} color="#6B7280" /> {booking.service.duration} minutes
             </Text>
           </View>
           <Divider style={styles.divider} />
           <View style={styles.totalRow}>
-            <Text variant="titleMedium" style={styles.totalLabel}>Total:</Text>
-            <Text variant="titleMedium" style={styles.totalValue}>
-              GH₵{booking.finalAmount.toLocaleString()}
-            </Text>
+            <Text style={styles.totalLabel}>Total Amount</Text>
+            <Text style={styles.totalValue}>GH₵{booking.finalAmount.toLocaleString()}</Text>
           </View>
         </Surface>
 
         {/* Date & Time */}
-        <Surface style={styles.section} elevation={1}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Appointment Time
-          </Text>
-          <Divider style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.infoLabel}>Date:</Text>
-            <Text variant="bodyMedium" style={styles.infoValue}>
-              {formatDate(booking.date)}
+        <Surface style={styles.section} elevation={0}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="calendar" size={20} color="#006B3F" />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Appointment Time
             </Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.infoLabel}>Time:</Text>
-            <Text variant="bodyMedium" style={styles.infoValue}>
-              {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
-            </Text>
+          <Divider style={styles.divider} />
+          <View style={styles.dateTimeGrid}>
+            <View style={styles.dateTimeItem}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+              <Text style={styles.dateTimeLabel}>Date</Text>
+              <Text style={styles.dateTimeValue}>{formatDate(booking.date)}</Text>
+            </View>
+            <View style={styles.dateTimeItem}>
+              <Ionicons name="time-outline" size={20} color="#6B7280" />
+              <Text style={styles.dateTimeLabel}>Time</Text>
+              <Text style={styles.dateTimeValue}>
+                {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+              </Text>
+            </View>
           </View>
           {booking.worker && (
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.infoLabel}>Stylist:</Text>
-              <Text variant="bodyMedium" style={styles.infoValue}>
-                {booking.worker.fullName}
-              </Text>
+            <View style={styles.workerRow}>
+              <Ionicons name="person-outline" size={16} color="#6B7280" />
+              <Text style={styles.workerLabel}>Stylist:</Text>
+              <Text style={styles.workerName}>{booking.worker.fullName}</Text>
             </View>
           )}
         </Surface>
 
         {/* Notes */}
         {booking.customerNotes && (
-          <Surface style={styles.section} elevation={1}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Customer Notes
-            </Text>
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="document-text" size={20} color="#006B3F" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Customer Notes
+              </Text>
+            </View>
             <Divider style={styles.divider} />
-            <Text variant="bodyMedium" style={styles.notesText}>
-              {booking.customerNotes}
+            <Text style={styles.notesText}>
+              "{booking.customerNotes}"
             </Text>
           </Surface>
         )}
 
         {/* Payment Status */}
         {booking.payment && (
-          <Surface style={styles.section} elevation={1}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Payment Status
-            </Text>
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="card" size={20} color="#006B3F" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Payment Status
+              </Text>
+            </View>
             <Divider style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.infoLabel}>Status:</Text>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Status</Text>
               <Chip
                 mode="flat"
                 style={[
@@ -339,30 +366,39 @@ export default function BookingDetailScreen() {
                 {booking.payment.status}
               </Chip>
             </View>
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.infoLabel}>Provider:</Text>
-              <Text variant="bodyMedium" style={styles.infoValue}>
-                {booking.payment.provider}
-              </Text>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Provider</Text>
+              <Text style={styles.paymentValue}>{booking.payment.provider}</Text>
             </View>
           </Surface>
         )}
 
         {/* Review */}
         {booking.review && (
-          <Surface style={styles.section} elevation={1}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Customer Review
-            </Text>
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="star" size={20} color="#FCD116" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Customer Review
+              </Text>
+            </View>
             <Divider style={styles.divider} />
             <View style={styles.ratingRow}>
-              <Text variant="headlineMedium" style={styles.ratingValue}>
-                {booking.review.rating}
-              </Text>
-              <Text variant="bodyMedium" style={styles.ratingMax}>/5</Text>
+              <Text style={styles.ratingValue}>{booking.review.rating}</Text>
+              <Text style={styles.ratingMax}>/5</Text>
+              <View style={styles.stars}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Ionicons
+                    key={star}
+                    name={star <= booking.review.rating ? 'star' : 'star-outline'}
+                    size={20}
+                    color="#FCD116"
+                  />
+                ))}
+              </View>
             </View>
             {booking.review.comment && (
-              <Text variant="bodyMedium" style={styles.reviewComment}>
+              <Text style={styles.reviewComment}>
                 "{booking.review.comment}"
               </Text>
             )}
@@ -378,8 +414,9 @@ export default function BookingDetailScreen() {
         <Dialog
           visible={cancelDialogVisible}
           onDismiss={() => setCancelDialogVisible(false)}
+          style={styles.dialog}
         >
-          <Dialog.Title>Cancel Booking</Dialog.Title>
+          <Dialog.Title style={styles.dialogTitle}>Cancel Booking</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium" style={styles.dialogText}>
               Please provide a reason for cancelling this booking.
@@ -394,9 +431,10 @@ export default function BookingDetailScreen() {
               style={styles.reasonInput}
               outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
+              theme={{ roundness: 10 }}
             />
           </Dialog.Content>
-          <Dialog.Actions>
+          <Dialog.Actions style={styles.dialogActions}>
             <Button
               onPress={() => setCancelDialogVisible(false)}
               textColor="#6B7280"
@@ -407,7 +445,7 @@ export default function BookingDetailScreen() {
               onPress={handleCancel}
               loading={cancelMutation.isPending}
               disabled={cancelMutation.isPending || !cancelReason.trim()}
-              textColor="#EF4444"
+              textColor="#CE1126"
             >
               Cancel Booking
             </Button>
@@ -439,6 +477,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#6B7280',
     marginBottom: 16,
+    marginTop: 12,
   },
   scrollContent: {
     padding: 16,
@@ -448,83 +487,171 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  statusChip: {
-    height: 36,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
+  statusBadge: {
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 20,
   },
   statusText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: 'bold',
   },
   section: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontWeight: 'bold',
-    color: '#111827',
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontWeight: '600',
+    color: '#111827',
   },
   divider: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  infoRow: {
+  customerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
   },
-  infoLabel: {
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#006B3F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  customerDetails: {
+    flex: 1,
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  contactText: {
+    fontSize: 14,
     color: '#6B7280',
   },
-  infoValue: {
-    color: '#111827',
-    fontWeight: '500',
-  },
   serviceItem: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   serviceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   serviceName: {
+    fontSize: 16,
     color: '#111827',
     fontWeight: '500',
     flex: 1,
   },
   servicePrice: {
+    fontSize: 16,
     color: '#006B3F',
     fontWeight: '600',
   },
   serviceDuration: {
     color: '#6B7280',
+    fontSize: 13,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    padding: 12,
+    borderRadius: 10,
   },
   totalLabel: {
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#111827',
+    fontSize: 15,
   },
   totalValue: {
     fontWeight: 'bold',
     color: '#006B3F',
+    fontSize: 18,
+  },
+  dateTimeGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dateTimeItem: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 14,
+    borderRadius: 12,
+  },
+  dateTimeLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  dateTimeValue: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  workerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    gap: 8,
+  },
+  workerLabel: {
+    color: '#6B7280',
+  },
+  workerName: {
+    color: '#111827',
+    fontWeight: '500',
   },
   notesText: {
     color: '#374151',
     fontStyle: 'italic',
+    lineHeight: 22,
+    fontSize: 14,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  paymentLabel: {
+    color: '#6B7280',
+  },
+  paymentValue: {
+    color: '#111827',
+    fontWeight: '500',
   },
   paymentChip: {
     height: 28,
     justifyContent: 'center',
+    borderRadius: 6,
   },
   paymentChipText: {
     color: '#FFFFFF',
@@ -533,52 +660,76 @@ const styles = StyleSheet.create({
   },
   ratingRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 10,
   },
   ratingValue: {
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#FCD116',
   },
   ratingMax: {
+    fontSize: 20,
     color: '#6B7280',
+    marginRight: 12,
+  },
+  stars: {
+    flexDirection: 'row',
+    gap: 2,
   },
   reviewComment: {
     color: '#374151',
     fontStyle: 'italic',
     marginTop: 8,
+    lineHeight: 22,
   },
   actionButtons: {
     marginTop: 16,
     gap: 12,
   },
   confirmButton: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
   completeButton: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
   cancelButton: {
-    borderRadius: 8,
-    borderColor: '#EF4444',
+    borderRadius: 12,
+    borderColor: '#CE1126',
   },
   buttonContent: {
     paddingVertical: 8,
   },
   readOnlyNotice: {
     marginTop: 16,
-    padding: 16,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    padding: 20,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
   readOnlyText: {
-    color: '#6B7280',
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  dialog: {
+    borderRadius: 16,
+  },
+  dialogTitle: {
+    fontWeight: '600',
   },
   dialogText: {
-    marginBottom: 12,
+    marginBottom: 16,
+    color: '#6B7280',
   },
   reasonInput: {
-    marginTop: 8,
+    marginTop: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  dialogActions: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
 });

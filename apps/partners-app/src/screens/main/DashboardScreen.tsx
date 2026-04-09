@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, isToday, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { salonApi } from '../../api/salon';
 import { bookingsApi } from '../../api/bookings';
 import { useAuthStore } from '../../store/authStore';
@@ -101,6 +102,15 @@ export default function DashboardScreen() {
     }
   };
 
+  const getStatusTextColor = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return '#111827';
+      default:
+        return '#FFFFFF';
+    }
+  };
+
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
@@ -109,28 +119,41 @@ export default function DashboardScreen() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   const renderBookingItem = ({ item }: { item: Booking }) => (
-    <TouchableOpacity onPress={() => navigateToBooking(item.id)}>
-      <Surface style={styles.bookingCard} elevation={1}>
-        <View style={styles.bookingHeader}>
-          <Text variant="titleMedium" style={styles.customerName}>
-            {item.customer.firstName} {item.customer.lastName}
-          </Text>
-          <Chip
-            mode="flat"
-            style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
-            textStyle={styles.statusText}
-          >
-            {item.status}
-          </Chip>
+    <TouchableOpacity onPress={() => navigateToBooking(item.id)} activeOpacity={0.7}>
+      <Surface style={styles.bookingCard} elevation={0}>
+        <View style={styles.bookingTimeColumn}>
+          <Text style={styles.bookingTime}>{formatTime(item.startTime)}</Text>
+          <Text style={styles.bookingDuration}>{item.service.duration}min</Text>
         </View>
-        <View style={styles.bookingDetails}>
-          <Text variant="bodyMedium" style={styles.serviceName}>
-            {item.service.name}
-          </Text>
-          <Text variant="bodyMedium" style={styles.timeText}>
-            {formatTime(item.startTime)} - {formatTime(item.endTime)}
-          </Text>
+        <View style={styles.bookingDivider} />
+        <View style={styles.bookingContent}>
+          <View style={styles.bookingHeader}>
+            <View style={styles.customerInfo}>
+              <Text style={styles.customerName}>
+                {item.customer.firstName} {item.customer.lastName}
+              </Text>
+              <Text style={styles.serviceName}>{item.service.name}</Text>
+            </View>
+            <Chip
+              mode="flat"
+              style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
+              textStyle={[styles.statusText, { color: getStatusTextColor(item.status) }]}
+            >
+              {item.status}
+            </Chip>
+          </View>
+          <View style={styles.bookingFooter}>
+            <Text style={styles.bookingPrice}>GH₵{item.finalAmount.toLocaleString()}</Text>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </View>
         </View>
       </Surface>
     </TouchableOpacity>
@@ -138,11 +161,14 @@ export default function DashboardScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+      </View>
       <Text variant="titleMedium" style={styles.emptyTitle}>
         No Appointments Today
       </Text>
       <Text variant="bodyMedium" style={styles.emptySubtitle}>
-        Your schedule is clear for today.
+        Your schedule is clear for today. Enjoy the free time!
       </Text>
     </View>
   );
@@ -165,78 +191,131 @@ export default function DashboardScreen() {
           <>
             {/* Header */}
             <View style={styles.header}>
-              <Text variant="headlineSmall" style={styles.greeting}>
-                Welcome back,
-              </Text>
-              <Text variant="headlineMedium" style={styles.salonName}>
-                {salon?.businessName || user?.firstName || 'Partner'}
-              </Text>
+              <View>
+                <Text variant="bodyMedium" style={styles.greeting}>
+                  {getGreeting()},
+                </Text>
+                <Text variant="headlineMedium" style={styles.salonName}>
+                  {salon?.businessName || user?.firstName || 'Partner'}
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.notificationButton}
+                onPress={() => {}}
+              >
+                <Ionicons name="notifications-outline" size={24} color="#111827" />
+                {pendingBookings.length > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>{pendingBookings.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
 
-            {/* Stats Cards */}
-            <View style={styles.statsRow}>
-              <Surface style={styles.statsCard} elevation={2}>
-                <Text variant="labelMedium" style={styles.statsLabel}>
+            {/* Stats Cards - 2x2 Grid */}
+            <View style={styles.statsGrid}>
+              {/* Today's Bookings */}
+              <View style={[styles.statsCard, { borderLeftColor: '#006B3F' }]}>
+                <View style={[styles.statsIcon, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="calendar-today" size={20} color="#006B3F" />
+                </View>
+                <Text variant="labelSmall" style={styles.statsLabel}>
                   Today's Bookings
                 </Text>
-                <Text variant="headlineMedium" style={styles.statsValue}>
+                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#006B3F' }]}>
                   {todayBookings.length}
                 </Text>
-              </Surface>
-              <Surface style={styles.statsCard} elevation={2}>
-                <Text variant="labelMedium" style={styles.statsLabel}>
+              </View>
+
+              {/* Revenue */}
+              <View style={[styles.statsCard, { borderLeftColor: '#FCD116' }]}>
+                <View style={[styles.statsIcon, { backgroundColor: '#FEF9E7' }]}>
+                  <Ionicons name="cash" size={20} color="#D4A017" />
+                </View>
+                <Text variant="labelSmall" style={styles.statsLabel}>
                   Weekly Revenue
                 </Text>
-                <Text variant="headlineMedium" style={styles.statsValue}>
+                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#D4A017' }]}>
                   GH₵{weeklyRevenue.toLocaleString()}
                 </Text>
-              </Surface>
-              <Surface style={styles.statsCard} elevation={2}>
-                <Text variant="labelMedium" style={styles.statsLabel}>
+              </View>
+
+              {/* Pending */}
+              <View style={[styles.statsCard, { borderLeftColor: '#CE1126' }]}>
+                <View style={[styles.statsIcon, { backgroundColor: '#FEF2F2' }]}>
+                  <Ionicons name="time" size={20} color="#CE1126" />
+                </View>
+                <Text variant="labelSmall" style={styles.statsLabel}>
                   Pending
                 </Text>
-                <Text variant="headlineMedium" style={styles.statsValue}>
+                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#CE1126' }]}>
                   {pendingBookings.length}
                 </Text>
-              </Surface>
+              </View>
+
+              {/* Rating */}
+              <View style={[styles.statsCard, { borderLeftColor: '#3B82F6' }]}>
+                <View style={[styles.statsIcon, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="star" size={20} color="#3B82F6" />
+                </View>
+                <Text variant="labelSmall" style={styles.statsLabel}>
+                  Rating
+                </Text>
+                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#3B82F6' }]}>
+                  {stats?.avgRating ? stats.avgRating.toFixed(1) : '-'}
+                </Text>
+              </View>
             </View>
 
             {/* Quick Actions */}
             <View style={styles.quickActions}>
-              <Button
-                mode="outlined"
+              <TouchableOpacity 
+                style={styles.actionButton}
                 onPress={() => navigation.getParent()?.navigate('Bookings')}
-                style={styles.actionButton}
-                textColor="#006B3F"
+                activeOpacity={0.7}
               >
-                View All Bookings
-              </Button>
-              <Button
-                mode="outlined"
+                <View style={[styles.actionButtonIcon, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="list" size={22} color="#006B3F" />
+                </View>
+                <Text style={styles.actionButtonText}>All Bookings</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.actionButton}
                 onPress={() => navigation.getParent()?.navigate('Services')}
-                style={styles.actionButton}
-                textColor="#006B3F"
+                activeOpacity={0.7}
               >
-                Add Service
-              </Button>
-              <Button
-                mode="outlined"
+                <View style={[styles.actionButtonIcon, { backgroundColor: '#FEF9E7' }]}>
+                  <Ionicons name="add-circle" size={22} color="#D4A017" />
+                </View>
+                <Text style={styles.actionButtonText}>Add Service</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.actionButton}
                 onPress={() => navigation.getParent()?.navigate('Staff')}
-                style={styles.actionButton}
-                textColor="#006B3F"
+                activeOpacity={0.7}
               >
-                Manage Staff
-              </Button>
+                <View style={[styles.actionButtonIcon, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="people" size={22} color="#3B82F6" />
+                </View>
+                <Text style={styles.actionButtonText}>Manage Staff</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Today's Appointments Header */}
             <View style={styles.sectionHeader}>
-              <Text variant="titleLarge" style={styles.sectionTitle}>
-                Today's Appointments
-              </Text>
-              <Text variant="bodyMedium" style={styles.dateText}>
-                {format(new Date(), 'EEEE, MMMM d')}
-              </Text>
+              <View>
+                <Text variant="titleLarge" style={styles.sectionTitle}>
+                  Today's Appointments
+                </Text>
+                <Text variant="bodyMedium" style={styles.dateText}>
+                  {format(new Date(), 'EEEE, MMMM d')}
+                </Text>
+              </View>
+              {todayBookings.length > 0 && (
+                <TouchableOpacity onPress={() => navigation.getParent()?.navigate('Bookings')}>
+                  <Text style={styles.seeAllText}>See All</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </>
         }
@@ -267,7 +346,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
   },
@@ -278,45 +360,106 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#006B3F',
   },
-  statsRow: {
+  notificationButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#CE1126',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  statsGrid: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    gap: 8,
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
   },
   statsCard: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 12,
+    width: '47%',
     backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 8,
   },
   statsLabel: {
     color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statsValue: {
     fontWeight: 'bold',
-    color: '#006B3F',
   },
   quickActions: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    gap: 8,
+    gap: 12,
   },
   actionButton: {
     flex: 1,
-    borderColor: '#006B3F',
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  actionButtonIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionButtonText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
   },
   sectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
   sectionTitle: {
     fontWeight: 'bold',
@@ -324,59 +467,113 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: '#6B7280',
+    marginTop: 2,
+  },
+  seeAllText: {
+    color: '#006B3F',
+    fontWeight: '600',
+    fontSize: 14,
   },
   listContent: {
     paddingBottom: 24,
   },
   bookingCard: {
     marginHorizontal: 16,
-    marginBottom: 8,
-    padding: 16,
-    borderRadius: 12,
+    marginBottom: 10,
+    padding: 14,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  bookingTimeColumn: {
+    width: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bookingTime: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#006B3F',
+  },
+  bookingDuration: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  bookingDivider: {
+    width: 1,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 12,
+  },
+  bookingContent: {
+    flex: 1,
   },
   bookingHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
   },
+  customerInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
   customerName: {
+    fontSize: 15,
     fontWeight: '600',
     color: '#111827',
-    flex: 1,
+  },
+  serviceName: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
   },
   statusChip: {
-    height: 28,
+    height: 26,
     justifyContent: 'center',
+    borderRadius: 6,
   },
   statusText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
+    paddingHorizontal: 4,
   },
-  bookingDetails: {
+  bookingFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  serviceName: {
-    color: '#6B7280',
-    flex: 1,
-  },
-  timeText: {
+  bookingPrice: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#006B3F',
-    fontWeight: '500',
   },
   emptyState: {
-    padding: 32,
+    padding: 40,
     alignItems: 'center',
   },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   emptyTitle: {
-    color: '#6B7280',
+    color: '#111827',
     marginBottom: 8,
+    fontWeight: '600',
   },
   emptySubtitle: {
-    color: '#9CA3AF',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

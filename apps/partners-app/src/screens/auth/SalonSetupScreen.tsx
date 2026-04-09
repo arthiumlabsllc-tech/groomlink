@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, Text, HelperText, Divider, List } from 'react-native-paper';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { TextInput, Button, Text, HelperText, Divider, Surface } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { salonApi, CreateSalonData } from '../../api/salon';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
@@ -16,13 +17,12 @@ type AuthStackParamList = {
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SalonSetup'>;
 
 const BUSINESS_CATEGORIES = [
-  { label: 'Hair Salon', value: 'HAIR_SALON' },
-  { label: 'Barbershop', value: 'BARBERSHOP' },
-  { label: 'Beauty Salon', value: 'BEAUTY_SALON' },
-  { label: 'Nail Salon', value: 'NAIL_SALON' },
-  { label: 'Spa & Wellness', value: 'SPA_WELLNESS' },
-  { label: 'Full Service', value: 'FULL_SERVICE' },
-  { label: 'Other', value: 'OTHER' },
+  { label: 'Barbershop', value: 'BARBERSHOP', icon: 'cut' },
+  { label: 'Hair Salon', value: 'HAIR_SALON', icon: 'scissors' },
+  { label: 'Beauty Salon', value: 'BEAUTY_SALON', icon: 'sparkles' },
+  { label: 'Nail Salon', value: 'NAIL_SALON', icon: 'hand-left' },
+  { label: 'Spa & Wellness', value: 'SPA_WELLNESS', icon: 'leaf' },
+  { label: 'Full Service', value: 'FULL_SERVICE', icon: 'business' },
 ];
 
 export default function SalonSetupScreen() {
@@ -35,10 +35,17 @@ export default function SalonSetupScreen() {
   const [phone, setPhone] = useState(user?.phoneNumber || '');
   const [email, setEmail] = useState(user?.email || '');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const toggleCategory = (value: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(value) 
+        ? prev.filter(c => c !== value)
+        : [...prev, value]
+    );
+  };
 
   const validateForm = (): boolean => {
     if (!businessName.trim()) {
@@ -74,7 +81,7 @@ export default function SalonSetupScreen() {
         phone: phone.trim(),
         email: email.trim() || undefined,
         description: description.trim() || undefined,
-        category: category || undefined,
+        category: selectedCategories[0] || undefined,
       };
 
       // Create the salon
@@ -93,11 +100,6 @@ export default function SalonSetupScreen() {
     }
   };
 
-  const getCategoryLabel = (value: string) => {
-    const cat = BUSINESS_CATEGORIES.find(c => c.value === value);
-    return cat?.label || 'Select Category';
-  };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -108,23 +110,56 @@ export default function SalonSetupScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          <Text variant="headlineMedium" style={styles.title}>
-            Register Your Salon
-          </Text>
-          <Text variant="bodyLarge" style={styles.subtitle}>
-            Tell us about your business to get started
-          </Text>
+          {/* Progress Steps */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressStep}>
+              <View style={[styles.stepCircle, styles.stepComplete]}>
+                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+              </View>
+              <Text style={styles.stepLabel}>Verify</Text>
+            </View>
+            <View style={styles.progressLine}>
+              <View style={styles.progressLineFilled} />
+            </View>
+            <View style={styles.progressStep}>
+              <View style={[styles.stepCircle, styles.stepActive]}>
+                <Text style={styles.stepNumber}>2</Text>
+              </View>
+              <Text style={[styles.stepLabel, styles.stepLabelActive]}>Setup</Text>
+            </View>
+          </View>
 
-          <View style={styles.formContainer}>
+          {/* Header */}
+          <View style={styles.headerSection}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="business" size={28} color="#006B3F" />
+            </View>
+            <Text variant="headlineSmall" style={styles.title}>
+              Set Up Your Salon
+            </Text>
+            <Text variant="bodyMedium" style={styles.subtitle}>
+              Tell us about your business to get started
+            </Text>
+          </View>
+
+          {/* Basic Info Section */}
+          <Surface style={styles.section} elevation={0}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Basic Information
+            </Text>
+            <Divider style={styles.sectionDivider} />
+            
             <TextInput
               label="Salon Name *"
               value={businessName}
               onChangeText={setBusinessName}
               style={styles.input}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               placeholder="e.g., Glamour Beauty Salon"
+              left={<TextInput.Icon icon="storefront" color="#6B7280" />}
+              theme={{ roundness: 10 }}
               autoFocus
             />
 
@@ -134,35 +169,43 @@ export default function SalonSetupScreen() {
               onChangeText={setAddress}
               style={styles.input}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               placeholder="e.g., 123 Oxford Street, Osu"
-              right={<TextInput.Icon icon="map-marker" />}
+              left={<TextInput.Icon icon="map-marker-outline" color="#6B7280" />}
+              theme={{ roundness: 10 }}
             />
 
-            <TextInput
-              label="City *"
-              value={city}
-              onChangeText={setCity}
-              style={styles.input}
-              mode="outlined"
-              outlineColor="#E0E0E0"
-              activeOutlineColor="#006B3F"
-              placeholder="e.g., Accra"
-            />
-
-            <TextInput
-              label="Phone Number *"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              style={styles.input}
-              mode="outlined"
-              outlineColor="#E0E0E0"
-              activeOutlineColor="#006B3F"
-              placeholder="e.g., 024 XXX XXXX"
-              right={<TextInput.Icon icon="phone" />}
-            />
+            <View style={styles.row}>
+              <View style={styles.halfInput}>
+                <TextInput
+                  label="City *"
+                  value={city}
+                  onChangeText={setCity}
+                  style={styles.input}
+                  mode="outlined"
+                  outlineColor="#E5E7EB"
+                  activeOutlineColor="#006B3F"
+                  placeholder="e.g., Accra"
+                  theme={{ roundness: 10 }}
+                />
+              </View>
+              <View style={styles.halfInput}>
+                <TextInput
+                  label="Phone *"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  style={styles.input}
+                  mode="outlined"
+                  outlineColor="#E5E7EB"
+                  activeOutlineColor="#006B3F"
+                  placeholder="024 XXX XXXX"
+                  left={<TextInput.Icon icon="phone-outline" color="#6B7280" />}
+                  theme={{ roundness: 10 }}
+                />
+              </View>
+            </View>
 
             <TextInput
               label="Email (Optional)"
@@ -172,57 +215,81 @@ export default function SalonSetupScreen() {
               autoCapitalize="none"
               style={styles.input}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               placeholder="salon@example.com"
-              right={<TextInput.Icon icon="email" />}
+              left={<TextInput.Icon icon="email-outline" color="#6B7280" />}
+              theme={{ roundness: 10 }}
             />
+          </Surface>
 
-            <View style={styles.pickerContainer}>
-              <Text variant="bodyMedium" style={styles.pickerLabel}>
-                Business Category (Optional)
-              </Text>
-              <List.Accordion
-                title={getCategoryLabel(category)}
-                expanded={showCategoryPicker}
-                onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-                style={styles.accordion}
-                titleStyle={category ? styles.accordionTitleSelected : styles.accordionTitle}
-              >
-                {BUSINESS_CATEGORIES.map((cat) => (
-                  <List.Item
-                    key={cat.value}
-                    title={cat.label}
-                    onPress={() => {
-                      setCategory(cat.value);
-                      setShowCategoryPicker(false);
-                    }}
-                    titleStyle={styles.categoryItem}
-                    right={props => category === cat.value ? <List.Icon {...props} icon="check" color="#006B3F" /> : null}
+          {/* Category Section */}
+          <Surface style={styles.section} elevation={0}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Business Category
+            </Text>
+            <Text variant="bodySmall" style={styles.sectionHint}>
+              Select all that apply
+            </Text>
+            <Divider style={styles.sectionDivider} />
+            
+            <View style={styles.categoryGrid}>
+              {BUSINESS_CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat.value}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategories.includes(cat.value) && styles.categoryChipSelected,
+                  ]}
+                  onPress={() => toggleCategory(cat.value)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name={cat.icon as any} 
+                    size={18} 
+                    color={selectedCategories.includes(cat.value) ? '#FFFFFF' : '#6B7280'} 
                   />
-                ))}
-              </List.Accordion>
+                  <Text style={[
+                    styles.categoryChipText,
+                    selectedCategories.includes(cat.value) && styles.categoryChipTextSelected,
+                  ]}>
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+          </Surface>
 
+          {/* Description Section */}
+          <Surface style={styles.section} elevation={0}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Description
+            </Text>
+            <Divider style={styles.sectionDivider} />
+            
             <TextInput
-              label="Description (Optional)"
+              label="About Your Salon (Optional)"
               value={description}
               onChangeText={setDescription}
               multiline
               numberOfLines={3}
-              style={styles.textArea}
+              style={[styles.input, styles.textArea]}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               placeholder="Tell customers about your salon, services, and what makes you unique..."
+              theme={{ roundness: 10 }}
             />
+          </Surface>
 
-            {error ? (
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={18} color="#CE1126" />
               <HelperText type="error" visible={true} style={styles.error}>
                 {error}
               </HelperText>
-            ) : null}
-          </View>
+            </View>
+          ) : null}
 
           <Button
             mode="contained"
@@ -232,12 +299,13 @@ export default function SalonSetupScreen() {
             style={styles.button}
             contentStyle={styles.buttonContent}
             buttonColor="#006B3F"
+            theme={{ roundness: 12 }}
           >
             {loading ? 'Creating Salon...' : 'Create Salon'}
           </Button>
           
           <Text variant="bodySmall" style={styles.hint}>
-            You can add services, workers, and more details after registration
+            You can add services, staff, and more details after registration
           </Text>
         </View>
       </ScrollView>
@@ -248,73 +316,170 @@ export default function SalonSetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
   },
   scrollContent: {
     flexGrow: 1,
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 20,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  progressStep: {
+    alignItems: 'center',
+  },
+  stepCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  stepComplete: {
+    backgroundColor: '#006B3F',
+  },
+  stepActive: {
+    backgroundColor: '#006B3F',
+    borderWidth: 3,
+    borderColor: '#FCD116',
+  },
+  stepNumber: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  stepLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  stepLabelActive: {
+    color: '#006B3F',
+    fontWeight: '600',
+  },
+  progressLine: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 12,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressLineFilled: {
+    flex: 1,
+    backgroundColor: '#006B3F',
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  headerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   title: {
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: '#111827',
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
+    color: '#6B7280',
   },
-  formContainer: {
-    marginBottom: 24,
-    gap: 16,
+  section: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  sectionHint: {
+    color: '#9CA3AF',
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  sectionDivider: {
+    marginBottom: 16,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
   },
   textArea: {
-    backgroundColor: '#fff',
     minHeight: 100,
   },
-  pickerContainer: {
-    marginTop: -8,
+  row: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  pickerLabel: {
-    marginBottom: 4,
-    color: '#666',
+  halfInput: {
+    flex: 1,
   },
-  accordion: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 4,
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    gap: 6,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E5E7EB',
   },
-  accordionTitle: {
-    color: '#666',
+  categoryChipSelected: {
+    backgroundColor: '#006B3F',
+    borderColor: '#006B3F',
   },
-  accordionTitleSelected: {
-    color: '#006B3F',
+  categoryChipText: {
+    fontSize: 14,
+    color: '#374151',
     fontWeight: '500',
   },
-  categoryItem: {
-    fontSize: 14,
+  categoryChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   error: {
-    marginTop: 8,
+    marginLeft: 4,
   },
   button: {
-    borderRadius: 8,
+    borderRadius: 12,
     marginTop: 8,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   hint: {
     textAlign: 'center',
-    color: '#999',
+    color: '#9CA3AF',
     marginTop: 16,
+    lineHeight: 20,
   },
 });

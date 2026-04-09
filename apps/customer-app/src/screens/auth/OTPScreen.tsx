@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput } from 'react-native';
 import { Text, Button, HelperText } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -7,8 +7,23 @@ import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types/navigation';
 
+// Design System Colors
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  dark: '#1a1a2e',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+};
+
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'OTP'>;
 type OTPRouteProp = RouteProp<AuthStackParamList, 'OTP'>;
+
+const RESEND_TIMEOUT = 30;
 
 export default function OTPScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -19,7 +34,15 @@ export default function OTPScreen() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [countdown, setCountdown] = useState(RESEND_TIMEOUT);
   const inputRefs = useRef<(RNTextInput | null)[]>([]);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -60,7 +83,7 @@ export default function OTPScreen() {
         
         if (isNewUser) {
           // New user - navigate to ProfileSetup to complete registration
-          navigation.navigate('ProfileSetup', { email, user });
+          navigation.navigate('ProfileSetup', { email });
         } else {
           // Existing user - tokens are already stored in SecureStore by authApi
           // Set user in store which updates isAuthenticated to true
@@ -81,9 +104,16 @@ export default function OTPScreen() {
     try {
       await authApi.requestEmailOTP(email);
       setError('');
+      setCountdown(RESEND_TIMEOUT);
     } catch (err: any) {
       setError('Failed to resend OTP. Please try again.');
     }
+  };
+
+  const isActive = (index: number) => {
+    // Active if current is empty and previous is filled, or if current has value
+    if (index === 0) return otp[0] === '';
+    return otp[index] !== '' || (otp[index - 1] !== '' && otp[index] === '');
   };
 
   return (
@@ -93,10 +123,11 @@ export default function OTPScreen() {
     >
       <View style={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>
-          Enter OTP
+          Verify your email
         </Text>
         <Text variant="bodyLarge" style={styles.subtitle}>
-          Enter the 6-digit code sent to {email}
+          Enter the 6-digit code sent to{'\n'}
+          <Text style={styles.emailText}>{email}</Text>
         </Text>
 
         <View style={styles.otpContainer}>
@@ -104,7 +135,10 @@ export default function OTPScreen() {
             <RNTextInput
               key={index}
               ref={(ref) => (inputRefs.current[index] = ref)}
-              style={styles.otpInput}
+              style={[
+                styles.otpInput,
+                isActive(index) && styles.otpInputActive,
+              ]}
               keyboardType="number-pad"
               maxLength={1}
               value={digit}
@@ -128,6 +162,7 @@ export default function OTPScreen() {
           disabled={loading || otp.join('').length !== 6}
           style={styles.button}
           contentStyle={styles.buttonContent}
+          buttonColor={COLORS.primaryGreen}
         >
           {loading ? 'Verifying...' : 'Verify'}
         </Button>
@@ -135,10 +170,11 @@ export default function OTPScreen() {
         <Button
           mode="text"
           onPress={handleResend}
-          disabled={loading}
+          disabled={loading || countdown > 0}
           style={styles.resendButton}
+          textColor={countdown > 0 ? COLORS.textSecondary : COLORS.primaryGreen}
         >
-          Resend OTP
+          {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
         </Button>
       </View>
     </KeyboardAvoidingView>
@@ -148,7 +184,7 @@ export default function OTPScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
   },
   content: {
     flex: 1,
@@ -159,37 +195,52 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     fontWeight: 'bold',
-    color: '#CE1126',
+    color: COLORS.textPrimary,
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 32,
-    color: '#666',
+    marginBottom: 40,
+    color: COLORS.textSecondary,
+    lineHeight: 24,
+  },
+  emailText: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 24,
+    gap: 12,
+    marginBottom: 32,
   },
   otpInput: {
-    width: 48,
-    height: 56,
+    width: 52,
+    height: 64,
     borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: 12,
     textAlign: 'center',
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.textPrimary,
+    backgroundColor: COLORS.cardBackground,
+  },
+  otpInputActive: {
+    borderColor: COLORS.primaryGreen,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   error: {
     textAlign: 'center',
     marginBottom: 16,
   },
   button: {
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 16,
+    minHeight: 56,
   },
   buttonContent: {
     paddingVertical: 8,

@@ -62,6 +62,12 @@
           "icon": "./assets/notification-icon.png",
           "color": "#CE1126"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "GroomLink needs your location to find nearby salons and barbershops."
+        }
       ]
     ],
     "owner": "gr3enink"

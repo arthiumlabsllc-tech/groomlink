@@ -3,6 +3,7 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 're
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
 
 type AuthStackParamList = {
@@ -50,22 +51,32 @@ export default function EmailScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
+          {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>GL</Text>
+              <View style={styles.logoInner}>
+                <Ionicons name="business" size={36} color="#FFFFFF" />
+              </View>
             </View>
+            <View style={styles.logoAccent} />
           </View>
-          
+
           <Text variant="headlineMedium" style={styles.title}>
-            GroomLink for Business
+            GroomLink Partners
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Enter your email to sign in or create an account
+            Manage Your Salon
+          </Text>
+          <Text variant="bodyMedium" style={styles.tagline}>
+            For salon & barbershop owners in Ghana
           </Text>
 
           <View style={styles.inputContainer}>
+            <Text variant="labelLarge" style={styles.inputLabel}>
+              Email Address
+            </Text>
             <TextInput
-              label="Email Address"
+              label=""
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -75,9 +86,10 @@ export default function EmailScreen() {
               style={styles.input}
               placeholder="you@example.com"
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
-              left={<TextInput.Icon icon="email" />}
+              left={<TextInput.Icon icon="email-outline" color="#6B7280" />}
+              theme={{ roundness: 12 }}
             />
             <HelperText type="info" visible={true} style={styles.helperText}>
               We'll send a 6-digit verification code to this email
@@ -98,19 +110,23 @@ export default function EmailScreen() {
             contentStyle={styles.buttonContent}
             buttonColor="#006B3F"
             textColor="#fff"
+            theme={{ roundness: 12 }}
           >
-            {loading ? 'Sending...' : 'Send OTP'}
+            {loading ? 'Sending...' : 'Continue'}
           </Button>
-          
+
           {!validateEmail(email) && !loading && (
             <Text variant="bodySmall" style={styles.hintText}>
               Enter a valid email address to continue
             </Text>
           )}
-          
-          <Text variant="bodySmall" style={styles.signupNote}>
-            New salon owner? We'll help you set up your business after verification
-          </Text>
+
+          <View style={styles.footerNote}>
+            <Ionicons name="information-circle-outline" size={16} color="#9CA3AF" />
+            <Text variant="bodySmall" style={styles.signupNote}>
+              New salon owner? We'll help you set up your business after verification
+            </Text>
+          </View>
 
           <Text variant="bodySmall" style={styles.termsText}>
             By continuing, you agree to our Terms of Service and Privacy Policy
@@ -124,7 +140,7 @@ export default function EmailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
@@ -138,77 +154,113 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: 24,
+    position: 'relative',
   },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: '#006B3F',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowColor: '#006B3F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
+  logoInner: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoAccent: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FCD116',
+    right: '32%',
+    top: 0,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   title: {
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
     fontWeight: 'bold',
     color: '#006B3F',
+    letterSpacing: 0.5,
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 32,
-    color: '#666',
+    marginBottom: 4,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  tagline: {
+    textAlign: 'center',
+    marginBottom: 40,
+    color: '#6B7280',
   },
   inputContainer: {
     marginBottom: 24,
   },
+  inputLabel: {
+    marginBottom: 8,
+    color: '#374151',
+    fontWeight: '500',
+  },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     fontSize: 16,
   },
   helperText: {
-    marginTop: 4,
+    marginTop: 6,
+    color: '#6B7280',
   },
   errorText: {
     marginTop: 4,
   },
   button: {
-    marginTop: 16,
-    borderRadius: 8,
+    marginTop: 8,
+    borderRadius: 12,
     minHeight: 56,
     justifyContent: 'center',
   },
   buttonDisabled: {
     backgroundColor: '#006B3F80',
-    opacity: 0.8,
+    opacity: 0.7,
   },
   buttonContent: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
   },
   hintText: {
     textAlign: 'center',
-    color: '#888',
+    color: '#9CA3AF',
     marginTop: 12,
+    fontSize: 13,
+  },
+  footerNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 32,
+    paddingHorizontal: 8,
+    gap: 8,
   },
   signupNote: {
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 24,
-    fontStyle: 'italic',
+    flex: 1,
+    color: '#6B7280',
+    lineHeight: 20,
   },
   termsText: {
     textAlign: 'center',
-    color: '#999',
-    marginTop: 16,
+    color: '#9CA3AF',
+    marginTop: 24,
+    fontSize: 12,
   },
 });

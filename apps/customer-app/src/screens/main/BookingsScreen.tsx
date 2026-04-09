@@ -21,17 +21,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { bookingApi } from '../../api/booking';
 import { Booking } from '../../types';
 
+// Design System Colors
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  dark: '#1a1a2e',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+};
+
 type TabType = 'upcoming' | 'past';
 
 const UPCOMING_STATUSES = ['PENDING', 'CONFIRMED', 'IN_PROGRESS'];
 const PAST_STATUSES = ['COMPLETED', 'CANCELLED'];
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: '#FFA500',
-  CONFIRMED: '#006B3F',
+  PENDING: COLORS.accentGold,
+  CONFIRMED: COLORS.primaryGreen,
   IN_PROGRESS: '#2196F3',
-  COMPLETED: '#4CAF50',
-  CANCELLED: '#CE1126',
+  COMPLETED: '#6B7280',
+  CANCELLED: COLORS.accentRed,
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -92,7 +105,7 @@ export default function BookingsScreen() {
   };
 
   const renderBookingCard = useCallback(({ item }: { item: Booking }) => {
-    const statusColor = STATUS_COLORS[item.status] || '#666';
+    const statusColor = STATUS_COLORS[item.status] || COLORS.textSecondary;
     const statusLabel = STATUS_LABELS[item.status] || item.status;
     
     return (
@@ -107,24 +120,24 @@ export default function BookingsScreen() {
                 {item.salon?.businessName || 'Salon'}
               </Text>
               <View style={styles.dateTimeRow}>
-                <Ionicons name="calendar-outline" size={14} color="#666" />
+                <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
                 <Text variant="bodySmall" style={styles.dateTimeText}>
                   {formatDate(item.scheduledDate)} • {formatTime(item.scheduledTime)}
                 </Text>
               </View>
             </View>
-            <Chip
-              style={[styles.statusChip, { backgroundColor: `${statusColor}15` }]}
-              textStyle={{ color: statusColor, fontSize: 12 }}
-            >
-              {statusLabel}
-            </Chip>
+            <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {statusLabel}
+              </Text>
+            </View>
           </View>
 
           <Divider style={styles.divider} />
 
           <View style={styles.servicesRow}>
-            <Text variant="bodySmall" style={styles.servicesLabel}>Services: </Text>
+            <Ionicons name="cut-outline" size={14} color={COLORS.textSecondary} />
             <Text variant="bodySmall" style={styles.servicesText} numberOfLines={1}>
               {item.services?.map(s => s.name).join(', ')}
             </Text>
@@ -132,46 +145,34 @@ export default function BookingsScreen() {
 
           {item.worker && (
             <View style={styles.workerRow}>
-              <Ionicons name="person-outline" size={14} color="#666" />
+              <Ionicons name="person-outline" size={14} color={COLORS.textSecondary} />
               <Text variant="bodySmall" style={styles.workerText}>
                 {item.worker.name}
               </Text>
             </View>
           )}
 
-          <View style={styles.footer}>
+          <View style={styles.cardFooter}>
             <Text variant="titleMedium" style={styles.totalAmount}>
               GH₵ {item.totalAmount.toFixed(2)}
             </Text>
-            {item.status === 'CONFIRMED' && (
-              <Button
-                mode="text"
-                compact
+            {(item.status === 'CONFIRMED' || item.status === 'PENDING') && (
+              <TouchableOpacity 
+                style={styles.viewButton}
                 onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
-                textColor="#006B3F"
               >
-                View Details
-              </Button>
-            )}
-            {item.status === 'PENDING' && (
-              <Button
-                mode="text"
-                compact
-                onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
-                textColor="#FFA500"
-              >
-                Confirm
-              </Button>
+                <Text style={styles.viewButtonText}>View Details</Text>
+                <Ionicons name="chevron-forward" size={16} color={COLORS.primaryGreen} />
+              </TouchableOpacity>
             )}
             {item.status === 'COMPLETED' && (
-              <Button
-                mode="text"
-                compact
+              <TouchableOpacity 
+                style={styles.rateButton}
                 onPress={() => navigation.navigate('RateBooking', { bookingId: item.id })}
-                textColor="#006B3F"
               >
-                Rate
-              </Button>
+                <Ionicons name="star" size={14} color={COLORS.accentGold} />
+                <Text style={styles.rateButtonText}>Rate</Text>
+              </TouchableOpacity>
             )}
           </View>
         </Card.Content>
@@ -214,7 +215,7 @@ export default function BookingsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#CE1126" />
+          <Ionicons name="alert-circle-outline" size={64} color={COLORS.accentRed} />
           <Text variant="titleMedium" style={styles.errorTitle}>Failed to load bookings</Text>
           <Button mode="contained" onPress={() => refetch()} style={styles.retryButton}>
             Retry
@@ -265,7 +266,7 @@ export default function BookingsScreen() {
       {/* Booking List */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#006B3F" />
+          <ActivityIndicator size="large" color={COLORS.primaryGreen} />
         </View>
       ) : (
         <FlatList
@@ -275,7 +276,7 @@ export default function BookingsScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmptyState}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#006B3F']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primaryGreen]} />
           }
           showsVerticalScrollIndicator={false}
         />
@@ -287,22 +288,22 @@ export default function BookingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   header: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
   },
   headerTitle: {
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: COLORS.textPrimary,
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: COLORS.border,
   },
   tab: {
     paddingVertical: 12,
@@ -314,17 +315,17 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#006B3F',
+    borderBottomColor: COLORS.primaryGreen,
   },
   tabText: {
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   activeTabText: {
-    color: '#006B3F',
+    color: COLORS.primaryGreen,
     fontWeight: '600',
   },
   tabBadge: {
-    backgroundColor: '#006B3F',
+    backgroundColor: COLORS.primaryGreen,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -345,9 +346,14 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   bookingCard: {
-    marginBottom: 12,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cardContent: {
     padding: 16,
@@ -363,52 +369,89 @@ const styles = StyleSheet.create({
   },
   salonName: {
     fontWeight: '600',
-    color: '#006B3F',
+    color: COLORS.textPrimary,
   },
   dateTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
+    gap: 4,
   },
   dateTimeText: {
-    color: '#666',
-    marginLeft: 4,
+    color: COLORS.textSecondary,
   },
-  statusChip: {
-    height: 28,
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   divider: {
     marginVertical: 12,
+    backgroundColor: COLORS.border,
   },
   servicesRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
-  },
-  servicesLabel: {
-    color: '#888',
+    gap: 6,
   },
   servicesText: {
     flex: 1,
-    color: '#444',
+    color: COLORS.textSecondary,
   },
   workerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
+    gap: 6,
   },
   workerText: {
-    color: '#666',
-    marginLeft: 4,
+    color: COLORS.textSecondary,
   },
-  footer: {
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 16,
   },
   totalAmount: {
+    fontWeight: '700',
+    color: COLORS.primaryGreen,
+    fontSize: 18,
+  },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewButtonText: {
+    color: COLORS.primaryGreen,
     fontWeight: '600',
-    color: '#006B3F',
+  },
+  rateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.accentGold}15`,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  rateButtonText: {
+    color: COLORS.accentGold,
+    fontWeight: '600',
   },
   emptyState: {
     flex: 1,
@@ -418,18 +461,19 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     marginTop: 16,
-    color: '#666',
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
   emptySubtitle: {
     marginTop: 8,
-    color: '#999',
+    color: COLORS.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 32,
   },
   bookNowButton: {
     marginTop: 24,
-    backgroundColor: '#006B3F',
-    borderRadius: 8,
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 12,
   },
   errorContainer: {
     flex: 1,
@@ -439,10 +483,11 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     marginTop: 16,
-    color: '#CE1126',
+    color: COLORS.accentRed,
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#006B3F',
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 12,
   },
 });

@@ -439,3 +439,130 @@ export async function verifyEmailOTPAndLogin(email: string, code: string): Promi
     isNewUser: false,
   };
 }
+
+export interface CompleteRegistrationData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  city?: string;
+  region?: string;
+  role?: UserRole;
+}
+
+export interface CompleteRegistrationResponse {
+  user: {
+    id: string;
+    phoneNumber: string | null;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    role: UserRole;
+    isVerified: boolean;
+  };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
+  isNewUser: boolean;
+}
+
+/**
+ * Complete registration for a new user after email OTP verification
+ * This creates the user record and returns valid tokens
+ */
+export async function completeRegistration(data: CompleteRegistrationData): Promise<CompleteRegistrationResponse> {
+  const { email, firstName, lastName, phoneNumber, latitude, longitude, address, city, region, role = UserRole.CUSTOMER } = data;
+
+  // Check if user already exists with this email
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    // User already registered, just return their tokens
+    const accessToken = generateToken({
+      userId: existingUser.id,
+      phoneNumber: existingUser.phoneNumber,
+      role: existingUser.role,
+    });
+
+    const refreshToken = await generateRefreshToken({
+      userId: existingUser.id,
+      phoneNumber: existingUser.phoneNumber,
+      role: existingUser.role,
+    });
+
+    logger.info(`Existing user completed registration flow: ${existingUser.id}`);
+
+    return {
+      user: {
+        id: existingUser.id,
+        phoneNumber: existingUser.phoneNumber,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        email: existingUser.email,
+        role: existingUser.role,
+        isVerified: existingUser.isVerified,
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+      },
+      isNewUser: false,
+    };
+  }
+
+  // Create new user
+  const user = await prisma.user.create({
+    data: {
+      email,
+      firstName,
+      lastName,
+      phoneNumber: phoneNumber || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      address: address || null,
+      city: city || null,
+      region: region || null,
+      role,
+      isVerified: true,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  // Generate tokens
+  const accessToken = generateToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  const refreshToken = await generateRefreshToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  logger.info(`New user completed registration: ${user.id}`);
+
+  return {
+    user: {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    },
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+    isNewUser: true,
+  };
+}

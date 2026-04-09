@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, Switch, FAB, IconButton, ActivityIndicator, Surface } from 'react-native-paper';
+import { Card, Switch, FAB, IconButton, ActivityIndicator, Surface, Chip } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { servicesApi, Service } from '../../api/services';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
@@ -107,7 +108,7 @@ export default function ServicesScreen() {
   };
 
   const formatPrice = (price: number) => {
-    return `GHS ${price.toFixed(2)}`;
+    return `GH₵${price.toFixed(2)}`;
   };
 
   const formatDuration = (minutes: number) => {
@@ -118,55 +119,76 @@ export default function ServicesScreen() {
   };
 
   const renderServiceItem = ({ item }: { item: Service }) => (
-    <TouchableOpacity onPress={() => handleEditService(item)} onLongPress={() => handleDeleteService(item)}>
-      <Card style={[styles.serviceCard, !item.isActive && styles.inactiveCard]}>
-        <Card.Content>
-          <View style={styles.serviceHeader}>
-            <View style={styles.serviceInfo}>
-              <Text style={styles.serviceName}>{item.name}</Text>
-              <Text style={styles.serviceCategory}>
-                {SERVICE_CATEGORIES[item.category] || item.category}
-              </Text>
-            </View>
-            <View style={styles.serviceActions}>
-              <Switch
-                value={item.isActive}
-                onValueChange={() => handleToggleStatus(item)}
-                color="#006B3F"
-              />
-              <IconButton
-                icon="delete-outline"
-                size={20}
-                iconColor="#D32F2F"
-                onPress={() => handleDeleteService(item)}
-              />
-            </View>
+    <TouchableOpacity onPress={() => handleEditService(item)} activeOpacity={0.7}>
+      <Surface style={[styles.serviceCard, !item.isActive && styles.inactiveCard]} elevation={0}>
+        <View style={styles.cardHeader}>
+          <View style={styles.serviceInfo}>
+            <Text style={styles.serviceName}>{item.name}</Text>
+            <Chip style={styles.categoryChip} textStyle={styles.categoryChipText} compact>
+              {SERVICE_CATEGORIES[item.category] || item.category}
+            </Chip>
           </View>
-          <View style={styles.serviceDetails}>
-            <View style={styles.detailItem}>
+          <Switch
+            value={item.isActive}
+            onValueChange={() => handleToggleStatus(item)}
+            color="#006B3F"
+          />
+        </View>
+        
+        <View style={styles.cardDivider} />
+        
+        <View style={styles.cardDetails}>
+          <View style={styles.detailColumn}>
+            <View style={styles.detailRow}>
+              <Ionicons name="cash-outline" size={16} color="#6B7280" />
               <Text style={styles.detailLabel}>Price</Text>
-              <Text style={styles.detailValue}>{formatPrice(item.price)}</Text>
             </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Duration</Text>
-              <Text style={styles.detailValue}>{formatDuration(item.duration)}</Text>
-            </View>
+            <Text style={styles.priceValue}>{formatPrice(item.price)}</Text>
           </View>
-          {item.description && (
-            <Text style={styles.serviceDescription} numberOfLines={2}>
-              {item.description}
-            </Text>
-          )}
-        </Card.Content>
-      </Card>
+          <View style={styles.detailDivider} />
+          <View style={styles.detailColumn}>
+            <View style={styles.detailRow}>
+              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <Text style={styles.detailLabel}>Duration</Text>
+            </View>
+            <Text style={styles.durationValue}>{formatDuration(item.duration)}</Text>
+          </View>
+        </View>
+
+        {item.description && (
+          <Text style={styles.serviceDescription} numberOfLines={2}>
+            {item.description}
+          </Text>
+        )}
+
+        <View style={styles.cardActions}>
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={() => handleDeleteService(item)}
+          >
+            <Ionicons name="trash-outline" size={18} color="#CE1126" />
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.editHint}>
+            <Text style={styles.editHintText}>Tap to edit</Text>
+            <Ionicons name="chevron-forward" size={16} color="#006B3F" />
+          </TouchableOpacity>
+        </View>
+      </Surface>
     </TouchableOpacity>
   );
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <IconButton icon="scissors" size={64} iconColor="#BDBDBD" />
-      <Text style={styles.emptyStateText}>No services yet.</Text>
-      <Text style={styles.emptyStateSubtext}>Add your first service!</Text>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="scissors" size={48} color="#9CA3AF" />
+      </View>
+      <Text style={styles.emptyStateTitle}>No services yet</Text>
+      <Text style={styles.emptyStateSubtext}>Add your first service to start accepting bookings</Text>
+      <TouchableOpacity style={styles.emptyButton} onPress={handleAddService}>
+        <Ionicons name="add" size={20} color="#FFFFFF" />
+        <Text style={styles.emptyButtonText}>Add Service</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -184,10 +206,13 @@ export default function ServicesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <IconButton icon="alert-circle-outline" size={64} iconColor="#D32F2F" />
+          <View style={styles.errorIcon}>
+            <Ionicons name="alert-circle" size={48} color="#CE1126" />
+          </View>
           <Text style={styles.errorText}>Failed to load services</Text>
           <Text style={styles.errorSubtext}>{(error as Error)?.message}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <Ionicons name="refresh" size={18} color="#FFFFFF" />
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -197,11 +222,19 @@ export default function ServicesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Surface style={styles.header}>
-        <Text style={styles.headerTitle}>Services</Text>
-        <Text style={styles.headerSubtitle}>
-          {services.length} service{services.length !== 1 ? 's' : ''}
-        </Text>
+      {/* Header */}
+      <Surface style={styles.header} elevation={0}>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.headerTitle}>Services</Text>
+            <Text style={styles.headerSubtitle}>
+              {services.length} service{services.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddService}>
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </Surface>
 
       <FlatList
@@ -226,6 +259,7 @@ export default function ServicesScreen() {
         style={styles.fab}
         color="#FFFFFF"
         onPress={handleAddService}
+        theme={{ roundness: 16 }}
       />
     </SafeAreaView>
   );
@@ -234,7 +268,7 @@ export default function ServicesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F9FAFB',
   },
   loadingContainer: {
     flex: 1,
@@ -247,24 +281,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  errorIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   errorText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#D32F2F',
-    marginTop: 16,
+    color: '#111827',
+    marginTop: 8,
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#757575',
+    color: '#6B7280',
     marginTop: 8,
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: '#006B3F',
-    borderRadius: 8,
+    borderRadius: 10,
   },
   retryButtonText: {
     color: '#FFFFFF',
@@ -272,20 +318,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#212121',
+    color: '#111827',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#757575',
-    marginTop: 4,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#006B3F',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContent: {
     padding: 16,
@@ -293,80 +353,160 @@ const styles = StyleSheet.create({
   },
   serviceCard: {
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    elevation: 2,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inactiveCard: {
-    opacity: 0.7,
+    opacity: 0.6,
     backgroundColor: '#FAFAFA',
   },
-  serviceHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   serviceInfo: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
   },
   serviceName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
+    color: '#111827',
+    marginBottom: 6,
   },
-  serviceCategory: {
-    fontSize: 14,
+  categoryChip: {
+    backgroundColor: '#E8F5E9',
+    height: 26,
+    alignSelf: 'flex-start',
+  },
+  categoryChipText: {
+    fontSize: 11,
     color: '#006B3F',
-    marginTop: 2,
+    fontWeight: '500',
   },
-  serviceActions: {
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 14,
+  },
+  cardDetails: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  serviceDetails: {
-    flexDirection: 'row',
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    paddingTop: 12,
-  },
-  detailItem: {
+  detailColumn: {
     flex: 1,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
   },
   detailLabel: {
     fontSize: 12,
-    color: '#9E9E9E',
-    textTransform: 'uppercase',
+    color: '#9CA3AF',
   },
-  detailValue: {
+  detailDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: 16,
+  },
+  priceValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#006B3F',
+  },
+  durationValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
-    marginTop: 2,
+    color: '#111827',
   },
   serviceDescription: {
-    fontSize: 14,
-    color: '#757575',
-    marginTop: 8,
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 12,
     lineHeight: 20,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+  },
+  deleteButtonText: {
+    fontSize: 13,
+    color: '#CE1126',
+    fontWeight: '500',
+  },
+  editHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editHintText: {
+    fontSize: 13,
+    color: '#006B3F',
+    fontWeight: '500',
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 80,
   },
-  emptyStateText: {
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#757575',
-    marginTop: 16,
+    color: '#111827',
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#9E9E9E',
+    color: '#6B7280',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#006B3F',
+    borderRadius: 10,
+  },
+  emptyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
@@ -374,6 +514,5 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#006B3F',
-    borderRadius: 30,
   },
 });

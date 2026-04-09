@@ -23,26 +23,27 @@ import {
   Switch,
   Card,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { salonApi, CreateSalonData } from '../../api/salon';
 import { OpeningHours } from '../../types';
 
 const BUSINESS_CATEGORIES = [
-  { label: 'Barbershop', value: 'BARBERSHOP' },
-  { label: 'Hair Salon', value: 'HAIR_SALON' },
-  { label: 'Nail Salon', value: 'NAIL_SALON' },
-  { label: 'Pedicure Salon', value: 'PEDICURE_SALON' },
-  { label: 'Spa', value: 'SPA' },
-  { label: 'Beauty Salon', value: 'BEAUTY_SALON' },
+  { label: 'Barbershop', value: 'BARBERSHOP', icon: 'cut' },
+  { label: 'Hair Salon', value: 'HAIR_SALON', icon: 'scissors' },
+  { label: 'Nail Salon', value: 'NAIL_SALON', icon: 'hand-left' },
+  { label: 'Pedicure Salon', value: 'PEDICURE_SALON', icon: 'footsteps' },
+  { label: 'Spa', value: 'SPA', icon: 'leaf' },
+  { label: 'Beauty Salon', value: 'BEAUTY_SALON', icon: 'sparkles' },
 ];
 
 const DAYS_OF_WEEK = [
-  { key: 'monday', label: 'Monday' },
-  { key: 'tuesday', label: 'Tuesday' },
-  { key: 'wednesday', label: 'Wednesday' },
-  { key: 'thursday', label: 'Thursday' },
-  { key: 'friday', label: 'Friday' },
-  { key: 'saturday', label: 'Saturday' },
-  { key: 'sunday', label: 'Sunday' },
+  { key: 'monday', label: 'Mon', fullLabel: 'Monday' },
+  { key: 'tuesday', label: 'Tue', fullLabel: 'Tuesday' },
+  { key: 'wednesday', label: 'Wed', fullLabel: 'Wednesday' },
+  { key: 'thursday', label: 'Thu', fullLabel: 'Thursday' },
+  { key: 'friday', label: 'Fri', fullLabel: 'Friday' },
+  { key: 'saturday', label: 'Sat', fullLabel: 'Saturday' },
+  { key: 'sunday', label: 'Sun', fullLabel: 'Sunday' },
 ] as const;
 
 const TIME_OPTIONS = (() => {
@@ -110,7 +111,6 @@ export default function EditSalonScreen() {
   const [openingHours, setOpeningHours] = useState<HoursState>(defaultHours);
 
   // Menu visibility
-  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [openTimeMenus, setOpenTimeMenus] = useState<{ [key: string]: boolean }>({});
   const [closeTimeMenus, setCloseTimeMenus] = useState<{ [key: string]: boolean }>({});
 
@@ -132,7 +132,6 @@ export default function EditSalonScreen() {
       setPhone(salon.phone || '');
       setEmail(salon.email || '');
       setDescription(salon.description || '');
-      // Category might not be set on existing salons
       setCategory('BARBERSHOP');
 
       if (salon.openingHours) {
@@ -249,12 +248,14 @@ export default function EditSalonScreen() {
   if (!salon) {
     return (
       <View style={styles.loadingContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
         <Text style={styles.errorText}>No salon found</Text>
         <Button
           mode="contained"
           onPress={() => navigation.goBack()}
           style={styles.backButton}
           buttonColor="#006B3F"
+          theme={{ roundness: 12 }}
         >
           Go Back
         </Button>
@@ -274,66 +275,69 @@ export default function EditSalonScreen() {
         >
           {/* Salon Photo Section */}
           <View style={styles.photoSection}>
-            <Surface style={styles.photoPlaceholder} elevation={2}>
+            <View style={styles.photoPlaceholder}>
               <Text style={styles.photoPlaceholderText}>
                 {businessName ? businessName[0].toUpperCase() : 'S'}
               </Text>
-            </Surface>
-            <Text style={styles.photoHint}>
-              Salon photo can be updated in the full settings
-            </Text>
+            </View>
+            <TouchableOpacity style={styles.photoButton}>
+              <Ionicons name="camera-outline" size={18} color="#006B3F" />
+              <Text style={styles.photoButtonText}>Change Photo</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Basic Information */}
-          <Card style={styles.card}>
-            <Card.Title title="Basic Information" titleStyle={styles.cardTitle} />
-            <Card.Content>
-              {/* Salon Name */}
-              <View style={styles.inputGroup}>
-                <TextInput
-                  label="Salon Name *"
-                  value={businessName}
-                  onChangeText={(text) => {
-                    setBusinessName(text);
-                    setTouched({ ...touched, businessName: true });
-                  }}
-                  onBlur={() => setTouched({ ...touched, businessName: true })}
-                  error={touched.businessName && !!errors.businessName}
-                  mode="outlined"
-                  outlineColor="#E0E0E0"
-                  activeOutlineColor="#006B3F"
-                  style={styles.input}
-                  placeholder="Enter salon name"
-                />
-                {touched.businessName && errors.businessName && (
-                  <HelperText type="error">{errors.businessName}</HelperText>
-                )}
-              </View>
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="information-circle" size={20} color="#006B3F" />
+              <Text style={styles.sectionTitle}>Basic Information</Text>
+            </View>
+            <Divider style={styles.sectionDivider} />
 
-              {/* Address */}
-              <View style={styles.inputGroup}>
-                <TextInput
-                  label="Address *"
-                  value={address}
-                  onChangeText={(text) => {
-                    setAddress(text);
-                    setTouched({ ...touched, address: true });
-                  }}
-                  onBlur={() => setTouched({ ...touched, address: true })}
-                  error={touched.address && !!errors.address}
-                  mode="outlined"
-                  outlineColor="#E0E0E0"
-                  activeOutlineColor="#006B3F"
-                  style={styles.input}
-                  placeholder="Street address"
-                />
-                {touched.address && errors.address && (
-                  <HelperText type="error">{errors.address}</HelperText>
-                )}
-              </View>
+            <TextInput
+              label="Salon Name *"
+              value={businessName}
+              onChangeText={(text) => {
+                setBusinessName(text);
+                setTouched({ ...touched, businessName: true });
+              }}
+              onBlur={() => setTouched({ ...touched, businessName: true })}
+              error={touched.businessName && !!errors.businessName}
+              mode="outlined"
+              outlineColor="#E5E7EB"
+              activeOutlineColor="#006B3F"
+              style={styles.input}
+              placeholder="Enter salon name"
+              left={<TextInput.Icon icon="storefront" color="#6B7280" />}
+              theme={{ roundness: 10 }}
+            />
+            {touched.businessName && errors.businessName && (
+              <HelperText type="error">{errors.businessName}</HelperText>
+            )}
 
-              {/* City */}
-              <View style={styles.inputGroup}>
+            <TextInput
+              label="Address *"
+              value={address}
+              onChangeText={(text) => {
+                setAddress(text);
+                setTouched({ ...touched, address: true });
+              }}
+              onBlur={() => setTouched({ ...touched, address: true })}
+              error={touched.address && !!errors.address}
+              mode="outlined"
+              outlineColor="#E5E7EB"
+              activeOutlineColor="#006B3F"
+              style={styles.input}
+              placeholder="Street address"
+              left={<TextInput.Icon icon="map-marker-outline" color="#6B7280" />}
+              theme={{ roundness: 10 }}
+            />
+            {touched.address && errors.address && (
+              <HelperText type="error">{errors.address}</HelperText>
+            )}
+
+            <View style={styles.row}>
+              <View style={styles.halfInput}>
                 <TextInput
                   label="City *"
                   value={city}
@@ -344,20 +348,19 @@ export default function EditSalonScreen() {
                   onBlur={() => setTouched({ ...touched, city: true })}
                   error={touched.city && !!errors.city}
                   mode="outlined"
-                  outlineColor="#E0E0E0"
+                  outlineColor="#E5E7EB"
                   activeOutlineColor="#006B3F"
                   style={styles.input}
                   placeholder="City"
+                  theme={{ roundness: 10 }}
                 />
                 {touched.city && errors.city && (
                   <HelperText type="error">{errors.city}</HelperText>
                 )}
               </View>
-
-              {/* Phone */}
-              <View style={styles.inputGroup}>
+              <View style={styles.halfInput}>
                 <TextInput
-                  label="Phone Number *"
+                  label="Phone *"
                   value={phone}
                   onChangeText={(text) => {
                     setPhone(text);
@@ -366,182 +369,181 @@ export default function EditSalonScreen() {
                   onBlur={() => setTouched({ ...touched, phone: true })}
                   error={touched.phone && !!errors.phone}
                   mode="outlined"
-                  outlineColor="#E0E0E0"
+                  outlineColor="#E5E7EB"
                   activeOutlineColor="#006B3F"
                   style={styles.input}
                   keyboardType="phone-pad"
                   placeholder="+233 XX XXX XXXX"
+                  left={<TextInput.Icon icon="phone-outline" color="#6B7280" />}
+                  theme={{ roundness: 10 }}
                 />
                 {touched.phone && errors.phone && (
                   <HelperText type="error">{errors.phone}</HelperText>
                 )}
               </View>
+            </View>
 
-              {/* Email */}
-              <View style={styles.inputGroup}>
-                <TextInput
-                  label="Email (Optional)"
-                  value={email}
-                  onChangeText={setEmail}
-                  mode="outlined"
-                  outlineColor="#E0E0E0"
-                  activeOutlineColor="#006B3F"
-                  style={styles.input}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="salon@example.com"
-                />
-              </View>
+            <TextInput
+              label="Email (Optional)"
+              value={email}
+              onChangeText={setEmail}
+              mode="outlined"
+              outlineColor="#E5E7EB"
+              activeOutlineColor="#006B3F"
+              style={styles.input}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="salon@example.com"
+              left={<TextInput.Icon icon="email-outline" color="#6B7280" />}
+              theme={{ roundness: 10 }}
+            />
 
-              {/* Description */}
-              <View style={styles.inputGroup}>
-                <TextInput
-                  label="Description (Optional)"
-                  value={description}
-                  onChangeText={setDescription}
-                  mode="outlined"
-                  outlineColor="#E0E0E0"
-                  activeOutlineColor="#006B3F"
-                  style={[styles.input, styles.textArea]}
-                  multiline
-                  numberOfLines={4}
-                  placeholder="Describe your salon..."
-                />
-              </View>
+            <TextInput
+              label="Description (Optional)"
+              value={description}
+              onChangeText={setDescription}
+              mode="outlined"
+              outlineColor="#E5E7EB"
+              activeOutlineColor="#006B3F"
+              style={[styles.input, styles.textArea]}
+              multiline
+              numberOfLines={4}
+              placeholder="Describe your salon..."
+              theme={{ roundness: 10 }}
+            />
+          </Surface>
 
-              {/* Category Dropdown */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Business Category *</Text>
-                <Menu
-                  visible={categoryMenuVisible}
-                  onDismiss={() => setCategoryMenuVisible(false)}
-                  anchor={
-                    <TouchableOpacity
-                      style={styles.menuAnchor}
-                      onPress={() => setCategoryMenuVisible(true)}
-                    >
-                      <Text style={styles.menuAnchorText}>
-                        {BUSINESS_CATEGORIES.find((c) => c.value === category)?.label || 'Select category'}
-                      </Text>
-                    </TouchableOpacity>
-                  }
-                >
-                  {BUSINESS_CATEGORIES.map((option) => (
-                    <Menu.Item
-                      key={option.value}
-                      onPress={() => {
-                        setCategory(option.value);
-                        setCategoryMenuVisible(false);
-                      }}
-                      title={option.label}
-                    />
-                  ))}
-                </Menu>
-              </View>
-            </Card.Content>
-          </Card>
-
-          {/* Business Hours */}
-          <Card style={styles.card}>
-            <Card.Title title="Business Hours" titleStyle={styles.cardTitle} />
-            <Card.Content>
-              <Text style={styles.hoursHint}>
-                Toggle each day to set open or closed. Select opening and closing times.
-              </Text>
-              
-              {DAYS_OF_WEEK.map(({ key, label }) => (
-                <View key={key} style={styles.dayRow}>
-                  <View style={styles.dayHeader}>
-                    <Switch
-                      value={openingHours[key].isOpen}
-                      onValueChange={() => toggleDayOpen(key)}
-                      color="#006B3F"
+          {/* Category Section */}
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="pricetag" size={20} color="#006B3F" />
+              <Text style={styles.sectionTitle}>Business Category</Text>
+            </View>
+            <Divider style={styles.sectionDivider} />
+            <View style={styles.categoryGrid}>
+              {BUSINESS_CATEGORIES.map((cat) => {
+                const isSelected = category === cat.value;
+                return (
+                  <TouchableOpacity
+                    key={cat.value}
+                    style={[
+                      styles.categoryChip,
+                      isSelected && styles.categoryChipSelected,
+                    ]}
+                    onPress={() => setCategory(cat.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={cat.icon as any}
+                      size={18}
+                      color={isSelected ? '#FFFFFF' : '#6B7280'}
                     />
                     <Text style={[
-                      styles.dayLabel,
-                      !openingHours[key].isOpen && styles.dayLabelClosed
+                      styles.categoryChipText,
+                      isSelected && styles.categoryChipTextSelected,
                     ]}>
-                      {label}
+                      {cat.label}
                     </Text>
-                  </View>
-                  
-                  {openingHours[key].isOpen && (
-                    <View style={styles.timeRow}>
-                      {/* Open Time Menu */}
-                      <Menu
-                        visible={openTimeMenus[key] || false}
-                        onDismiss={() => setOpenTimeMenus({ ...openTimeMenus, [key]: false })}
-                        anchor={
-                          <TouchableOpacity
-                            style={styles.timeButton}
-                            onPress={() => setOpenTimeMenus({ ...openTimeMenus, [key]: true })}
-                          >
-                            <Text style={styles.timeButtonLabel}>Open</Text>
-                            <Text style={styles.timeButtonValue}>
-                              {formatTimeDisplay(openingHours[key].open)}
-                            </Text>
-                          </TouchableOpacity>
-                        }
-                        contentStyle={styles.timeMenuContent}
-                      >
-                        <ScrollView style={styles.timeMenuScroll}>
-                          {TIME_OPTIONS.map((time) => (
-                            <Menu.Item
-                              key={time.value}
-                              onPress={() => {
-                                updateTime(key, 'open', time.value);
-                                setOpenTimeMenus({ ...openTimeMenus, [key]: false });
-                              }}
-                              title={time.label}
-                            />
-                          ))}
-                        </ScrollView>
-                      </Menu>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Surface>
 
-                      <Text style={styles.timeSeparator}>—</Text>
-
-                      {/* Close Time Menu */}
-                      <Menu
-                        visible={closeTimeMenus[key] || false}
-                        onDismiss={() => setCloseTimeMenus({ ...closeTimeMenus, [key]: false })}
-                        anchor={
-                          <TouchableOpacity
-                            style={styles.timeButton}
-                            onPress={() => setCloseTimeMenus({ ...closeTimeMenus, [key]: true })}
-                          >
-                            <Text style={styles.timeButtonLabel}>Close</Text>
-                            <Text style={styles.timeButtonValue}>
-                              {formatTimeDisplay(openingHours[key].close)}
-                            </Text>
-                          </TouchableOpacity>
-                        }
-                        contentStyle={styles.timeMenuContent}
-                      >
-                        <ScrollView style={styles.timeMenuScroll}>
-                          {TIME_OPTIONS.map((time) => (
-                            <Menu.Item
-                              key={time.value}
-                              onPress={() => {
-                                updateTime(key, 'close', time.value);
-                                setCloseTimeMenus({ ...closeTimeMenus, [key]: false });
-                              }}
-                              title={time.label}
-                            />
-                          ))}
-                        </ScrollView>
-                      </Menu>
-                    </View>
-                  )}
-                  
-                  {!openingHours[key].isOpen && (
-                    <Text style={styles.closedText}>Closed</Text>
-                  )}
-                  
-                  <Divider style={styles.dayDivider} />
+          {/* Business Hours */}
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="time" size={20} color="#006B3F" />
+              <Text style={styles.sectionTitle}>Business Hours</Text>
+            </View>
+            <Divider style={styles.sectionDivider} />
+            
+            {DAYS_OF_WEEK.map(({ key, label, fullLabel }) => (
+              <View key={key} style={styles.dayRow}>
+                <View style={styles.dayHeader}>
+                  <Switch
+                    value={openingHours[key].isOpen}
+                    onValueChange={() => toggleDayOpen(key)}
+                    color="#006B3F"
+                  />
+                  <Text style={[
+                    styles.dayLabel,
+                    !openingHours[key].isOpen && styles.dayLabelClosed
+                  ]}>
+                    {fullLabel}
+                  </Text>
                 </View>
-              ))}
-            </Card.Content>
-          </Card>
+                
+                {openingHours[key].isOpen ? (
+                  <View style={styles.timeRow}>
+                    <Menu
+                      visible={openTimeMenus[key] || false}
+                      onDismiss={() => setOpenTimeMenus({ ...openTimeMenus, [key]: false })}
+                      anchor={
+                        <TouchableOpacity
+                          style={styles.timeButton}
+                          onPress={() => setOpenTimeMenus({ ...openTimeMenus, [key]: true })}
+                        >
+                          <Text style={styles.timeButtonLabel}>Open</Text>
+                          <Text style={styles.timeButtonValue}>
+                            {formatTimeDisplay(openingHours[key].open)}
+                          </Text>
+                        </TouchableOpacity>
+                      }
+                      contentStyle={styles.timeMenuContent}
+                    >
+                      <ScrollView style={styles.timeMenuScroll}>
+                        {TIME_OPTIONS.map((time) => (
+                          <Menu.Item
+                            key={time.value}
+                            onPress={() => {
+                              updateTime(key, 'open', time.value);
+                              setOpenTimeMenus({ ...openTimeMenus, [key]: false });
+                            }}
+                            title={time.label}
+                          />
+                        ))}
+                      </ScrollView>
+                    </Menu>
+
+                    <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
+
+                    <Menu
+                      visible={closeTimeMenus[key] || false}
+                      onDismiss={() => setCloseTimeMenus({ ...closeTimeMenus, [key]: false })}
+                      anchor={
+                        <TouchableOpacity
+                          style={styles.timeButton}
+                          onPress={() => setCloseTimeMenus({ ...closeTimeMenus, [key]: true })}
+                        >
+                          <Text style={styles.timeButtonLabel}>Close</Text>
+                          <Text style={styles.timeButtonValue}>
+                            {formatTimeDisplay(openingHours[key].close)}
+                          </Text>
+                        </TouchableOpacity>
+                      }
+                      contentStyle={styles.timeMenuContent}
+                    >
+                      <ScrollView style={styles.timeMenuScroll}>
+                        {TIME_OPTIONS.map((time) => (
+                          <Menu.Item
+                            key={time.value}
+                            onPress={() => {
+                              updateTime(key, 'close', time.value);
+                              setCloseTimeMenus({ ...closeTimeMenus, [key]: false });
+                            }}
+                            title={time.label}
+                          />
+                        ))}
+                      </ScrollView>
+                    </Menu>
+                  </View>
+                ) : (
+                  <Text style={styles.closedText}>Closed</Text>
+                )}
+              </View>
+            ))}
+          </Surface>
 
           {/* Save Button */}
           <View style={styles.buttonContainer}>
@@ -552,6 +554,8 @@ export default function EditSalonScreen() {
               disabled={updateMutation.isPending}
               style={styles.saveButton}
               buttonColor="#006B3F"
+              theme={{ roundness: 12 }}
+              contentStyle={styles.buttonContent}
             >
               Save Changes
             </Button>
@@ -577,9 +581,10 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 16,
     marginBottom: 16,
+    marginTop: 12,
   },
   backButton: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
   keyboardView: {
     flex: 1,
@@ -599,67 +604,100 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#006B3F',
+    marginBottom: 12,
   },
   photoPlaceholderText: {
     fontSize: 40,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  photoHint: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 8,
+  photoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E9',
   },
-  card: {
-    marginBottom: 16,
-    borderRadius: 12,
+  photoButtonText: {
+    color: '#006B3F',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  section: {
     backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
   },
-  cardTitle: {
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  sectionTitle: {
     fontWeight: '600',
     color: '#111827',
+    fontSize: 16,
   },
-  inputGroup: {
-    marginTop: 12,
-  },
-  label: {
-    fontSize: 12,
-    color: '#757575',
-    marginBottom: 8,
+  sectionDivider: {
+    marginBottom: 16,
   },
   input: {
     backgroundColor: '#FFFFFF',
+    marginBottom: 12,
   },
   textArea: {
     minHeight: 100,
   },
-  menuAnchor: {
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfInput: {
+    flex: 1,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E7EB',
+    gap: 8,
   },
-  menuAnchorText: {
-    fontSize: 16,
-    color: '#212121',
+  categoryChipSelected: {
+    backgroundColor: '#006B3F',
+    borderColor: '#006B3F',
   },
-  hoursHint: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 16,
+  categoryChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  categoryChipTextSelected: {
+    color: '#FFFFFF',
   },
   dayRow: {
-    paddingVertical: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   dayLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: '#111827',
     marginLeft: 12,
@@ -670,18 +708,19 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
     paddingLeft: 52,
+    gap: 8,
   },
   timeButton: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    minWidth: 80,
+    minWidth: 85,
   },
   timeButtonLabel: {
     fontSize: 10,
@@ -692,18 +731,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#111827',
   },
-  timeSeparator: {
-    marginHorizontal: 12,
-    color: '#9CA3AF',
-  },
   closedText: {
     fontSize: 14,
     color: '#9CA3AF',
-    marginTop: 4,
+    marginTop: 8,
     paddingLeft: 52,
-  },
-  dayDivider: {
-    marginTop: 12,
   },
   timeMenuContent: {
     maxHeight: 300,
@@ -715,8 +747,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 24,
   },
-  saveButton: {
-    paddingVertical: 6,
-    borderRadius: 8,
+  saveButton: {},
+  buttonContent: {
+    paddingVertical: 8,
   },
 });

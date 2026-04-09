@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 import HomeScreen from '../screens/main/HomeScreen';
 import SearchScreen from '../screens/main/SearchScreen';
 import BookingsScreen from '../screens/main/BookingsScreen';
@@ -9,6 +10,17 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
 import BookingScreen from '../screens/main/BookingScreen';
 import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen';
+
+// Design System Colors
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+};
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -68,10 +80,17 @@ export default function MainNavigator() {
             iconName = focused ? 'person' : 'person-outline';
           }
           
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return (
+            <View style={styles.iconContainer}>
+              <Ionicons name={iconName} size={size} color={color} />
+              {focused && <View style={styles.activeIndicator} />}
+            </View>
+          );
         },
-        tabBarActiveTintColor: '#CE1126',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: COLORS.primaryGreen,
+        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
       })}
     >
@@ -82,3 +101,36 @@ export default function MainNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    height: 80,
+    paddingBottom: 20,
+    paddingTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  tabBarLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 32,
+  },
+  activeIndicator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.primaryGreen,
+    marginTop: 2,
+  },
+});

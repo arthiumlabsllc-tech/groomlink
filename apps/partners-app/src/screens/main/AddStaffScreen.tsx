@@ -15,13 +15,13 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   TextInput,
   Button,
-  Menu,
   Checkbox,
   ActivityIndicator,
   HelperText,
-  Divider,
   Surface,
+  Chip,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { staffApi, CreateStaffData, UpdateStaffData, StaffMember } from '../../api/staff';
 import { servicesApi, Service } from '../../api/services';
 import { salonApi } from '../../api/salon';
@@ -30,12 +30,12 @@ import { MainStackParamList } from '../../types/navigation';
 type AddStaffRouteProp = RouteProp<MainStackParamList, 'AddStaff'>;
 
 const ROLE_OPTIONS = [
-  { label: 'Stylist', value: 'Stylist' },
-  { label: 'Barber', value: 'Barber' },
-  { label: 'Nail Technician', value: 'Nail Technician' },
-  { label: 'Spa Therapist', value: 'Spa Therapist' },
-  { label: 'Manager', value: 'Manager' },
-  { label: 'Other', value: 'Other' },
+  { label: 'Stylist', value: 'Stylist', icon: 'scissors' },
+  { label: 'Barber', value: 'Barber', icon: 'cut' },
+  { label: 'Nail Technician', value: 'Nail Technician', icon: 'hand-left' },
+  { label: 'Spa Therapist', value: 'Spa Therapist', icon: 'leaf' },
+  { label: 'Manager', value: 'Manager', icon: 'briefcase' },
+  { label: 'Other', value: 'Other', icon: 'ellipsis-horizontal' },
 ];
 
 interface FormErrors {
@@ -77,9 +77,6 @@ export default function AddStaffScreen() {
   const [selectedServices, setSelectedServices] = useState<string[]>(
     existingStaff?.workerServices?.map((ws) => ws.service.id) || []
   );
-
-  // Menu visibility
-  const [roleMenuVisible, setRoleMenuVisible] = useState(false);
 
   // Form validation
   const [errors, setErrors] = useState<FormErrors>({});
@@ -238,8 +235,8 @@ export default function AddStaffScreen() {
         >
           {/* Full Name */}
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Full Name *</Text>
             <TextInput
-              label="Full Name *"
               value={fullName}
               onChangeText={(text) => {
                 setFullName(text);
@@ -248,10 +245,12 @@ export default function AddStaffScreen() {
               onBlur={() => setTouched({ ...touched, fullName: true })}
               error={touched.fullName && !!errors.fullName}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               style={styles.input}
               placeholder="Enter full name"
+              left={<TextInput.Icon icon="account-outline" color="#6B7280" />}
+              theme={{ roundness: 12 }}
             />
             {touched.fullName && errors.fullName && (
               <HelperText type="error">{errors.fullName}</HelperText>
@@ -260,8 +259,8 @@ export default function AddStaffScreen() {
 
           {/* Phone Number */}
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Phone Number *</Text>
             <TextInput
-              label="Phone Number *"
               value={phoneNumber}
               onChangeText={(text) => {
                 setPhoneNumber(text);
@@ -270,11 +269,13 @@ export default function AddStaffScreen() {
               onBlur={() => setTouched({ ...touched, phoneNumber: true })}
               error={touched.phoneNumber && !!errors.phoneNumber}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               style={styles.input}
               keyboardType="phone-pad"
               placeholder="+233 XX XXX XXXX"
+              left={<TextInput.Icon icon="phone-outline" color="#6B7280" />}
+              theme={{ roundness: 12 }}
             />
             {touched.phoneNumber && errors.phoneNumber && (
               <HelperText type="error">{errors.phoneNumber}</HelperText>
@@ -283,84 +284,98 @@ export default function AddStaffScreen() {
 
           {/* Email */}
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Email (Optional)</Text>
             <TextInput
-              label="Email (Optional)"
               value={email}
               onChangeText={setEmail}
               mode="outlined"
-              outlineColor="#E0E0E0"
+              outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               style={styles.input}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholder="email@example.com"
+              left={<TextInput.Icon icon="email-outline" color="#6B7280" />}
+              theme={{ roundness: 12 }}
             />
           </View>
 
-          {/* Role Dropdown */}
+          {/* Role */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Role/Title *</Text>
-            <Menu
-              visible={roleMenuVisible}
-              onDismiss={() => setRoleMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  style={styles.menuAnchor}
-                  onPress={() => setRoleMenuVisible(true)}
-                >
-                  <Text style={styles.menuAnchorText}>
-                    {ROLE_OPTIONS.find((o) => o.value === role)?.label || 'Select role'}
-                  </Text>
-                </TouchableOpacity>
-              }
-            >
-              {ROLE_OPTIONS.map((option) => (
-                <Menu.Item
-                  key={option.value}
-                  onPress={() => {
-                    setRole(option.value);
-                    setRoleMenuVisible(false);
-                  }}
-                  title={option.label}
-                />
-              ))}
-            </Menu>
-            {errors.role && (
-              <HelperText type="error">{errors.role}</HelperText>
-            )}
+            <Text style={styles.inputLabel}>Role / Title *</Text>
+            <View style={styles.roleGrid}>
+              {ROLE_OPTIONS.map((opt) => {
+                const isSelected = role === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.roleChip,
+                      isSelected && styles.roleChipSelected,
+                    ]}
+                    onPress={() => setRole(opt.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={opt.icon as any}
+                      size={18}
+                      color={isSelected ? '#FFFFFF' : '#6B7280'}
+                    />
+                    <Text style={[
+                      styles.roleChipText,
+                      isSelected && styles.roleChipTextSelected,
+                    ]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Services Multi-select */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Services They Can Perform</Text>
-            <Surface style={styles.servicesContainer}>
-              {availableServices.length === 0 ? (
+            <Text style={styles.inputLabel}>Services They Can Perform</Text>
+            {availableServices.length === 0 ? (
+              <Surface style={styles.emptyServices} elevation={0}>
+                <Ionicons name="scissors-outline" size={24} color="#9CA3AF" />
                 <Text style={styles.noServicesText}>
                   No services available. Add services first.
                 </Text>
-              ) : (
-                availableServices.map((service: Service) => (
-                  <TouchableOpacity
-                    key={service.id}
-                    style={styles.serviceItem}
-                    onPress={() => toggleServiceSelection(service.id)}
-                  >
-                    <View style={styles.serviceCheckbox}>
-                      <Checkbox
-                        status={selectedServices.includes(service.id) ? 'checked' : 'unchecked'}
-                        onPress={() => toggleServiceSelection(service.id)}
-                        color="#006B3F"
-                      />
+              </Surface>
+            ) : (
+              <Surface style={styles.servicesContainer} elevation={0}>
+                {availableServices.map((service: Service) => {
+                  const isSelected = selectedServices.includes(service.id);
+                  return (
+                    <TouchableOpacity
+                      key={service.id}
+                      style={[styles.serviceItem, isSelected && styles.serviceItemSelected]}
+                      onPress={() => toggleServiceSelection(service.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.serviceCheckbox}>
+                        {isSelected ? (
+                          <Ionicons name="checkmark-circle" size={24} color="#006B3F" />
+                        ) : (
+                          <View style={styles.checkboxEmpty} />
+                        )}
+                      </View>
                       <View style={styles.serviceInfo}>
                         <Text style={styles.serviceName}>{service.name}</Text>
-                        <Text style={styles.serviceCategory}>{service.category}</Text>
+                        <View style={styles.serviceMeta}>
+                          <Chip style={styles.serviceCategoryChip} textStyle={styles.serviceCategoryText} compact>
+                            {service.category}
+                          </Chip>
+                          <Text style={styles.servicePrice}>GH₵{service.price}</Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                ))
-              )}
-            </Surface>
-            <Text style={styles.hint}>
+                    </TouchableOpacity>
+                  );
+                })}
+              </Surface>
+            )}
+            <Text style={styles.selectionHint}>
               {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} selected
             </Text>
           </View>
@@ -374,6 +389,8 @@ export default function AddStaffScreen() {
               disabled={isLoading || !salonId}
               style={styles.saveButton}
               buttonColor="#006B3F"
+              theme={{ roundness: 12 }}
+              contentStyle={styles.buttonContent}
             >
               {isEditMode ? 'Update Staff Member' : 'Add Staff Member'}
             </Button>
@@ -385,7 +402,9 @@ export default function AddStaffScreen() {
                 loading={deleteMutation.isPending}
                 disabled={isLoading}
                 style={styles.deleteButton}
-                textColor="#D32F2F"
+                textColor="#CE1126"
+                theme={{ roundness: 12 }}
+                contentStyle={styles.buttonContent}
               >
                 Remove Staff Member
               </Button>
@@ -400,88 +419,134 @@ export default function AddStaffScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  label: {
-    fontSize: 12,
-    color: '#757575',
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 8,
   },
   input: {
     backgroundColor: '#FFFFFF',
   },
-  menuAnchor: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+  roleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  menuAnchorText: {
-    fontSize: 16,
-    color: '#212121',
-  },
-  servicesContainer: {
-    borderRadius: 8,
-    padding: 8,
-    backgroundColor: '#FAFAFA',
-  },
-  serviceItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  serviceCheckbox: {
+  roleChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 8,
   },
-  serviceInfo: {
-    marginLeft: 8,
-    flex: 1,
+  roleChipSelected: {
+    backgroundColor: '#006B3F',
+    borderColor: '#006B3F',
   },
-  serviceName: {
-    fontSize: 16,
-    color: '#212121',
+  roleChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
   },
-  serviceCategory: {
-    fontSize: 12,
-    color: '#757575',
-    marginTop: 2,
+  roleChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  emptyServices: {
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
   },
   noServicesText: {
     fontSize: 14,
-    color: '#9E9E9E',
+    color: '#6B7280',
+    marginTop: 8,
     textAlign: 'center',
-    padding: 16,
   },
-  hint: {
+  servicesContainer: {
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  serviceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  serviceItemSelected: {
+    backgroundColor: '#F0FDF4',
+  },
+  serviceCheckbox: {
+    marginRight: 12,
+  },
+  checkboxEmpty: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  serviceInfo: {
+    flex: 1,
+  },
+  serviceName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  serviceMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  serviceCategoryChip: {
+    backgroundColor: '#F3F4F6',
+    height: 22,
+  },
+  serviceCategoryText: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  servicePrice: {
+    fontSize: 13,
+    color: '#006B3F',
+    fontWeight: '600',
+  },
+  selectionHint: {
     fontSize: 12,
-    color: '#9E9E9E',
+    color: '#9CA3AF',
     marginTop: 8,
   },
   buttonContainer: {
-    marginTop: 24,
+    marginTop: 16,
     marginBottom: 32,
   },
   saveButton: {
-    paddingVertical: 6,
-    borderRadius: 8,
+    marginBottom: 12,
   },
   deleteButton: {
-    marginTop: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderColor: '#D32F2F',
+    borderColor: '#CE1126',
+  },
+  buttonContent: {
+    paddingVertical: 8,
   },
 });

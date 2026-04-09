@@ -1,12 +1,26 @@
 import React, { useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { Text, Card, Button, Searchbar, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
+import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { Salon } from '../../types';
 import apiClient from '../../api/client';
+import { useAuthStore } from '../../store/authStore';
+
+// Design System Colors
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  dark: '#1a1a2e',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+};
 
 type NavigationProp = any;
 
@@ -22,6 +36,7 @@ const fetchNearbySalons = async (): Promise<Salon[]> => {
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -43,30 +58,58 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [refetchFeatured, refetchNearby]);
 
-  const renderSalonCard = (salon: Salon) => (
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const getUserName = () => {
+    return user?.firstName || 'there';
+  };
+
+  const renderSalonCard = (salon: Salon, isHorizontal = true) => (
     <Card
       key={salon.id}
-      style={styles.salonCard}
+      style={[styles.salonCard, !isHorizontal && styles.salonCardVertical]}
       onPress={() => navigation.navigate('SalonDetail', { salonId: salon.id })}
     >
-      <Card.Cover source={{ uri: salon.images[0] || 'https://via.placeholder.com/300x150' }} />
-      <Card.Content style={styles.cardContent}>
-        <Text variant="titleMedium" numberOfLines={1}>{salon.businessName}</Text>
-        <Text variant="bodySmall" numberOfLines={1} style={styles.address}>{salon.address}</Text>
-        <View style={styles.ratingContainer}>
-          <Ionicons name="star" size={16} color="#FCD116" />
-          <Text variant="bodySmall">{salon.rating.toFixed(1)} ({salon.reviewCount})</Text>
-          {salon.distance && (
-            <Text variant="bodySmall" style={styles.distance}>• {salon.distance.toFixed(1)} km</Text>
-          )}
+      <View style={styles.cardImageContainer}>
+        {salon.images?.[0] ? (
+          <Image source={{ uri: salon.images[0] }} style={styles.cardImage} />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Ionicons name="storefront" size={40} color={COLORS.textSecondary} />
+          </View>
+        )}
+        <View style={styles.ratingBadge}>
+          <Ionicons name="star" size={12} color={COLORS.accentGold} />
+          <Text style={styles.ratingBadgeText}>{salon.rating.toFixed(1)}</Text>
         </View>
+      </View>
+      <Card.Content style={styles.cardContent}>
+        <Text variant="titleSmall" numberOfLines={1} style={styles.salonName}>
+          {salon.businessName}
+        </Text>
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
+          <Text variant="bodySmall" numberOfLines={1} style={styles.address}>
+            {salon.address}
+          </Text>
+        </View>
+        {salon.distance && (
+          <Text variant="bodySmall" style={styles.distance}>
+            {salon.distance.toFixed(1)} km away
+          </Text>
+        )}
       </Card.Content>
     </Card>
   );
 
   const renderError = () => (
     <View style={styles.errorContainer}>
-      <Ionicons name="alert-circle-outline" size={48} color="#CE1126" />
+      <Ionicons name="alert-circle-outline" size={48} color={COLORS.accentRed} />
       <Text variant="bodyMedium" style={styles.errorText}>Failed to load salons</Text>
       <TouchableOpacity onPress={() => { refetchFeatured(); refetchNearby(); }}>
         <Text style={styles.retryText}>Tap to retry</Text>
@@ -76,7 +119,7 @@ export default function HomeScreen() {
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#006B3F" />
+      <ActivityIndicator size="large" color={COLORS.primaryGreen} />
     </View>
   );
 
@@ -84,17 +127,38 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#006B3F']} tintColor="#006B3F" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primaryGreen]} tintColor={COLORS.primaryGreen} />
         }
+        showsVerticalScrollIndicator={false}
       >
+        {/* Header with greeting */}
         <View style={styles.header}>
-          <Text variant="headlineSmall" style={styles.greeting}>Find Your Style</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text variant="bodyMedium" style={styles.greetingLabel}>
+                {getGreeting()},
+              </Text>
+              <Text variant="headlineSmall" style={styles.greetingName}>
+                {getUserName()}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.avatarButton}>
+              <Avatar.Text
+                size={44}
+                label={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`}
+                style={styles.userAvatar}
+                labelStyle={styles.userAvatarLabel}
+              />
+            </TouchableOpacity>
+          </View>
+          
           <Searchbar
             placeholder="Search salons, services..."
             onChangeText={setSearchQuery}
             value={searchQuery}
             style={styles.searchBar}
-            iconColor="#006B3F"
+            inputStyle={styles.searchInput}
+            iconColor={COLORS.textSecondary}
             onSubmitEditing={() => navigation.navigate('Search', { query: searchQuery })}
           />
         </View>
@@ -103,7 +167,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>Featured Salons</Text>
-            <Button onPress={() => navigation.navigate('Search')} textColor="#006B3F">See All</Button>
+            <Button onPress={() => navigation.navigate('Search')} textColor={COLORS.primaryGreen}>See All</Button>
           </View>
           {featuredLoading ? (
             <View style={styles.horizontalLoading}>{renderLoading()}</View>
@@ -111,26 +175,28 @@ export default function HomeScreen() {
             <View style={styles.horizontalLoading}>{renderError()}</View>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {featuredSalons?.map(renderSalonCard)}
+              {featuredSalons?.map((salon) => renderSalonCard(salon, true))}
             </ScrollView>
           )}
         </View>
 
         {/* Nearby Salons */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.nearbySection]}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>Nearby Salons</Text>
-            <Button onPress={() => navigation.navigate('Search')} textColor="#006B3F">See All</Button>
+            <Button onPress={() => navigation.navigate('Search')} textColor={COLORS.primaryGreen}>See All</Button>
           </View>
           {nearbyLoading ? (
             renderLoading()
           ) : nearbyError ? (
             renderError()
           ) : nearbySalons && nearbySalons.length > 0 ? (
-            nearbySalons.map(renderSalonCard)
+            <View style={styles.nearbyList}>
+              {nearbySalons.map((salon) => renderSalonCard(salon, false))}
+            </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="location-outline" size={48} color="#ccc" />
+              <Ionicons name="location-outline" size={48} color={COLORS.border} />
               <Text variant="bodyMedium" style={styles.emptyText}>No nearby salons found</Text>
             </View>
           )}
@@ -143,33 +209,67 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   header: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  greeting: {
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  greetingLabel: {
+    color: COLORS.textSecondary,
+  },
+  greetingName: {
     fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#006B3F',
+    color: COLORS.textPrimary,
+  },
+  avatarButton: {
+    borderRadius: 22,
+  },
+  userAvatar: {
+    backgroundColor: COLORS.primaryGreen,
+  },
+  userAvatarLabel: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   searchBar: {
     elevation: 0,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    height: 48,
+  },
+  searchInput: {
+    fontSize: 15,
   },
   section: {
-    marginTop: 16,
+    marginTop: 24,
     paddingHorizontal: 16,
+  },
+  nearbySection: {
+    paddingBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   horizontalScroll: {
     marginHorizontal: -16,
@@ -181,25 +281,79 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   salonCard: {
-    width: 280,
-    marginRight: 12,
-    marginBottom: 12,
+    width: 260,
+    marginRight: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  salonCardVertical: {
+    width: '100%',
+    marginRight: 0,
+    marginBottom: 16,
+  },
+  cardImageContainer: {
+    position: 'relative',
+    height: 140,
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  ratingBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   cardContent: {
-    paddingTop: 12,
+    padding: 12,
   },
-  address: {
-    color: '#666',
-    marginTop: 4,
+  salonName: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
   },
-  ratingContainer: {
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 8,
+  },
+  address: {
+    color: COLORS.textSecondary,
+    flex: 1,
   },
   distance: {
-    color: '#666',
+    color: COLORS.primaryGreen,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  nearbyList: {
+    gap: 16,
   },
   loadingContainer: {
     paddingVertical: 32,
@@ -213,11 +367,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: 8,
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   retryText: {
     marginTop: 8,
-    color: '#006B3F',
+    color: COLORS.primaryGreen,
     fontWeight: '600',
   },
   emptyState: {
@@ -227,6 +381,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 8,
-    color: '#666',
+    color: COLORS.textSecondary,
   },
 });

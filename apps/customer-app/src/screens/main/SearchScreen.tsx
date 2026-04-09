@@ -5,6 +5,7 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import {
   Text,
@@ -12,7 +13,6 @@ import {
   Chip,
   Card,
   ActivityIndicator,
-  Surface,
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -21,6 +21,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { salonApi, SearchFilters } from '../../api/salon';
 import { Salon } from '../../types';
 import { TabParamList } from '../../types/navigation';
+
+// Design System Colors
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  dark: '#1a1a2e',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+};
 
 const SALON_TYPES = [
   { label: 'All', value: '' },
@@ -33,8 +46,8 @@ const SALON_TYPES = [
 
 const RATING_FILTERS = [
   { label: 'Any Rating', value: 0 },
-  { label: '4+', value: 4 },
-  { label: '4.5+', value: 4.5 },
+  { label: '4+ Stars', value: 4 },
+  { label: '4.5+ Stars', value: 4.5 },
 ];
 
 type SearchRouteProp = RouteProp<TabParamList, 'Search'>;
@@ -71,21 +84,32 @@ export default function SearchScreen() {
       style={styles.salonCard}
       onPress={() => navigation.navigate('SalonDetail', { salonId: item.id })}
     >
-      <Card.Cover
-        source={{ uri: item.images?.[0] || 'https://via.placeholder.com/300x150' }}
-        style={styles.cardImage}
-      />
+      <View style={styles.cardImageContainer}>
+        {item.images?.[0] ? (
+          <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Ionicons name="storefront" size={48} color={COLORS.textSecondary} />
+          </View>
+        )}
+        <View style={styles.ratingBadge}>
+          <Ionicons name="star" size={12} color={COLORS.accentGold} />
+          <Text style={styles.ratingBadgeText}>{item.rating.toFixed(1)}</Text>
+        </View>
+      </View>
       <Card.Content style={styles.cardContent}>
-        <Text variant="titleMedium" numberOfLines={1} style={styles.salonName}>
+        <Text variant="titleSmall" numberOfLines={1} style={styles.salonName}>
           {item.businessName}
         </Text>
-        <Text variant="bodySmall" numberOfLines={1} style={styles.address}>
-          {item.address}, {item.city}
-        </Text>
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
+          <Text variant="bodySmall" numberOfLines={1} style={styles.address}>
+            {item.address}, {item.city}
+          </Text>
+        </View>
         <View style={styles.ratingRow}>
-          <Ionicons name="star" size={16} color="#FCD116" />
-          <Text variant="bodySmall" style={styles.ratingText}>
-            {item.rating.toFixed(1)} ({item.reviewCount} reviews)
+          <Text variant="bodySmall" style={styles.reviewCount}>
+            {item.reviewCount} reviews
           </Text>
           {item.distance && (
             <Text variant="bodySmall" style={styles.distance}>
@@ -102,7 +126,9 @@ export default function SearchScreen() {
     
     return (
       <View style={styles.emptyState}>
-        <Ionicons name="search-outline" size={64} color="#ccc" />
+        <View style={styles.emptyIconContainer}>
+          <Ionicons name="search-outline" size={48} color={COLORS.textSecondary} />
+        </View>
         <Text variant="titleMedium" style={styles.emptyTitle}>No salons found</Text>
         <Text variant="bodyMedium" style={styles.emptySubtitle}>
           Try adjusting your filters or search terms
@@ -113,17 +139,21 @@ export default function SearchScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <Searchbar
-        placeholder="Search salons, services..."
-        onChangeText={setSearchQuery}
-        value={searchQuery}
-        style={styles.searchBar}
-        inputStyle={styles.searchInput}
-        iconColor="#006B3F"
-      />
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+        <Searchbar
+          placeholder="Search salons, services..."
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={styles.searchBar}
+          inputStyle={styles.searchInput}
+          icon={() => null}
+          elevation={0}
+        />
+      </View>
       
       <View style={styles.filterSection}>
-        <Text variant="labelMedium" style={styles.filterLabel}>Type</Text>
+        <Text variant="labelMedium" style={styles.filterLabel}>Category</Text>
         <FlatList
           horizontal
           data={SALON_TYPES}
@@ -138,7 +168,7 @@ export default function SearchScreen() {
                 styles.filterChip,
                 selectedType === item.value && styles.filterChipSelected,
               ]}
-              textStyle={selectedType === item.value ? styles.filterChipTextSelected : {}}
+              textStyle={selectedType === item.value ? styles.filterChipTextSelected : styles.filterChipText}
             >
               {item.label}
             </Chip>
@@ -148,7 +178,7 @@ export default function SearchScreen() {
 
       <View style={styles.filterSection}>
         <Text variant="labelMedium" style={styles.filterLabel}>Rating</Text>
-        <View style={styles.ratingRow}>
+        <View style={styles.ratingChips}>
           {RATING_FILTERS.map((filter) => (
             <Chip
               key={filter.value}
@@ -158,7 +188,7 @@ export default function SearchScreen() {
                 styles.filterChip,
                 minRating === filter.value && styles.filterChipSelected,
               ]}
-              textStyle={minRating === filter.value ? styles.filterChipTextSelected : {}}
+              textStyle={minRating === filter.value ? styles.filterChipTextSelected : styles.filterChipText}
             >
               {filter.label}
             </Chip>
@@ -172,7 +202,7 @@ export default function SearchScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#CE1126" />
+          <Ionicons name="alert-circle-outline" size={64} color={COLORS.accentRed} />
           <Text variant="titleMedium" style={styles.errorTitle}>Failed to load salons</Text>
           <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
             <Text style={styles.retryText}>Tap to retry</Text>
@@ -183,7 +213,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
         data={data?.salons || []}
         keyExtractor={(item) => item.id}
@@ -192,7 +222,7 @@ export default function SearchScreen() {
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#006B3F']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primaryGreen]} />
         }
         showsVerticalScrollIndicator={false}
       />
@@ -203,75 +233,147 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   header: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
     marginBottom: 8,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchBar: {
+    flex: 1,
+    backgroundColor: 'transparent',
     elevation: 0,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+    height: 48,
   },
   searchInput: {
-    fontSize: 16,
+    fontSize: 15,
   },
   filterSection: {
     marginTop: 16,
   },
   filterLabel: {
-    marginBottom: 8,
-    color: '#666',
+    marginBottom: 10,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   filterChips: {
     gap: 8,
+    paddingRight: 16,
+  },
+  ratingChips: {
+    flexDirection: 'row',
+    gap: 8,
   },
   filterChip: {
-    marginRight: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   filterChipSelected: {
-    backgroundColor: '#006B3F',
+    backgroundColor: COLORS.primaryGreen,
+    borderColor: COLORS.primaryGreen,
+  },
+  filterChipText: {
+    color: COLORS.textSecondary,
   },
   filterChipTextSelected: {
     color: '#fff',
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  salonCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  cardImageContainer: {
+    position: 'relative',
+    height: 160,
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  ratingBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  cardContent: {
+    padding: 16,
+  },
+  salonName: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  address: {
+    color: COLORS.textSecondary,
+    flex: 1,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  listContent: {
-    paddingBottom: 16,
-  },
-  salonCard: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  cardImage: {
-    height: 150,
-  },
-  cardContent: {
-    padding: 12,
-  },
-  salonName: {
-    fontWeight: '600',
-    color: '#006B3F',
-  },
-  address: {
-    color: '#666',
-    marginTop: 4,
-  },
-  ratingText: {
-    marginLeft: 4,
+  reviewCount: {
+    color: COLORS.textSecondary,
   },
   distance: {
-    color: '#666',
-    marginLeft: 4,
+    color: COLORS.primaryGreen,
+    fontWeight: '500',
   },
   emptyState: {
     flex: 1,
@@ -279,13 +381,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 64,
   },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   emptyTitle: {
     marginTop: 16,
-    color: '#666',
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
   emptySubtitle: {
     marginTop: 8,
-    color: '#999',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
   errorContainer: {
     flex: 1,
@@ -295,13 +409,14 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     marginTop: 16,
-    color: '#CE1126',
+    color: COLORS.accentRed,
   },
   retryButton: {
     marginTop: 16,
-    padding: 12,
-    backgroundColor: '#006B3F',
-    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 12,
   },
   retryText: {
     color: '#fff',

@@ -4,18 +4,16 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  FlatList,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import {
   Text,
   Card,
   Button,
-  FAB,
   Divider,
   ActivityIndicator,
   Avatar,
-  Chip,
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -25,6 +23,19 @@ import { salonApi } from '../../api/salon';
 import { reviewApi } from '../../api/review';
 import { Salon, Review, Service } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
+
+// Design System Colors
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  dark: '#1a1a2e',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+};
 
 type SalonDetailRouteProp = RouteProp<MainStackParamList, 'SalonDetail'>;
 
@@ -75,16 +86,19 @@ export default function SalonDetailScreen() {
     return day.charAt(0).toUpperCase() + day.slice(1);
   };
 
-  const renderServiceItem = useCallback(({ item }: { item: Service }) => (
-    <View style={styles.serviceItem}>
+  const renderServiceItem = useCallback((item: Service) => (
+    <View key={item.id} style={styles.serviceItem}>
       <View style={styles.serviceInfo}>
         <Text variant="titleSmall" style={styles.serviceName}>{item.name}</Text>
         {item.description && (
           <Text variant="bodySmall" style={styles.serviceDescription}>{item.description}</Text>
         )}
-        <Text variant="bodySmall" style={styles.serviceDuration}>
-          <Ionicons name="time-outline" size={14} /> {formatDuration(item.duration)}
-        </Text>
+        <View style={styles.serviceDuration}>
+          <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+          <Text variant="bodySmall" style={styles.serviceDurationText}>
+            {formatDuration(item.duration)}
+          </Text>
+        </View>
       </View>
       <Text variant="titleMedium" style={styles.servicePrice}>
         GH₵ {item.price.toFixed(2)}
@@ -92,24 +106,27 @@ export default function SalonDetailScreen() {
     </View>
   ), []);
 
-  const renderReviewItem = useCallback(({ item }: { item: Review }) => (
-    <Card style={styles.reviewCard}>
+  const renderReviewItem = useCallback((item: Review) => (
+    <Card key={item.id} style={styles.reviewCard}>
       <Card.Content style={styles.reviewContent}>
         <View style={styles.reviewHeader}>
           <Avatar.Text
-            size={40}
+            size={44}
             label={`${item.user.firstName?.[0] || ''}${item.user.lastName?.[0] || ''}`}
             style={styles.reviewAvatar}
+            labelStyle={styles.reviewAvatarLabel}
           />
           <View style={styles.reviewUserInfo}>
-            <Text variant="titleSmall">{item.user.firstName} {item.user.lastName}</Text>
+            <Text variant="titleSmall" style={styles.reviewUserName}>
+              {item.user.firstName} {item.user.lastName}
+            </Text>
             <View style={styles.reviewRating}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <Ionicons
                   key={star}
                   name={star <= item.rating ? 'star' : 'star-outline'}
                   size={14}
-                  color="#FCD116"
+                  color={COLORS.accentGold}
                 />
               ))}
             </View>
@@ -123,16 +140,39 @@ export default function SalonDetailScreen() {
   ), []);
 
   const renderOpeningHours = (salonData: Salon) => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    
     return (
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>Opening Hours</Text>
         <View style={styles.hoursContainer}>
           {DAYS.map((day) => {
             const hours = salonData.openingHours?.[day as keyof typeof salonData.openingHours];
+            const isToday = day === today;
             return (
-              <View key={day} style={styles.hoursRow}>
-                <Text variant="bodyMedium" style={styles.dayName}>{getDayName(day)}</Text>
-                <Text variant="bodyMedium" style={styles.dayHours}>
+              <View 
+                key={day} 
+                style={[
+                  styles.hoursRow,
+                  isToday && styles.hoursRowToday
+                ]}
+              >
+                <Text 
+                  variant="bodyMedium" 
+                  style={[
+                    styles.dayName,
+                    isToday && styles.dayNameToday
+                  ]}
+                >
+                  {getDayName(day)}
+                </Text>
+                <Text 
+                  variant="bodyMedium" 
+                  style={[
+                    styles.dayHours,
+                    isToday && styles.dayHoursToday
+                  ]}
+                >
                   {hours?.isOpen
                     ? `${formatTime(hours.open)} - ${formatTime(hours.close)}`
                     : 'Closed'}
@@ -149,7 +189,7 @@ export default function SalonDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#006B3F" />
+          <ActivityIndicator size="large" color={COLORS.primaryGreen} />
         </View>
       </SafeAreaView>
     );
@@ -159,7 +199,7 @@ export default function SalonDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#CE1126" />
+          <Ionicons name="alert-circle-outline" size={64} color={COLORS.accentRed} />
           <Text variant="titleMedium" style={styles.errorTitle}>Failed to load salon</Text>
           <Button mode="contained" onPress={() => refetchSalon()} style={styles.retryButton}>
             Retry
@@ -173,94 +213,99 @@ export default function SalonDetailScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#006B3F']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primaryGreen]} />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header Image */}
-        <View style={styles.headerImage}>
+        {/* Hero Image Section */}
+        <View style={styles.heroSection}>
           {salon.images?.[0] ? (
-            <Card.Cover
-              source={{ uri: salon.images[0] }}
-              style={styles.coverImage}
-            />
+            <Image source={{ uri: salon.images[0] }} style={styles.heroImage} />
           ) : (
-            <View style={styles.placeholderImage}>
-              <Ionicons name="storefront" size={64} color="#ccc" />
+            <View style={styles.heroPlaceholder}>
+              <Ionicons name="storefront" size={64} color={COLORS.textSecondary} />
             </View>
           )}
+          <View style={styles.heroOverlay}>
+            <Text variant="headlineMedium" style={styles.heroTitle}>{salon.businessName}</Text>
+          </View>
         </View>
 
-        {/* Salon Info */}
-        <View style={styles.salonInfo}>
-          <Text variant="headlineSmall" style={styles.salonName}>{salon.businessName}</Text>
+        {/* Salon Info Card */}
+        <View style={styles.infoCard}>
           <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={20} color="#FCD116" />
-            <Text variant="titleMedium" style={styles.ratingText}>
-              {salon.rating.toFixed(1)}
-            </Text>
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={18} color={COLORS.accentGold} />
+              <Text variant="titleMedium" style={styles.ratingText}>
+                {salon.rating.toFixed(1)}
+              </Text>
+            </View>
             <Text variant="bodyMedium" style={styles.reviewCount}>
               ({salon.reviewCount} reviews)
             </Text>
           </View>
+          
           <View style={styles.addressContainer}>
-            <Ionicons name="location-outline" size={18} color="#666" />
+            <Ionicons name="location-outline" size={20} color={COLORS.primaryGreen} />
             <Text variant="bodyMedium" style={styles.address}>
               {salon.address}, {salon.city}
             </Text>
           </View>
+          
           {salon.phone && (
             <View style={styles.phoneContainer}>
-              <Ionicons name="call-outline" size={18} color="#666" />
+              <Ionicons name="call-outline" size={20} color={COLORS.primaryGreen} />
               <Text variant="bodyMedium" style={styles.phone}>{salon.phone}</Text>
             </View>
           )}
+          
           {salon.description && (
             <Text variant="bodyMedium" style={styles.description}>{salon.description}</Text>
           )}
         </View>
 
-        <Divider />
-
-        {/* Services */}
+        {/* Services Section */}
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>Services</Text>
-          {salon.services?.length > 0 ? (
-            salon.services.map((service) => (
-              <View key={service.id}>{renderServiceItem({ item: service })}</View>
-            ))
-          ) : (
-            <Text variant="bodyMedium" style={styles.emptyText}>No services available</Text>
-          )}
+          <View style={styles.servicesCard}>
+            {salon.services?.length > 0 ? (
+              salon.services.map((service) => renderServiceItem(service))
+            ) : (
+              <Text variant="bodyMedium" style={styles.emptyText}>No services available</Text>
+            )}
+          </View>
         </View>
 
-        <Divider />
-
-        {/* Opening Hours */}
+        {/* Opening Hours Section */}
         {salon.openingHours && renderOpeningHours(salon)}
 
-        <Divider />
-
-        {/* Reviews */}
+        {/* Reviews Section */}
         <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>Reviews</Text>
-          {reviews && reviews.length > 0 ? (
-            reviews.map((review) => (
-              <View key={review.id}>{renderReviewItem({ item: review })}</View>
-            ))
-          ) : (
-            <Text variant="bodyMedium" style={styles.emptyText}>No reviews yet</Text>
-          )}
+          <View style={styles.reviewsHeader}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>Reviews</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.reviewsContainer}>
+            {reviews && reviews.length > 0 ? (
+              reviews.slice(0, 3).map((review) => renderReviewItem(review))
+            ) : (
+              <Text variant="bodyMedium" style={styles.emptyText}>No reviews yet</Text>
+            )}
+          </View>
         </View>
+
+        <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <FAB
-        icon="calendar-plus"
-        style={styles.fab}
-        onPress={handleBookNow}
-        label="Book Now"
-        color="#fff"
-      />
+      {/* Book Now Button */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
+          <Ionicons name="calendar" size={20} color="#fff" />
+          <Text style={styles.bookButtonText}>Book Now</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -268,7 +313,7 @@ export default function SalonDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
@@ -283,156 +328,291 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     marginTop: 16,
-    color: '#CE1126',
+    color: COLORS.accentRed,
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#006B3F',
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 12,
   },
-  headerImage: {
-    height: 200,
+  // Hero Section
+  heroSection: {
+    height: 240,
+    position: 'relative',
   },
-  coverImage: {
-    height: 200,
-    borderRadius: 0,
+  heroImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
-  placeholderImage: {
-    height: 200,
-    backgroundColor: '#f5f5f5',
+  heroPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  salonInfo: {
+  heroOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 16,
+    paddingTop: 60,
+    backgroundColor: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
   },
-  salonName: {
+  heroTitle: {
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  // Info Card
+  infoCard: {
+    margin: 16,
+    marginTop: -30,
+    padding: 20,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 12,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.accentGold}20`,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
   },
   ratingText: {
-    marginLeft: 4,
     fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   reviewCount: {
-    color: '#666',
-    marginLeft: 4,
+    color: COLORS.textSecondary,
+    marginLeft: 8,
   },
   addressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 8,
   },
   address: {
-    color: '#666',
-    marginLeft: 4,
+    color: COLORS.textSecondary,
+    marginLeft: 8,
+    flex: 1,
   },
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginBottom: 12,
   },
   phone: {
-    color: '#666',
-    marginLeft: 4,
+    color: COLORS.textSecondary,
+    marginLeft: 8,
   },
   description: {
-    marginTop: 12,
-    color: '#444',
+    color: COLORS.textSecondary,
     lineHeight: 22,
   },
+  // Sections
   section: {
-    padding: 16,
+    paddingHorizontal: 16,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontWeight: '600',
     marginBottom: 12,
-    color: '#006B3F',
+    color: COLORS.textPrimary,
+  },
+  // Services
+  servicesCard: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   serviceItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   serviceInfo: {
     flex: 1,
     marginRight: 12,
   },
   serviceName: {
-    fontWeight: '500',
+    fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   serviceDescription: {
-    color: '#666',
+    color: COLORS.textSecondary,
     marginTop: 2,
+    fontSize: 13,
   },
   serviceDuration: {
-    color: '#888',
-    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 4,
+  },
+  serviceDurationText: {
+    color: COLORS.textSecondary,
   },
   servicePrice: {
     fontWeight: '600',
-    color: '#006B3F',
+    color: COLORS.primaryGreen,
   },
+  // Hours
   hoursContainer: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   hoursRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  hoursRowToday: {
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderBottomWidth: 0,
   },
   dayName: {
     fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  dayNameToday: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
   },
   dayHours: {
-    color: '#666',
+    color: COLORS.textSecondary,
+  },
+  dayHoursToday: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
+  },
+  // Reviews
+  reviewsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  seeAllText: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
+  },
+  reviewsContainer: {
+    gap: 12,
   },
   reviewCard: {
-    marginBottom: 12,
-    borderRadius: 8,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   reviewContent: {
-    padding: 12,
+    padding: 16,
   },
   reviewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   reviewAvatar: {
-    backgroundColor: '#006B3F',
+    backgroundColor: COLORS.primaryGreen,
+  },
+  reviewAvatarLabel: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   reviewUserInfo: {
     marginLeft: 12,
   },
+  reviewUserName: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
   reviewRating: {
     flexDirection: 'row',
-    marginTop: 2,
+    marginTop: 4,
+    gap: 2,
   },
   reviewComment: {
     marginTop: 12,
-    color: '#444',
+    color: COLORS.textSecondary,
     lineHeight: 20,
   },
   emptyText: {
-    color: '#888',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    paddingVertical: 16,
+    paddingVertical: 32,
   },
-  fab: {
+  bottomPadding: {
+    height: 100,
+  },
+  // Footer
+  footer: {
     position: 'absolute',
-    margin: 16,
+    bottom: 0,
+    left: 0,
     right: 0,
-    bottom: 16,
-    backgroundColor: '#006B3F',
-    borderRadius: 30,
+    padding: 16,
+    backgroundColor: COLORS.cardBackground,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  bookButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primaryGreen,
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  bookButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

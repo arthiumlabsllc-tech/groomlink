@@ -10,6 +10,7 @@ router.post('/otp/request', authValidations.requestOTP, authController.requestOT
 router.post('/otp/verify', authValidations.verifyOTP, authController.verifyOTP);
 router.post('/otp/email/request', authController.requestEmailOTP);
 router.post('/otp/email/verify', authController.verifyEmailOTP);
+router.post('/complete-registration', authController.completeRegistration);
 router.post('/login', authController.login);
 router.post('/register', authController.register);
 router.post('/refresh', authController.refreshToken);
