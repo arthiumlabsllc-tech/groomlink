@@ -60,6 +60,16 @@ services:
       DB_CONNECTION_POOL_SIZE: ${DB_CONNECTION_POOL_SIZE:-20}
       DB_CONNECTION_TIMEOUT: ${DB_CONNECTION_TIMEOUT:-10000}
       DB_IDLE_TIMEOUT: ${DB_IDLE_TIMEOUT:-30000}
+      # Africa's Talking SMS
+      AT_USERNAME: ${AT_USERNAME}
+      AT_API_KEY: ${AT_API_KEY}
+      SMS_FROM: ${SMS_FROM}
+      # SMTP Email
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
     ports:
       - "3000:3000"
     depends_on:

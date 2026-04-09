@@ -21,7 +21,11 @@ if (AT_API_KEY) {
     logger.error('Failed to initialize Africa\'s Talking:', error);
   }
 } else {
-  logger.warn('AT_API_KEY not set. SMS will be logged only.');
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('CRITICAL: AT_API_KEY not set in production! SMS cannot be sent.');
+  } else {
+    logger.warn('AT_API_KEY not set. SMS will be logged only.');
+  }
 }
 
 export interface SMSMessage {
@@ -64,11 +68,15 @@ export async function sendSMS({ to, message }: SMSMessage): Promise<boolean> {
 
       const response = await sms.send(sendOptions);
       logger.info(`SMS sent successfully to ${formattedNumber}`, { response });
+      return true;
     } else {
+      // In production, this is a critical error - SMS must be sent
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('SMS service not configured. Cannot send OTP in production.');
+      }
       logger.warn(`SMS not sent: Africa's Talking not configured`);
+      return false;
     }
-
-    return true;
   } catch (error) {
     logger.error('SMS sending failed:', error);
     // Don't throw - return false to allow graceful handling

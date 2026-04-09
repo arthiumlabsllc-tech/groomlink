@@ -2,8 +2,9 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { generateToken, generateRefreshToken, verifyRefreshToken, rotateRefreshToken, revokeAllUserRefreshTokens } from '../utils/jwt';
 import { hashPassword, verifyPassword } from '../utils/password';
-import { createOTP, verifyOTP } from '../utils/otp';
+import { createOTP, verifyOTP, createEmailOTP, verifyEmailOTP } from '../utils/otp';
 import { sendOTPSMS } from './sms.service';
+import { sendEmailOTP } from './email.service';
 import { UserRole, UserStatus } from '../middleware/auth';
 
 export interface RegisterData {
@@ -45,11 +46,13 @@ export async function requestOTP(phoneNumber: string): Promise<void> {
   const otp = await createOTP(phoneNumber);
   logger.info(`OTP requested for ${phoneNumber}`);
 
-  // Send OTP via SMS (don't await - let it happen in background)
-  // If SMS fails, the OTP is still in the database and can be retrieved
-  sendOTPSMS(phoneNumber, otp).catch((error) => {
-    logger.error(`Failed to send OTP SMS to ${phoneNumber}:`, error);
-  });
+  // Send OTP via SMS - await to ensure delivery and propagate errors to client
+  // OTP is already saved in database, so retry will work even if this request fails
+  const smsSent = await sendOTPSMS(phoneNumber, otp);
+  if (!smsSent) {
+    logger.error(`Failed to send OTP SMS to ${phoneNumber}`);
+    throw new Error('Failed to send OTP SMS. Please try again.');
+  }
 }
 
 export async function verifyPhoneOTP(phoneNumber: string, code: string): Promise<boolean> {
@@ -301,4 +304,126 @@ export async function logout(userId: string): Promise<void> {
   // Revoke all refresh tokens for the user
   await revokeAllUserRefreshTokens(userId);
   logger.info(`User logged out: ${userId}`);
+}
+
+/**
+ * Request OTP for email verification
+ */
+export async function requestEmailOTP(email: string): Promise<void> {
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new Error('Invalid email format');
+  }
+
+  const otp = await createEmailOTP(email);
+  logger.info(`Email OTP requested for ${email}`);
+
+  // Send OTP via email (don't await - let it happen in background)
+  // If email fails, the OTP is still in the database and can be retrieved
+  sendEmailOTP(email, otp).catch((error) => {
+    logger.error(`Failed to send OTP email to ${email}:`, error);
+  });
+}
+
+export interface EmailOTPVerifyResponse {
+  user: {
+    id: string;
+    phoneNumber: string | null;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    role: UserRole;
+    isVerified: boolean;
+  };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
+  isNewUser: boolean;
+}
+
+/**
+ * Verify email OTP and login/register user
+ */
+export async function verifyEmailOTPAndLogin(email: string, code: string): Promise<EmailOTPVerifyResponse | null> {
+  // First verify the OTP
+  const isValid = await verifyEmailOTP(email, code);
+  if (!isValid) {
+    return null;
+  }
+
+  // Find the user by email
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    // User doesn't exist - they need to register
+    // Return a temporary verification token for registration
+    const tempToken = generateToken({
+      userId: 'pending',
+      phoneNumber: email, // Use email as identifier for pending users
+      role: UserRole.CUSTOMER,
+    });
+    
+    return {
+      user: {
+        id: '',
+        phoneNumber: null,
+        firstName: '',
+        lastName: '',
+        email,
+        role: UserRole.CUSTOMER,
+        isVerified: true,
+      },
+      tokens: {
+        accessToken: tempToken,
+        refreshToken: '',
+      },
+      isNewUser: true,
+    };
+  }
+
+  if (user.status === UserStatus.SUSPENDED) {
+    throw new Error('Account has been suspended');
+  }
+
+  // Update last login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date(), isVerified: true },
+  });
+
+  // Generate tokens
+  const accessToken = generateToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  const refreshToken = await generateRefreshToken({
+    userId: user.id,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+  });
+
+  logger.info(`User logged in via email OTP: ${user.id}`);
+
+  return {
+    user: {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    },
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+    isNewUser: false,
+  };
 }
