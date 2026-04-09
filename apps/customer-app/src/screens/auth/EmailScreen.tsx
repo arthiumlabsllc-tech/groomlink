@@ -6,17 +6,26 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { authApi } from '../../api/auth';
 import { AuthStackParamList } from '../../types/navigation';
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Phone'>;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Email'>;
 
-export default function PhoneScreen() {
+// Simple email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export default function EmailScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isValidEmail = (email: string): boolean => {
+    return EMAIL_REGEX.test(email.trim());
+  };
+
   const handleRequestOTP = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      setError('Please enter a valid phone number');
+    const trimmedEmail = email.trim();
+    
+    if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -24,9 +33,8 @@ export default function PhoneScreen() {
     setError('');
 
     try {
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+233${phoneNumber.replace(/^0/, '')}`;
-      await authApi.requestOTP(formattedPhone);
-      navigation.navigate('OTP', { phoneNumber: formattedPhone });
+      await authApi.requestEmailOTP(trimmedEmail);
+      navigation.navigate('OTP', { email: trimmedEmail });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
@@ -45,22 +53,24 @@ export default function PhoneScreen() {
             Welcome to GroomLink
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Enter your phone number to sign in or create an account
+            Enter your email to sign in or create an account
           </Text>
 
           <View style={styles.inputContainer}>
             <TextInput
-              label="Phone Number"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
+              label="Email Address"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
               autoFocus
               style={styles.input}
-              placeholder="+233 XX XXX XXXX"
-              left={<TextInput.Affix text="+233 " />}
+              placeholder="you@example.com"
+              left={<TextInput.Icon icon="email" />}
             />
             <HelperText type="info" visible={true}>
-              Enter your Ghana phone number
+              We'll send a verification code to this email
             </HelperText>
             {error ? (
               <HelperText type="error" visible={true}>
@@ -73,18 +83,18 @@ export default function PhoneScreen() {
             mode="contained"
             onPress={handleRequestOTP}
             loading={loading}
-            disabled={loading || phoneNumber.length < 9}
-            style={[styles.button, (loading || phoneNumber.length < 9) && styles.buttonDisabled]}
+            disabled={loading || !isValidEmail(email)}
+            style={[styles.button, (loading || !isValidEmail(email)) && styles.buttonDisabled]}
             contentStyle={styles.buttonContent}
             buttonColor="#CE1126"
             textColor="#fff"
           >
-            {loading ? 'Sending...' : 'Continue'}
+            {loading ? 'Sending...' : 'Send OTP'}
           </Button>
           
-          {phoneNumber.length < 9 && !loading && (
+          {!isValidEmail(email) && !loading && (
             <Text variant="bodySmall" style={styles.hintText}>
-              Enter your phone number to continue
+              Enter a valid email to continue
             </Text>
           )}
 
@@ -133,7 +143,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: 8,
     minHeight: 56,
-  justifyContent: 'center',
+    justifyContent: 'center',
   },
   buttonDisabled: {
     backgroundColor: '#CE112680',

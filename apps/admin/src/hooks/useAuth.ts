@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { authApi, AdminUser } from '../api';
+import { authApi, AdminUser, AuthResponse } from '../api';
 
 const AUTH_KEY = 'admin_auth';
 
@@ -71,6 +71,26 @@ export function useAuth() {
     },
   });
 
+  // Request Email OTP mutation
+  const requestEmailOTP = useMutation({
+    mutationFn: authApi.requestEmailOTP,
+  });
+
+  // Verify Email OTP mutation
+  const verifyEmailOTP = useMutation({
+    mutationFn: ({ email, code }: { email: string; code: string }) =>
+      authApi.verifyEmailOTP(email, code),
+    onSuccess: (response: AuthResponse) => {
+      if (response.success) {
+        localStorage.setItem('admin_token', response.data.tokens.accessToken);
+        localStorage.setItem('admin_refresh_token', response.data.tokens.refreshToken);
+        localStorage.setItem('admin_user', JSON.stringify(response.data.user));
+        queryClient.setQueryData([AUTH_KEY, 'user'], response.data.user);
+        navigate('/dashboard');
+      }
+    },
+  });
+
   // Logout mutation
   const logout = useMutation({
     mutationFn: authApi.logout,
@@ -89,6 +109,8 @@ export function useAuth() {
     login,
     requestOTP,
     verifyOTP,
+    requestEmailOTP,
+    verifyEmailOTP,
     logout,
   };
 }

@@ -16,7 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   loginWithOtp: (phone: string, otp: string) => Promise<void>;
-  loginWithEmail: (email: string, password: string) => Promise<void>;
+  loginWithEmailOTP: (email: string, code: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loginWithEmail = useCallback(async (email: string, password: string) => {
-    const response = await api.loginWithEmail(email, password);
+  const loginWithEmailOTP = useCallback(async (email: string, code: string) => {
+    const response = await api.verifyEmailOTP(email, code);
     if (response.success && response.data) {
       setUser(response.data.user);
     }
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, loginWithOtp, loginWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, loginWithOtp, loginWithEmailOTP, logout }}>
       {children}
     </AuthContext.Provider>
   );

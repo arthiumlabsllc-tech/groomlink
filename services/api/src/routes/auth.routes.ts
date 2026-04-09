@@ -8,6 +8,8 @@ const router = Router();
 // Public routes with validation
 router.post('/otp/request', authValidations.requestOTP, authController.requestOTP);
 router.post('/otp/verify', authValidations.verifyOTP, authController.verifyOTP);
+router.post('/otp/email/request', authController.requestEmailOTP);
+router.post('/otp/email/verify', authController.verifyEmailOTP);
 router.post('/login', authController.login);
 router.post('/register', authController.register);
 router.post('/refresh', authController.refreshToken);

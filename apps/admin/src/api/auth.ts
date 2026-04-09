@@ -16,6 +16,15 @@ export interface AdminUser {
   isVerified: boolean;
 }
 
+export interface EmailOTPRequest {
+  email: string;
+}
+
+export interface EmailOTPVerify {
+  email: string;
+  code: string;
+}
+
 export interface AuthResponse {
   success: boolean;
   data: {
@@ -44,6 +53,18 @@ export const authApi = {
   // Verify OTP and login
   verifyOTP: async (phoneNumber: string, otp: string): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/otp/verify', { phoneNumber, code: otp });
+    return response.data;
+  },
+
+  // Request Email OTP for admin login
+  requestEmailOTP: async (email: string) => {
+    const response = await apiClient.post('/auth/otp/email/request', { email });
+    return response.data;
+  },
+
+  // Verify Email OTP and login
+  verifyEmailOTP: async (email: string, code: string): Promise<AuthResponse> => {
+    const response = await apiClient.post('/auth/otp/email/verify', { email, code });
     return response.data;
   },
 

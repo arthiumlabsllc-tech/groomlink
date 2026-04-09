@@ -3,15 +3,35 @@ import * as SecureStore from 'expo-secure-store';
 import { AuthResponse, User } from '../types';
 
 export const authApi = {
-  // Request OTP for login
+  // Request OTP for login (phone-based - legacy)
   requestOTP: async (phoneNumber: string) => {
     const response = await apiClient.post('/auth/otp/request', { phoneNumber });
     return response.data;
   },
 
-  // Verify OTP and login
+  // Verify OTP and login (phone-based - legacy)
   verifyOTP: async (phoneNumber: string, code: string): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/otp/verify', { phoneNumber, code });
+    
+    if (response.data.success) {
+      const { tokens, user } = response.data.data;
+      await SecureStore.setItemAsync('accessToken', tokens.accessToken);
+      await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+      await SecureStore.setItemAsync('user', JSON.stringify(user));
+    }
+    
+    return response.data;
+  },
+
+  // Request Email OTP for login
+  requestEmailOTP: async (email: string) => {
+    const response = await apiClient.post('/auth/otp/email/request', { email });
+    return response.data;
+  },
+
+  // Verify Email OTP and login
+  verifyEmailOTP: async (email: string, code: string): Promise<AuthResponse> => {
+    const response = await apiClient.post('/auth/otp/email/verify', { email, code });
     
     if (response.data.success) {
       const { tokens, user } = response.data.data;

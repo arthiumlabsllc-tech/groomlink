@@ -7,8 +7,8 @@ import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 
 type AuthStackParamList = {
-  Phone: undefined;
-  OTP: { phoneNumber: string };
+  Email: undefined;
+  OTP: { email: string };
   SalonSetup: undefined;
 };
 
@@ -18,7 +18,7 @@ type OTPRouteProp = RouteProp<AuthStackParamList, 'OTP'>;
 export default function OTPScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<OTPRouteProp>();
-  const { phoneNumber } = route.params;
+  const { email } = route.params;
   const { setUser } = useAuthStore();
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -82,7 +82,7 @@ export default function OTPScreen() {
     setError('');
 
     try {
-      const response = await authApi.verifyOTP(phoneNumber, code);
+      const response = await authApi.verifyEmailOTP(email, code);
       
       if (response.success) {
         setUser(response.data.user);
@@ -106,7 +106,7 @@ export default function OTPScreen() {
     
     try {
       setLoading(true);
-      await authApi.requestOTP(phoneNumber);
+      await authApi.requestEmailOTP(email);
       setError('');
       setResendTimer(60);
       setCanResend(false);
@@ -119,14 +119,14 @@ export default function OTPScreen() {
     }
   };
 
-  const formatPhoneNumber = (phone: string) => {
-    // Format: +233 XX XXX XXXX
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length === 12) {
-      const ghanaNumber = digits.slice(3);
-      return `+233 ${ghanaNumber.slice(0, 2)} ${ghanaNumber.slice(2, 5)} ${ghanaNumber.slice(5)}`;
+  const maskEmail = (email: string) => {
+    // Mask email for privacy: s***@example.com
+    const [localPart, domain] = email.split('@');
+    if (localPart.length <= 2) {
+      return email;
     }
-    return phone;
+    const maskedLocal = localPart[0] + '*'.repeat(localPart.length - 2) + localPart[localPart.length - 1];
+    return `${maskedLocal}@${domain}`;
   };
 
   return (
@@ -140,7 +140,7 @@ export default function OTPScreen() {
         </Text>
         <Text variant="bodyLarge" style={styles.subtitle}>
           Enter the 6-digit code sent to{'\n'}
-          <Text style={styles.phoneNumber}>{formatPhoneNumber(phoneNumber)}</Text>
+          <Text style={styles.emailText}>{maskEmail(email)}</Text>
         </Text>
 
         <View style={styles.otpContainer}>
@@ -201,11 +201,11 @@ export default function OTPScreen() {
 
         <Button
           mode="text"
-          onPress={() => navigation.navigate('Phone')}
+          onPress={() => navigation.navigate('Email')}
           textColor="#666"
           style={styles.backButton}
         >
-          Change Phone Number
+          Change Email
         </Button>
       </View>
     </KeyboardAvoidingView>
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     color: '#666',
   },
-  phoneNumber: {
+  emailText: {
     fontWeight: 'bold',
     color: '#333',
   },

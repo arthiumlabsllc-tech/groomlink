@@ -64,17 +64,13 @@ export async function sendSMS({ to, message }: SMSMessage): Promise<boolean> {
     const sendOptions: {
       to: string[];
       message: string;
-      from?: string;
     } = {
       to: [formattedNumber],
       message,
     };
-
-    // Only include 'from' if sender ID is explicitly configured and approved
-    // Empty SMS_FROM means use AT default sender
-    if (AT_USERNAME !== 'sandbox' && SMS_FROM && SMS_FROM.trim() !== '') {
-      sendOptions.from = SMS_FROM;
-    }
+    // Note: 'from' field is intentionally NOT included.
+    // Africa's Talking Ghana uses a shared shortcode by default.
+    // Only add 'from' if you have an approved sender ID from AT.
 
     const response = await sms.send(sendOptions);
     logger.info(`SMS sent successfully to ${formattedNumber}`, { response });

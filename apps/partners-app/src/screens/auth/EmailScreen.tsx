@@ -6,36 +6,27 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { authApi } from '../../api/auth';
 
 type AuthStackParamList = {
-  Phone: undefined;
-  OTP: { phoneNumber: string };
+  Email: undefined;
+  OTP: { email: string };
   SalonSetup: undefined;
 };
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Phone'>;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Email'>;
 
-export default function PhoneScreen() {
+export default function EmailScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const formatPhoneNumber = (text: string) => {
-    // Remove any non-digit characters
-    const cleaned = text.replace(/\D/g, '');
-    // Limit to 10 digits
-    return cleaned.slice(0, 10);
-  };
-
-  const validatePhoneNumber = (phone: string): boolean => {
-    // Ghana phone numbers: 10 digits, starting with 0
-    // Or 9 digits without leading 0
-    const cleanPhone = phone.replace(/\D/g, '');
-    return cleanPhone.length === 10 || cleanPhone.length === 9;
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleRequestOTP = async () => {
-    if (!validatePhoneNumber(phoneNumber)) {
-      setError('Please enter a valid 10-digit Ghana phone number');
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -43,16 +34,8 @@ export default function PhoneScreen() {
     setError('');
 
     try {
-      // Format phone number with +233 prefix
-      let formattedPhone = phoneNumber.replace(/\D/g, '');
-      // Remove leading 0 if present
-      if (formattedPhone.startsWith('0')) {
-        formattedPhone = formattedPhone.slice(1);
-      }
-      formattedPhone = `+233${formattedPhone}`;
-      
-      await authApi.requestOTP(formattedPhone);
-      navigation.navigate('OTP', { phoneNumber: formattedPhone });
+      await authApi.requestEmailOTP(email);
+      navigation.navigate('OTP', { email });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
@@ -68,10 +51,8 @@ export default function PhoneScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <View style={styles.logoContainer}>
-            <View style={styles.ghanaFlag}>
-              <View style={[styles.flagStripe, styles.flagRed]} />
-              <View style={[styles.flagStripe, styles.flagGold]} />
-              <View style={[styles.flagStripe, styles.flagGreen]} />
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoText}>GL</Text>
             </View>
           </View>
           
@@ -79,30 +60,27 @@ export default function PhoneScreen() {
             GroomLink for Business
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Enter your phone number to sign in or register your salon
+            Enter your email to sign in or create an account
           </Text>
 
           <View style={styles.inputContainer}>
-            <View style={styles.phoneInputRow}>
-              <View style={styles.prefixContainer}>
-                <Text style={styles.prefixText}>🇬🇭 +233</Text>
-              </View>
-              <TextInput
-                label="Phone Number"
-                value={phoneNumber}
-                onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
-                keyboardType="phone-pad"
-                autoFocus
-                style={styles.input}
-                placeholder="XX XXX XXXX"
-                maxLength={10}
-                mode="outlined"
-                outlineColor="#E0E0E0"
-                activeOutlineColor="#006B3F"
-              />
-            </View>
+            <TextInput
+              label="Email Address"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+              style={styles.input}
+              placeholder="you@example.com"
+              mode="outlined"
+              outlineColor="#E0E0E0"
+              activeOutlineColor="#006B3F"
+              left={<TextInput.Icon icon="email" />}
+            />
             <HelperText type="info" visible={true} style={styles.helperText}>
-              Enter your Ghana phone number
+              We'll send a 6-digit verification code to this email
             </HelperText>
             {error ? (
               <HelperText type="error" visible={true} style={styles.errorText}>
@@ -115,18 +93,18 @@ export default function PhoneScreen() {
             mode="contained"
             onPress={handleRequestOTP}
             loading={loading}
-            disabled={loading || phoneNumber.length < 9}
-            style={[styles.button, (loading || phoneNumber.length < 9) && styles.buttonDisabled]}
+            disabled={loading || !validateEmail(email)}
+            style={[styles.button, (loading || !validateEmail(email)) && styles.buttonDisabled]}
             contentStyle={styles.buttonContent}
             buttonColor="#006B3F"
             textColor="#fff"
           >
-            {loading ? 'Sending...' : 'Continue'}
+            {loading ? 'Sending...' : 'Send OTP'}
           </Button>
           
-          {phoneNumber.length < 9 && !loading && (
+          {!validateEmail(email) && !loading && (
             <Text variant="bodySmall" style={styles.hintText}>
-              Enter your phone number to continue
+              Enter a valid email address to continue
             </Text>
           )}
           
@@ -161,25 +139,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  ghanaFlag: {
-    width: 60,
-    height: 40,
-    borderRadius: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  flagStripe: {
-    height: 13.33,
-  },
-  flagRed: {
-    backgroundColor: '#CE1126',
-  },
-  flagGold: {
-    backgroundColor: '#FCD116',
-  },
-  flagGreen: {
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#006B3F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  logoText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   title: {
     textAlign: 'center',
@@ -195,27 +171,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 24,
   },
-  phoneInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  prefixContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  prefixText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
   input: {
-    flex: 1,
     backgroundColor: '#fff',
-    fontSize: 18,
+    fontSize: 16,
   },
   helperText: {
     marginTop: 4,

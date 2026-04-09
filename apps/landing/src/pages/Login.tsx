@@ -5,7 +5,7 @@ import {
   ArrowLeft,
   User,
   Store,
-  Phone,
+  Mail,
   Loader2,
   CheckCircle,
   AlertCircle
@@ -25,7 +25,7 @@ export default function Login() {
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>(1)
   const [userType, setUserType] = useState<UserType>(null)
-  const [phoneNumber, setPhoneNumber] = useState('')
+  const [email, setEmail] = useState('')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -59,42 +59,30 @@ export default function Login() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const validatePhone = (phone: string): boolean => {
-    const cleanPhone = phone.replace(/\s/g, '')
-    if (cleanPhone.startsWith('+233')) {
-      const digits = cleanPhone.slice(4)
-      return digits.length === 9 && /^\d+$/.test(digits)
-    } else if (cleanPhone.startsWith('0')) {
-      const digits = cleanPhone.slice(1)
-      return digits.length === 9 && /^\d+$/.test(digits)
-    }
-    return false
+
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
   }
 
-  const formatPhoneForApi = (phone: string): string => {
-    const cleanPhone = phone.replace(/\s/g, '')
-    if (cleanPhone.startsWith('0')) {
-      return '+233' + cleanPhone.slice(1)
-    }
-    return cleanPhone
-  }
+
 
   const handleUserTypeSelect = (type: UserType) => {
     setUserType(type)
     setErrors({})
   }
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^\d+\s-]/g, '')
-    setPhoneNumber(value)
-    if (errors.phone) setErrors({ ...errors, phone: '' })
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value)
+    if (errors.email) setErrors({ ...errors, email: '' })
   }
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) {
       value = value[0]
     }
-    
+
     if (!/^\d*$/.test(value)) return
 
     const newOtp = [...otp]
@@ -131,20 +119,17 @@ export default function Login() {
       return
     }
 
-    if (!validatePhone(phoneNumber)) {
-      setErrors({ phone: 'Please enter a valid Ghana phone number' })
+    if (!validateEmail(email)) {
+      setErrors({ email: 'Please enter a valid email address' })
       return
     }
 
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/otp/email/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: formatPhoneForApi(phoneNumber),
-          role: userType === 'customer' ? 'CUSTOMER' : 'SALON_OWNER'
-        })
+        body: JSON.stringify({ email: email.toLowerCase().trim() })
       })
 
       const data = await response.json()
@@ -153,7 +138,10 @@ export default function Login() {
         setStep(2)
         setTimer(600)
         setTimerActive(true)
-        setToast({ message: 'OTP sent to your phone!', type: 'success' })
+        setToast({
+          message: 'OTP sent to your email!',
+          type: 'success'
+        })
       } else {
         setToast({ message: data.message || 'Failed to send OTP', type: 'error' })
       }
@@ -173,23 +161,26 @@ export default function Login() {
 
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      const response = await fetch(`${API_BASE_URL}/auth/otp/email/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: formatPhoneForApi(phoneNumber),
-          otp: otpString,
-          role: userType === 'customer' ? 'CUSTOMER' : 'SALON_OWNER'
-        })
+        body: JSON.stringify({ email: email.toLowerCase().trim(), code: otpString })
       })
 
       const data = await response.json()
 
-      if (response.ok) {
-        // Store tokens
-        localStorage.setItem('accessToken', data.accessToken)
-        localStorage.setItem('refreshToken', data.refreshToken)
-        localStorage.setItem('user', JSON.stringify(data.user))
+      if (response.ok && data.success) {
+        // Store tokens - handle both response formats
+        const tokens = data.data?.tokens || data.tokens
+        const user = data.data?.user || data.user
+
+        if (tokens) {
+          localStorage.setItem('accessToken', tokens.accessToken)
+          localStorage.setItem('refreshToken', tokens.refreshToken)
+        }
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user))
+        }
 
         setToast({ message: 'Login successful!', type: 'success' })
         setTimerActive(false)
@@ -197,7 +188,6 @@ export default function Login() {
         // Redirect based on user type
         setTimeout(() => {
           if (userType === 'customer') {
-            // For now, redirect to app store or show success
             window.location.href = 'https://groomlinkgh.com'
           } else {
             window.location.href = 'https://partners.groomlinkgh.com'
@@ -273,7 +263,7 @@ export default function Login() {
           </button>
         )}
 
-        {/* Step 1: User Type & Phone */}
+        {/* Step 1: User Type & Contact */}
         {step === 1 && (
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center mb-8">
@@ -328,28 +318,28 @@ export default function Login() {
               )}
             </div>
 
-            {/* Phone Input */}
+            {/* Email Input */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+                Email Address
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={handlePhoneChange}
-                  placeholder="0XX XXX XXXX"
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  placeholder="you@example.com"
                   className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                    errors.email ? 'border-red-500' : 'border-gray-300'
                   } focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none`}
                 />
               </div>
-              {errors.phone && (
-                <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                Enter your Ghana phone number (e.g., 024 123 4567)
+                Enter the email address registered with your account
               </p>
             </div>
 
@@ -393,12 +383,14 @@ export default function Login() {
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Phone className="w-8 h-8 text-primary-500" />
+                <Mail className="w-8 h-8 text-primary-500" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Number</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Verify Your Email
+              </h1>
               <p className="text-gray-600">
                 We sent a 6-digit code to<br />
-                <span className="font-medium">{phoneNumber}</span>
+                <span className="font-medium">{email}</span>
               </p>
             </div>
 

@@ -25,6 +25,15 @@ const loginSchema = z.object({
   password: z.string().optional(),
 });
 
+const emailSchema = z.object({
+  email: z.string().email('Invalid email format'),
+});
+
+const verifyEmailOTPSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  code: z.string().length(6, 'OTP must be 6 digits'),
+});
+
 export async function requestOTP(req: Request, res: Response): Promise<void> {
   try {
     const { phoneNumber } = phoneSchema.parse(req.body);
@@ -111,5 +120,38 @@ export async function logout(req: Request, res: Response): Promise<void> {
     successResponse(res, { message: 'Logged out successfully' });
   } catch (error) {
     errorResponse(res, 'LOGOUT_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function requestEmailOTP(req: Request, res: Response): Promise<void> {
+  try {
+    const { email } = emailSchema.parse(req.body);
+    await authService.requestEmailOTP(email);
+    successResponse(res, { message: 'OTP sent successfully to your email' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'REQUEST_FAILED', (error as Error).message, 400);
+  }
+}
+
+export async function verifyEmailOTP(req: Request, res: Response): Promise<void> {
+  try {
+    const { email, code } = verifyEmailOTPSchema.parse(req.body);
+    const result = await authService.verifyEmailOTPAndLogin(email, code);
+    
+    if (result) {
+      successResponse(res, result);
+    } else {
+      errorResponse(res, 'INVALID_OTP', 'Invalid or expired OTP', 400);
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'VERIFICATION_FAILED', (error as Error).message, 400);
   }
 }

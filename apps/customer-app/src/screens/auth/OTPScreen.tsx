@@ -13,7 +13,7 @@ type OTPRouteProp = RouteProp<AuthStackParamList, 'OTP'>;
 export default function OTPScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<OTPRouteProp>();
-  const { phoneNumber } = route.params;
+  const { email } = route.params;
   const { setUser } = useAuthStore();
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -53,7 +53,7 @@ export default function OTPScreen() {
     setError('');
 
     try {
-      const response = await authApi.verifyOTP(phoneNumber, code);
+      const response = await authApi.verifyEmailOTP(email, code);
       
       if (response.success) {
         setUser(response.data.user);
@@ -74,7 +74,7 @@ export default function OTPScreen() {
 
   const handleResend = async () => {
     try {
-      await authApi.requestOTP(phoneNumber);
+      await authApi.requestEmailOTP(email);
       setError('');
     } catch (err: any) {
       setError('Failed to resend OTP. Please try again.');
@@ -91,7 +91,7 @@ export default function OTPScreen() {
           Enter OTP
         </Text>
         <Text variant="bodyLarge" style={styles.subtitle}>
-          Enter the 6-digit code sent to {phoneNumber}
+          Enter the 6-digit code sent to {email}
         </Text>
 
         <View style={styles.otpContainer}>

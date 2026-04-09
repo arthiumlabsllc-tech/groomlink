@@ -1,0 +1,6 @@
+#!/usr/bin/expect -f
+set timeout 30
+spawn ssh -o StrictHostKeyChecking=no root@187.124.210.205 {*}$argv
+expect "password:"
+send "TwentyOranges#2512\r"
+interact

@@ -74,44 +74,26 @@ class ApiClient {
   }
 
   // Auth
-  async requestOtp(phoneNumber: string) {
-    return this.request<{ success: boolean; message: string }>('/auth/otp/request', {
+  async requestEmailOTP(email: string) {
+    return this.request<{ success: boolean; message: string }>('/auth/otp/email/request', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber }),
+      body: JSON.stringify({ email }),
     });
   }
 
-  async verifyOtp(phoneNumber: string, otp: string) {
-    const response = await this.request<{ 
-      success: boolean; 
-      data: { 
+  async verifyEmailOTP(email: string, code: string) {
+    const response = await this.request<{
+      success: boolean;
+      data: {
         tokens: { accessToken: string; refreshToken: string };
         user: User;
         isNewUser: boolean;
-      } 
-    }>('/auth/otp/verify', {
+      }
+    }>('/auth/otp/email/verify', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber, code: otp }),
+      body: JSON.stringify({ email, code }),
     });
-    
-    if (response.success && response.data.tokens?.accessToken) {
-      this.setToken(response.data.tokens.accessToken);
-    }
-    return response;
-  }
 
-  async loginWithEmail(email: string, password: string) {
-    const response = await this.request<{ 
-      success: boolean; 
-      data: { 
-        tokens: { accessToken: string; refreshToken: string };
-        user: User;
-      } 
-    }>('/auth/login/email', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    
     if (response.success && response.data.tokens?.accessToken) {
       this.setToken(response.data.tokens.accessToken);
     }
