@@ -13,29 +13,29 @@ const isPnpmMonorepo = fs.existsSync(pnpmVirtualStore);
 
 const config = getDefaultConfig(projectRoot);
 
-// Block Node.js built-in modules that shouldn't be in React Native
-// This prevents backend packages (like africastalking) from breaking mobile builds
-const nodeBuiltins = ['crypto', 'fs', 'path', 'os', 'http', 'https', 'net', 'tls', 'stream', 'zlib', 'dns', 'child_process', 'cluster', 'dgram', 'module', 'process', 'readline', 'repl', 'vm'];
-const originalResolveRequest = config.resolver.resolveRequest;
+// Block backend-only packages and Node.js built-in modules from Metro bundling
+config.resolver.blockList = [
+  // Block backend-only packages that import Node.js builtins
+  /.*\/africastalking\/.*/,
+  /.*\/prisma\/.*/,
+  /.*\/express\/.*/,
+  /.*\/bcrypt\/.*/,
+  /.*\/node-cron\/.*/,
+  // Block axios 1.13.x node-specific CJS build that imports crypto
+  /.*\/axios@1\.1[3-9]\..*/,
+  // Block test standalone directories
+  new RegExp(path.resolve(projectRoot, 'eas-test-standalone').replace(/[/\\]/g, '[/\\\\]') + '.*$'),
+];
+
+// Also block Node.js built-in module resolution as safety net
+const nodeBuiltins = new Set(['crypto', 'dns', 'net', 'tls', 'child_process', 'cluster', 'dgram', 'readline', 'repl', 'vm']);
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  // Block Node.js built-in modules
-  if (nodeBuiltins.includes(moduleName)) {
-    console.warn(`[Metro] Blocking Node.js built-in module: ${moduleName}`);
+  if (nodeBuiltins.has(moduleName)) {
     return { type: 'empty' };
-  }
-  
-  // Use original resolver if available, otherwise default
-  if (originalResolveRequest) {
-    return originalResolveRequest(context, moduleName, platform);
   }
   return context.resolveRequest(context, moduleName, platform);
 };
-
-// Exclude test standalone directory from Metro
-config.resolver.blockList = [
-  new RegExp(path.resolve(projectRoot, 'eas-test-standalone').replace(/[/\\]/g, '[/\\\\]') + '.*$'),
-];
 
 if (isPnpmMonorepo) {
   // Monorepo (local development with pnpm)
@@ -46,10 +46,14 @@ if (isPnpmMonorepo) {
     rootNodeModules,
   ];
 
-  // NOTE: Do NOT add all pnpm virtual store paths here.
-  // That exposes backend-only packages (africastalking, prisma, etc.) to Metro,
-  // causing "Unable to resolve module crypto" errors.
-  // The extraNodeModules symlink resolution below handles the app's direct deps.
+  // Add pnpm virtual store paths for proper module resolution
+  const pnpmItems = fs.readdirSync(pnpmVirtualStore);
+  pnpmItems.forEach(item => {
+    const virtualStoreModulePath = path.join(pnpmVirtualStore, item, 'node_modules');
+    if (fs.existsSync(virtualStoreModulePath)) {
+      config.resolver.nodeModulesPaths.push(virtualStoreModulePath);
+    }
+  });
 
   // Resolve symlinks in node_modules for pnpm compatibility
   const nodeModulesDir = path.resolve(projectRoot, 'node_modules');
