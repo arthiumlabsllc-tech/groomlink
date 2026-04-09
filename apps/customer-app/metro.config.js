@@ -46,14 +46,10 @@ if (isPnpmMonorepo) {
     rootNodeModules,
   ];
 
-  // Add pnpm virtual store paths for proper module resolution
-  const pnpmItems = fs.readdirSync(pnpmVirtualStore);
-  pnpmItems.forEach(item => {
-    const virtualStoreModulePath = path.join(pnpmVirtualStore, item, 'node_modules');
-    if (fs.existsSync(virtualStoreModulePath)) {
-      config.resolver.nodeModulesPaths.push(virtualStoreModulePath);
-    }
-  });
+  // NOTE: Do NOT add all pnpm virtual store paths here.
+  // That exposes backend-only packages (africastalking, prisma, etc.) to Metro,
+  // causing "Unable to resolve module crypto" errors.
+  // The extraNodeModules symlink resolution below handles the app's direct deps.
 
   // Resolve symlinks in node_modules for pnpm compatibility
   const nodeModulesDir = path.resolve(projectRoot, 'node_modules');

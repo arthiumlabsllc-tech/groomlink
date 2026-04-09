@@ -76,10 +76,10 @@ export default function PhoneScreen() {
           </View>
           
           <Text variant="headlineMedium" style={styles.title}>
-            Welcome to GroomLink
+            GroomLink for Business
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Partner with us to grow your salon business
+            Enter your phone number to sign in or register your salon
           </Text>
 
           <View style={styles.inputContainer}>
@@ -116,13 +116,24 @@ export default function PhoneScreen() {
             onPress={handleRequestOTP}
             loading={loading}
             disabled={loading || phoneNumber.length < 9}
-            style={styles.button}
+            style={[styles.button, (loading || phoneNumber.length < 9) && styles.buttonDisabled]}
             contentStyle={styles.buttonContent}
             buttonColor="#006B3F"
+            textColor="#fff"
           >
             {loading ? 'Sending...' : 'Continue'}
           </Button>
           
+          {phoneNumber.length < 9 && !loading && (
+            <Text variant="bodySmall" style={styles.hintText}>
+              Enter your phone number to continue
+            </Text>
+          )}
+          
+          <Text variant="bodySmall" style={styles.signupNote}>
+            New salon owner? We'll help you set up your business after verification
+          </Text>
+
           <Text variant="bodySmall" style={styles.termsText}>
             By continuing, you agree to our Terms of Service and Privacy Policy
           </Text>
@@ -139,6 +150,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 40,
   },
   content: {
     flex: 1,
@@ -203,6 +215,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     backgroundColor: '#fff',
+    fontSize: 18,
   },
   helperText: {
     marginTop: 4,
@@ -211,15 +224,33 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   button: {
-    marginTop: 8,
+    marginTop: 16,
     borderRadius: 8,
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#006B3F80',
+    opacity: 0.8,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  hintText: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 12,
+  },
+  signupNote: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 24,
+    fontStyle: 'italic',
   },
   termsText: {
     textAlign: 'center',
     color: '#999',
-    marginTop: 24,
+    marginTop: 16,
   },
 });

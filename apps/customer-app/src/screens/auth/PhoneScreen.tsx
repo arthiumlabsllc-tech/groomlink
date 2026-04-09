@@ -45,7 +45,7 @@ export default function PhoneScreen() {
             Welcome to GroomLink
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Enter your phone number to get started
+            Enter your phone number to sign in or create an account
           </Text>
 
           <View style={styles.inputContainer}>
@@ -74,11 +74,23 @@ export default function PhoneScreen() {
             onPress={handleRequestOTP}
             loading={loading}
             disabled={loading || phoneNumber.length < 9}
-            style={styles.button}
+            style={[styles.button, (loading || phoneNumber.length < 9) && styles.buttonDisabled]}
             contentStyle={styles.buttonContent}
+            buttonColor="#CE1126"
+            textColor="#fff"
           >
             {loading ? 'Sending...' : 'Continue'}
           </Button>
+          
+          {phoneNumber.length < 9 && !loading && (
+            <Text variant="bodySmall" style={styles.hintText}>
+              Enter your phone number to continue
+            </Text>
+          )}
+
+          <Text variant="bodySmall" style={styles.signupNote}>
+            New here? We'll help you set up your account after verification
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -92,6 +104,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 40,
   },
   content: {
     flex: 1,
@@ -114,12 +127,31 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#f5f5f5',
+    fontSize: 18,
   },
   button: {
-    marginTop: 8,
+    marginTop: 16,
     borderRadius: 8,
+    minHeight: 56,
+  justifyContent: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#CE112680',
+    opacity: 0.8,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  hintText: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 12,
+  },
+  signupNote: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 24,
+    fontStyle: 'italic',
   },
 });
