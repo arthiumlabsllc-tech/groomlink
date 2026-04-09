@@ -13,6 +13,12 @@ const isPnpmMonorepo = fs.existsSync(pnpmVirtualStore);
 
 const config = getDefaultConfig(projectRoot);
 
+// Exclude test standalone directories from Metro (both local and sibling apps)
+config.resolver.blockList = [
+  new RegExp(path.resolve(projectRoot, 'eas-test-standalone').replace(/[/\\]/g, '[/\\\\]') + '.*$'),
+  new RegExp(path.resolve(projectRoot, '../customer-app/eas-test-standalone').replace(/[/\\]/g, '[/\\\\]') + '.*$'),
+];
+
 if (isPnpmMonorepo) {
   // Monorepo (local development with pnpm)
   config.watchFolders = [projectRoot, monorepoRoot];
