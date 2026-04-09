@@ -85,12 +85,18 @@ export default function OTPScreen() {
       const response = await authApi.verifyEmailOTP(email, code);
       
       if (response.success) {
-        setUser(response.data.user);
+        const { isNewUser, user } = response.data;
         
-        if (response.data.isNewUser) {
+        if (isNewUser) {
+          // New user needs to set up their salon first
+          // Don't call setUser() yet - keep user in auth flow
+          // Tokens (even temp ones) are stored by authApi for salon creation
           navigation.navigate('SalonSetup');
+        } else {
+          // Existing user - fully authenticated, go to main app
+          setUser(user);
+          // AppNavigator will automatically redirect to MainNavigator
         }
-        // Otherwise, AppNavigator will automatically show Main screens
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid OTP. Please try again.');

@@ -34,10 +34,21 @@ export const authApi = {
     const response = await apiClient.post('/auth/otp/email/verify', { email, code });
     
     if (response.data.success) {
-      const { tokens, user } = response.data.data;
-      await SecureStore.setItemAsync('accessToken', tokens.accessToken);
-      await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
-      await SecureStore.setItemAsync('user', JSON.stringify(user));
+      const { tokens, user, isNewUser } = response.data.data;
+      
+      // For new users, tokens might be temporary or empty
+      // Only store tokens if we have a valid access token
+      if (tokens?.accessToken) {
+        await SecureStore.setItemAsync('accessToken', tokens.accessToken);
+        if (tokens.refreshToken) {
+          await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+        }
+      }
+      
+      // Always store user data
+      if (user) {
+        await SecureStore.setItemAsync('user', JSON.stringify(user));
+      }
     }
     
     return response.data;
@@ -71,5 +82,13 @@ export const authApi = {
   getStoredUser: async (): Promise<User | null> => {
     const userStr = await SecureStore.getItemAsync('user');
     return userStr ? JSON.parse(userStr) : null;
+  },
+
+  // Refresh auth state after salon setup completion
+  // This fetches the updated profile and stores it
+  refreshAuthAfterSalonSetup: async (): Promise<User> => {
+    const profile = await authApi.getProfile();
+    await SecureStore.setItemAsync('user', JSON.stringify(profile));
+    return profile;
   },
 };

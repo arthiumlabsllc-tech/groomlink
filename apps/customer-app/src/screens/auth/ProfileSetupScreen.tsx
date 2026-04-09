@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
+import { AuthStackParamList } from '../../types/navigation';
+
+type ProfileSetupRouteProp = RouteProp<AuthStackParamList, 'ProfileSetup'>;
 
 export default function ProfileSetupScreen() {
+  const route = useRoute<ProfileSetupRouteProp>();
+  const initialEmail = route.params?.email || '';
+  const initialUser = route.params?.user;
+  
   const { setUser } = useAuthStore();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState(initialUser?.firstName || '');
+  const [lastName, setLastName] = useState(initialUser?.lastName || '');
+  const [email, setEmail] = useState(initialEmail);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

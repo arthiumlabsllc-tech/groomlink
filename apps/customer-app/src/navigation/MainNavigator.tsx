@@ -35,6 +35,22 @@ function SearchStack() {
   );
 }
 
+function BookingsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="BookingsMain" component={BookingsScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function ProfileStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+    </Stack.Navigator>
+  );
+}
+
 export default function MainNavigator() {
   return (
     <Tab.Navigator
@@ -61,8 +77,8 @@ export default function MainNavigator() {
     >
       <Tab.Screen name="Home" component={HomeStack} />
       <Tab.Screen name="Search" component={SearchStack} />
-      <Tab.Screen name="Bookings" component={BookingsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Bookings" component={BookingsStack} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }

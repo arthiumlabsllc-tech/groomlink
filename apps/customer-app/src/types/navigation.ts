@@ -1,10 +1,11 @@
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { User } from '.';
 
 export type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
-  ProfileSetup: undefined;
+  ProfileSetup: { email: string; user: User } | undefined;
 };
 
 export type MainStackParamList = {

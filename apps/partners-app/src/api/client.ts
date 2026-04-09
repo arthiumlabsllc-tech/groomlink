@@ -39,9 +39,17 @@ apiClient.interceptors.response.use(
             refreshToken,
           });
           
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+          // More defensive token extraction
+          const tokens = response.data?.data?.tokens || response.data?.tokens;
+          if (!tokens?.accessToken) {
+            throw new Error('Invalid token response from refresh endpoint');
+          }
+          
+          const { accessToken, refreshToken: newRefreshToken } = tokens;
           await SecureStore.setItemAsync('accessToken', accessToken);
-          await SecureStore.setItemAsync('refreshToken', newRefreshToken);
+          if (newRefreshToken) {
+            await SecureStore.setItemAsync('refreshToken', newRefreshToken);
+          }
           
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return apiClient(originalRequest);

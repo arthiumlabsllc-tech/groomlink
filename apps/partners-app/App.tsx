@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { PaperProvider } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
@@ -18,7 +19,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { setUser, setLoading } = useAuthStore();
+  const { setUser, clearAuth } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -26,16 +27,34 @@ function AppContent() {
 
   const checkAuth = async () => {
     try {
-      const user = await authApi.getStoredUser();
-      if (user) {
+      // Check if we have stored tokens
+      const accessToken = await SecureStore.getItemAsync('accessToken');
+      const storedUser = await authApi.getStoredUser();
+      
+      if (accessToken && storedUser) {
         // Verify token is still valid by fetching profile
-        const profile = await authApi.getProfile();
-        setUser(profile);
+        try {
+          const profile = await authApi.getProfile();
+          setUser(profile);
+        } catch (profileError) {
+          // Token is invalid or expired - clear everything and show login
+          console.log('Profile fetch failed, clearing auth state');
+          await authApi.logout();
+          clearAuth();
+        }
       } else {
-        setLoading(false);
+        // No tokens stored - show login screen
+        clearAuth();
       }
     } catch (error) {
-      setLoading(false);
+      // Unexpected error - clear auth and show login screen
+      console.log('Auth check failed:', error);
+      try {
+        await authApi.logout();
+      } catch (e) {
+        // Ignore logout errors
+      }
+      clearAuth();
     }
   };
 

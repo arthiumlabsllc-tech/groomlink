@@ -4,6 +4,7 @@ import { TextInput, Button, Text, HelperText, Divider, List } from 'react-native
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { salonApi, CreateSalonData } from '../../api/salon';
+import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 
 type AuthStackParamList = {
@@ -26,7 +27,7 @@ const BUSINESS_CATEGORIES = [
 
 export default function SalonSetupScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   
   const [businessName, setBusinessName] = useState('');
   const [address, setAddress] = useState('');
@@ -76,9 +77,15 @@ export default function SalonSetupScreen() {
         category: category || undefined,
       };
 
+      // Create the salon
       await salonApi.create(salonData);
-      // Navigation will be handled automatically by AppNavigator
-      // since the user now has a salon associated
+      
+      // Refresh auth state - fetch updated profile with salon association
+      // This ensures we have proper tokens and user state
+      const updatedProfile = await authApi.refreshAuthAfterSalonSetup();
+      
+      // Update auth store - this will trigger navigation to MainNavigator
+      setUser(updatedProfile);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create salon. Please try again.');
     } finally {

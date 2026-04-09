@@ -56,12 +56,17 @@ export default function OTPScreen() {
       const response = await authApi.verifyEmailOTP(email, code);
       
       if (response.success) {
-        setUser(response.data.user);
+        const { user, isNewUser } = response.data;
         
-        if (response.data.isNewUser) {
-          navigation.navigate('ProfileSetup');
+        if (isNewUser) {
+          // New user - navigate to ProfileSetup to complete registration
+          navigation.navigate('ProfileSetup', { email, user });
+        } else {
+          // Existing user - tokens are already stored in SecureStore by authApi
+          // Set user in store which updates isAuthenticated to true
+          setUser(user);
+          // AppNavigator will automatically redirect to MainNavigator
         }
-        // Otherwise, AppNavigator will automatically show Main screens
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
