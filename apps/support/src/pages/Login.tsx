@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api';
-import { Headphones, Mail, ArrowRight } from 'lucide-react';
+import { Headphones, ArrowRight } from 'lucide-react';
 
 type EmailStep = 'email' | 'verify';
 

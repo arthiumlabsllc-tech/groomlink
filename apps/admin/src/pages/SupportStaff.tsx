@@ -8,7 +8,7 @@ export function SupportStaff() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    phoneNumber: '+233',
+    phoneNumber: '',
     email: '',
   });
   const [error, setError] = useState<string | null>(null);
@@ -26,12 +26,12 @@ export function SupportStaff() {
       await createStaff.mutateAsync({
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber,
-        email: formData.email || null,
+        phoneNumber: formData.phoneNumber || null,
+        email: formData.email,
       });
       
       // Reset form and close modal
-      setFormData({ firstName: '', lastName: '', phoneNumber: '+233', email: '' });
+      setFormData({ firstName: '', lastName: '', phoneNumber: '', email: '' });
       setShowCreateModal(false);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create support staff');
@@ -212,22 +212,7 @@ export function SupportStaff() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  placeholder="+233 XX XXX XXXX"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">This will be used for OTP login</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email (Optional)
+                  Email
                 </label>
                 <input
                   type="email"
@@ -235,12 +220,27 @@ export function SupportStaff() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="support@groomlinkgh.com"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">This will be used for email OTP login</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  placeholder="+233 XX XXX XXXX"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
                 />
               </div>
 
               <div className="bg-orange-50 p-3 rounded-lg">
                 <p className="text-sm text-orange-700">
-                  <strong>Note:</strong> The staff member will use OTP login with their phone number to access the support dashboard at support.groomlinkgh.com
+                  <strong>Note:</strong> The staff member will use email OTP to log in to the support dashboard
                 </p>
               </div>
 
@@ -250,7 +250,7 @@ export function SupportStaff() {
                   onClick={() => {
                     setShowCreateModal(false);
                     setError(null);
-                    setFormData({ firstName: '', lastName: '', phoneNumber: '+233', email: '' });
+                    setFormData({ firstName: '', lastName: '', phoneNumber: '', email: '' });
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >

@@ -8,7 +8,7 @@ import { sendEmailOTP } from './email.service';
 import { UserRole, UserStatus } from '../middleware/auth';
 
 export interface RegisterData {
-  phoneNumber: string;
+  phoneNumber?: string;
   firstName: string;
   lastName: string;
   email?: string;
@@ -23,7 +23,7 @@ export interface LoginData {
 export interface AuthResponse {
   user: {
     id: string;
-    phoneNumber: string;
+    phoneNumber: string | null;
     firstName: string;
     lastName: string;
     email: string | null;
@@ -62,7 +62,7 @@ export async function verifyPhoneOTP(phoneNumber: string, code: string): Promise
 export interface OTPVerifyResponse {
   user: {
     id: string;
-    phoneNumber: string;
+    phoneNumber: string | null;
     firstName: string;
     lastName: string;
     email: string | null;
@@ -161,13 +161,25 @@ export async function verifyOTPAndLogin(phoneNumber: string, code: string): Prom
 export async function register(data: RegisterData): Promise<AuthResponse> {
   const { phoneNumber, firstName, lastName, email, password } = data;
 
-  // Check if user already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { phoneNumber },
-  });
-
-  if (existingUser) {
-    throw new Error('User already exists with this phone number');
+  // Check if user already exists by phone or email
+  let existingUser = null;
+  
+  if (phoneNumber) {
+    existingUser = await prisma.user.findUnique({
+      where: { phoneNumber },
+    });
+    if (existingUser) {
+      throw new Error('User already exists with this phone number');
+    }
+  }
+  
+  if (email) {
+    existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new Error('User already exists with this email');
+    }
   }
 
   // Hash password if provided
@@ -176,7 +188,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
   // Create user
   const user = await prisma.user.create({
     data: {
-      phoneNumber,
+      phoneNumber: phoneNumber || null,
       firstName,
       lastName,
       email: email || null,

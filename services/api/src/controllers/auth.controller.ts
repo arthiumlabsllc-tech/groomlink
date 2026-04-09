@@ -13,12 +13,15 @@ const verifyOTPSchema = z.object({
 });
 
 const registerSchema = z.object({
-  phoneNumber: z.string(),
+  phoneNumber: z.string().optional(),
   firstName: z.string().min(2, 'First name is required'),
   lastName: z.string().min(2, 'Last name is required'),
   email: z.string().email().optional(),
   password: z.string().min(6).optional(),
-});
+}).refine(
+  (data) => data.phoneNumber || data.email,
+  { message: 'Either phoneNumber or email is required' }
+);
 
 const loginSchema = z.object({
   phoneNumber: z.string(),

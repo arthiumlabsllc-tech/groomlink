@@ -5,6 +5,7 @@ import logger from '../config/logger';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import { revokeAllUserRefreshTokens } from '../utils/jwt';
+import { sendWelcomeEmail } from '../services/email.service';
 
 // Transaction client type for Prisma transactions
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -684,6 +685,18 @@ export async function createSupportStaff(req: AuthenticatedRequest, res: Respons
     });
 
     logger.info(`Support staff created by admin: ${user.id}`);
+
+    // Send welcome email (fire-and-forget, don't block response)
+    if (user.email) {
+      sendWelcomeEmail(user.email, user.firstName).catch((emailError) => {
+        logger.error('Failed to send welcome email to support staff', {
+          error: emailError,
+          userId: user.id,
+          email: user.email,
+        });
+      });
+    }
+
     successResponse(res, user, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {

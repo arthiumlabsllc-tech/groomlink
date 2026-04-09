@@ -15,12 +15,14 @@ if (validateEmailConfig()) {
       host: emailConfig.host,
       port: emailConfig.port,
       secure: emailConfig.secure,
+      requireTLS: emailConfig.requireTLS,
+      tls: emailConfig.tls,
       auth: {
         user: emailConfig.auth.user,
         pass: emailConfig.auth.pass,
       },
     });
-    logger.info(`Email transporter initialized for ${emailConfig.host}:${emailConfig.port}`);
+    logger.info(`Email transporter initialized for ${emailConfig.host}:${emailConfig.port} (secure: ${emailConfig.secure})`);
   } catch (error) {
     logger.error('Failed to initialize email transporter:', error);
   }
@@ -160,6 +162,115 @@ export async function sendTransactionalEmail(
     // Don't throw - return false to allow graceful handling
     return false;
   }
+}
+
+/**
+ * Send a welcome email to new support staff
+ */
+export async function sendWelcomeEmail(email: string, firstName: string): Promise<boolean> {
+  const subject = 'Welcome to GroomLink Support Team';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to GroomLink Support Team</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color: ${BRAND_GREEN}; padding: 30px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 40px 20px 40px;">
+              <h2 style="margin: 0 0 20px 0; color: #333; font-size: 22px; font-weight: 500;">Welcome to the Team!</h2>
+              <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                Hi ${firstName},
+              </p>
+              <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                You have been added as a support team member at <strong style="color: ${BRAND_GREEN};">GroomLink</strong>. We're excited to have you on board!
+              </p>
+            </td>
+          </tr>
+
+          <!-- Login Instructions -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid ${BRAND_GREEN};">
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 600;">How to Access Your Dashboard</h3>
+                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px; line-height: 1.6;">
+                      <strong>Dashboard URL:</strong> <a href="https://support.groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">support.groomlinkgh.com</a>
+                    </p>
+                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px; line-height: 1.6;">
+                      <strong>Email:</strong> ${email}
+                    </p>
+                    <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">
+                      <strong>Login Method:</strong> OTP verification via email
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Steps -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;">
+              <p style="margin: 0 0 15px 0; color: #666; font-size: 14px; line-height: 1.6;">To log in:</p>
+              <ol style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                <li>Visit <a href="https://support.groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">support.groomlinkgh.com</a></li>
+                <li>Enter your email address: <strong>${email}</strong></li>
+                <li>Request an OTP code</li>
+                <li>Check your email for the verification code</li>
+                <li>Enter the code to access your dashboard</li>
+              </ol>
+            </td>
+          </tr>
+
+          <!-- Welcome Message -->
+          <tr>
+            <td style="padding: 0 40px 40px 40px;">
+              <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                Welcome aboard! If you have any questions, please reach out to your administrator.
+              </p>
+              <p style="margin: 0; color: #888; font-size: 14px;">
+                — <strong style="color: ${BRAND_GREEN};">The GroomLink Team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
+              <p style="margin: 0 0 10px 0; color: #999; font-size: 13px; text-align: center;">
+                If you believe you received this email in error, please contact your administrator.
+              </p>
+              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
+                © ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  return sendTransactionalEmail(email, subject, html);
 }
 
 /**

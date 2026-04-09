@@ -3,7 +3,7 @@ import { UserRole, UserStatus } from '../middleware/auth';
 
 export interface AuthenticatedUser {
   id: string;
-  phoneNumber: string;
+  phoneNumber: string | null;
   role: UserRole;
   status: UserStatus;
   impersonatedBy?: string; // ID of support staff if impersonating
@@ -31,7 +31,7 @@ export interface ApiResponse<T = unknown> {
 
 export interface TokenPayload {
   userId: string;
-  phoneNumber: string;
+  phoneNumber: string | null;
   role: UserRole;
   impersonatedBy?: string; // ID of support staff if impersonating
 }

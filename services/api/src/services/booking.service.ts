@@ -112,7 +112,7 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     select: { phoneNumber: true },
   });
 
-  if (customer) {
+  if (customer && customer.phoneNumber) {
     await smsService.sendBookingConfirmation(
       customer.phoneNumber,
       booking.id,
@@ -358,12 +358,14 @@ export async function cancelBooking(id: string, userId: string, userRole: string
 
   logger.info(`Booking cancelled: ${id} by ${userRole}`);
 
-  // Send cancellation SMS
-  await smsService.sendCancellationSMS(
-    booking.customer.phoneNumber,
-    booking.id,
-    booking.salon.businessName
-  );
+  // Send cancellation SMS (only if customer has phone number)
+  if (booking.customer.phoneNumber) {
+    await smsService.sendCancellationSMS(
+      booking.customer.phoneNumber,
+      booking.id,
+      booking.salon.businessName
+    );
+  }
 
   return updated;
 }

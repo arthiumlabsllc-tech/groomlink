@@ -25,8 +25,8 @@ export interface PaginatedSupportStaff {
 export interface CreateSupportStaffData {
   firstName: string;
   lastName: string;
-  phoneNumber: string;
-  email?: string | null;
+  phoneNumber?: string | null;
+  email: string;
 }
 
 export const supportStaffApi = {

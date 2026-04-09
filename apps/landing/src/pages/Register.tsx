@@ -5,13 +5,14 @@ import {
   ArrowLeft, 
   User, 
   Store, 
-  Phone, 
+  Mail,
   UserCircle, 
   MapPin, 
   ShieldCheck, 
   Loader2,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Phone
 } from 'lucide-react'
 
 const API_BASE_URL = 'https://api.groomlinkgh.com'
@@ -20,10 +21,10 @@ type UserType = 'customer' | 'salon-owner' | null
 type Step = 1 | 2 | 3
 
 interface FormData {
+  email: string
   phoneNumber: string
   firstName: string
   lastName: string
-  email: string
   salonName: string
   salonLocation: string
 }
@@ -38,10 +39,10 @@ export default function Register() {
   const [step, setStep] = useState<Step>(1)
   const [userType, setUserType] = useState<UserType>(null)
   const [formData, setFormData] = useState<FormData>({
+    email: '',
     phoneNumber: '',
     firstName: '',
     lastName: '',
-    email: '',
     salonName: '',
     salonLocation: ''
   })
@@ -79,25 +80,9 @@ export default function Register() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const validatePhone = (phone: string): boolean => {
-    // Must start with 0 or +233, exactly 10 digits after country code
-    const cleanPhone = phone.replace(/\s/g, '')
-    if (cleanPhone.startsWith('+233')) {
-      const digits = cleanPhone.slice(4)
-      return digits.length === 9 && /^\d+$/.test(digits)
-    } else if (cleanPhone.startsWith('0')) {
-      const digits = cleanPhone.slice(1)
-      return digits.length === 9 && /^\d+$/.test(digits)
-    }
-    return false
-  }
-
-  const formatPhoneForApi = (phone: string): string => {
-    const cleanPhone = phone.replace(/\s/g, '')
-    if (cleanPhone.startsWith('0')) {
-      return '+233' + cleanPhone.slice(1)
-    }
-    return cleanPhone
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
   }
 
   const handleUserTypeSelect = (type: UserType) => {
@@ -123,11 +108,23 @@ export default function Register() {
     }
   }
 
+  const validatePhoneNumber = (phone: string): boolean => {
+    // Accept Ghana phone numbers: +233XXXXXXXXX or 0XXXXXXXXX
+    const phoneRegex = /^(\+233|0)[0-9]{9}$/
+    return phoneRegex.test(phone.replace(/\s/g, ''))
+  }
+
   const validateStep2 = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (!validatePhone(formData.phoneNumber)) {
-      newErrors.phoneNumber = 'Enter a valid Ghana phone number (e.g., 0241234567 or +233241234567)'
+    if (!validateEmail(formData.email)) {
+      newErrors.email = 'Enter a valid email address'
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required'
+    } else if (!validatePhoneNumber(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Enter a valid Ghana phone number (e.g., +233XXXXXXXXX or 0XXXXXXXXX)'
     }
 
     if (!formData.firstName.trim()) {
@@ -156,10 +153,10 @@ export default function Register() {
 
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
+      const response = await fetch(`${API_BASE_URL}/auth/otp/email/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: formatPhoneForApi(formData.phoneNumber) })
+        body: JSON.stringify({ email: formData.email.toLowerCase().trim() })
       })
 
       const data = await response.json()
@@ -171,7 +168,7 @@ export default function Register() {
       setStep(3)
       setTimer(600)
       setTimerActive(true)
-      setToast({ message: 'OTP sent successfully!', type: 'success' })
+      setToast({ message: 'OTP sent to your email!', type: 'success' })
     } catch (error) {
       setToast({ 
         message: error instanceof Error ? error.message : 'Failed to send OTP', 
@@ -211,10 +208,10 @@ export default function Register() {
   const handleResendOtp = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
+      const response = await fetch(`${API_BASE_URL}/auth/otp/email/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: formatPhoneForApi(formData.phoneNumber) })
+        body: JSON.stringify({ email: formData.email.toLowerCase().trim() })
       })
 
       const data = await response.json()
@@ -246,11 +243,11 @@ export default function Register() {
 
     setIsLoading(true)
     try {
-      const verifyResponse = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
+      const verifyResponse = await fetch(`${API_BASE_URL}/auth/otp/email/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          phoneNumber: formatPhoneForApi(formData.phoneNumber), 
+          email: formData.email.toLowerCase().trim(), 
           code: otpCode 
         })
       })
@@ -263,20 +260,21 @@ export default function Register() {
 
       // If new user, register them
       if (verifyData.isNewUser) {
-        const registerBody: Record<string, string> = {
-          phoneNumber: formatPhoneForApi(formData.phoneNumber),
-          firstName: formData.firstName,
-          lastName: formData.lastName
-        }
-
-        if (formData.email) {
-          registerBody.email = formData.email
+        // Format phone number to +233 format for the API
+        let formattedPhone = formData.phoneNumber.replace(/\s/g, '')
+        if (formattedPhone.startsWith('0')) {
+          formattedPhone = '+233' + formattedPhone.slice(1)
         }
 
         const registerResponse = await fetch(`${API_BASE_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(registerBody)
+          body: JSON.stringify({
+            email: formData.email.toLowerCase().trim(),
+            phoneNumber: formattedPhone,
+            firstName: formData.firstName,
+            lastName: formData.lastName
+          })
         })
 
         const registerData = await registerResponse.json()
@@ -485,6 +483,29 @@ export default function Register() {
               </p>
 
               <div className="space-y-5">
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="you@example.com"
+                      className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all ${
+                        errors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                  )}
+                </div>
+
                 {/* Phone Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -497,14 +518,16 @@ export default function Register() {
                       name="phoneNumber"
                       value={formData.phoneNumber}
                       onChange={handleInputChange}
-                      placeholder="024 123 4567 or +233 24 123 4567"
+                      placeholder="+233 XX XXX XXXX"
                       className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all ${
                         errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />
                   </div>
-                  {errors.phoneNumber && (
+                  {errors.phoneNumber ? (
                     <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
+                  ) : (
+                    <p className="text-gray-500 text-xs mt-1">So we can reach you if needed</p>
                   )}
                 </div>
 
@@ -549,21 +572,6 @@ export default function Register() {
                       <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
                     )}
                   </div>
-                </div>
-
-                {/* Email (Optional) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email <span className="text-gray-400">(Optional)</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="john@example.com"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                  />
                 </div>
 
                 {/* Salon Owner Additional Fields */}
@@ -648,14 +656,14 @@ export default function Register() {
 
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheck className="w-8 h-8 text-primary-500" />
+                  <Mail className="w-8 h-8 text-primary-500" />
                 </div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                  Verify Your Number
+                  Verify Your Email
                 </h1>
                 <p className="text-gray-600">
                   We've sent a 6-digit code to<br />
-                  <span className="font-medium text-gray-900">{formatPhoneForApi(formData.phoneNumber)}</span>
+                  <span className="font-medium text-gray-900">{formData.email}</span>
                 </p>
               </div>
 
