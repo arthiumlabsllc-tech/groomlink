@@ -629,8 +629,8 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
 const createSupportStaffSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number'),
-  email: z.string().email('Invalid email address').optional().nullable(),
+  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number').optional().nullable(),
+  email: z.string().email('Invalid email address'),
 });
 
 // Create support staff account
@@ -638,14 +638,16 @@ export async function createSupportStaff(req: AuthenticatedRequest, res: Respons
   try {
     const data = createSupportStaffSchema.parse(req.body);
 
-    // Check if phone number already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { phoneNumber: data.phoneNumber },
-    });
+    // Check if phone number already exists (only if provided)
+    if (data.phoneNumber) {
+      const existingUser = await prisma.user.findUnique({
+        where: { phoneNumber: data.phoneNumber ?? undefined },
+      });
 
-    if (existingUser) {
-      errorResponse(res, 'PHONE_EXISTS', 'A user with this phone number already exists', 400);
-      return;
+      if (existingUser) {
+        errorResponse(res, 'PHONE_EXISTS', 'A user with this phone number already exists', 400);
+        return;
+      }
     }
 
     // Check if email exists (if provided)

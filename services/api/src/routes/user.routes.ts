@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as userController from '../controllers/user.controller';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken, requireRole, requireAdminOrHigher } from '../middleware/auth';
 import { UserRole } from '../middleware/auth';
 
 const router = Router();
@@ -27,12 +27,12 @@ router.delete('/account', authenticateToken, userController.deleteAccount);
 router.post('/export-data', authenticateToken, userController.exportUserData);
 
 // Admin routes
-router.get('/', authenticateToken, requireRole(UserRole.ADMIN), userController.getAllUsers);
-router.put('/:id/status', authenticateToken, requireRole(UserRole.ADMIN), userController.updateUserStatus);
-router.delete('/:id', authenticateToken, requireRole(UserRole.ADMIN), userController.adminDeleteUser);
+router.get('/', authenticateToken, requireAdminOrHigher, userController.getAllUsers);
+router.put('/:id/status', authenticateToken, requireAdminOrHigher, userController.updateUserStatus);
+router.delete('/:id', authenticateToken, requireAdminOrHigher, userController.adminDeleteUser);
 
-// Support staff management (ADMIN only)
-router.post('/support-staff', authenticateToken, requireRole(UserRole.ADMIN), userController.createSupportStaff);
-router.get('/support-staff', authenticateToken, requireRole(UserRole.ADMIN), userController.getSupportStaff);
+// Support staff management (ADMIN and SUPER_ADMIN)
+router.post('/support-staff', authenticateToken, requireAdminOrHigher, userController.createSupportStaff);
+router.get('/support-staff', authenticateToken, requireAdminOrHigher, userController.getSupportStaff);
 
 export default router;
