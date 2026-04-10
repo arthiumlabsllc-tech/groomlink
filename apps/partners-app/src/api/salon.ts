@@ -3,12 +3,18 @@ import { Salon, DashboardStats } from '../types';
 
 export interface CreateSalonData {
   businessName: string;
+  type: string;
+  phoneNumber: string;
+  email?: string;
   address: string;
   city: string;
-  phone: string;
-  email?: string;
+  region: string;
+  latitude: number;
+  longitude: number;
+  openingTime: string;
+  closingTime: string;
+  workingDays: string[];
   description?: string;
-  category?: string;
 }
 
 export const salonApi = {

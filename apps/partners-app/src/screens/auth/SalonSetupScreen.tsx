@@ -1,55 +1,168 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
-import { TextInput, Button, Text, HelperText, Divider, Surface } from 'react-native-paper';
+import { TextInput, Button, Text, HelperText, Divider, Surface, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { salonApi, CreateSalonData } from '../../api/salon';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 
 type AuthStackParamList = {
-  Phone: undefined;
-  OTP: { phoneNumber: string };
+  Email: undefined;
+  OTP: { email: string };
+  ProfileSetup: { email: string };
   SalonSetup: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SalonSetup'>;
 
-const BUSINESS_CATEGORIES = [
+const SALON_TYPES = [
   { label: 'Barbershop', value: 'BARBERSHOP', icon: 'cut' },
-  { label: 'Hair Salon', value: 'HAIR_SALON', icon: 'scissors' },
+  { label: 'Hair Salon', value: 'HAIR_SALON', icon: 'woman' },
   { label: 'Beauty Salon', value: 'BEAUTY_SALON', icon: 'sparkles' },
   { label: 'Nail Salon', value: 'NAIL_SALON', icon: 'hand-left' },
-  { label: 'Spa & Wellness', value: 'SPA_WELLNESS', icon: 'leaf' },
-  { label: 'Full Service', value: 'FULL_SERVICE', icon: 'business' },
+  { label: 'Pedicure Salon', value: 'PEDICURE_SALON', icon: 'footsteps' },
+  { label: 'Spa', value: 'SPA', icon: 'water' },
 ];
+
+const GHANA_REGIONS = [
+  'Greater Accra',
+  'Ashanti',
+  'Western',
+  'Central',
+  'Eastern',
+  'Northern',
+  'Upper East',
+  'Upper West',
+  'Volta',
+  'Oti',
+  'Bono',
+  'Bono East',
+  'Ahafo',
+  'Savannah',
+  'North East',
+  'Western North',
+];
+
+const GHANA_CITIES = [
+  'Accra',
+  'Kumasi',
+  'Takoradi',
+  'Cape Coast',
+  'Tamale',
+  'Ho',
+  'Sunyani',
+  'Bolgatanga',
+  'Wa',
+  'Koforidua',
+  'Tema',
+  'Sekondi',
+];
+
+const TIME_OPTIONS = [
+  '06:00', '07:00', '08:00', '09:00', '10:00',
+  '17:00', '18:00', '19:00', '20:00', '21:00', '22:00',
+];
+
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function SalonSetupScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, setUser } = useAuthStore();
-  
+
+  // Section 1: Basic Info
   const [businessName, setBusinessName] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [description, setDescription] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
+  const [email, setEmail] = useState(user?.email || '');
+
+  // Section 2: Location
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [phone, setPhone] = useState(user?.phoneNumber || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [description, setDescription] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [region, setRegion] = useState('Greater Accra');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationDetected, setLocationDetected] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+
+  // Section 3: Business Hours
+  const [openingTime, setOpeningTime] = useState('08:00');
+  const [closingTime, setClosingTime] = useState('18:00');
+  const [workingDays, setWorkingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const toggleCategory = (value: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(value) 
-        ? prev.filter(c => c !== value)
-        : [...prev, value]
+  // Auto-detect location on mount
+  useEffect(() => {
+    detectLocation();
+  }, []);
+
+  const detectLocation = async () => {
+    setDetectingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const loc = await Location.getCurrentPositionAsync({});
+        setLatitude(loc.coords.latitude);
+        setLongitude(loc.coords.longitude);
+        setLocationDetected(true);
+      }
+    } catch (err) {
+      console.log('Location detection failed:', err);
+    } finally {
+      setDetectingLocation(false);
+    }
+  };
+
+  const formatPhoneNumber = (input: string): string => {
+    const digits = input.replace(/\D/g, '');
+    if (digits.startsWith('0')) {
+      return '+233' + digits.slice(1);
+    }
+    if (digits.startsWith('233')) {
+      return '+' + digits;
+    }
+    if (input.startsWith('+')) {
+      return '+' + digits;
+    }
+    if (digits.length <= 9) {
+      return '+233' + digits;
+    }
+    return '+' + digits;
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value);
+    setPhoneNumber(formatted);
+  };
+
+  const toggleWorkingDay = (day: string) => {
+    setWorkingDays(prev =>
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
     );
   };
 
   const validateForm = (): boolean => {
     if (!businessName.trim()) {
-      setError('Salon name is required');
+      setError('Business name is required');
+      return false;
+    }
+    if (!selectedType) {
+      setError('Please select a salon type');
+      return false;
+    }
+    if (!phoneNumber.trim()) {
+      setError('Phone number is required');
+      return false;
+    }
+    if (!phoneNumber.match(/^\+233[0-9]{9}$/)) {
+      setError('Phone number must be in Ghana format (+233XXXXXXXXX)');
       return false;
     }
     if (!address.trim()) {
@@ -60,8 +173,24 @@ export default function SalonSetupScreen() {
       setError('City is required');
       return false;
     }
-    if (!phone.trim()) {
-      setError('Phone number is required');
+    if (!region.trim()) {
+      setError('Region is required');
+      return false;
+    }
+    if (latitude === null || longitude === null) {
+      setError('Location coordinates are required. Please enable location services.');
+      return false;
+    }
+    if (!openingTime) {
+      setError('Opening time is required');
+      return false;
+    }
+    if (!closingTime) {
+      setError('Closing time is required');
+      return false;
+    }
+    if (workingDays.length === 0) {
+      setError('Please select at least one working day');
       return false;
     }
     return true;
@@ -76,23 +205,28 @@ export default function SalonSetupScreen() {
     try {
       const salonData: CreateSalonData = {
         businessName: businessName.trim(),
+        type: selectedType,
+        phoneNumber: phoneNumber.trim(),
+        email: email.trim() || undefined,
         address: address.trim(),
         city: city.trim(),
-        phone: phone.trim(),
-        email: email.trim() || undefined,
+        region: region.trim(),
+        latitude: latitude!,
+        longitude: longitude!,
+        openingTime,
+        closingTime,
+        workingDays,
         description: description.trim() || undefined,
-        category: selectedCategories[0] || undefined,
       };
 
       // Create the salon
       await salonApi.create(salonData);
-      
+
       // Refresh auth state - fetch updated profile with salon association
-      // This ensures we have proper tokens and user state
-      const updatedProfile = await authApi.refreshAuthAfterSalonSetup();
-      
+      const profile = await authApi.getProfile();
+
       // Update auth store - this will trigger navigation to MainNavigator
-      setUser(updatedProfile);
+      setUser(profile);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create salon. Please try again.');
     } finally {
@@ -105,8 +239,8 @@ export default function SalonSetupScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
@@ -122,10 +256,19 @@ export default function SalonSetupScreen() {
               <View style={styles.progressLineFilled} />
             </View>
             <View style={styles.progressStep}>
-              <View style={[styles.stepCircle, styles.stepActive]}>
-                <Text style={styles.stepNumber}>2</Text>
+              <View style={[styles.stepCircle, styles.stepComplete]}>
+                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
               </View>
-              <Text style={[styles.stepLabel, styles.stepLabelActive]}>Setup</Text>
+              <Text style={styles.stepLabel}>Profile</Text>
+            </View>
+            <View style={styles.progressLine}>
+              <View style={styles.progressLineFilled} />
+            </View>
+            <View style={styles.progressStep}>
+              <View style={[styles.stepCircle, styles.stepActive]}>
+                <Text style={styles.stepNumber}>3</Text>
+              </View>
+              <Text style={[styles.stepLabel, styles.stepLabelActive]}>Salon</Text>
             </View>
           </View>
 
@@ -142,15 +285,18 @@ export default function SalonSetupScreen() {
             </Text>
           </View>
 
-          {/* Basic Info Section */}
+          {/* Section 1: Basic Info */}
           <Surface style={styles.section} elevation={0}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Basic Information
-            </Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="information-circle" size={20} color="#006B3F" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Basic Information
+              </Text>
+            </View>
             <Divider style={styles.sectionDivider} />
-            
+
             <TextInput
-              label="Salon Name *"
+              label="Business Name *"
               value={businessName}
               onChangeText={setBusinessName}
               style={styles.input}
@@ -163,6 +309,89 @@ export default function SalonSetupScreen() {
               autoFocus
             />
 
+            <Text variant="bodyMedium" style={styles.label}>
+              Salon Type *
+            </Text>
+            <View style={styles.typeGrid}>
+              {SALON_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type.value}
+                  style={[
+                    styles.typeChip,
+                    selectedType === type.value && styles.typeChipSelected,
+                  ]}
+                  onPress={() => setSelectedType(type.value)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={type.icon as any}
+                    size={18}
+                    color={selectedType === type.value ? '#FFFFFF' : '#6B7280'}
+                  />
+                  <Text style={[
+                    styles.typeChipText,
+                    selectedType === type.value && styles.typeChipTextSelected,
+                  ]}>
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput
+              label="Description (Optional)"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={3}
+              style={[styles.input, styles.textArea]}
+              mode="outlined"
+              outlineColor="#E5E7EB"
+              activeOutlineColor="#006B3F"
+              placeholder="Tell customers about your salon and services..."
+              theme={{ roundness: 10 }}
+            />
+
+            <TextInput
+              label="Phone Number *"
+              value={phoneNumber}
+              onChangeText={handlePhoneChange}
+              keyboardType="phone-pad"
+              style={styles.input}
+              mode="outlined"
+              outlineColor="#E5E7EB"
+              activeOutlineColor="#006B3F"
+              placeholder="+233 XX XXX XXXX"
+              left={<TextInput.Icon icon="phone" color="#6B7280" />}
+              theme={{ roundness: 10 }}
+            />
+
+            <TextInput
+              label="Email (Optional)"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={styles.input}
+              mode="outlined"
+              outlineColor="#E5E7EB"
+              activeOutlineColor="#006B3F"
+              placeholder="salon@example.com"
+              left={<TextInput.Icon icon="email" color="#6B7280" />}
+              theme={{ roundness: 10 }}
+            />
+          </Surface>
+
+          {/* Section 2: Location */}
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="location" size={20} color="#006B3F" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Location
+              </Text>
+            </View>
+            <Divider style={styles.sectionDivider} />
+
             <TextInput
               label="Address *"
               value={address}
@@ -172,7 +401,7 @@ export default function SalonSetupScreen() {
               outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               placeholder="e.g., 123 Oxford Street, Osu"
-              left={<TextInput.Icon icon="map-marker-outline" color="#6B7280" />}
+              left={<TextInput.Icon icon="map-marker" color="#6B7280" />}
               theme={{ roundness: 10 }}
             />
 
@@ -192,94 +421,122 @@ export default function SalonSetupScreen() {
               </View>
               <View style={styles.halfInput}>
                 <TextInput
-                  label="Phone *"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
+                  label="Region *"
+                  value={region}
+                  onChangeText={setRegion}
                   style={styles.input}
                   mode="outlined"
                   outlineColor="#E5E7EB"
                   activeOutlineColor="#006B3F"
-                  placeholder="024 XXX XXXX"
-                  left={<TextInput.Icon icon="phone-outline" color="#6B7280" />}
+                  placeholder="e.g., Greater Accra"
                   theme={{ roundness: 10 }}
                 />
               </View>
             </View>
 
-            <TextInput
-              label="Email (Optional)"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-              mode="outlined"
-              outlineColor="#E5E7EB"
-              activeOutlineColor="#006B3F"
-              placeholder="salon@example.com"
-              left={<TextInput.Icon icon="email-outline" color="#6B7280" />}
-              theme={{ roundness: 10 }}
-            />
+            {/* GPS Location Status */}
+            <View style={styles.locationStatusContainer}>
+              {locationDetected ? (
+                <View style={styles.locationDetected}>
+                  <Ionicons name="checkmark-circle" size={20} color="#006B3F" />
+                  <Text style={styles.locationDetectedText}>
+                    Location detected successfully
+                  </Text>
+                </View>
+              ) : (
+                <Button
+                  mode="outlined"
+                  onPress={detectLocation}
+                  loading={detectingLocation}
+                  disabled={detectingLocation}
+                  style={styles.detectLocationButton}
+                  textColor="#006B3F"
+                  icon="map-marker"
+                >
+                  {detectingLocation ? 'Detecting...' : 'Detect GPS Location'}
+                </Button>
+              )}
+            </View>
           </Surface>
 
-          {/* Category Section */}
+          {/* Section 3: Business Hours */}
           <Surface style={styles.section} elevation={0}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Business Category
-            </Text>
-            <Text variant="bodySmall" style={styles.sectionHint}>
-              Select all that apply
-            </Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="time" size={20} color="#006B3F" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Business Hours
+              </Text>
+            </View>
             <Divider style={styles.sectionDivider} />
-            
-            <View style={styles.categoryGrid}>
-              {BUSINESS_CATEGORIES.map((cat) => (
+
+            <View style={styles.row}>
+              <View style={styles.halfInput}>
+                <Text variant="bodyMedium" style={styles.label}>
+                  Opening Time *
+                </Text>
+                <View style={styles.timeChips}>
+                  {['06:00', '07:00', '08:00', '09:00'].map((time) => (
+                    <Chip
+                      key={time}
+                      selected={openingTime === time}
+                      onPress={() => setOpeningTime(time)}
+                      style={[
+                        styles.timeChip,
+                        openingTime === time && styles.timeChipSelected,
+                      ]}
+                      textStyle={openingTime === time ? styles.timeChipTextSelected : undefined}
+                    >
+                      {time}
+                    </Chip>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.halfInput}>
+                <Text variant="bodyMedium" style={styles.label}>
+                  Closing Time *
+                </Text>
+                <View style={styles.timeChips}>
+                  {['17:00', '18:00', '19:00', '20:00'].map((time) => (
+                    <Chip
+                      key={time}
+                      selected={closingTime === time}
+                      onPress={() => setClosingTime(time)}
+                      style={[
+                        styles.timeChip,
+                        closingTime === time && styles.timeChipSelected,
+                      ]}
+                      textStyle={closingTime === time ? styles.timeChipTextSelected : undefined}
+                    >
+                      {time}
+                    </Chip>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <Text variant="bodyMedium" style={[styles.label, { marginTop: 16 }]}>
+              Working Days *
+            </Text>
+            <View style={styles.daysContainer}>
+              {DAYS_OF_WEEK.map((day) => (
                 <TouchableOpacity
-                  key={cat.value}
+                  key={day}
                   style={[
-                    styles.categoryChip,
-                    selectedCategories.includes(cat.value) && styles.categoryChipSelected,
+                    styles.dayChip,
+                    workingDays.includes(day) && styles.dayChipSelected,
                   ]}
-                  onPress={() => toggleCategory(cat.value)}
+                  onPress={() => toggleWorkingDay(day)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons 
-                    name={cat.icon as any} 
-                    size={18} 
-                    color={selectedCategories.includes(cat.value) ? '#FFFFFF' : '#6B7280'} 
-                  />
                   <Text style={[
-                    styles.categoryChipText,
-                    selectedCategories.includes(cat.value) && styles.categoryChipTextSelected,
+                    styles.dayChipText,
+                    workingDays.includes(day) && styles.dayChipTextSelected,
                   ]}>
-                    {cat.label}
+                    {day.slice(0, 3)}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-          </Surface>
-
-          {/* Description Section */}
-          <Surface style={styles.section} elevation={0}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Description
-            </Text>
-            <Divider style={styles.sectionDivider} />
-            
-            <TextInput
-              label="About Your Salon (Optional)"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={3}
-              style={[styles.input, styles.textArea]}
-              mode="outlined"
-              outlineColor="#E5E7EB"
-              activeOutlineColor="#006B3F"
-              placeholder="Tell customers about your salon, services, and what makes you unique..."
-              theme={{ roundness: 10 }}
-            />
           </Surface>
 
           {error ? (
@@ -295,7 +552,7 @@ export default function SalonSetupScreen() {
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
-            disabled={loading || !businessName || !address || !city || !phone}
+            disabled={loading}
             style={styles.button}
             contentStyle={styles.buttonContent}
             buttonColor="#006B3F"
@@ -303,7 +560,7 @@ export default function SalonSetupScreen() {
           >
             {loading ? 'Creating Salon...' : 'Create Salon'}
           </Button>
-          
+
           <Text variant="bodySmall" style={styles.hint}>
             You can add services, staff, and more details after registration
           </Text>
@@ -365,10 +622,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   progressLine: {
-    width: 60,
+    width: 30,
     height: 3,
     backgroundColor: '#E5E7EB',
-    marginHorizontal: 12,
+    marginHorizontal: 6,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -405,18 +662,24 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   sectionTitle: {
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
-  },
-  sectionHint: {
-    color: '#9CA3AF',
-    marginBottom: 8,
-    marginTop: -4,
   },
   sectionDivider: {
     marginBottom: 16,
+    marginTop: 8,
+  },
+  label: {
+    color: '#374151',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -432,12 +695,13 @@ const styles = StyleSheet.create({
   halfInput: {
     flex: 1,
   },
-  categoryGrid: {
+  typeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    marginBottom: 12,
   },
-  categoryChip: {
+  typeChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
@@ -448,16 +712,77 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  categoryChipSelected: {
+  typeChipSelected: {
     backgroundColor: '#006B3F',
     borderColor: '#006B3F',
   },
-  categoryChipText: {
+  typeChipText: {
     fontSize: 14,
     color: '#374151',
     fontWeight: '500',
   },
-  categoryChipTextSelected: {
+  typeChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  locationStatusContainer: {
+    marginTop: 8,
+  },
+  locationDetected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 8,
+  },
+  locationDetectedText: {
+    color: '#006B3F',
+    fontWeight: '500',
+  },
+  detectLocationButton: {
+    borderColor: '#006B3F',
+    borderRadius: 8,
+  },
+  timeChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  timeChip: {
+    backgroundColor: '#F3F4F6',
+    marginVertical: 2,
+  },
+  timeChipSelected: {
+    backgroundColor: '#006B3F',
+  },
+  timeChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  daysContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  dayChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  dayChipSelected: {
+    backgroundColor: '#006B3F',
+    borderColor: '#006B3F',
+  },
+  dayChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  dayChipTextSelected: {
     color: '#FFFFFF',
   },
   errorContainer: {

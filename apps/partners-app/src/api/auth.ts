@@ -91,4 +91,23 @@ export const authApi = {
     await SecureStore.setItemAsync('user', JSON.stringify(profile));
     return profile;
   },
+
+  // Complete registration for new users (sets profile and role)
+  completeRegistration: async (data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+    role?: string;
+  }) => {
+    const response = await apiClient.post('/auth/complete-registration', data);
+    if (response.data?.data?.tokens?.accessToken) {
+      await SecureStore.setItemAsync('accessToken', response.data.data.tokens.accessToken);
+      if (response.data.data.tokens.refreshToken) {
+        await SecureStore.setItemAsync('refreshToken', response.data.data.tokens.refreshToken);
+      }
+      await SecureStore.setItemAsync('user', JSON.stringify(response.data.data.user));
+    }
+    return response.data;
+  },
 };

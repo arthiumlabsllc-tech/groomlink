@@ -3,6 +3,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 export type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
+  ProfileSetup: { email: string };
   SalonSetup: undefined;
 };
 

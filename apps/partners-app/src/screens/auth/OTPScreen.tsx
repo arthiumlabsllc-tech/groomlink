@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
+  ProfileSetup: { email: string };
   SalonSetup: undefined;
 };
 
@@ -89,12 +90,11 @@ export default function OTPScreen() {
         const { isNewUser, user } = response.data;
         
         if (isNewUser) {
-          // New user needs to set up their salon first
+          // New user needs to complete profile first, then set up their salon
           // Don't call setUser() yet - keep user in auth flow
-          // Tokens (even temp ones) are stored by authApi for salon creation
-          navigation.navigate('SalonSetup');
+          navigation.navigate('ProfileSetup', { email });
         } else {
-          // Existing user - fully authenticated, go to main app
+          // Existing user - fully authenticated, store tokens and go to main app
           setUser(user);
           // AppNavigator will automatically redirect to MainNavigator
         }
