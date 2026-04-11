@@ -1,6 +1,8 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { PaymentProvider, PaymentStatus } from '@prisma/client';
+import axios from 'axios';
+import crypto from 'crypto';
 
 export interface InitializePaymentData {
   bookingId: string;
@@ -13,9 +15,35 @@ export interface PaymentResult {
   paymentId?: string;
   reference?: string;
   message: string;
+  authorizationUrl?: string;
+  accessCode?: string;
 }
 
-// Mock payment provider implementations
+export interface PaystackKeys {
+  publicKey: string;
+  secretKey: string;
+  isTestMode: boolean;
+}
+
+// Helper function to get Paystack keys from SiteSettings
+async function getPaystackKeys(): Promise<PaystackKeys | null> {
+  const settings = await prisma.siteSettings.findUnique({
+    where: { id: 'default' }
+  });
+  
+  if (!settings || !settings.paystackSecretKey || !settings.paystackPublicKey) {
+    logger.warn('Paystack keys not configured in SiteSettings');
+    return null;
+  }
+  
+  return {
+    publicKey: settings.paystackPublicKey,
+    secretKey: settings.paystackSecretKey,
+    isTestMode: settings.isPaymentTestMode,
+  };
+}
+
+// Mock payment provider implementations (fallback when Paystack is not configured)
 class MockPaymentProvider {
   static async initiateMTNMomo(phoneNumber: string, amount: number, reference: string): Promise<PaymentResult> {
     // Simulate API call delay
@@ -95,16 +123,200 @@ class MockPaymentProvider {
   }
 }
 
+// Paystack Payment Provider
+class PaystackPaymentProvider {
+  private static BASE_URL = 'https://api.paystack.co';
+
+  /**
+   * Initialize a payment transaction with Paystack
+   */
+  static async initializePayment(
+    amount: number,
+    email: string,
+    reference: string,
+    bookingId: string,
+    provider: PaymentProvider,
+    secretKey: string
+  ): Promise<PaymentResult> {
+    try {
+      // Convert amount to pesewas (smallest currency unit for GHS)
+      const amountInPesewas = Math.round(amount * 100);
+      
+      // Map provider to Paystack mobile money channel
+      const channelMap: Record<string, string[]> = {
+        [PaymentProvider.MTN_MOMO]: ['mobile_money'],
+        [PaymentProvider.VODAFONE_CASH]: ['mobile_money'],
+        [PaymentProvider.AIRTELTIGO_MONEY]: ['mobile_money'],
+        [PaymentProvider.CASH]: [],
+      };
+      
+      const channels = channelMap[provider] || ['mobile_money'];
+      
+      const response = await axios.post(
+        `${this.BASE_URL}/transaction/initialize`,
+        {
+          amount: amountInPesewas,
+          email,
+          reference,
+          channels,
+          callback_url: 'https://my.groomlinkgh.com/bookings?payment=callback',
+          metadata: {
+            bookingId,
+            provider,
+            custom_fields: [
+              {
+                display_name: 'Booking',
+                variable_name: 'booking_id',
+                value: bookingId,
+              },
+            ],
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${secretKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const { data } = response.data;
+      
+      logger.info(`Paystack payment initialized: ${reference}`, { bookingId });
+      
+      return {
+        success: true,
+        reference: data.reference,
+        authorizationUrl: data.authorization_url,
+        accessCode: data.access_code,
+        message: 'Payment initialized. Please complete payment.',
+      };
+    } catch (error: any) {
+      logger.error('Paystack initialize payment error:', {
+        message: error.message,
+        response: error.response?.data,
+      });
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to initialize payment with Paystack',
+      };
+    }
+  }
+
+  /**
+   * Verify a payment transaction with Paystack
+   */
+  static async verifyPayment(
+    reference: string,
+    secretKey: string
+  ): Promise<{ success: boolean; status: string; data: any }> {
+    try {
+      const response = await axios.get(
+        `${this.BASE_URL}/transaction/verify/${reference}`,
+        {
+          headers: {
+            Authorization: `Bearer ${secretKey}`,
+          },
+        }
+      );
+
+      const { data } = response.data;
+      const status = data.status;
+      
+      logger.info(`Paystack payment verified: ${reference}`, { status });
+      
+      return {
+        success: status === 'success',
+        status,
+        data,
+      };
+    } catch (error: any) {
+      logger.error('Paystack verify payment error:', {
+        message: error.message,
+        response: error.response?.data,
+      });
+      
+      return {
+        success: false,
+        status: 'failed',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Verify webhook signature from Paystack
+   */
+  static verifyWebhookSignature(
+    payload: string,
+    signature: string,
+    secretKey: string
+  ): boolean {
+    const hash = crypto
+      .createHmac('sha512', secretKey)
+      .update(payload)
+      .digest('hex');
+    return hash === signature;
+  }
+
+  /**
+   * Initiate a refund with Paystack
+   */
+  static async refund(
+    transactionRef: string,
+    secretKey: string,
+    amount?: number
+  ): Promise<{ success: boolean; data?: any }> {
+    try {
+      const body: any = { transaction: transactionRef };
+      if (amount) {
+        body.amount = Math.round(amount * 100); // Convert to pesewas
+      }
+      
+      const response = await axios.post(
+        `${this.BASE_URL}/refund`,
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${secretKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      logger.info(`Paystack refund initiated: ${transactionRef}`);
+      
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } catch (error: any) {
+      logger.error('Paystack refund error:', {
+        message: error.message,
+        response: error.response?.data,
+      });
+      
+      return {
+        success: false,
+      };
+    }
+  }
+}
+
 export async function initializePayment(
   userId: string,
   data: InitializePaymentData
 ): Promise<PaymentResult> {
   const { bookingId, provider, phoneNumber } = data;
 
-  // Get booking details
+  // Get booking details with customer info for email
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { payment: true },
+    include: { 
+      payment: true,
+      customer: { select: { email: true, phoneNumber: true } }
+    },
   });
 
   if (!booking) {
@@ -147,29 +359,70 @@ export async function initializePayment(
     },
   });
 
-  // Initiate payment with provider
-  let result: PaymentResult;
+  // Check if Paystack is configured
+  const paystackKeys = await getPaystackKeys();
   const amount = Number(booking.finalAmount);
 
-  switch (provider) {
-    case PaymentProvider.MTN_MOMO:
-      result = await MockPaymentProvider.initiateMTNMomo(phoneNumber, amount, reference);
-      break;
-    case PaymentProvider.VODAFONE_CASH:
-      result = await MockPaymentProvider.initiateVodafoneCash(phoneNumber, amount, reference);
-      break;
-    case PaymentProvider.AIRTELTIGO_MONEY:
-      result = await MockPaymentProvider.initiateAirtelTigoMoney(phoneNumber, amount, reference);
-      break;
-    case PaymentProvider.CASH:
-      result = {
-        success: true,
-        reference,
-        message: 'Cash payment recorded. Please pay at the salon.',
-      };
-      break;
-    default:
-      return { success: false, message: 'Unsupported payment provider' };
+  // Cash payment doesn't need payment gateway
+  if (provider === PaymentProvider.CASH) {
+    const result: PaymentResult = {
+      success: true,
+      reference,
+      message: 'Cash payment recorded. Please pay at the salon.',
+    };
+    
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: PaymentStatus.PROCESSING },
+    });
+    
+    logger.info(`Cash payment initiated: ${payment.id} for booking: ${bookingId}`);
+    return { ...result, paymentId: payment.id };
+  }
+
+  let result: PaymentResult;
+
+  // Use Paystack if keys are configured, otherwise fall back to mock
+  if (paystackKeys) {
+    // Use customer email or generate a placeholder email
+    const email = booking.customer?.email || `customer_${userId}@groomlink.temp`;
+    
+    result = await PaystackPaymentProvider.initializePayment(
+      amount,
+      email,
+      reference,
+      bookingId,
+      provider,
+      paystackKeys.secretKey
+    );
+    
+    logger.info(`Paystack payment initiated for booking: ${bookingId}`, { 
+      mode: paystackKeys.isTestMode ? 'test' : 'live' 
+    });
+  } else {
+    // Fall back to mock provider
+    logger.warn('Paystack not configured, using mock payment provider');
+    
+    switch (provider) {
+      case PaymentProvider.MTN_MOMO:
+        result = await MockPaymentProvider.initiateMTNMomo(phoneNumber, amount, reference);
+        break;
+      case PaymentProvider.VODAFONE_CASH:
+        result = await MockPaymentProvider.initiateVodafoneCash(phoneNumber, amount, reference);
+        break;
+      case PaymentProvider.AIRTELTIGO_MONEY:
+        result = await MockPaymentProvider.initiateAirtelTigoMoney(phoneNumber, amount, reference);
+        break;
+      default:
+        return { success: false, message: 'Unsupported payment provider' };
+    }
+
+    // Simulate webhook for mock provider in development
+    if (process.env.NODE_ENV === 'development') {
+      setTimeout(async () => {
+        await verifyAndCompletePayment(payment.id, reference);
+      }, 5000);
+    }
   }
 
   if (result.success) {
@@ -177,13 +430,6 @@ export async function initializePayment(
       where: { id: payment.id },
       data: { status: PaymentStatus.PROCESSING },
     });
-
-    // Simulate webhook - auto-verify after 5 seconds in development
-    if (process.env.NODE_ENV === 'development') {
-      setTimeout(async () => {
-        await verifyAndCompletePayment(payment.id, reference);
-      }, 5000);
-    }
   }
 
   logger.info(`Payment initiated: ${payment.id} for booking: ${bookingId}`);
@@ -204,10 +450,35 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     return { success: true, message: 'Payment already completed' };
   }
 
-  // Verify with provider
-  const verification = await MockPaymentProvider.verifyPayment(reference);
+  // Check if Paystack is configured
+  const paystackKeys = await getPaystackKeys();
+  let isSuccess = false;
 
-  if (verification.success) {
+  if (paystackKeys) {
+    // Verify with Paystack
+    const verification = await PaystackPaymentProvider.verifyPayment(
+      reference,
+      paystackKeys.secretKey
+    );
+    
+    isSuccess = verification.success;
+    
+    // Store provider data
+    if (verification.data) {
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          providerData: verification.data,
+        },
+      });
+    }
+  } else {
+    // Fall back to mock verification
+    const verification = await MockPaymentProvider.verifyPayment(reference);
+    isSuccess = verification.success;
+  }
+
+  if (isSuccess) {
     await prisma.payment.update({
       where: { id: paymentId },
       data: {
@@ -223,14 +494,16 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     });
 
     logger.info(`Payment completed: ${paymentId}`);
+    
+    return { success: true, reference, message: 'Payment verified successfully.' };
   } else {
     await prisma.payment.update({
       where: { id: paymentId },
       data: { status: PaymentStatus.FAILED },
     });
+    
+    return { success: false, message: 'Payment verification failed.' };
   }
-
-  return verification;
 }
 
 export async function getPaymentHistory(userId: string, page: number = 1, limit: number = 20) {
@@ -323,3 +596,97 @@ export async function handlePaymentWebhook(provider: string, payload: any): Prom
     }
   }
 }
+
+// Paystack webhook handler
+export async function handlePaystackWebhook(
+  rawBody: string,
+  signature: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    // Get Paystack keys for signature verification
+    const paystackKeys = await getPaystackKeys();
+    
+    if (!paystackKeys) {
+      logger.warn('Paystack webhook received but keys not configured');
+      return { success: false, message: 'Paystack not configured' };
+    }
+
+    // Verify webhook signature
+    const isValid = PaystackPaymentProvider.verifyWebhookSignature(
+      rawBody,
+      signature,
+      paystackKeys.secretKey
+    );
+
+    if (!isValid) {
+      logger.warn('Paystack webhook signature verification failed');
+      return { success: false, message: 'Invalid signature' };
+    }
+
+    const payload = JSON.parse(rawBody);
+    const event = payload.event;
+    const data = payload.data;
+
+    logger.info(`Paystack webhook event: ${event}`, { reference: data?.reference });
+
+    // Handle different event types
+    switch (event) {
+      case 'charge.success': {
+        const payment = await prisma.payment.findFirst({
+          where: { providerRef: data.reference },
+        });
+
+        if (payment) {
+          // Update payment status
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.SUCCESS,
+              completedAt: new Date(),
+              providerData: data,
+            },
+          });
+
+          // Update booking status
+          await prisma.booking.update({
+            where: { id: payment.bookingId },
+            data: { status: 'CONFIRMED' },
+          });
+
+          logger.info(`Payment completed via webhook: ${payment.id}`);
+        }
+        break;
+      }
+
+      case 'charge.failed': {
+        const payment = await prisma.payment.findFirst({
+          where: { providerRef: data.reference },
+        });
+
+        if (payment) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.FAILED,
+              providerData: data,
+            },
+          });
+
+          logger.info(`Payment failed via webhook: ${payment.id}`);
+        }
+        break;
+      }
+
+      default:
+        logger.info(`Unhandled Paystack event: ${event}`);
+    }
+
+    return { success: true, message: 'Webhook processed' };
+  } catch (error) {
+    logger.error('Paystack webhook error:', error);
+    return { success: false, message: 'Webhook processing failed' };
+  }
+}
+
+// Export PaystackPaymentProvider for direct use (e.g., refunds)
+export { PaystackPaymentProvider, getPaystackKeys };

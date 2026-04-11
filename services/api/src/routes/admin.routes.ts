@@ -43,6 +43,10 @@ router.get('/settings', authenticateToken, requireAdminOrHigher, adminController
 router.put('/settings', authenticateToken, requireSuperAdmin, adminController.updateSiteSettings);
 router.post('/settings/maintenance', authenticateToken, requireSuperAdmin, adminController.toggleMaintenanceMode);
 
+// Payment settings
+router.get('/payment-settings', authenticateToken, requireAdminOrHigher, adminController.getPaymentSettings);
+router.put('/payment-settings', authenticateToken, requireSuperAdmin, adminController.updatePaymentSettings);
+
 // User activity & security
 router.get('/users/:id/activities', authenticateToken, requireAdminOrHigher, adminController.getUserActivities);
 router.get('/suspicious-activities', authenticateToken, requireAdminOrHigher, adminController.getSuspiciousUsers);

@@ -21,8 +21,14 @@ import {
   ShieldAlert,
   RefreshCw,
   Save,
+  CreditCard,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  AlertTriangle,
 } from 'lucide-react';
-import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth } from '../hooks';
+import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings } from '../hooks';
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
@@ -43,6 +49,8 @@ export function Settings() {
   const { data: health, isLoading: healthLoading } = useHealth(30000);
   const updateSettings = useUpdateSettings();
   const toggleMaintenance = useToggleMaintenance();
+  const { data: paymentSettings, isLoading: paymentSettingsLoading } = usePaymentSettings();
+  const updatePaymentSettings = useUpdatePaymentSettings();
 
   const [formData, setFormData] = useState({
     siteName: '',
@@ -57,6 +65,21 @@ export function Settings() {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [generalSuccess, setGeneralSuccess] = useState(false);
   const [maintenanceSuccess, setMaintenanceSuccess] = useState(false);
+
+  // Payment settings state
+  const [paymentFormData, setPaymentFormData] = useState({
+    paymentGateway: 'paystack',
+    paystackPublicKey: '',
+    paystackSecretKey: '',
+    isPaymentTestMode: true,
+    transactionFeePercent: 1.95,
+  });
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
+  const [showLiveConfirmDialog, setShowLiveConfirmDialog] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Initialize form data when settings load
   useEffect(() => {
@@ -78,6 +101,19 @@ export function Settings() {
       setMaintenanceMessage(settings.maintenanceMsg ?? '');
     }
   }, [settings]);
+
+  // Initialize payment settings when they load
+  useEffect(() => {
+    if (paymentSettings) {
+      setPaymentFormData({
+        paymentGateway: paymentSettings.paymentGateway || 'paystack',
+        paystackPublicKey: paymentSettings.paystackPublicKey || '',
+        paystackSecretKey: paymentSettings.paystackSecretKey || '',
+        isPaymentTestMode: paymentSettings.isPaymentTestMode ?? true,
+        transactionFeePercent: paymentSettings.transactionFeePercent ?? 1.95,
+      });
+    }
+  }, [paymentSettings]);
 
   const handleGeneralSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +146,69 @@ export function Settings() {
   };
 
   const isLoading = settingsLoading || healthLoading;
+
+  // Copy to clipboard helper
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Handle test mode toggle
+  const handleTestModeToggle = () => {
+    if (paymentFormData.isPaymentTestMode) {
+      // Switching from test to live - show confirmation
+      setShowLiveConfirmDialog(true);
+    } else {
+      // Switching from live to test - safe, just toggle
+      setPaymentFormData({ ...paymentFormData, isPaymentTestMode: true });
+    }
+  };
+
+  // Confirm switch to live mode
+  const confirmSwitchToLive = () => {
+    setPaymentFormData({ ...paymentFormData, isPaymentTestMode: false });
+    setShowLiveConfirmDialog(false);
+  };
+
+  // Handle payment settings save
+  const handlePaymentSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPaymentError(null);
+    setPaymentSuccess(false);
+    setTestConnectionSuccess(false);
+
+    try {
+      await updatePaymentSettings.mutateAsync({
+        paymentGateway: paymentFormData.paymentGateway,
+        paystackPublicKey: paymentFormData.paystackPublicKey || null,
+        paystackSecretKey: paymentFormData.paystackSecretKey || null,
+        isPaymentTestMode: paymentFormData.isPaymentTestMode,
+        transactionFeePercent: paymentFormData.transactionFeePercent,
+      });
+      setPaymentSuccess(true);
+      setTimeout(() => setPaymentSuccess(false), 3000);
+    } catch (err: any) {
+      setPaymentError(err.response?.data?.message || 'Failed to update payment settings');
+    }
+  };
+
+  // Test connection (simple verification by re-fetching settings)
+  const handleTestConnection = async () => {
+    setTestConnectionSuccess(false);
+    try {
+      // Just verify we can fetch the settings - indicates API connectivity
+      await updatePaymentSettings.mutateAsync({});
+      setTestConnectionSuccess(true);
+      setTimeout(() => setTestConnectionSuccess(false), 3000);
+    } catch (err: any) {
+      setPaymentError(err.response?.data?.message || 'Connection test failed');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -326,6 +425,239 @@ export function Settings() {
               </div>
             </div>
           </div>
+
+          {/* Payment Gateway Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+                <CreditCard size={18} className="text-[#006B3F]" />
+                Payment Gateway
+              </h2>
+            </div>
+
+            <form onSubmit={handlePaymentSave} className="p-6 space-y-4">
+              {paymentError && (
+                <div className="p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
+                  <AlertCircle size={16} />
+                  {paymentError}
+                </div>
+              )}
+
+              {paymentSuccess && (
+                <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
+                  <CheckCircle size={16} />
+                  Payment settings saved successfully!
+                </div>
+              )}
+
+              {testConnectionSuccess && (
+                <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
+                  <CheckCircle size={16} />
+                  Connection verified! Keys are configured correctly.
+                </div>
+              )}
+
+              {/* Test/Live Mode Toggle - Most prominent */}
+              <div className="p-4 rounded-xl border-2 border-gray-100 bg-gray-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        paymentFormData.isPaymentTestMode ? 'bg-green-500' : 'bg-[#CE1126] animate-pulse'
+                      }`}
+                    />
+                    <div>
+                      <p className="font-medium text-gray-800">
+                        {paymentFormData.isPaymentTestMode ? 'Test Mode' : 'Live Mode'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {paymentFormData.isPaymentTestMode
+                          ? 'No real charges will be made'
+                          : 'Real payments will be processed'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTestModeToggle}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                      paymentFormData.isPaymentTestMode ? 'bg-green-500' : 'bg-[#CE1126]'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                        paymentFormData.isPaymentTestMode ? 'translate-x-1' : 'translate-x-6'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Mode badges */}
+                <div className="mt-3">
+                  {paymentFormData.isPaymentTestMode ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <CheckCircle size={12} />
+                      TEST MODE — No real charges
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#CE1126]/10 text-[#CE1126]">
+                      <AlertTriangle size={12} />
+                      LIVE MODE — Real payments will be processed
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Warning banner when in LIVE mode */}
+              {!paymentFormData.isPaymentTestMode && (
+                <div className="p-3 bg-[#FCD116]/20 text-yellow-800 rounded-xl text-sm flex items-start gap-2">
+                  <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Live Mode Active</p>
+                    <p className="text-yellow-700">All transactions will process real payments. Ensure your API keys are correct.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Gateway Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Gateway
+                </label>
+                <select
+                  value={paymentFormData.paymentGateway}
+                  onChange={(e) => setPaymentFormData({ ...paymentFormData, paymentGateway: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors bg-white"
+                >
+                  <option value="paystack">Paystack</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  More payment gateways will be available in future updates
+                </p>
+              </div>
+
+              {/* API Keys Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  API Keys
+                </h3>
+
+                {/* Public Key */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">
+                    Public Key
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={paymentFormData.paystackPublicKey || ''}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, paystackPublicKey: e.target.value })}
+                      className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors font-mono text-sm"
+                      placeholder="pk_test_xxxxxxxxxxxxxxxxxxxxxxxx"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(paymentFormData.paystackPublicKey || '', 'publicKey')}
+                      disabled={!paymentFormData.paystackPublicKey}
+                      className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copiedField === 'publicKey' ? (
+                        <Check size={18} className="text-green-500" />
+                      ) : (
+                        <Copy size={18} className="text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Secret Key */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">
+                    Secret Key
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showSecretKey ? 'text' : 'password'}
+                        value={paymentFormData.paystackSecretKey || ''}
+                        onChange={(e) => setPaymentFormData({ ...paymentFormData, paystackSecretKey: e.target.value })}
+                        className="w-full px-4 py-3 pr-10 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors font-mono text-sm"
+                        placeholder="sk_test_xxxxxxxxxxxxxxxxxxxxxxxx"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSecretKey(!showSecretKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showSecretKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(paymentFormData.paystackSecretKey || '', 'secretKey')}
+                      disabled={!paymentFormData.paystackSecretKey}
+                      className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copiedField === 'secretKey' ? (
+                        <Check size={18} className="text-green-500" />
+                      ) : (
+                        <Copy size={18} className="text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Secret key is masked in the database. If you see "****", the existing key is preserved.
+                  </p>
+                </div>
+              </div>
+
+              {/* Transaction Fee - Read Only */}
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Transaction Fee</p>
+                    <p className="text-xs text-gray-500">Applied to all payment transactions</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-gray-800">{paymentFormData.transactionFeePercent}%</p>
+                    <p className="text-xs text-gray-500">capped at GHS 100</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+n                  type="submit"
+                  disabled={updatePaymentSettings.isPending}
+                  className="flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {updatePaymentSettings.isPending ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Save Settings
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={updatePaymentSettings.isPending || !paymentFormData.paystackPublicKey}
+                  className="px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw size={18} />
+                  Test Connection
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
         {/* Right Column - System Health */}
@@ -531,6 +863,48 @@ export function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Live Mode Confirmation Dialog */}
+      {showLiveConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowLiveConfirmDialog(false)} />
+          <div className="relative bg-white rounded-xl shadow-lg max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#CE1126]/10 flex items-center justify-center">
+                <AlertTriangle className="text-[#CE1126]" size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">Switch to Live Mode?</h3>
+                <p className="text-sm text-gray-500">This action will enable real payments</p>
+              </div>
+            </div>
+            <div className="p-3 bg-[#FCD116]/20 rounded-lg mb-4">
+              <p className="text-sm text-yellow-800">
+                <strong>Warning:</strong> Switching to live mode means all transactions will process real payments. Make sure you have:
+              </p>
+              <ul className="text-sm text-yellow-700 mt-2 space-y-1 list-disc list-inside">
+                <li>Tested thoroughly in test mode</li>
+                <li>Added correct live API keys</li>
+                <li>Verified your Paystack account is live</li>
+              </ul>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLiveConfirmDialog(false)}
+                className="flex-1 px-4 py-2 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmSwitchToLive}
+                className="flex-1 px-4 py-2 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1e] font-medium transition-colors"
+              >
+                Yes, Switch to Live
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

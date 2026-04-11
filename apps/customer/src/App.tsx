@@ -10,6 +10,7 @@ import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import SalonDetail from './pages/SalonDetail';
 import BookSalon from './pages/BookSalon';
+import PaymentCallback from './pages/PaymentCallback';
 import { useAuthStore } from './store/auth';
 
 function App() {
@@ -82,6 +83,13 @@ function App() {
         <Route path="/salon/:id/book" element={
           <ProtectedRoute>
             <BookSalon />
+          </ProtectedRoute>
+        } />
+        
+        {/* Payment Callback - Protected */}
+        <Route path="/payment/callback" element={
+          <ProtectedRoute>
+            <PaymentCallback />
           </ProtectedRoute>
         } />
         

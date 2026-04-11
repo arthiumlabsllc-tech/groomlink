@@ -510,16 +510,22 @@ model AdminPermission {
 }
 
 model SiteSettings {
-  id              String   @id @default("default")
-  siteName        String   @default("GroomLink")
-  logoUrl         String?
-  email           String?
-  phoneNumber     String?
-  address         String?
-  maintenanceMode Boolean  @default(false)
-  maintenanceMsg  String?
-  updatedAt       DateTime @updatedAt
-  updatedBy       String?
+  id                    String   @id @default("default")
+  siteName              String   @default("GroomLink")
+  logoUrl               String?
+  email                 String?
+  phoneNumber           String?
+  address               String?
+  maintenanceMode       Boolean  @default(false)
+  maintenanceMsg        String?
+  // Payment Gateway Settings
+  paymentGateway        String   @default("paystack")
+  paystackPublicKey     String?
+  paystackSecretKey     String?
+  isPaymentTestMode     Boolean  @default(true)
+  transactionFeePercent Decimal? @db.Decimal(5,2)
+  updatedAt             DateTime @updatedAt
+  updatedBy             String?
 }
 
 model UserActivity {

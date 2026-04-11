@@ -153,4 +153,44 @@ export const bookingApi = {
   },
 };
 
+// Payment types
+export interface PaymentInitializeResponse {
+  authorization_url: string;
+  reference: string;
+}
+
+export interface PaymentVerifyResponse {
+  success: boolean;
+  status: string;
+  message?: string;
+}
+
+export interface Payment {
+  id: string;
+  bookingId: string;
+  amount: number;
+  provider: 'MTN_MOMO' | 'VODAFONE_CASH' | 'AIRTELTIGO_MONEY' | 'CASH';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+  reference: string | null;
+  phoneNumber: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Payment API functions
+export const paymentApi = {
+  initialize: async (data: { bookingId: string; provider: string; phoneNumber: string }): Promise<PaymentInitializeResponse> => {
+    const response = await apiClient.post('/payments/initialize', data);
+    return response.data.data;
+  },
+  verify: async (data: { paymentId: string; reference: string }): Promise<PaymentVerifyResponse> => {
+    const response = await apiClient.post('/payments/verify', data);
+    return response.data.data;
+  },
+  getPayment: async (id: string): Promise<Payment> => {
+    const response = await apiClient.get(`/payments/${id}`);
+    return response.data.data;
+  },
+};
+
 export default apiClient;

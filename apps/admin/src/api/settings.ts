@@ -15,6 +15,14 @@ export interface MaintenanceSettings {
   message: string | null;
 }
 
+export interface PaymentSettings {
+  paymentGateway: string;
+  paystackPublicKey: string | null;
+  paystackSecretKey: string | null;
+  isPaymentTestMode: boolean;
+  transactionFeePercent: number | null;
+}
+
 export interface AdminSystemHealth {
   api: {
     status: 'healthy' | 'degraded' | 'down';
@@ -68,6 +76,18 @@ export const settingsApi = {
   // Get system health
   getHealth: async (): Promise<AdminSystemHealth> => {
     const response = await apiClient.get('/admin/health');
+    return response.data.data;
+  },
+
+  // Get payment settings
+  getPaymentSettings: async (): Promise<PaymentSettings> => {
+    const response = await apiClient.get('/admin/payment-settings');
+    return response.data.data;
+  },
+
+  // Update payment settings
+  updatePaymentSettings: async (data: Partial<PaymentSettings>): Promise<PaymentSettings> => {
+    const response = await apiClient.put('/admin/payment-settings', data);
     return response.data.data;
   },
 };

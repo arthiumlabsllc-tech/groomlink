@@ -3,6 +3,7 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import * as paymentService from '../services/payment.service';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
+import logger from '../config/logger';
 
 // Define PaymentProvider enum locally since Prisma client may not export it correctly
 enum PaymentProvider {
@@ -115,5 +116,31 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
   } catch (error) {
     // Still return 200 to prevent retries
     successResponse(res, { received: true });
+  }
+}
+
+// Paystack webhook endpoint
+// This requires the raw body for signature verification
+export async function handlePaystackWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    // Get the raw body - this requires express.raw() middleware
+    const rawBody = req.body?.toString?.() || JSON.stringify(req.body);
+    const signature = req.headers['x-paystack-signature'] as string;
+
+    if (!signature) {
+      logger.warn('Paystack webhook received without signature');
+      // Still return 200 to prevent retries
+      res.status(200).json({ received: true });
+      return;
+    }
+
+    const result = await paymentService.handlePaystackWebhook(rawBody, signature);
+    
+    // Always return 200 to prevent Paystack retries
+    res.status(200).json({ received: true, processed: result.success });
+  } catch (error) {
+    // Log error but still return 200 to prevent Paystack retries
+    logger.error('Paystack webhook error:', error);
+    res.status(200).json({ received: true, processed: false });
   }
 }

@@ -617,6 +617,15 @@ const siteSettingsSchema = z.object({
   logoUrl: z.string().url().optional(),
 });
 
+// Payment Settings Schema
+const paymentSettingsSchema = z.object({
+  paymentGateway: z.string().default('paystack'),
+  paystackPublicKey: z.string().optional(),
+  paystackSecretKey: z.string().optional(),
+  isPaymentTestMode: z.boolean().optional(),
+  transactionFeePercent: z.number().min(0).max(100).optional().nullable(),
+});
+
 export async function getSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     let settings = await prisma.siteSettings.findUnique({
@@ -654,6 +663,101 @@ export async function updateSiteSettings(req: AuthenticatedRequest, res: Respons
     });
 
     successResponse(res, settings);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Payment Settings
+export async function getPaymentSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    let settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+
+    // Create default settings if not found
+    if (!settings) {
+      settings = await prisma.siteSettings.create({
+        data: { id: 'default' }
+      });
+    }
+
+    // Mask the secret key - show only last 4 characters
+    const maskedSecretKey = settings.paystackSecretKey
+      ? `****${settings.paystackSecretKey.slice(-4)}`
+      : null;
+
+    successResponse(res, {
+      paymentGateway: settings.paymentGateway,
+      paystackPublicKey: settings.paystackPublicKey,
+      paystackSecretKey: maskedSecretKey,
+      isPaymentTestMode: settings.isPaymentTestMode,
+      transactionFeePercent: settings.transactionFeePercent,
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function updatePaymentSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = paymentSettingsSchema.parse(req.body);
+
+    // Get existing settings
+    let existingSettings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+
+    if (!existingSettings) {
+      existingSettings = await prisma.siteSettings.create({
+        data: { id: 'default' }
+      });
+    }
+
+    // If secret key contains '****', keep the existing key (user didn't change it)
+    const updateData: any = {
+      paymentGateway: data.paymentGateway,
+      updatedBy: req.user!.id,
+    };
+
+    if (data.paystackPublicKey !== undefined) {
+      updateData.paystackPublicKey = data.paystackPublicKey || null;
+    }
+
+    if (data.paystackSecretKey !== undefined && !data.paystackSecretKey.includes('****')) {
+      updateData.paystackSecretKey = data.paystackSecretKey || null;
+    }
+    // If secret key contains '****', don't update it
+
+    if (data.isPaymentTestMode !== undefined) {
+      updateData.isPaymentTestMode = data.isPaymentTestMode;
+    }
+
+    if (data.transactionFeePercent !== undefined) {
+      updateData.transactionFeePercent = data.transactionFeePercent;
+    }
+
+    const settings = await prisma.siteSettings.update({
+      where: { id: 'default' },
+      data: updateData,
+    });
+
+    // Return with masked secret key
+    const maskedSecretKey = settings.paystackSecretKey
+      ? `****${settings.paystackSecretKey.slice(-4)}`
+      : null;
+
+    successResponse(res, {
+      paymentGateway: settings.paymentGateway,
+      paystackPublicKey: settings.paystackPublicKey,
+      paystackSecretKey: maskedSecretKey,
+      isPaymentTestMode: settings.isPaymentTestMode,
+      transactionFeePercent: settings.transactionFeePercent,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
