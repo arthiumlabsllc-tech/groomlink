@@ -64,4 +64,10 @@ export const dashboardApi = {
     });
     return response.data.data;
   },
+
+  // Get recent activities
+  getRecentActivities: async (limit: number = 5) => {
+    const response = await apiClient.get('/admin/activities', { params: { limit } });
+    return response.data.data;
+  },
 };

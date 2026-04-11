@@ -4,10 +4,15 @@ import { authenticateToken, requireAdminOrHigher, requireSuperAdmin } from '../m
 
 const router = Router();
 
+// Public endpoint (NO AUTH) - must be before authenticated routes
+router.get('/public-settings', adminController.getPublicSiteSettings);
+
 // Salon Approval
 router.get('/salons/pending', authenticateToken, requireAdminOrHigher, adminController.getPendingSalons);
 router.post('/salons/:id/approve', authenticateToken, requireAdminOrHigher, adminController.approveSalon);
 router.post('/salons/:id/reject', authenticateToken, requireAdminOrHigher, adminController.rejectSalon);
+router.post('/salons/:id/suspend', authenticateToken, requireAdminOrHigher, adminController.suspendSalon);
+router.post('/salons/:id/reactivate', authenticateToken, requireAdminOrHigher, adminController.reactivateSalon);
 
 // Coupon Management
 router.get('/coupons', authenticateToken, requireAdminOrHigher, adminController.getCoupons);
@@ -23,6 +28,9 @@ router.post('/transactions/:id/refund', authenticateToken, requireAdminOrHigher,
 // System Health & Metrics
 router.get('/health', authenticateToken, requireAdminOrHigher, adminController.getSystemHealth);
 router.get('/metrics', authenticateToken, requireAdminOrHigher, adminController.getSystemMetrics);
+
+// Recent Activities
+router.get('/activities', authenticateToken, requireAdminOrHigher, adminController.getRecentActivities);
 
 // Admin management (SUPER_ADMIN only)
 router.post('/admins', authenticateToken, requireSuperAdmin, adminController.createAdmin);

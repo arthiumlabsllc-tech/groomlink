@@ -34,3 +34,11 @@ export function useRevenueStats(period: string = '30d') {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function useRecentActivities(limit: number = 5) {
+  return useQuery({
+    queryKey: [DASHBOARD_KEY, 'activities', limit],
+    queryFn: () => dashboardApi.getRecentActivities(limit),
+    staleTime: 60 * 1000,
+  });
+}

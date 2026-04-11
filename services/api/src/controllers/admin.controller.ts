@@ -3,7 +3,7 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import prisma, { getPoolMetrics } from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
-import { SalonStatus, PaymentStatus, UserRole, UserStatus } from '@prisma/client';
+import { SalonStatus, PaymentStatus, UserRole, UserStatus, Prisma } from '@prisma/client';
 import { sendWelcomeEmail } from '../services/email.service';
 import { activityService } from '../services/activity.service';
 
@@ -1045,6 +1045,226 @@ export async function adminGetUserDetails(req: AuthenticatedRequest, res: Respon
         lastActive: user.lastLoginAt
       }
     });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Recent Activities for Dashboard
+export async function getRecentActivities(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 5;
+
+    // Fetch activities from UserActivity table
+    const userActivities = await prisma.userActivity.findMany({
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true }
+        }
+      }
+    });
+
+    // If we have enough activities, return them
+    if (userActivities.length >= limit) {
+      const activities = userActivities.map((a: Prisma.UserActivityGetPayload<{include: {user: {select: {id: true, firstName: true, lastName: true, email: true}}}}>) => ({
+        id: a.id,
+        type: a.action,
+        description: a.action,
+        user: a.user ? `${a.user.firstName} ${a.user.lastName}` : 'Unknown',
+        email: a.user?.email,
+        createdAt: a.createdAt
+      }));
+      successResponse(res, activities);
+      return;
+    }
+
+    // Otherwise, aggregate recent bookings, payments, and salon registrations
+    const [recentBookings, recentPayments, recentSalons] = await Promise.all([
+      prisma.booking.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: { select: { id: true, firstName: true, lastName: true, email: true } }
+        }
+      }),
+      prisma.payment.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, email: true } }
+        }
+      }),
+      prisma.salon.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          owner: { select: { id: true, firstName: true, lastName: true, email: true } }
+        }
+      })
+    ]);
+
+    // Combine and format all activities
+    const allActivities: Array<{
+      id: string;
+      type: string;
+      description: string;
+      user: string;
+      email?: string | null;
+      createdAt: Date;
+    }> = [
+      ...userActivities.map((a: Prisma.UserActivityGetPayload<{include: {user: {select: {id: true, firstName: true, lastName: true, email: true}}}}>) => ({
+        id: a.id,
+        type: a.action,
+        description: a.action,
+        user: a.user ? `${a.user.firstName} ${a.user.lastName}` : 'Unknown',
+        email: a.user?.email,
+        createdAt: a.createdAt
+      })),
+      ...recentBookings.map(b => ({
+        id: b.id,
+        type: 'BOOKING_CREATED',
+        description: `New booking created`,
+        user: `${b.customer.firstName} ${b.customer.lastName}`,
+        email: b.customer.email,
+        createdAt: b.createdAt
+      })),
+      ...recentPayments.map(p => ({
+        id: p.id,
+        type: 'PAYMENT_RECEIVED',
+        description: `Payment of GHS ${p.amount}`,
+        user: `${p.user.firstName} ${p.user.lastName}`,
+        email: p.user.email,
+        createdAt: p.createdAt
+      })),
+      ...recentSalons.map(s => ({
+        id: s.id,
+        type: 'SALON_REGISTERED',
+        description: `Salon "${s.businessName}" registered`,
+        user: s.owner ? `${s.owner.firstName} ${s.owner.lastName}` : 'Unknown',
+        email: s.owner?.email,
+        createdAt: s.createdAt
+      }))
+    ];
+
+    // Sort by createdAt descending and limit
+    allActivities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const limitedActivities = allActivities.slice(0, limit);
+
+    successResponse(res, limitedActivities);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Salon Suspend
+export async function suspendSalon(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const salon = await prisma.salon.findUnique({ where: { id } });
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    const updatedSalon = await prisma.salon.update({
+      where: { id },
+      data: { status: SalonStatus.SUSPENDED },
+      include: {
+        owner: {
+          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true }
+        }
+      }
+    });
+
+    // Create notification for salon owner
+    await prisma.notification.create({
+      data: {
+        userId: salon.ownerId,
+        type: 'SYSTEM',
+        title: 'Salon Suspended',
+        message: `Your salon "${salon.businessName}" has been suspended. Please contact support for more information.`,
+        data: { salonId: salon.id }
+      }
+    });
+
+    // Track admin activity
+    await activityService.trackActivity(req.user!.id, 'SALON_SUSPENDED', req as any, { salonId: id, salonName: salon.businessName });
+
+    successResponse(res, updatedSalon);
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Salon Reactivate
+export async function reactivateSalon(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const salon = await prisma.salon.findUnique({ where: { id } });
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    const updatedSalon = await prisma.salon.update({
+      where: { id },
+      data: { status: SalonStatus.APPROVED },
+      include: {
+        owner: {
+          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true }
+        }
+      }
+    });
+
+    // Create notification for salon owner
+    await prisma.notification.create({
+      data: {
+        userId: salon.ownerId,
+        type: 'SYSTEM',
+        title: 'Salon Reactivated',
+        message: `Your salon "${salon.businessName}" has been reactivated and is now live!`,
+        data: { salonId: salon.id }
+      }
+    });
+
+    // Track admin activity
+    await activityService.trackActivity(req.user!.id, 'SALON_REACTIVATED', req as any, { salonId: id, salonName: salon.businessName });
+
+    successResponse(res, updatedSalon);
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Public Site Settings (No Auth)
+export async function getPublicSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    let settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+
+    // Create default settings if not found
+    if (!settings) {
+      settings = await prisma.siteSettings.create({
+        data: { id: 'default' }
+      });
+    }
+
+    // Return only public-safe fields
+    const publicSettings = {
+      siteName: settings.siteName,
+      logoUrl: settings.logoUrl,
+      email: settings.email,
+      phoneNumber: settings.phoneNumber,
+      address: settings.address,
+      maintenanceMode: settings.maintenanceMode
+    };
+
+    successResponse(res, publicSettings);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }

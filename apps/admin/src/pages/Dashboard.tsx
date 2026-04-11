@@ -23,8 +23,13 @@ import {
   Loader2,
   TrendingUp,
   TrendingDown,
+  User,
+  Scissors,
+  CheckCircle,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
-import { useDashboardStats, useDashboardMetrics } from '../hooks';
+import { useDashboardStats, useDashboardMetrics, useRecentActivities } from '../hooks';
 import { formatCurrency } from '../lib/utils';
 
 const GHANA_COLORS = {
@@ -32,6 +37,102 @@ const GHANA_COLORS = {
   gold: '#FCD116',
   red: '#CE1126',
 };
+
+// Activity type icons and colors
+const ACTIVITY_CONFIG: Record<string, { icon: typeof User; color: string; bgColor: string }> = {
+  USER_REGISTERED: { icon: User, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+  SALON_REGISTERED: { icon: Store, color: 'text-[#006B3F]', bgColor: 'bg-[#006B3F]/10' },
+  BOOKING_CREATED: { icon: Calendar, color: 'text-[#B8960F]', bgColor: 'bg-[#FCD116]/20' },
+  BOOKING_COMPLETED: { icon: CheckCircle, color: 'text-[#006B3F]', bgColor: 'bg-[#006B3F]/10' },
+  BOOKING_CANCELLED: { icon: AlertCircle, color: 'text-[#CE1126]', bgColor: 'bg-[#CE1126]/10' },
+  PAYMENT_RECEIVED: { icon: CreditCard, color: 'text-[#006B3F]', bgColor: 'bg-[#006B3F]/10' },
+  SALON_APPROVED: { icon: CheckCircle, color: 'text-[#006B3F]', bgColor: 'bg-[#006B3F]/10' },
+  SALON_REJECTED: { icon: AlertCircle, color: 'text-[#CE1126]', bgColor: 'bg-[#CE1126]/10' },
+  REVIEW_SUBMITTED: { icon: Scissors, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+  default: { icon: Clock, color: 'text-gray-500', bgColor: 'bg-gray-50' },
+};
+
+interface Activity {
+  id: string;
+  type: string;
+  description: string;
+  userEmail?: string;
+  userName?: string;
+  createdAt: string;
+}
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
+
+function RecentActivitySection() {
+  const { data: activities, isLoading } = useRecentActivities(5);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="animate-spin text-[#006B3F]" size={24} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!activities || activities.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
+        <div className="text-center py-8 text-gray-500">
+          <Clock className="mx-auto mb-2 text-gray-300" size={32} />
+          <p className="text-sm">No recent activity</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
+      <div className="space-y-4">
+        {activities.map((activity: Activity) => {
+          const config = ACTIVITY_CONFIG[activity.type] || ACTIVITY_CONFIG.default;
+          const Icon = config.icon;
+          return (
+            <div key={activity.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 last:pb-0">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${config.bgColor}`}>
+                  <Icon className={`w-5 h-5 ${config.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{activity.description}</p>
+                  <p className="text-xs text-gray-500">
+                    {activity.userName || activity.userEmail || 'System'}
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
+                {formatTimeAgo(activity.createdAt)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function Dashboard() {
   const [period, setPeriod] = useState(30);
@@ -328,35 +429,7 @@ export function Dashboard() {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {[
-            { action: 'New salon registration', detail: 'Elite Barbershop', time: '2 min ago', type: 'info', initials: 'EB' },
-            { action: 'Booking completed', detail: 'GHS 50 - Haircut', time: '5 min ago', type: 'success', initials: 'BC' },
-            { action: 'Payment received', detail: 'GHS 75 - MTN MoMo', time: '10 min ago', type: 'success', initials: 'PR' },
-            { action: 'User complaint', detail: 'Service not as expected', time: '15 min ago', type: 'warning', initials: 'UC' },
-            { action: 'Salon approved', detail: 'Fresh Cuts Salon', time: '30 min ago', type: 'success', initials: 'SA' },
-          ].map((activity, index) => (
-            <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 last:pb-0">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  activity.type === 'success' ? 'bg-[#006B3F]/10 text-[#006B3F]' :
-                  activity.type === 'warning' ? 'bg-[#FCD116]/20 text-[#B8960F]' :
-                  'bg-blue-50 text-blue-500'
-                }`}>
-                  {activity.initials}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{activity.action}</p>
-                  <p className="text-xs text-gray-500">{activity.detail}</p>
-                </div>
-              </div>
-              <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">{activity.time}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <RecentActivitySection />
     </div>
   );
 }

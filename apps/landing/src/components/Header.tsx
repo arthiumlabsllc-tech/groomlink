@@ -1,13 +1,56 @@
 import { Menu, X, Scissors } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+
+const API_BASE_URL = 'https://api.groomlinkgh.com'
+
+interface SiteSettings {
+  siteName: string
+  logoUrl?: string
+  email?: string
+  phoneNumber?: string
+  address?: string
+  maintenanceMode: boolean
+}
 
 interface HeaderProps {
   scrolled: boolean
 }
 
+// Default/fallback values
+const DEFAULT_SETTINGS: SiteSettings = {
+  siteName: 'GroomLink',
+  email: 'hello@groomlinkgh.com',
+  phoneNumber: '+233 24 123 4567',
+  address: 'Accra, Ghana',
+  maintenanceMode: false
+}
+
 export default function Header({ scrolled }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS)
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/public-settings`)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            setSiteSettings({
+              ...DEFAULT_SETTINGS,
+              ...result.data
+            })
+          }
+        }
+      } catch (error) {
+        // Keep default values on error
+        console.error('Failed to fetch site settings:', error)
+      }
+    }
+
+    fetchSiteSettings()
+  }, [])
 
   const navLinks = [
     { name: 'Features', href: '#features' },
@@ -25,11 +68,19 @@ export default function Header({ scrolled }: HeaderProps) {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <a href="#" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-full flex items-center justify-center">
-              <Scissors className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-full flex items-center justify-center overflow-hidden">
+              {siteSettings.logoUrl ? (
+                <img 
+                  src={siteSettings.logoUrl} 
+                  alt={siteSettings.siteName} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Scissors className="w-5 h-5 text-white" />
+              )}
             </div>
             <span className={`text-xl font-bold font-display ${scrolled ? 'text-ghana-green' : 'text-white'}`}>
-              GroomLink
+              {siteSettings.siteName}
             </span>
           </a>
 

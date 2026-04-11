@@ -142,7 +142,7 @@ export interface PaginatedSalons {
 export const salonsApi = {
   // Get all salons with pagination
   getAll: async (page: number = 1, limit: number = 20, status?: string): Promise<PaginatedSalons> => {
-    const response = await apiClient.get('/salons', {
+    const response = await apiClient.get('/admin/salons', {
       params: { page, limit, status },
     });
     return response.data;
@@ -176,7 +176,7 @@ export const salonsApi = {
 
   // Suspend salon
   suspend: async (id: string, reason?: string): Promise<Salon> => {
-    const response = await apiClient.post(`/salons/${id}/suspend`, { reason });
+    const response = await apiClient.post(`/admin/salons/${id}/suspend`, { reason });
     return response.data.data;
   },
 

@@ -1,5 +1,17 @@
 import { Scissors, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+
+const API_BASE_URL = 'https://api.groomlinkgh.com'
+
+interface SiteSettings {
+  siteName: string
+  logoUrl?: string
+  email?: string
+  phoneNumber?: string
+  address?: string
+  maintenanceMode: boolean
+}
 
 const footerLinks = {
   company: [
@@ -35,7 +47,43 @@ const socialLinks = [
   { name: 'LinkedIn', icon: Linkedin, href: '#' },
 ]
 
+// Default/fallback values
+const DEFAULT_SETTINGS: SiteSettings = {
+  siteName: 'GroomLink',
+  email: 'hello@groomlinkgh.com',
+  phoneNumber: '+233 24 123 4567',
+  address: 'Accra, Ghana',
+  maintenanceMode: false
+}
+
 export default function Footer() {
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/public-settings`)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            setSiteSettings({
+              ...DEFAULT_SETTINGS,
+              ...result.data
+            })
+          }
+        }
+      } catch (error) {
+        // Keep default values on error
+        console.error('Failed to fetch site settings:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSiteSettings()
+  }, [])
+
   return (
     <footer className="bg-[#1a1a2e] text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,10 +92,18 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-full flex items-center justify-center">
-                <Scissors className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-full flex items-center justify-center overflow-hidden">
+                {siteSettings.logoUrl ? (
+                  <img 
+                    src={siteSettings.logoUrl} 
+                    alt={siteSettings.siteName} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Scissors className="w-5 h-5 text-white" />
+                )}
               </div>
-              <span className="text-xl font-bold font-display text-white">GroomLink</span>
+              <span className="text-xl font-bold font-display text-white">{siteSettings.siteName}</span>
             </Link>
             <p className="text-gray-400 text-sm mb-4">
               Ghana's premier salon and barbershop booking platform.
@@ -55,17 +111,23 @@ export default function Footer() {
             
             {/* Contact Info */}
             <div className="space-y-2 text-sm">
-              <a href="mailto:hello@groomlinkgh.com" className="flex items-center gap-2 text-gray-400 hover:text-ghana-gold transition-colors">
+              <a 
+                href={`mailto:${siteSettings.email}`} 
+                className="flex items-center gap-2 text-gray-400 hover:text-ghana-gold transition-colors"
+              >
                 <Mail className="w-4 h-4" />
-                hello@groomlinkgh.com
+                {siteSettings.email}
               </a>
-              <a href="tel:+233241234567" className="flex items-center gap-2 text-gray-400 hover:text-ghana-gold transition-colors">
+              <a 
+                href={`tel:${siteSettings.phoneNumber?.replace(/\s/g, '')}`} 
+                className="flex items-center gap-2 text-gray-400 hover:text-ghana-gold transition-colors"
+              >
                 <Phone className="w-4 h-4" />
-                +233 24 123 4567
+                {siteSettings.phoneNumber}
               </a>
               <div className="flex items-center gap-2 text-gray-400">
                 <MapPin className="w-4 h-4" />
-                Accra, Ghana
+                {siteSettings.address}
               </div>
             </div>
           </div>
