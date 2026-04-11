@@ -77,6 +77,17 @@ function formatTimeAgo(dateString: string): string {
   return `${months}mo ago`;
 }
 
+// Helper function to calculate percentage change between two periods
+function calculatePercentageChange(current: number, previous: number): string {
+  if (!previous || previous === 0) {
+    return current > 0 ? '+∞%' : '0%';
+  }
+  const change = ((current - previous) / previous) * 100;
+  const formatted = Math.abs(change).toFixed(1);
+  const sign = change >= 0 ? '+' : '-';
+  return `${sign}${formatted}%`;
+}
+
 function RecentActivitySection() {
   const { data: activities, isLoading } = useRecentActivities(5);
 
@@ -142,20 +153,54 @@ export function Dashboard() {
   const isLoading = statsLoading || metricsLoading;
 
   // Transform API data for charts
-  const bookingData = metrics?.bookingsByDay?.map((item: { date: string; count: number }) => ({
+  // API returns dailyBookings, dailyRevenue, userGrowth (backend field names)
+  // Frontend previously expected bookingsByDay, revenueByWeek - now using actual API field names
+  const bookingData = (metrics?.dailyBookings || metrics?.bookingsByDay || [])?.map((item: { date: string; count: number }) => ({
     name: new Date(item.date).toLocaleDateString('en', { weekday: 'short' }),
     bookings: item.count,
   })) || [];
 
-  const revenueData = metrics?.revenueByWeek?.map((item: { week: string; amount: number }) => ({
-    name: item.week,
-    revenue: item.amount,
+  const revenueData = (metrics?.dailyRevenue || metrics?.revenueByWeek || [])?.map((item: { date?: string; week?: string; total?: number; amount?: number }) => ({
+    name: item.date || item.week || '',
+    revenue: item.total ?? item.amount ?? 0,
   })) || [];
 
-  const userGrowthData = metrics?.userGrowth?.map((item: { month: string; count: number }) => ({
-    name: item.month,
+  const userGrowthData = (metrics?.userGrowth || [])?.map((item: { date: string; count: number }) => ({
+    name: new Date(item.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
     users: item.count,
   })) || [];
+
+  // Calculate revenue change from dailyRevenue data
+  // Compare first half vs second half of the period
+  const calculateRevenueChange = (): string => {
+    const revenueData = metrics?.dailyRevenue || [];
+    if (revenueData.length < 2) return 'N/A';
+    
+    const midpoint = Math.floor(revenueData.length / 2);
+    const previousPeriod = revenueData.slice(0, midpoint).reduce((sum: number, item: { total?: number }) => sum + (item.total || 0), 0);
+    const currentPeriod = revenueData.slice(midpoint).reduce((sum: number, item: { total?: number }) => sum + (item.total || 0), 0);
+    
+    return calculatePercentageChange(currentPeriod, previousPeriod);
+  };
+
+  // Calculate user growth change from userGrowth data
+  // Compare first half vs second half of the period
+  const calculateUserChange = (): string => {
+    const growthData = metrics?.userGrowth || [];
+    if (growthData.length < 2) return 'N/A';
+    
+    const midpoint = Math.floor(growthData.length / 2);
+    const previousPeriod = growthData.slice(0, midpoint).reduce((sum: number, item: { count: number }) => sum + item.count, 0);
+    const currentPeriod = growthData.slice(midpoint).reduce((sum: number, item: { count: number }) => sum + item.count, 0);
+    
+    return calculatePercentageChange(currentPeriod, previousPeriod);
+  };
+
+  // Calculate total revenue from dailyRevenue
+  const totalRevenue = (metrics?.dailyRevenue || [])?.reduce(
+    (sum: number, item: { total?: number }) => sum + (item.total || 0), 
+    0
+  ) || metrics?.totalRevenue || 0;
 
   const salonStatusData = [
     { name: 'Approved', value: (stats?.stats as { approvedSalons?: number })?.approvedSalons || 0, color: GHANA_COLORS.green },
@@ -166,14 +211,14 @@ export function Dashboard() {
   const statsCards = [
     {
       title: 'Total Revenue',
-      value: formatCurrency(metrics?.totalRevenue || 0),
-      change: '+8.2%',
+      value: formatCurrency(totalRevenue),
+      change: calculateRevenueChange(),
       trend: 'up',
       icon: CreditCard,
       borderColor: 'border-l-[#006B3F]',
       iconBg: 'bg-[#006B3F]/10',
       iconColor: 'text-[#006B3F]',
-      subtitle: 'vs last month',
+      subtitle: 'vs prior period',
     },
     {
       title: 'Total Bookings',
@@ -189,13 +234,13 @@ export function Dashboard() {
     {
       title: 'Total Users',
       value: stats?.stats?.totalUsers?.toLocaleString() || '0',
-      change: '+15.3%',
+      change: calculateUserChange(),
       trend: 'up',
       icon: Users,
       borderColor: 'border-l-blue-500',
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-500',
-      subtitle: 'vs last month',
+      subtitle: 'vs prior period',
     },
     {
       title: 'Pending Salons',

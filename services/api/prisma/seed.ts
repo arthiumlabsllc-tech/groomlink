@@ -499,11 +499,11 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       phoneNumber: '+233200000000',
-      email: 'admin@groomlink.com',
+      email: 'admin@groomlinkgh.com',
       firstName: 'Admin',
       lastName: 'User',
       password: hashedPassword,
-      role: UserRole.ADMIN,
+      role: UserRole.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
       isVerified: true,
     },
@@ -512,18 +512,18 @@ async function main() {
   const superAdmin = await prisma.user.create({
     data: {
       phoneNumber: '+233200000001',
-      email: 'superadmin@groomlink.com',
+      email: 'superadmin@groomlinkgh.com',
       firstName: 'Super',
       lastName: 'Admin',
       password: hashedPassword,
-      role: UserRole.SUPER_ADMIN,
+      role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
       isVerified: true,
     },
   });
 
-  console.log(`✅ Admin: ${admin.email}`);
-  console.log(`✅ Super Admin: ${superAdmin.email}\n`);
+  console.log(`✅ Super Admin: ${admin.email}`);
+  console.log(`✅ Admin: ${superAdmin.email}\n`);
 
   // Step 3: Create customers
   console.log('👥 Creating customers...');
@@ -773,8 +773,8 @@ async function main() {
   console.log(`   Reviews: ${reviewCount}`);
   
   console.log('\n🔐 Test Accounts (Password: Password123!):');
-  console.log('   Super Admin: superadmin@groomlink.com');
-  console.log('   Admin: admin@groomlink.com');
+  console.log('   Super Admin: admin@groomlinkgh.com');
+  console.log('   Admin: superadmin@groomlinkgh.com');
   console.log('   Customer 1: kwame.asante@gmail.com');
   console.log('   Customer 2: ama.mensah@gmail.com');
   console.log('   Customer 3: kofi.boateng@gmail.com');
