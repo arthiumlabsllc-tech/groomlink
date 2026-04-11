@@ -180,13 +180,18 @@ class ApiClient {
 
   // Salon
   async getMySalon() {
-    // The backend returns paginated results from /salons/my/list
-    const response = await this.request<{ success: boolean; data: Salon[]; pagination: { total: number } }>('/salons/my/list');
-    // Return the first salon (salon owners typically have one salon)
-    if (response.success && response.data && response.data.length > 0) {
-      return { success: true, data: response.data[0] };
+    try {
+      // The backend returns paginated results from /salons/my/list
+      const response = await this.request<{ success: boolean; data: Salon[]; pagination: { total: number } }>('/salons/my/list');
+      // Return the first salon (salon owners typically have one salon)
+      if (response.success && response.data && response.data.length > 0) {
+        return { success: true, data: response.data[0] };
+      }
+      return { success: false, data: null };
+    } catch (error) {
+      console.error('Error fetching salon:', error);
+      throw error;
     }
-    return { success: false, data: null };
   }
 
   async updateSalon(id: string, data: Partial<Salon>) {

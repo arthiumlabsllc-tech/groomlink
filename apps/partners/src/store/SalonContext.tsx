@@ -23,10 +23,15 @@ export function SalonProvider({ children }: { children: ReactNode }) {
       const response = await api.getMySalon()
       if (response.success && response.data) {
         setSalon(response.data)
+      } else {
+        console.warn('No salon found for this user')
+        setError('No salon found. Please create a salon first or contact support.')
       }
     } catch (err) {
       console.error('Failed to fetch salon:', err)
-      setError((err as Error).message || 'Failed to fetch salon')
+      const errorMessage = (err as Error).message || 'Failed to fetch salon'
+      setError(errorMessage)
+      // Don't set salon to null on error, keep existing data
     } finally {
       setLoading(false)
     }

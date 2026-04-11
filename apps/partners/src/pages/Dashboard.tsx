@@ -113,11 +113,7 @@ export default function Dashboard() {
           <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-gray-500 mt-4">Loading...</p>
         </div>
-      ) : !salonId ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No salon found. Please contact support.</p>
-        </div>
-      ) : (
+      ) : salonId ? (
       <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -237,6 +233,16 @@ export default function Dashboard() {
         </div>
       </div>
       </>
+      ) : (
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-10 h-10 text-ghana-gold" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Salon Found</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            You don't have a salon registered yet. Please contact support to get started.
+          </p>
+        </div>
       )}
     </Layout>
   )
