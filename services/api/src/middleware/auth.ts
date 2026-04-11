@@ -39,8 +39,14 @@ export function authenticateToken(
 
   try {
     const decoded = verifyToken(token);
+    // Support both 'userId' and 'id' fields for backward compatibility
+    const userId = decoded.userId || (decoded as any).id;
+    if (!userId) {
+      errorResponse(res, 'INVALID_TOKEN', 'Token missing user identifier', 401);
+      return;
+    }
     req.user = {
-      id: decoded.userId,
+      id: userId,
       phoneNumber: decoded.phoneNumber,
       role: decoded.role,
       status: UserStatus.ACTIVE, // Will be verified in DB
