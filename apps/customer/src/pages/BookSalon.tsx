@@ -506,7 +506,7 @@ export default function BookSalon() {
   };
 
   // Step 1: Select Service
-  const ServiceStep = () => (
+  const renderServiceStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Select a Service</h2>
@@ -586,7 +586,7 @@ export default function BookSalon() {
   );
 
   // Step 2: Select Staff
-  const StaffStep = () => (
+  const renderStaffStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Select Staff</h2>
@@ -677,7 +677,7 @@ export default function BookSalon() {
   );
 
   // Step 3: Select Date & Time
-  const DateTimeStep = () => (
+  const renderDateTimeStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Select Date & Time</h2>
@@ -827,7 +827,7 @@ export default function BookSalon() {
   ];
 
   // Step 4: Confirm & Book
-  const ConfirmStep = () => (
+  const renderConfirmStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Confirm Your Booking</h2>
@@ -986,7 +986,7 @@ export default function BookSalon() {
   );
 
   // Step 5: Success
-  const SuccessStep = () => (
+  const renderSuccessStep = () => (
     <div className="text-center py-8">
       <div className="w-20 h-20 bg-[#006B3F]/10 rounded-full flex items-center justify-center mx-auto mb-6">
         <CheckCircle2 className="w-12 h-12 text-[#006B3F]" />
@@ -1059,11 +1059,11 @@ export default function BookSalon() {
       {/* Main Content */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          {currentStep === 'service' && <ServiceStep />}
-          {currentStep === 'staff' && <StaffStep />}
-          {currentStep === 'datetime' && <DateTimeStep />}
-          {currentStep === 'confirm' && <ConfirmStep />}
-          {currentStep === 'success' && <SuccessStep />}
+          {currentStep === 'service' && renderServiceStep()}
+          {currentStep === 'staff' && renderStaffStep()}
+          {currentStep === 'datetime' && renderDateTimeStep()}
+          {currentStep === 'confirm' && renderConfirmStep()}
+          {currentStep === 'success' && renderSuccessStep()}
         </div>
 
         {/* Navigation Buttons */}
