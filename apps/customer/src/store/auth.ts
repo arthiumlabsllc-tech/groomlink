@@ -63,16 +63,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const res = await apiClient.post('/auth/otp/email/verify', { email, code });
     const data = res.data.data || res.data;
     
-    if (data.token && data.user) {
-      localStorage.setItem('customer_token', data.token);
+    // Handle both old format (data.token) and new format (data.tokens.accessToken)
+    const accessToken = data.token || data.tokens?.accessToken;
+    
+    if (accessToken && data.user) {
+      localStorage.setItem('customer_token', accessToken);
       localStorage.setItem('customer_user', JSON.stringify(data.user));
-      set({ token: data.token, user: data.user, isAuthenticated: true });
-      return { isNewUser: false, token: data.token };
+      set({ token: accessToken, user: data.user, isAuthenticated: true });
+      return { isNewUser: false, token: accessToken };
     }
     
     // New user - store temp token for registration
-    if (data.tempToken) {
-      localStorage.setItem('customer_temp_token', data.tempToken);
+    const tempToken = data.tempToken || data.tokens?.accessToken;
+    if (tempToken) {
+      localStorage.setItem('customer_temp_token', tempToken);
     }
     return { isNewUser: true };
   },
@@ -84,10 +88,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
     const result = res.data.data || res.data;
     
+    // Handle both old format (result.token) and new format (result.tokens.accessToken)
+    const accessToken = result.token || result.tokens?.accessToken;
+    
     localStorage.removeItem('customer_temp_token');
-    localStorage.setItem('customer_token', result.token);
+    localStorage.setItem('customer_token', accessToken);
     localStorage.setItem('customer_user', JSON.stringify(result.user));
-    set({ token: result.token, user: result.user, isAuthenticated: true });
+    set({ token: accessToken, user: result.user, isAuthenticated: true });
   },
 
   fetchProfile: async () => {

@@ -45,14 +45,15 @@ export default function Bookings() {
   // Fetch all booking counts on mount
   const fetchCounts = useCallback(async () => {
     try {
-      const [confirmed, completed, cancelled] = await Promise.all([
+      const [pending, confirmed, completed, cancelled] = await Promise.all([
+        bookingApi.getMyBookings('PENDING'),
         bookingApi.getMyBookings('CONFIRMED'),
         bookingApi.getMyBookings('COMPLETED'),
         bookingApi.getMyBookings('CANCELLED')
       ])
       
       setCounts({
-        upcoming: confirmed.length,
+        upcoming: pending.length + confirmed.length,
         past: completed.length,
         cancelled: cancelled.length
       })
@@ -66,9 +67,22 @@ export default function Bookings() {
     setLoading(true)
     setError(null)
     try {
-      const status = statusMap[activeTab]
-      const data = await bookingApi.getMyBookings(status)
-      setBookings(prev => ({ ...prev, [activeTab]: data }))
+      // For upcoming tab, fetch both PENDING and CONFIRMED bookings
+      if (activeTab === 'upcoming') {
+        const [pendingBookings, confirmedBookings] = await Promise.all([
+          bookingApi.getMyBookings('PENDING'),
+          bookingApi.getMyBookings('CONFIRMED')
+        ])
+        // Combine and sort by creation date (newest first)
+        const combined = [...pendingBookings, ...confirmedBookings].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        setBookings(prev => ({ ...prev, [activeTab]: combined }))
+      } else {
+        const status = statusMap[activeTab]
+        const data = await bookingApi.getMyBookings(status)
+        setBookings(prev => ({ ...prev, [activeTab]: data }))
+      }
     } catch (err: any) {
       console.error('Failed to fetch bookings:', err)
       setError(err.response?.data?.message || 'Failed to load bookings. Please try again.')
@@ -101,6 +115,7 @@ export default function Bookings() {
       // Update counts
       setCounts(prev => ({
         upcoming: Math.max(0, prev.upcoming - 1),
+        past: prev.past,
         cancelled: prev.cancelled + 1
       }))
       

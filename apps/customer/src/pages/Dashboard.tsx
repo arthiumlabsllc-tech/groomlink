@@ -176,11 +176,14 @@ export default function Dashboard() {
     setStatsLoading(true)
     setStatsError(null)
     try {
-      const [upcomingRes, completedRes] = await Promise.all([
+      const [pendingRes, upcomingRes, completedRes] = await Promise.all([
+        apiClient.get<BookingsResponse>('/bookings/my?status=PENDING'),
         apiClient.get<BookingsResponse>('/bookings/my?status=CONFIRMED'),
         apiClient.get<BookingsResponse>('/bookings/my?status=COMPLETED')
       ])
-      setUpcomingCount(upcomingRes.data.meta?.total || upcomingRes.data.data?.length || 0)
+      const pendingCount = pendingRes.data.meta?.total || pendingRes.data.data?.length || 0
+      const confirmedCount = upcomingRes.data.meta?.total || upcomingRes.data.data?.length || 0
+      setUpcomingCount(pendingCount + confirmedCount)
       setCompletedCount(completedRes.data.meta?.total || completedRes.data.data?.length || 0)
       
       // Calculate total savings from discountAmount
@@ -202,8 +205,17 @@ export default function Dashboard() {
     setBookingsLoading(true)
     setBookingsError(null)
     try {
-      const response = await apiClient.get<BookingsResponse>('/bookings/my?status=CONFIRMED&limit=3')
-      setBookings(response.data.data || [])
+      const [pendingRes, confirmedRes] = await Promise.all([
+        apiClient.get<BookingsResponse>('/bookings/my?status=PENDING&limit=3'),
+        apiClient.get<BookingsResponse>('/bookings/my?status=CONFIRMED&limit=3')
+      ])
+      const pending = pendingRes.data.data || []
+      const confirmed = confirmedRes.data.data || []
+      // Combine and sort by date
+      const combined = [...pending, ...confirmed]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 3)
+      setBookings(combined)
     } catch (error) {
       console.error('Failed to fetch bookings:', error)
       setBookingsError('Failed to load upcoming appointments')

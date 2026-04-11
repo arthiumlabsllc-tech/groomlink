@@ -45,6 +45,13 @@ export function authenticateToken(
       errorResponse(res, 'INVALID_TOKEN', 'Token missing user identifier', 401);
       return;
     }
+    
+    // Reject pending tokens - user must complete registration
+    if (userId === 'pending') {
+      errorResponse(res, 'REGISTRATION_INCOMPLETE', 'Please complete your registration to continue', 401);
+      return;
+    }
+    
     req.user = {
       id: userId,
       phoneNumber: decoded.phoneNumber,
