@@ -11,7 +11,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 
-const API_BASE_URL = 'https://api.groomlinkgh.com'
+const API_BASE_URL = 'https://groomlinkgh.com/api'
 
 type UserType = 'customer' | 'salon-owner' | null
 type Step = 1 | 2

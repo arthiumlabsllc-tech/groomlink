@@ -2,7 +2,7 @@ import { Scissors, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin }
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
-const API_BASE_URL = 'https://api.groomlinkgh.com'
+const API_BASE_URL = 'https://groomlinkgh.com/api'
 
 interface SiteSettings {
   siteName: string

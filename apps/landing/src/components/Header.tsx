@@ -2,7 +2,7 @@ import { Menu, X, Scissors } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
-const API_BASE_URL = 'https://api.groomlinkgh.com'
+const API_BASE_URL = 'https://groomlinkgh.com/api'
 
 interface SiteSettings {
   siteName: string
