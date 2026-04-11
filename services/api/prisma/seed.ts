@@ -485,16 +485,8 @@ async function main() {
   await prisma.notification.deleteMany({});
   await prisma.salon.deleteMany({});
   
-  // Delete non-admin users
-  const adminRoles = [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUPPORT];
-  await prisma.adminPermission.deleteMany({});
-  await prisma.userActivity.deleteMany({});
-  await prisma.impersonationLog.deleteMany({});
-  await prisma.user.deleteMany({
-    where: {
-      role: { notIn: adminRoles }
-    }
-  });
+  // Delete all users (including admin users - we'll recreate them)
+  await prisma.user.deleteMany({});
   await prisma.otp.deleteMany({});
   
   console.log('✅ Data cleanup complete\n');
@@ -561,12 +553,13 @@ async function main() {
   console.log('🏪 Creating salons, workers, services, and reviews...');
   const allWorkers: { id: string; salonId: string; specialties: string[] }[] = [];
 
-  for (const salonData of salonsData) {
+  for (let i = 0; i < salonsData.length; i++) {
+    const salonData = salonsData[i];
     // Create salon owner
     const isFemaleOwner = Math.random() > 0.4;
     const ownerFirstName = randomElement(isFemaleOwner ? ghanaFirstNames.female : ghanaFirstNames.male);
     const ownerLastName = randomElement(ghanaLastNames);
-    const ownerEmail = `${ownerFirstName.toLowerCase()}.${ownerLastName.toLowerCase()}@gmail.com`;
+    const ownerEmail = `${ownerFirstName.toLowerCase()}.${ownerLastName.toLowerCase()}${i}@gmail.com`;
 
     const owner = await prisma.user.create({
       data: {
