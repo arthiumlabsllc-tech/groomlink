@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Explore from './pages/Explore';
 import Bookings from './pages/Bookings';
@@ -14,10 +13,23 @@ import { useAuthStore } from './store/auth';
 
 function App() {
   const initialize = useAuthStore((state) => state.initialize);
+  const setToken = useAuthStore((state) => state.setToken);
 
   useEffect(() => {
+    // Check for token in URL params (from redirect after login)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    if (tokenFromUrl) {
+      // Store token and clean up URL
+      setToken(tokenFromUrl);
+      // Remove token from URL without reloading
+      const newUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+    
     initialize();
-  }, [initialize]);
+  }, [initialize, setToken]);
 
   return (
     <BrowserRouter>
@@ -44,9 +56,6 @@ function App() {
         }}
       />
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
-        
         {/* Protected routes */}
         <Route path="/" element={
           <ProtectedRoute>

@@ -1,4 +1,3 @@
-import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -13,7 +12,10 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Redirect to main login page with redirect parameter
+    const currentUrl = encodeURIComponent(window.location.href);
+    window.location.href = `https://groomlinkgh.com/login?redirect=${currentUrl}`;
+    return null;
   }
   
   return <>{children}</>;

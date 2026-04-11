@@ -23,6 +23,7 @@ interface AuthState {
   fetchProfile: () => Promise<void>;
   logout: () => void;
   initialize: () => void;
+  setToken: (token: string) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -44,6 +45,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } else {
       set({ isLoading: false });
     }
+  },
+
+  setToken: (token: string) => {
+    localStorage.setItem('customer_token', token);
+    set({ token, isAuthenticated: true });
+    // Fetch user profile after setting token
+    get().fetchProfile();
   },
 
   requestOTP: async (email: string) => {
@@ -98,6 +106,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem('customer_user');
     localStorage.removeItem('customer_temp_token');
     set({ token: null, user: null, isAuthenticated: false });
-    window.location.href = '/login';
+    window.location.href = 'https://groomlinkgh.com/login';
   },
 }));

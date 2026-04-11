@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Scissors,
   ArrowLeft,
@@ -23,6 +23,7 @@ interface Toast {
 
 export default function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [step, setStep] = useState<Step>(1)
   const [userType, setUserType] = useState<UserType>(null)
   const [email, setEmail] = useState('')
@@ -33,6 +34,9 @@ export default function Login() {
   const [timer, setTimer] = useState(600)
   const [timerActive, setTimerActive] = useState(false)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+  
+  // Get redirect URL from query params
+  const redirectUrl = searchParams.get('redirect')
 
   // Timer effect
   useEffect(() => {
@@ -185,9 +189,17 @@ export default function Login() {
         setToast({ message: 'Login successful!', type: 'success' })
         setTimerActive(false)
 
-        // Redirect based on user type
+        // Redirect based on user type and redirect param
         setTimeout(() => {
-          if (userType === 'customer') {
+          if (userType === 'customer' && redirectUrl) {
+            // Redirect to specified URL with token
+            const tokens = data.data?.tokens || data.tokens
+            if (tokens?.accessToken) {
+              window.location.href = `${redirectUrl}?token=${tokens.accessToken}`
+            } else {
+              window.location.href = redirectUrl
+            }
+          } else if (userType === 'customer') {
             window.location.href = 'https://groomlinkgh.com'
           } else {
             window.location.href = 'https://partners.groomlinkgh.com'
