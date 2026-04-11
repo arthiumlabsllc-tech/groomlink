@@ -13,6 +13,7 @@ import logger from './config/logger';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { initializeSocket } from './config/socket';
+import { maintenanceCheck } from './middleware/maintenance';
 
 // Load environment variables
 dotenv.config();
@@ -125,6 +126,9 @@ app.use(morgan('dev', {
     write: (message) => logger.info(message.trim()),
   },
 }));
+
+// Maintenance mode check (after cors/helmet, before routes)
+app.use(maintenanceCheck);
 
 // API routes
 app.use('/api', routes);

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import * as salonService from '../services/salon.service';
+import prisma from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 
@@ -224,5 +225,74 @@ export async function rejectSalon(req: AuthenticatedRequest, res: Response): Pro
     successResponse(res, salon);
   } catch (error) {
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 400);
+  }
+}
+
+// Map endpoint - get salons for map display
+interface SalonMapData {
+  id: string;
+  businessName: string;
+  type: string;
+  latitude: number | null;
+  longitude: number | null;
+  rating: number;
+  reviewCount: number;
+  openingTime: string | null;
+  closingTime: string | null;
+  workingDays: string[];
+  city: string;
+  address: string;
+  phoneNumber: string;
+}
+
+export async function getSalonsForMap(req: Request, res: Response): Promise<void> {
+  try {
+    const { lat, lng, radius = 10 } = req.query;
+    
+    // Get all approved salons with location data
+    const salons = await prisma.salon.findMany({
+      where: { 
+        status: 'APPROVED', 
+        latitude: { not: undefined },
+        longitude: { not: undefined }
+      },
+      select: {
+        id: true, businessName: true, type: true,
+        latitude: true, longitude: true,
+        rating: true, reviewCount: true,
+        openingTime: true, closingTime: true, workingDays: true,
+        city: true, address: true, phoneNumber: true,
+      }
+    });
+
+    // If lat/lng provided, filter by radius (Haversine approximation)
+    let filtered: SalonMapData[] = salons;
+    if (lat && lng) {
+      const latNum = parseFloat(lat as string);
+      const lngNum = parseFloat(lng as string);
+      const radiusNum = parseFloat(radius as string);
+      filtered = salons.filter((s: SalonMapData) => {
+        if (!s.latitude || !s.longitude) return false;
+        const dLat = (s.latitude - latNum) * Math.PI / 180;
+        const dLng = (s.longitude - lngNum) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(latNum*Math.PI/180) * Math.cos(s.latitude*Math.PI/180) * Math.sin(dLng/2)**2;
+        const distance = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return distance <= radiusNum;
+      });
+    }
+
+    // Determine open/closed status based on current time
+    const now = new Date();
+    const currentDay = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getDay()];
+    const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    const result = filtered.map((s: SalonMapData) => ({
+      ...s,
+      isOpen: s.workingDays?.includes(currentDay) && s.openingTime && s.closingTime && currentTime >= s.openingTime && currentTime <= s.closingTime,
+    }));
+
+    successResponse(res, result);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }

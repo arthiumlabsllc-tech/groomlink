@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { salonsApi } from '../api';
+import { salonsApi, CreateSalonData } from '../api';
 
 const SALONS_KEY = 'salons';
 
@@ -54,10 +54,40 @@ export function useSuspendSalon() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) => 
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
       salonsApi.suspend(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SALONS_KEY] });
     },
+  });
+}
+
+export function useReactivateSalon() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => salonsApi.reactivate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SALONS_KEY] });
+    },
+  });
+}
+
+export function useCreateSalon() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: CreateSalonData) => salonsApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SALONS_KEY] });
+    },
+  });
+}
+
+export function useSalonDetails(id: string) {
+  return useQuery({
+    queryKey: [SALONS_KEY, 'details', id],
+    queryFn: () => salonsApi.getDetails(id),
+    enabled: !!id,
   });
 }

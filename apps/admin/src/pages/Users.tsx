@@ -1,7 +1,14 @@
 import { useState } from 'react';
-import { Search, Ban, Eye, Phone, Calendar, Loader2, CheckCircle, LogIn, Users as UsersIcon } from 'lucide-react';
-import { useUsers, useBlockUser, useUnblockUser } from '../hooks';
-import { formatDate, formatPhoneNumber, getStatusColor } from '../lib/utils';
+import { 
+  Search, Ban, Eye, Phone, Calendar, Loader2, CheckCircle, LogIn, Users as UsersIcon,
+  Plus, X, Mail, MapPin, Shield, AlertTriangle, CreditCard, Clock, Activity,
+  UserCheck, UserX, AlertCircle
+} from 'lucide-react';
+import { 
+  useUsers, useBlockUser, useUnblockUser, useCreateCustomer, 
+  useUserDetails, useUserActivities, useBanUser, useUnbanUser 
+} from '../hooks';
+import { formatDate, formatPhoneNumber, formatCurrency } from '../lib/utils';
 import api from '../api/client';
 
 interface ImpersonationResponse {
@@ -21,15 +28,46 @@ interface ImpersonationResponse {
   impersonationLogId: string;
 }
 
+interface CreateCustomerFormData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+}
+
+const initialFormData: CreateCustomerFormData = {
+  email: '',
+  firstName: '',
+  lastName: '',
+  phoneNumber: '+233 ',
+};
+
+type DetailTab = 'profile' | 'activity' | 'bookings' | 'payments';
+
 export function Users() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [showSuspiciousOnly, setShowSuspiciousOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [impersonating, setImpersonating] = useState<string | null>(null);
+  
+  // Modal states
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [formData, setFormData] = useState<CreateCustomerFormData>(initialFormData);
+  const [activeTab, setActiveTab] = useState<DetailTab>('profile');
 
   const { data: usersData, isLoading } = useUsers(page, 20);
   const blockUser = useBlockUser();
   const unblockUser = useUnblockUser();
+  const createCustomer = useCreateCustomer();
+  const banUserMutation = useBanUser();
+  const unbanUserMutation = useUnbanUser();
+  const { data: userDetails, isLoading: detailsLoading } = useUserDetails(selectedUserId || '');
+  const { data: userActivities, isLoading: activitiesLoading } = useUserActivities(selectedUserId || '');
 
   const users = usersData?.data || [];
   const totalCount = usersData?.pagination?.total || 0;
@@ -42,7 +80,8 @@ export function Users() {
       (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    return matchesSearch && matchesRole;
+    const matchesSuspicious = !showSuspiciousOnly || user.hasSuspiciousActivity;
+    return matchesSearch && matchesRole && matchesSuspicious;
   });
 
   const handleBlock = async (id: string) => {
@@ -83,6 +122,45 @@ export function Users() {
     } finally {
       setImpersonating(null);
     }
+  };
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createCustomer.mutateAsync({
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber || undefined,
+      });
+      setShowRegisterModal(false);
+      setFormData(initialFormData);
+    } catch (error) {
+      console.error('Failed to create customer:', error);
+    }
+  };
+
+  const handleBan = async () => {
+    if (!selectedUserId || !banReason.trim()) return;
+    await banUserMutation.mutateAsync({ id: selectedUserId, reason: banReason });
+    setShowBanModal(false);
+    setSelectedUserId(null);
+    setBanReason('');
+  };
+
+  const handleUnban = async (id: string) => {
+    await unbanUserMutation.mutateAsync(id);
+  };
+
+  const openDetailModal = (id: string) => {
+    setSelectedUserId(id);
+    setActiveTab('profile');
+    setShowDetailModal(true);
+  };
+
+  const openBanModal = (id: string) => {
+    setSelectedUserId(id);
+    setShowBanModal(true);
   };
 
   const getRoleBadgeStyle = (role: string) => {
@@ -128,6 +206,13 @@ export function Users() {
           <p className="text-sm text-gray-500 mt-1">Manage platform users and their access</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => setShowRegisterModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-sm"
+          >
+            <Plus size={18} />
+            Register Customer
+          </button>
           <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
             <UsersIcon size={18} className="text-gray-400" />
             <span className="text-sm text-gray-500">Total:</span>
@@ -148,7 +233,7 @@ export function Users() {
             className="w-full pl-11 pr-4 py-3 text-sm bg-white border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {(['all', 'CUSTOMER', 'SALON_OWNER'] as const).map((role) => (
             <button
               key={role}
@@ -162,6 +247,17 @@ export function Users() {
               {role === 'all' ? 'All Roles' : role === 'CUSTOMER' ? 'Customers' : 'Salon Owners'}
             </button>
           ))}
+          <button
+            onClick={() => setShowSuspiciousOnly(!showSuspiciousOnly)}
+            className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 flex items-center gap-2 ${
+              showSuspiciousOnly
+                ? 'bg-[#CE1126] text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+            }`}
+          >
+            <AlertTriangle size={16} />
+            Suspicious Only
+          </button>
         </div>
       </div>
 
@@ -171,8 +267,15 @@ export function Users() {
           <div key={user.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-md">
-                  {user.firstName.charAt(0)}
+                <div className="relative">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-md">
+                    {user.firstName.charAt(0)}
+                  </div>
+                  {user.hasSuspiciousActivity && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#CE1126] rounded-full flex items-center justify-center">
+                      <AlertTriangle size={12} className="text-white" />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">{user.firstName} {user.lastName}</p>
@@ -202,8 +305,11 @@ export function Users() {
                 <span className="text-sm text-gray-500">{user._count?.bookings || 0} bookings</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm">
+            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 flex-wrap">
+              <button 
+                onClick={() => openDetailModal(user.id)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm"
+              >
                 <Eye size={16} />
                 View
               </button>
@@ -224,16 +330,15 @@ export function Users() {
               )}
               {user.status === 'ACTIVE' ? (
                 <button 
-                  onClick={() => handleBlock(user.id)}
-                  disabled={blockUser.isPending}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] disabled:opacity-50 transition-colors font-medium text-sm"
+                  onClick={() => openBanModal(user.id)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] transition-colors font-medium text-sm"
                 >
                   <Ban size={16} />
                 </button>
               ) : (
                 <button 
-                  onClick={() => handleUnblock(user.id)}
-                  disabled={unblockUser.isPending}
+                  onClick={() => handleUnban(user.id)}
+                  disabled={unbanUserMutation.isPending}
                   className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium text-sm"
                 >
                   <CheckCircle size={16} />
@@ -264,8 +369,15 @@ export function Users() {
                 <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-medium shadow-sm">
-                        {user.firstName.charAt(0)}
+                      <div className="relative">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-medium shadow-sm">
+                          {user.firstName.charAt(0)}
+                        </div>
+                        {user.hasSuspiciousActivity && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#CE1126] rounded-full flex items-center justify-center">
+                            <AlertTriangle size={10} className="text-white" />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <p className="font-medium text-gray-800">{user.firstName} {user.lastName}</p>
@@ -303,7 +415,11 @@ export function Users() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View details">
+                      <button 
+                        onClick={() => openDetailModal(user.id)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                        title="View details"
+                      >
                         <Eye size={18} />
                       </button>
                       {(user.role === 'CUSTOMER' || user.role === 'SALON_OWNER') && (
@@ -322,19 +438,18 @@ export function Users() {
                       )}
                       {user.status === 'ACTIVE' ? (
                         <button 
-                          onClick={() => handleBlock(user.id)}
-                          disabled={blockUser.isPending}
-                          className="p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors"
-                          title="Block user"
+                          onClick={() => openBanModal(user.id)}
+                          className="p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] transition-colors"
+                          title="Ban user"
                         >
                           <Ban size={18} />
                         </button>
                       ) : (
                         <button 
-                          onClick={() => handleUnblock(user.id)}
-                          disabled={unblockUser.isPending}
+                          onClick={() => handleUnban(user.id)}
+                          disabled={unbanUserMutation.isPending}
                           className="p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
-                          title="Unblock user"
+                          title="Unban user"
                         >
                           <CheckCircle size={18} />
                         </button>
@@ -347,6 +462,457 @@ export function Users() {
           </table>
         </div>
       </div>
+
+      {/* Empty State */}
+      {filteredUsers.length === 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UsersIcon size={32} className="text-gray-300" />
+          </div>
+          <p className="text-gray-500 font-medium">No users found</p>
+          <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+        </div>
+      )}
+
+      {/* Register Customer Modal */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-800">Register Customer</h2>
+              <button 
+                onClick={() => { setShowRegisterModal(false); setFormData(initialFormData); }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateCustomer} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                  placeholder="customer@example.com"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  placeholder="+233 XX XXX XXXX"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowRegisterModal(false); setFormData(initialFormData); }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createCustomer.isPending}
+                  className="px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {createCustomer.isPending && <Loader2 className="animate-spin" size={16} />}
+                  Register
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* User Detail Modal */}
+      {showDetailModal && selectedUserId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">User Details</h2>
+              <button 
+                onClick={() => { setShowDetailModal(false); setSelectedUserId(null); }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {detailsLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="animate-spin text-[#006B3F]" size={32} />
+              </div>
+            ) : userDetails ? (
+              <div className="p-6">
+                {/* Tabs */}
+                <div className="flex gap-2 mb-6 border-b border-gray-100 overflow-x-auto">
+                  {[
+                    { id: 'profile', label: 'Profile', icon: UsersIcon },
+                    { id: 'activity', label: 'Activity', icon: Activity },
+                    { id: 'bookings', label: 'Bookings', icon: Calendar },
+                    { id: 'payments', label: 'Payments', icon: CreditCard },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as DetailTab)}
+                      className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                        activeTab === tab.id
+                          ? 'border-[#006B3F] text-[#006B3F]'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <tab.icon size={16} />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Profile Tab */}
+                {activeTab === 'profile' && (
+                  <div className="space-y-6">
+                    {/* User Header */}
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="w-20 h-20 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                          {userDetails.firstName.charAt(0)}
+                        </div>
+                        {userDetails.hasSuspiciousActivity && (
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#CE1126] rounded-full flex items-center justify-center">
+                            <AlertTriangle size={14} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">{userDetails.firstName} {userDetails.lastName}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          {getRoleBadge(userDetails.role)}
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            userDetails.status === 'ACTIVE' 
+                              ? 'bg-[#006B3F]/10 text-[#006B3F]' 
+                              : 'bg-[#CE1126]/10 text-[#CE1126]'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${userDetails.status === 'ACTIVE' ? 'bg-[#006B3F]' : 'bg-[#CE1126]'}`}></span>
+                            {userDetails.status.toLowerCase()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact Information</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Phone size={18} className="text-gray-400" />
+                            <span className="text-gray-600">{formatPhoneNumber(userDetails.phoneNumber)}</span>
+                          </div>
+                          {userDetails.email && (
+                            <div className="flex items-center gap-3">
+                              <Mail size={18} className="text-gray-400" />
+                              <span className="text-gray-600">{userDetails.email}</span>
+                            </div>
+                          )}
+                          {userDetails.location?.city && (
+                            <div className="flex items-center gap-3">
+                              <MapPin size={18} className="text-gray-400" />
+                              <span className="text-gray-600">
+                                {userDetails.location.city}{userDetails.location.region ? `, ${userDetails.location.region}` : ''}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Account Details</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Calendar size={18} className="text-gray-400" />
+                            <div>
+                              <p className="text-xs text-gray-500">Joined</p>
+                              <p className="text-gray-600">{formatDate(userDetails.createdAt)}</p>
+                            </div>
+                          </div>
+                          {userDetails.lastLoginAt && (
+                            <div className="flex items-center gap-3">
+                              <Clock size={18} className="text-gray-400" />
+                              <div>
+                                <p className="text-xs text-gray-500">Last Login</p>
+                                <p className="text-gray-600">{formatDate(userDetails.lastLoginAt)}</p>
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-3">
+                            <Shield size={18} className="text-gray-400" />
+                            <div>
+                              <p className="text-xs text-gray-500">Verified</p>
+                              <p className={`font-medium ${userDetails.isVerified ? 'text-[#006B3F]' : 'text-[#CE1126]'}`}>
+                                {userDetails.isVerified ? 'Yes' : 'No'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ban Info */}
+                    {userDetails.status === 'SUSPENDED' && userDetails.banReason && (
+                      <div className="bg-[#CE1126]/10 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="text-[#CE1126] mt-0.5" size={20} />
+                          <div>
+                            <p className="font-medium text-[#CE1126]">Account Suspended</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              <strong>Reason:</strong> {userDetails.banReason}
+                            </p>
+                            {userDetails.bannedAt && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Suspended on {formatDate(userDetails.bannedAt)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-gray-50 rounded-xl p-4 text-center">
+                        <p className="text-2xl font-bold text-gray-800">{userDetails._count?.bookings || 0}</p>
+                        <p className="text-xs text-gray-500">Total Bookings</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-4 text-center">
+                        <p className="text-2xl font-bold text-gray-800">{userDetails._count?.salons || 0}</p>
+                        <p className="text-xs text-gray-500">Salons</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-4 text-center">
+                        <p className={`text-2xl font-bold ${userDetails.isVerified ? 'text-[#006B3F]' : 'text-[#CE1126]'}`}>
+                          {userDetails.isVerified ? 'Verified' : 'Unverified'}
+                        </p>
+                        <p className="text-xs text-gray-500">Status</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Activity Tab */}
+                {activeTab === 'activity' && (
+                  <div>
+                    {activitiesLoading ? (
+                      <div className="flex items-center justify-center h-32">
+                        <Loader2 className="animate-spin text-[#006B3F]" size={24} />
+                      </div>
+                    ) : userActivities?.data && userActivities.data.length > 0 ? (
+                      <div className="space-y-3">
+                        {userActivities.data.map((activity) => (
+                          <div 
+                            key={activity.id} 
+                            className={`flex items-center justify-between p-4 rounded-xl ${
+                              activity.isSuspicious ? 'bg-[#CE1126]/5 border border-[#CE1126]/20' : 'bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {activity.isSuspicious ? (
+                                <AlertTriangle size={18} className="text-[#CE1126]" />
+                              ) : (
+                                <Activity size={18} className="text-gray-400" />
+                              )}
+                              <div>
+                                <p className={`font-medium ${activity.isSuspicious ? 'text-[#CE1126]' : 'text-gray-800'}`}>
+                                  {activity.action}
+                                </p>
+                                <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                  <span>{activity.ipAddress || 'Unknown IP'}</span>
+                                  <span>•</span>
+                                  <span>{activity.device || 'Unknown device'}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-400">{formatDate(activity.createdAt)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <Activity size={32} className="mx-auto mb-2 text-gray-300" />
+                        <p>No activity recorded</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Bookings Tab */}
+                {activeTab === 'bookings' && (
+                  <div>
+                    {userDetails.bookings && userDetails.bookings.length > 0 ? (
+                      <div className="space-y-3">
+                        {userDetails.bookings.map((booking) => (
+                          <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                            <div>
+                              <p className="font-medium text-gray-800">{booking.salon.businessName}</p>
+                              <p className="text-sm text-gray-500">{booking.salon.city}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                <Calendar size={12} />
+                                <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-gray-800">{formatCurrency(booking.totalAmount)}</p>
+                              <p className={`text-xs ${
+                                booking.status === 'BOOKING_COMPLETED' ? 'text-green-600' :
+                                booking.status === 'CONFIRMED' ? 'text-blue-600' :
+                                booking.status === 'CANCELLED' ? 'text-red-600' :
+                                'text-gray-500'
+                              }`}>{booking.status.toLowerCase().replace('_', ' ')}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <Calendar size={32} className="mx-auto mb-2 text-gray-300" />
+                        <p>No bookings found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Payments Tab */}
+                {activeTab === 'payments' && (
+                  <div>
+                    {userDetails.payments && userDetails.payments.length > 0 ? (
+                      <div className="space-y-3">
+                        {userDetails.payments.map((payment) => (
+                          <div key={payment.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                            <div>
+                              {payment.booking && (
+                                <p className="font-medium text-gray-800">{payment.booking.salon.businessName}</p>
+                              )}
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <CreditCard size={14} />
+                                <span>{payment.provider}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-gray-800">{formatCurrency(payment.amount)}</p>
+                              <p className={`text-xs ${
+                                payment.status === 'PAYMENT_COMPLETED' ? 'text-green-600' :
+                                payment.status === 'FAILED' ? 'text-red-600' :
+                                'text-gray-500'
+                              }`}>{payment.status.toLowerCase().replace('_', ' ')}</p>
+                              <p className="text-xs text-gray-400 mt-1">{formatDate(payment.createdAt)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <CreditCard size={32} className="mx-auto mb-2 text-gray-300" />
+                        <p>No payments found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                  {userDetails.status === 'ACTIVE' ? (
+                    <button
+                      onClick={() => { setShowDetailModal(false); openBanModal(selectedUserId); }}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] transition-colors"
+                    >
+                      <UserX size={18} />
+                      Ban User
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleUnban(selectedUserId)}
+                      disabled={unbanUserMutation.isPending}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
+                    >
+                      {unbanUserMutation.isPending ? (
+                        <Loader2 className="animate-spin" size={18} />
+                      ) : (
+                        <UserCheck size={18} />
+                      )}
+                      Unban User
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500">Unable to load user details</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Ban User Modal */}
+      {showBanModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800">Ban User</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-600 mb-4">Please provide a reason for banning this user:</p>
+              <textarea
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                rows={3}
+                placeholder="Enter ban reason..."
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#CE1126] focus:ring-1 focus:ring-[#CE1126]"
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => { setShowBanModal(false); setBanReason(''); }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBan}
+                  disabled={!banReason.trim() || banUserMutation.isPending}
+                  className="px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {banUserMutation.isPending && <Loader2 className="animate-spin" size={16} />}
+                  Ban User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

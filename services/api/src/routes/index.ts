@@ -8,6 +8,7 @@ import bookingRoutes from './booking.routes';
 import paymentRoutes from './payment.routes';
 import notificationRoutes from './notification.routes';
 import adminRoutes from './admin.routes';
+import supportRoutes from './support.routes';
 import uploadRoutes from './upload.routes';
 import impersonationRoutes from './impersonation.routes';
 
@@ -28,6 +29,7 @@ router.use('/bookings', bookingRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin', adminRoutes);
+router.use('/support', supportRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/impersonation', impersonationRoutes);
 

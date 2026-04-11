@@ -12,25 +12,67 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Shield,
+  Settings,
 } from 'lucide-react';
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks';
 
+// Map of page IDs to their paths for permission checking
+const pageIdToPath: Record<string, string> = {
+  'dashboard': '/dashboard',
+  'salons': '/salons',
+  'users': '/users',
+  'transactions': '/transactions',
+  'promotions': '/promotions',
+  'support': '/support',
+  'support-staff': '/support-staff',
+  'settings': '/settings',
+};
+
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/salons', label: 'Salons', icon: Store },
-  { path: '/users', label: 'Users', icon: Users },
-  { path: '/transactions', label: 'Transactions', icon: CreditCard },
-  { path: '/promotions', label: 'Promotions', icon: Gift },
-  { path: '/support', label: 'Support', icon: Headphones },
-  { path: '/support-staff', label: 'Support Staff', icon: UserPlus },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, pageId: 'dashboard' },
+  { path: '/salons', label: 'Salons', icon: Store, pageId: 'salons' },
+  { path: '/users', label: 'Users', icon: Users, pageId: 'users' },
+  { path: '/transactions', label: 'Transactions', icon: CreditCard, pageId: 'transactions' },
+  { path: '/promotions', label: 'Promotions', icon: Gift, pageId: 'promotions' },
+  { path: '/support', label: 'Support', icon: Headphones, pageId: 'support' },
+  { path: '/support-staff', label: 'Support Staff', icon: UserPlus, pageId: 'support-staff' },
 ];
+
+// Admin nav items (only for SUPER_ADMIN)
+const adminNavItems = [
+  { path: '/admins', label: 'Admins', icon: Shield, pageId: 'admins' },
+];
+
+// Settings nav item (shown at bottom)
+const settingsNavItem = { path: '/settings', label: 'Settings', icon: Settings, pageId: 'settings' };
 
 export function Layout() {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Check if user has permission to access a page
+  const hasPagePermission = (pageId: string): boolean => {
+    // SUPER_ADMIN has access to everything
+    if (user?.role === 'SUPER_ADMIN') return true;
+    
+    // ADMIN users check their pages array
+    if (user?.role === 'ADMIN') {
+      // Settings is always accessible to logged-in admins
+      if (pageId === 'settings') return true;
+      // Check if page is in user's allowed pages
+      return user.pages?.includes(pageId) ?? false;
+    }
+    
+    return false;
+  };
+
+  // Filter nav items based on permissions
+  const filteredNavItems = navItems.filter(item => hasPagePermission(item.pageId));
+  const showAdminNav = user?.role === 'SUPER_ADMIN';
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -57,10 +99,11 @@ export function Layout() {
     logout.mutate();
   };
 
-  const NavLinks = ({ onClick }: { onClick?: () => void }) => {
+  const NavLinks = ({ onClick, items }: { onClick?: () => void; items?: typeof navItems }) => {
+    const navItemsToRender = items || filteredNavItems;
     return (
       <>
-        {navItems.map((item) => {
+        {navItemsToRender.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (
@@ -112,7 +155,28 @@ export function Layout() {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                title={!isSidebarOpen ? item.label : undefined}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#FCD116]'}`} />
+                {isSidebarOpen && <span className="ml-3">{item.label}</span>}
+              </Link>
+            );
+          })}
+          
+          {/* Admin Management - Only for SUPER_ADMIN */}
+          {showAdminNav && adminNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
@@ -133,6 +197,28 @@ export function Layout() {
           })}
         </nav>
 
+        {/* Settings Link */}
+        <div className="p-4 border-t border-gray-700/50">
+          {(() => {
+            const Icon = settingsNavItem.icon;
+            const isActive = location.pathname === settingsNavItem.path;
+            return (
+              <Link
+                to={settingsNavItem.path}
+                title={!isSidebarOpen ? settingsNavItem.label : undefined}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#FCD116]'}`} />
+                {isSidebarOpen && <span className="ml-3">{settingsNavItem.label}</span>}
+              </Link>
+            );
+          })()}
+        </div>
+
         {/* User Section & Logout */}
         <div className="p-4 border-t border-gray-700/50">
           {isSidebarOpen && user && (
@@ -144,8 +230,12 @@ export function Layout() {
                 <p className="text-sm font-medium text-white truncate">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <span className="inline-block px-2 py-0.5 bg-[#FCD116]/20 text-[#FCD116] text-[10px] font-semibold rounded uppercase tracking-wide">
-                  Admin
+                <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wide ${
+                  user?.role === 'SUPER_ADMIN' 
+                    ? 'bg-purple-500/20 text-purple-300' 
+                    : 'bg-[#FCD116]/20 text-[#FCD116]'
+                }`}>
+                  {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
                 </span>
               </div>
             </div>
@@ -198,6 +288,47 @@ export function Layout() {
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
           <NavLinks onClick={() => setIsMobileMenuOpen(false)} />
+          
+          {/* Admin Management - Only for SUPER_ADMIN */}
+          {showAdminNav && adminNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} />
+                <span className="ml-3">{item.label}</span>
+              </Link>
+            );
+          })}
+          
+          {/* Settings Link */}
+          {(() => {
+            const Icon = settingsNavItem.icon;
+            const isActive = location.pathname === settingsNavItem.path;
+            return (
+              <Link
+                to={settingsNavItem.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} />
+                <span className="ml-3">{settingsNavItem.label}</span>
+              </Link>
+            );
+          })()}
         </nav>
 
         {/* User Info & Logout */}
@@ -211,8 +342,12 @@ export function Layout() {
                 <p className="text-sm font-medium text-white truncate">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <span className="inline-block px-2 py-0.5 bg-[#FCD116]/20 text-[#FCD116] text-[10px] font-semibold rounded uppercase tracking-wide">
-                  Admin
+                <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wide ${
+                  user?.role === 'SUPER_ADMIN' 
+                    ? 'bg-purple-500/20 text-purple-300' 
+                    : 'bg-[#FCD116]/20 text-[#FCD116]'
+                }`}>
+                  {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
                 </span>
               </div>
             </div>

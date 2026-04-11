@@ -126,6 +126,35 @@ export function requireSuperAdmin(
   next();
 }
 
+// Check page access permission for regular admins
+export function requirePageAccess(page: string) {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    // Super admin has all access
+    if (req.user.role === UserRole.SUPER_ADMIN) {
+      next();
+      return;
+    }
+
+    // For regular ADMIN, check page permissions
+    const { default: prisma } = await import('../config/database');
+    const permission = await prisma.adminPermission.findUnique({
+      where: { userId: req.user.id }
+    });
+
+    if (!permission || !permission.pages.includes(page)) {
+      errorResponse(res, 'FORBIDDEN', 'You do not have access to this section', 403);
+      return;
+    }
+
+    next();
+  };
+}
+
 export function requireActiveUser(
   req: AuthenticatedRequest,
   res: Response,

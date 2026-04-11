@@ -11,6 +11,7 @@ export type AuthStackParamList = {
 export type MainStackParamList = {
   HomeMain: undefined;
   SearchMain: undefined;
+  MapMain: undefined;
   SalonDetail: { salonId: string };
   Booking: { salonId: string; workerId?: string; services?: string[] };
   BookingConfirmation: { bookingId: string };
@@ -21,6 +22,7 @@ export type MainStackParamList = {
 export type TabParamList = {
   Home: undefined;
   Search: { query?: string };
+  Map: undefined;
   Bookings: undefined;
   Profile: undefined;
 };

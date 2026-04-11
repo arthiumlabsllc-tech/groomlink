@@ -3,7 +3,9 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import prisma, { getPoolMetrics } from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
-import { SalonStatus, PaymentStatus } from '@prisma/client';
+import { SalonStatus, PaymentStatus, UserRole, UserStatus } from '@prisma/client';
+import { sendWelcomeEmail } from '../services/email.service';
+import { activityService } from '../services/activity.service';
 
 const couponSchema = z.object({
   code: z.string().min(3),
@@ -307,43 +309,69 @@ export async function refundTransaction(req: AuthenticatedRequest, res: Response
 // System Health & Metrics
 export async function getSystemHealth(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const [
-      totalUsers,
-      totalSalons,
-      totalBookings,
-      totalPayments,
-      recentBookings,
-    ] = await Promise.all([
+    const startTime = process.uptime();
+    const memUsage = process.memoryUsage();
+    
+    // DB check
+    let dbStatus = 'healthy';
+    let dbLatency = 0;
+    try {
+      const dbStart = Date.now();
+      await prisma.$queryRaw`SELECT 1`;
+      dbLatency = Date.now() - dbStart;
+    } catch { dbStatus = 'unhealthy'; }
+
+    // Redis check (if redis client available)
+    let redisStatus = 'healthy';
+    let redisLatency = 0;
+    try {
+      const redisStart = Date.now();
+      const { default: redis } = await import('../config/redis');
+      await redis.ping();
+      redisLatency = Date.now() - redisStart;
+    } catch { redisStatus = 'unhealthy'; }
+
+    // Counts
+    const [userCount, salonCount, bookingCount, activeSessionCount] = await Promise.all([
       prisma.user.count(),
       prisma.salon.count(),
       prisma.booking.count(),
-      prisma.payment.count(),
-      prisma.booking.count({
-        where: {
-          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        },
-      }),
+      prisma.user.count({ where: { lastLoginAt: { gte: new Date(Date.now() - 24*60*60*1000) } } }),
     ]);
+
+    // Error rate (suspicious activities in last hour as proxy)
+    const recentSuspicious = await prisma.userActivity.count({
+      where: { suspicious: true, createdAt: { gte: new Date(Date.now() - 60*60*1000) } }
+    });
 
     // Get database pool metrics
     const poolMetrics = getPoolMetrics();
 
     successResponse(res, {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      stats: {
-        totalUsers,
-        totalSalons,
-        totalBookings,
-        totalPayments,
-        bookingsLast24h: recentBookings,
+      status: dbStatus === 'healthy' ? 'healthy' : 'degraded',
+      uptime: startTime,
+      memory: {
+        rss: Math.round(memUsage.rss / 1024 / 1024),
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
       },
-      database: {
+      database: { 
+        status: dbStatus, 
+        latencyMs: dbLatency,
         poolSize: poolMetrics.poolSize,
         totalQueries: poolMetrics.totalQueries,
         slowQueries: poolMetrics.slowQueries,
         slowQueryPercentage: poolMetrics.slowQueryPercentage.toFixed(2) + '%',
       },
+      redis: { status: redisStatus, latencyMs: redisLatency },
+      counts: { 
+        users: userCount, 
+        salons: salonCount, 
+        bookings: bookingCount, 
+        activeSessions24h: activeSessionCount 
+      },
+      suspiciousActivitiesLastHour: recentSuspicious,
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     errorResponse(res, 'HEALTH_CHECK_FAILED', (error as Error).message, 500);
@@ -401,5 +429,623 @@ export async function getSystemMetrics(req: AuthenticatedRequest, res: Response)
     });
   } catch (error) {
     errorResponse(res, 'METRICS_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Admin Management
+const createAdminSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  pages: z.array(z.string()).optional().default(['dashboard']),
+});
+
+export async function createAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = createAdminSchema.parse(req.body);
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email }
+    });
+
+    if (existingUser) {
+      errorResponse(res, 'EMAIL_EXISTS', 'User already exists with this email', 400);
+      return;
+    }
+
+    // Create user with ADMIN role
+    const user = await prisma.user.create({
+      data: {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: UserRole.ADMIN,
+        status: UserStatus.ACTIVE,
+        isVerified: true,
+      }
+    });
+
+    // Create admin permission
+    const permission = await prisma.adminPermission.create({
+      data: {
+        userId: user.id,
+        pages: data.pages,
+        createdBy: req.user!.id,
+      }
+    });
+
+    // Send welcome email
+    await sendWelcomeEmail(data.email, data.firstName);
+
+    successResponse(res, {
+      ...user,
+      permissions: permission,
+    }, 201);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function getAdmins(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const search = req.query.search as string;
+
+    const where: any = {
+      role: { in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] }
+    };
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [admins, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          adminPermission: true,
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    paginatedResponse(res, admins, page, limit, total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function updateAdminPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { pages } = req.body;
+
+    if (!Array.isArray(pages)) {
+      errorResponse(res, 'VALIDATION_ERROR', 'Pages must be an array', 400);
+      return;
+    }
+
+    // Check if user exists and is an admin
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      errorResponse(res, 'NOT_FOUND', 'User not found', 404);
+      return;
+    }
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      errorResponse(res, 'FORBIDDEN', 'Cannot modify SUPER_ADMIN permissions', 403);
+      return;
+    }
+
+    // Upsert admin permission
+    const permission = await prisma.adminPermission.upsert({
+      where: { userId: id },
+      create: {
+        userId: id,
+        pages,
+        createdBy: req.user!.id,
+      },
+      update: {
+        pages,
+      }
+    });
+
+    successResponse(res, permission);
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function deleteAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      errorResponse(res, 'NOT_FOUND', 'User not found', 404);
+      return;
+    }
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      errorResponse(res, 'FORBIDDEN', 'Cannot delete SUPER_ADMIN', 403);
+      return;
+    }
+
+    // Delete admin permission if exists
+    await prisma.adminPermission.deleteMany({
+      where: { userId: id }
+    });
+
+    // Set user status to INACTIVE (demote)
+    await prisma.user.update({
+      where: { id },
+      data: { status: UserStatus.INACTIVE, role: UserRole.CUSTOMER }
+    });
+
+    successResponse(res, { message: 'Admin access revoked successfully' });
+  } catch (error) {
+    errorResponse(res, 'DELETE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Site Settings
+const siteSettingsSchema = z.object({
+  siteName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phoneNumber: z.string().optional(),
+  address: z.string().optional(),
+  logoUrl: z.string().url().optional(),
+});
+
+export async function getSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    let settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+
+    // Create default settings if not found
+    if (!settings) {
+      settings = await prisma.siteSettings.create({
+        data: { id: 'default' }
+      });
+    }
+
+    successResponse(res, settings);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function updateSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = siteSettingsSchema.parse(req.body);
+
+    const settings = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      create: {
+        id: 'default',
+        ...data,
+        updatedBy: req.user!.id,
+      },
+      update: {
+        ...data,
+        updatedBy: req.user!.id,
+      }
+    });
+
+    successResponse(res, settings);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function toggleMaintenanceMode(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { enabled, message } = req.body;
+
+    if (typeof enabled !== 'boolean') {
+      errorResponse(res, 'VALIDATION_ERROR', 'Enabled must be a boolean', 400);
+      return;
+    }
+
+    const settings = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      create: {
+        id: 'default',
+        maintenanceMode: enabled,
+        maintenanceMsg: message || null,
+        updatedBy: req.user!.id,
+      },
+      update: {
+        maintenanceMode: enabled,
+        maintenanceMsg: message || null,
+        updatedBy: req.user!.id,
+      }
+    });
+
+    successResponse(res, settings);
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// User Activity & Security
+export async function getUserActivities(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const result = await activityService.getUserActivities(id, page, limit);
+    paginatedResponse(res, result.activities, page, limit, result.total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function getSuspiciousUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const result = await activityService.getSuspiciousActivities(page, limit);
+    paginatedResponse(res, result.activities, page, limit, result.total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function banUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      errorResponse(res, 'NOT_FOUND', 'User not found', 404);
+      return;
+    }
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      errorResponse(res, 'FORBIDDEN', 'Cannot ban SUPER_ADMIN', 403);
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { status: UserStatus.SUSPENDED }
+    });
+
+    // Track admin activity
+    await activityService.trackActivity(req.user!.id, 'USER_BANNED', req as any, { targetUserId: id, reason });
+
+    successResponse(res, { message: 'User banned successfully' });
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function unbanUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      errorResponse(res, 'NOT_FOUND', 'User not found', 404);
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { status: UserStatus.ACTIVE }
+    });
+
+    // Track admin activity
+    await activityService.trackActivity(req.user!.id, 'USER_UNBANNED', req as any, { targetUserId: id });
+
+    successResponse(res, { message: 'User unbanned successfully' });
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Salon Management (Admin)
+const adminCreateSalonSchema = z.object({
+  businessName: z.string().min(2),
+  type: z.enum(['BARBERSHOP', 'HAIR_SALON', 'PEDICURE_SALON', 'NAIL_SALON', 'SPA', 'BEAUTY_SALON']),
+  phoneNumber: z.string(),
+  address: z.string(),
+  city: z.string(),
+  region: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+  openingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+  closingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+  workingDays: z.array(z.string()),
+  description: z.string().optional(),
+  email: z.string().email().optional(),
+  website: z.string().url().optional(),
+  ownerId: z.string().optional(),
+});
+
+export async function adminCreateSalon(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = adminCreateSalonSchema.parse(req.body);
+
+    let ownerId = data.ownerId;
+
+    // If ownerId provided, verify it exists
+    if (ownerId) {
+      const owner = await prisma.user.findUnique({ where: { id: ownerId } });
+      if (!owner) {
+        errorResponse(res, 'NOT_FOUND', 'Owner not found', 404);
+        return;
+      }
+    }
+
+    const salon = await prisma.salon.create({
+      data: {
+        businessName: data.businessName,
+        type: data.type as any,
+        phoneNumber: data.phoneNumber,
+        address: data.address,
+        city: data.city,
+        region: data.region,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        openingTime: data.openingTime,
+        closingTime: data.closingTime,
+        workingDays: data.workingDays,
+        description: data.description,
+        email: data.email,
+        website: data.website,
+        status: SalonStatus.APPROVED,
+        ownerId: ownerId || req.user!.id,
+      }
+    });
+
+    successResponse(res, salon, 201);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function adminGetSalonDetails(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const salon = await prisma.salon.findUnique({
+      where: { id },
+      include: {
+        owner: {
+          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true }
+        },
+        workers: true,
+        services: true,
+        bookings: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            customer: { select: { id: true, firstName: true, lastName: true } },
+            service: { select: { id: true, name: true } },
+            payment: true,
+          }
+        },
+        reviews: {
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            customer: { select: { id: true, firstName: true, lastName: true } }
+          }
+        },
+        documents: true,
+      }
+    });
+
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    // Calculate revenue
+    const revenue = await prisma.payment.aggregate({
+      where: {
+        booking: { salonId: id },
+        status: PaymentStatus.SUCCESS
+      },
+      _sum: { amount: true }
+    });
+
+    successResponse(res, {
+      ...salon,
+      revenue: revenue._sum.amount || 0
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function adminGetAllSalons(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const search = req.query.search as string;
+    const status = req.query.status as string;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { businessName: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [salons, total] = await Promise.all([
+      prisma.salon.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          owner: { select: { id: true, firstName: true, lastName: true, email: true } }
+        }
+      }),
+      prisma.salon.count({ where })
+    ]);
+
+    paginatedResponse(res, salons, page, limit, total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Customer Management (Admin)
+const adminCreateCustomerSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  phoneNumber: z.string().optional(),
+});
+
+export async function adminCreateCustomer(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = adminCreateCustomerSchema.parse(req.body);
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email }
+    });
+
+    if (existingUser) {
+      errorResponse(res, 'EMAIL_EXISTS', 'User already exists with this email', 400);
+      return;
+    }
+
+    // Check if phone number already exists
+    if (data.phoneNumber) {
+      const existingPhone = await prisma.user.findUnique({
+        where: { phoneNumber: data.phoneNumber }
+      });
+      if (existingPhone) {
+        errorResponse(res, 'PHONE_EXISTS', 'User already exists with this phone number', 400);
+        return;
+      }
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phoneNumber: data.phoneNumber || null,
+        role: UserRole.CUSTOMER,
+        status: UserStatus.ACTIVE,
+        isVerified: true,
+      }
+    });
+
+    successResponse(res, user, 201);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function adminGetUserDetails(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        bookings: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            salon: { select: { id: true, businessName: true } },
+            service: { select: { id: true, name: true } },
+            payment: true,
+          }
+        },
+        payments: {
+          take: 20,
+          orderBy: { createdAt: 'desc' }
+        },
+        reviews: {
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            salon: { select: { id: true, businessName: true } }
+          }
+        },
+        favorites: {
+          include: {
+            salon: { select: { id: true, businessName: true } }
+          }
+        },
+        activities: {
+          take: 20,
+          orderBy: { createdAt: 'desc' }
+        },
+        salons: {
+          where: { status: { not: undefined } }
+        }
+      }
+    });
+
+    if (!user) {
+      errorResponse(res, 'NOT_FOUND', 'User not found', 404);
+      return;
+    }
+
+    // Calculate stats
+    const totalBookings = await prisma.booking.count({ where: { customerId: id } });
+    const totalSpent = await prisma.payment.aggregate({
+      where: { userId: id, status: PaymentStatus.SUCCESS },
+      _sum: { amount: true }
+    });
+
+    successResponse(res, {
+      ...user,
+      stats: {
+        totalBookings,
+        totalSpent: totalSpent._sum.amount || 0,
+        lastActive: user.lastLoginAt
+      }
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }

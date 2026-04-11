@@ -7,3 +7,5 @@ export * from './transactions';
 export * from './promotions';
 export * from './support';
 export * from './supportStaff';
+export * from './adminManagement';
+export * from './settings';

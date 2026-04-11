@@ -204,6 +204,31 @@ class ApiClient {
       };
     }>('/admin/stats');
   }
+
+  // Customer management
+  async createCustomer(data: { email: string; firstName: string; lastName: string; phoneNumber?: string }) {
+    return this.request<{ 
+      success: boolean; 
+      data: User;
+    }>('/support/customers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getRecentCustomers(page: number = 1, limit: number = 10) {
+    const params = new URLSearchParams({ 
+      page: String(page), 
+      limit: String(limit),
+      role: 'CUSTOMER' 
+    });
+    
+    return this.request<{ 
+      success: boolean; 
+      data: User[];
+      meta: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/users?${params}`);
+  }
 }
 
 export const api = new ApiClient();

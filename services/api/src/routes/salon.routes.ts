@@ -8,6 +8,7 @@ const router = Router();
 // Public routes with validation
 router.get('/', salonValidations.searchSalons, salonController.getSalons);
 router.get('/nearby', salonValidations.searchSalons, salonController.getNearbySalons);
+router.get('/map', salonController.getSalonsForMap);  // Public endpoint, no auth needed
 router.get('/:id', salonController.getSalonById);
 router.get('/:id/staff', salonController.getSalonStaff);
 router.get('/:id/services', salonController.getSalonServices);

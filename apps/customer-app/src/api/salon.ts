@@ -62,4 +62,14 @@ export const salonApi = {
     const response = await apiClient.get(`/salons/${salonId}/services`);
     return response.data.data.services;
   },
+
+  // Get salons for map view
+  getSalonsForMap: async (lat?: number, lng?: number, radius?: number): Promise<Salon[]> => {
+    const params = new URLSearchParams();
+    if (lat) params.append('lat', lat.toString());
+    if (lng) params.append('lng', lng.toString());
+    if (radius) params.append('radius', radius.toString());
+    const response = await apiClient.get(`/salons/map?${params.toString()}`);
+    return response.data.data;
+  },
 };

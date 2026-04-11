@@ -3,6 +3,7 @@ import { useAuth, AuthProvider } from './hooks/useAuth';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Customers from './pages/Customers';
 import Users from './pages/Users';
 import Salons from './pages/Salons';
 import Tickets from './pages/Tickets';
@@ -35,6 +36,13 @@ function AppRoutes() {
         <ProtectedRoute>
           <Layout>
             <Dashboard />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/customers" element={
+        <ProtectedRoute>
+          <Layout>
+            <Customers />
           </Layout>
         </ProtectedRoute>
       } />

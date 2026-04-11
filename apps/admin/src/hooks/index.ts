@@ -6,3 +6,5 @@ export * from './useTransactions';
 export * from './usePromotions';
 export * from './useSupport';
 export * from './useSupportStaff';
+export * from './useAdminManagement';
+export * from './useSettings';

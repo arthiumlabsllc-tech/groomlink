@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -8,7 +8,10 @@ import { Transactions } from './pages/Transactions';
 import { Promotions } from './pages/Promotions';
 import { Support } from './pages/Support';
 import { SupportStaff } from './pages/SupportStaff';
+import { AdminManagement } from './pages/AdminManagement';
+import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
+import { useAuth } from './hooks';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -20,23 +23,128 @@ const queryClient = new QueryClient({
   },
 });
 
+// Permission guard component
+function PermissionGuard({ 
+  children, 
+  pageId,
+  requireSuperAdmin = false 
+}: { 
+  children: React.ReactNode; 
+  pageId?: string;
+  requireSuperAdmin?: boolean;
+}) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  // Check if user is authenticated
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check for SUPER_ADMIN requirement
+  if (requireSuperAdmin && user.role !== 'SUPER_ADMIN') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check page permissions for ADMIN users
+  if (user.role === 'ADMIN' && pageId && pageId !== 'settings') {
+    const hasPermission = user.pages?.includes(pageId);
+    if (!hasPermission) {
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
+
+  return <>{children}</>;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route 
+          path="dashboard" 
+          element={
+            <PermissionGuard pageId="dashboard">
+              <Dashboard />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="salons" 
+          element={
+            <PermissionGuard pageId="salons">
+              <Salons />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="users" 
+          element={
+            <PermissionGuard pageId="users">
+              <Users />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="transactions" 
+          element={
+            <PermissionGuard pageId="transactions">
+              <Transactions />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="promotions" 
+          element={
+            <PermissionGuard pageId="promotions">
+              <Promotions />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="support" 
+          element={
+            <PermissionGuard pageId="support">
+              <Support />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="support-staff" 
+          element={
+            <PermissionGuard pageId="support-staff">
+              <SupportStaff />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="admins" 
+          element={
+            <PermissionGuard requireSuperAdmin>
+              <AdminManagement />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="settings" 
+          element={
+            <PermissionGuard pageId="settings">
+              <Settings />
+            </PermissionGuard>
+          } 
+        />
+      </Route>
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="salons" element={<Salons />} />
-            <Route path="users" element={<Users />} />
-            <Route path="transactions" element={<Transactions />} />
-            <Route path="promotions" element={<Promotions />} />
-            <Route path="support" element={<Support />} />
-            <Route path="support-staff" element={<SupportStaff />} />
-          </Route>
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>
   );

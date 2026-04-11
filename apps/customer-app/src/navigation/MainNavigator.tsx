@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet } from 'react-native';
 import HomeScreen from '../screens/main/HomeScreen';
 import SearchScreen from '../screens/main/SearchScreen';
+import MapScreen from '../screens/main/MapScreen';
 import BookingsScreen from '../screens/main/BookingsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
@@ -47,6 +48,16 @@ function SearchStack() {
   );
 }
 
+function MapStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="MapMain" component={MapScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
+      <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
+    </Stack.Navigator>
+  );
+}
+
 function BookingsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -74,6 +85,8 @@ export default function MainNavigator() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Search') {
             iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'Map') {
+            iconName = focused ? 'map' : 'map-outline';
           } else if (route.name === 'Bookings') {
             iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Profile') {
@@ -96,6 +109,7 @@ export default function MainNavigator() {
     >
       <Tab.Screen name="Home" component={HomeStack} />
       <Tab.Screen name="Search" component={SearchStack} />
+      <Tab.Screen name="Map" component={MapStack} />
       <Tab.Screen name="Bookings" component={BookingsStack} />
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>

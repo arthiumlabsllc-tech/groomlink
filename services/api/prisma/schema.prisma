@@ -109,6 +109,8 @@ model User {
   payments      Payment[]
   impersonationLogs ImpersonationLog[] @relation("ImpersonatedBy")
   performedImpersonations ImpersonationLog[] @relation("PerformedBy")
+  adminPermission  AdminPermission?
+  activities       UserActivity[]
   
   @@index([phoneNumber])
   @@index([role])
@@ -495,4 +497,44 @@ model ImpersonationLog {
   @@index([targetUserId])
   @@index([startedAt])
   @@map("impersonation_logs")
+}
+
+model AdminPermission {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages     String[] // ["dashboard","salons","users","transactions","promotions","support","support-staff","settings","admins"]
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSettings {
+  id              String   @id @default("default")
+  siteName        String   @default("GroomLink")
+  logoUrl         String?
+  email           String?
+  phoneNumber     String?
+  address         String?
+  maintenanceMode Boolean  @default(false)
+  maintenanceMsg  String?
+  updatedAt       DateTime @updatedAt
+  updatedBy       String?
+}
+
+model UserActivity {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String
+  ipAddress  String?
+  userAgent  String?
+  device     String?
+  metadata   Json?
+  suspicious Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([suspicious])
+  @@index([createdAt])
 }
