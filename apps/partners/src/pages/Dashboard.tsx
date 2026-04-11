@@ -55,7 +55,7 @@ export default function Dashboard() {
       label: "Today's Bookings", 
       value: stats?.todayBookings?.toString() || '0', 
       icon: Calendar, 
-      trend: '--', 
+      trend: stats?.todayBookings ? `+${stats.todayBookings}` : '0', 
       borderColor: 'border-l-ghana-green',
       iconBg: 'bg-ghana-green/10',
       iconColor: 'text-ghana-green'
@@ -64,7 +64,7 @@ export default function Dashboard() {
       label: 'Total Revenue', 
       value: stats?.todayRevenue ? `GH₵ ${stats.todayRevenue}` : 'GH₵ 0', 
       icon: DollarSign, 
-      trend: '--', 
+      trend: stats?.todayRevenue ? `+GH₵ ${stats.todayRevenue}` : 'GH₵ 0',
       borderColor: 'border-l-ghana-gold',
       iconBg: 'bg-ghana-gold/10',
       iconColor: 'text-amber-600'
@@ -73,7 +73,7 @@ export default function Dashboard() {
       label: 'Active Services', 
       value: activeServicesCount.toString(), 
       icon: Scissors, 
-      trend: '--', 
+      trend: `${services.length} total`, 
       borderColor: 'border-l-ghana-red',
       iconBg: 'bg-ghana-red/10',
       iconColor: 'text-ghana-red'
@@ -82,7 +82,7 @@ export default function Dashboard() {
       label: 'Staff Members', 
       value: activeWorkersCount.toString(), 
       icon: Users, 
-      trend: '--', 
+      trend: `${workers.length} total`,
       borderColor: 'border-l-blue-500',
       iconBg: 'bg-blue-500/10',
       iconColor: 'text-blue-600'
@@ -218,18 +218,22 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Average Rating</span>
               <span className="font-semibold text-gray-900 flex items-center gap-1">
-                {stats?.averageRating || '4.8'} 
+                {stats?.averageRating ? stats.averageRating.toFixed(1) : '0.0'} 
                 <span className="text-ghana-gold">★</span>
               </span>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-ghana-green/5 rounded-lg border border-ghana-green/10">
-            <div className="flex items-center gap-2 text-ghana-green">
-              <TrendingUp className="w-5 h-5" />
-              <span className="font-medium text-sm">+23% from last week</span>
+          {stats && (
+            <div className="mt-6 p-4 bg-ghana-green/5 rounded-lg border border-ghana-green/10">
+              <div className="flex items-center gap-2 text-ghana-green">
+                <TrendingUp className="w-5 h-5" />
+                <span className="font-medium text-sm">
+                  {stats.weeklyBookings > 0 ? `${stats.weeklyBookings} bookings this week` : 'No bookings this week'}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       </>
