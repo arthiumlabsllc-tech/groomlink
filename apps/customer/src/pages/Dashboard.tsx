@@ -19,6 +19,7 @@ interface Booking {
   status: string
   date: string
   startTime: string
+  discountAmount: number | null
   service: {
     name: string
   }
@@ -156,6 +157,7 @@ export default function Dashboard() {
   // Stats state
   const [upcomingCount, setUpcomingCount] = useState<number>(0)
   const [completedCount, setCompletedCount] = useState<number>(0)
+  const [totalSavings, setTotalSavings] = useState<number>(0)
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
 
@@ -180,6 +182,13 @@ export default function Dashboard() {
       ])
       setUpcomingCount(upcomingRes.data.meta?.total || upcomingRes.data.data?.length || 0)
       setCompletedCount(completedRes.data.meta?.total || completedRes.data.data?.length || 0)
+      
+      // Calculate total savings from discountAmount
+      const completedBookings = completedRes.data.data || []
+      const savings = completedBookings.reduce((total, booking) => {
+        return total + (booking.discountAmount || 0)
+      }, 0)
+      setTotalSavings(savings)
     } catch (error) {
       console.error('Failed to fetch stats:', error)
       setStatsError('Failed to load statistics')
@@ -274,7 +283,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Money Saved</p>
-                <p className="text-2xl font-bold text-gray-900">GH₵ 0</p>
+                <p className="text-2xl font-bold text-gray-900">GH₵ {totalSavings.toFixed(2)}</p>
               </div>
             </div>
           </div>

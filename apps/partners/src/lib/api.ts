@@ -17,6 +17,7 @@ export interface Salon {
   reviewCount: number;
   services: Service[];
   workers: Worker[];
+  operatingHours?: Record<string, string>;
 }
 
 export interface Service {

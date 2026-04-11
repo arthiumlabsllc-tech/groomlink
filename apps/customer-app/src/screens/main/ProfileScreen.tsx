@@ -26,6 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
+import Constants from 'expo-constants';
 
 // Design System Colors
 const COLORS = {
@@ -40,8 +41,8 @@ const COLORS = {
   border: '#E5E7EB',
 };
 
-// App version - would normally come from app config
-const APP_VERSION = '1.0.0';
+// App version from expo config
+const APP_VERSION = Constants.expoConfig?.version || Constants.manifest?.version || '1.0.0';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();

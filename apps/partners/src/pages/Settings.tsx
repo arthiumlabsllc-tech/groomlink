@@ -2,14 +2,58 @@ import { useState, useEffect } from 'react'
 import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Salon } from '../lib/api'
+import { useSalon } from '../store/SalonContext'
 
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+interface BusinessHour {
+  day: string
+  open: string
+  close: string
+  isOpen: boolean
+}
+
+// Default business hours when salon has no operating hours data
+const defaultBusinessHours: BusinessHour[] = daysOfWeek.map(day => ({ day, open: '09:00', close: '18:00', isOpen: true }))
+
+// Parse operating hours from salon data
+const parseOperatingHours = (operatingHours: Record<string, string> | null | undefined): BusinessHour[] => {
+  if (!operatingHours) return defaultBusinessHours
+  
+  return daysOfWeek.map(day => {
+    const hours = operatingHours[day.toLowerCase()]
+    if (!hours || hours.toLowerCase() === 'closed') {
+      return { day, open: '09:00', close: '18:00', isOpen: false }
+    }
+    // Parse format like "09:00 - 18:00" or "09:00-18:00"
+    const match = hours.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/)
+    if (match) {
+      return { day, open: match[1], close: match[2], isOpen: true }
+    }
+    return { day, open: '09:00', close: '18:00', isOpen: true }
+  })
+}
+
+// Convert business hours back to API format
+const formatOperatingHours = (businessHours: BusinessHour[]): Record<string, string> => {
+  const result: Record<string, string> = {}
+  businessHours.forEach(hour => {
+    if (hour.isOpen) {
+      result[hour.day.toLowerCase()] = `${hour.open} - ${hour.close}`
+    } else {
+      result[hour.day.toLowerCase()] = 'closed'
+    }
+  })
+  return result
+}
+
 export default function Settings() {
+  const { salon: contextSalon, refetch } = useSalon()
   const [salon, setSalon] = useState<Salon | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -21,24 +65,28 @@ export default function Settings() {
     email: '',
     instagram: '',
     facebook: '',
-    businessHours: daysOfWeek.map(day => ({ day, open: '09:00', close: '18:00', isOpen: true }))
+    businessHours: defaultBusinessHours
   })
 
   useEffect(() => {
     const fetchSalon = async () => {
       try {
         const response = await api.getMySalon()
-        if (response.success) {
-          setSalon(response.data)
+        if (response.success && response.data) {
+          const salonData = response.data
+          setSalon(salonData)
+          // Parse operating hours from salon data if available
+          const parsedHours = parseOperatingHours(salonData.operatingHours)
           setFormData(prev => ({
             ...prev,
-            businessName: response.data.businessName || '',
-            description: response.data.description || '',
-            address: response.data.address || '',
-            city: response.data.city || '',
-            region: response.data.region || '',
-            phoneNumber: response.data.phoneNumber || '',
-            email: response.data.email || '',
+            businessName: salonData.businessName || '',
+            description: salonData.description || '',
+            address: salonData.address || '',
+            city: salonData.city || '',
+            region: salonData.region || '',
+            phoneNumber: salonData.phoneNumber || '',
+            email: salonData.email || '',
+            businessHours: parsedHours
           }))
         }
       } catch (error) {
@@ -52,15 +100,44 @@ export default function Settings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!salon?.id) {
+      setError('No salon ID found. Please try again.')
+      return
+    }
+    
     setSaving(true)
     setSaved(false)
+    setError(null)
     
-    // Simulate save delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      // Prepare update data
+      const updateData = {
+        businessName: formData.businessName,
+        description: formData.description,
+        address: formData.address,
+        city: formData.city,
+        region: formData.region,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+        operatingHours: formatOperatingHours(formData.businessHours)
+      }
+      
+      const response = await api.updateSalon(salon.id, updateData)
+      
+      if (response.success) {
+        setSaved(true)
+        // Refetch salon data to ensure consistency
+        await refetch()
+        setTimeout(() => setSaved(false), 3000)
+      } else {
+        setError('Failed to save settings. Please try again.')
+      }
+    } catch (err) {
+      console.error('Failed to save settings:', err)
+      setError('Failed to save settings. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const updateBusinessHour = (index: number, field: string, value: string | boolean) => {

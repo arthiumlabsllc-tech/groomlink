@@ -5,28 +5,38 @@ import {
   Plus, ArrowRight, Scissors, Users
 } from 'lucide-react'
 import Layout from '../components/Layout'
-import { api, DashboardStats, Booking } from '../lib/api'
+import { api, DashboardStats, Booking, Service, Worker } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
 export default function Dashboard() {
   const { salonId, loading: salonLoading } = useSalon()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [workers, setWorkers] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       if (!salonId) return
       try {
-        const [statsRes, bookingsRes] = await Promise.all([
+        const [statsRes, bookingsRes, servicesRes, workersRes] = await Promise.all([
           api.getDashboardStats(),
-          api.getBookings(salonId)
+          api.getBookings(salonId),
+          api.getServices(salonId),
+          api.getWorkers(salonId)
         ])
         if (statsRes.success) {
           setStats(statsRes.data)
         }
         if (bookingsRes.success) {
           setBookings(bookingsRes.data)
+        }
+        if (servicesRes.success) {
+          setServices(servicesRes.data)
+        }
+        if (workersRes.success) {
+          setWorkers(workersRes.data)
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
@@ -37,12 +47,15 @@ export default function Dashboard() {
     fetchData()
   }, [salonId])
 
+  const activeServicesCount = services.filter(s => s.isActive).length
+  const activeWorkersCount = workers.filter(w => w.isActive).length
+
   const statCards = [
     { 
       label: "Today's Bookings", 
       value: stats?.todayBookings?.toString() || '0', 
       icon: Calendar, 
-      trend: '+3', 
+      trend: '--', 
       borderColor: 'border-l-ghana-green',
       iconBg: 'bg-ghana-green/10',
       iconColor: 'text-ghana-green'
@@ -51,25 +64,25 @@ export default function Dashboard() {
       label: 'Total Revenue', 
       value: stats?.todayRevenue ? `GH₵ ${stats.todayRevenue}` : 'GH₵ 0', 
       icon: DollarSign, 
-      trend: '+15%', 
+      trend: '--', 
       borderColor: 'border-l-ghana-gold',
       iconBg: 'bg-ghana-gold/10',
       iconColor: 'text-amber-600'
     },
     { 
       label: 'Active Services', 
-      value: '12', 
+      value: activeServicesCount.toString(), 
       icon: Scissors, 
-      trend: '+2', 
+      trend: '--', 
       borderColor: 'border-l-ghana-red',
       iconBg: 'bg-ghana-red/10',
       iconColor: 'text-ghana-red'
     },
     { 
       label: 'Staff Members', 
-      value: '4', 
+      value: activeWorkersCount.toString(), 
       icon: Users, 
-      trend: '0', 
+      trend: '--', 
       borderColor: 'border-l-blue-500',
       iconBg: 'bg-blue-500/10',
       iconColor: 'text-blue-600'
