@@ -95,4 +95,12 @@ export const authApi = {
     const userStr = await SecureStore.getItemAsync('user');
     return userStr ? JSON.parse(userStr) : null;
   },
+
+  // Upload avatar image
+  uploadAvatar: async (formData: FormData) => {
+    const response = await apiClient.post('/users/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };

@@ -2,12 +2,14 @@ import { Router } from 'express';
 import * as userController from '../controllers/user.controller';
 import { authenticateToken, requireRole, requireAdminOrHigher } from '../middleware/auth';
 import { UserRole } from '../middleware/auth';
+import upload from '../middleware/upload';
 
 const router = Router();
 
 // Protected routes
 router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/profile', authenticateToken, userController.updateProfile);
+router.post('/profile/avatar', authenticateToken, upload.single('avatar'), userController.uploadAvatar);
 router.put('/location', authenticateToken, userController.updateLocation);
 
 // Favorites - Salons

@@ -105,7 +105,7 @@ export default function HomeScreen() {
   // Navigate to Search tab (handles cross-tab navigation properly)
   const navigateToSearch = useCallback((filter?: string) => {
     // Use the parent navigator to switch tabs
-    navigation.navigate('Search', { filter });
+    navigation.getParent()?.navigate('Search', { filter });
   }, [navigation]);
 
   const getGreeting = () => {
@@ -209,7 +209,7 @@ export default function HomeScreen() {
             style={styles.searchBar}
             inputStyle={styles.searchInput}
             iconColor={COLORS.textSecondary}
-            onSubmitEditing={() => navigation.navigate('Search', { query: searchQuery })}
+            onSubmitEditing={() => navigation.getParent()?.navigate('Search', { query: searchQuery })}
           />
         </View>
 

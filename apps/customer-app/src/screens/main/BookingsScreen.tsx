@@ -225,7 +225,7 @@ export default function BookingsScreen() {
         {activeTab === 'upcoming' && (
           <Button
             mode="contained"
-            onPress={() => navigation.navigate('Search')}
+            onPress={() => navigation.getParent()?.navigate('Search')}
             style={styles.bookNowButton}
           >
             Book an Appointment

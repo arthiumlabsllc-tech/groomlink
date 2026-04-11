@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import path from 'path';
 
 import { connectDatabase } from './config/database';
 import { connectRedis } from './config/redis';
@@ -120,6 +121,9 @@ app.use('/api/auth/login', authLimiter);
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files for uploaded avatars
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Logging
 app.use(morgan('dev', {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -52,7 +52,7 @@ export default function ProfileScreen() {
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(user?.avatar || null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
@@ -106,7 +106,14 @@ export default function ProfileScreen() {
     return user?.firstName || 'User';
   };
 
-  // Image picker handler
+  // Load avatar from user on mount
+  useEffect(() => {
+    if (user?.avatar) {
+      setProfileImage(user.avatar);
+    }
+  }, [user?.avatar]);
+
+  // Image picker handler with server upload
   const pickImage = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -123,9 +130,29 @@ export default function ProfileScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        // For now, update local state with the URI
-        // TODO: Upload to server when backend supports it
-        setProfileImage(result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        setProfileImage(uri);
+        
+        // Upload to server
+        try {
+          const formData = new FormData();
+          formData.append('avatar', {
+            uri: uri,
+            type: 'image/jpeg',
+            name: 'avatar.jpg',
+          } as any);
+          
+          const response = await authApi.uploadAvatar(formData);
+          
+          if (response?.data?.avatar) {
+            setProfileImage(response.data.avatar);
+            // Update auth store user with new avatar
+            setUser({ ...user, avatar: response.data.avatar } as any);
+          }
+        } catch (error: any) {
+          console.error('Failed to upload image:', error);
+          Alert.alert('Upload Failed', error.response?.data?.message || 'Failed to upload image. Please try again.');
+        }
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image. Please try again.');

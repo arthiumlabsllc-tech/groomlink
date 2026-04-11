@@ -90,6 +90,9 @@ importers:
 
   apps/customer:
     dependencies:
+      axios:
+        specifier: 1.6.8
+        version: 1.6.8
       date-fns:
         specifier: ^3.0.0
         version: 3.6.0
@@ -102,9 +105,15 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.2.0)
+      react-hot-toast:
+        specifier: ^2.6.0
+        version: 2.6.0(react-dom@18.3.1(react@18.2.0))(react@18.2.0)
       react-router-dom:
         specifier: ^6.20.0
         version: 6.30.3(react-dom@18.3.1(react@18.2.0))(react@18.2.0)
+      zustand:
+        specifier: ^5.0.12
+        version: 5.0.12(@types/react@18.2.79)(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))
     devDependencies:
       '@types/react':
         specifier: ^18.2.0
@@ -4456,6 +4465,11 @@ packages:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
 
+  goober@2.1.18:
+    resolution: {integrity: sha512-2vFqsaDVIT9Gz7N6kAL++pLpp41l3PfDuusHcjnGLfR6+huZkl6ziX+zgVC3ZxpqWhzH6pyDdGrCeDhMIvwaxw==}
+    peerDependencies:
+      csstype: ^3.0.10
+
   google-libphonenumber@3.2.44:
     resolution: {integrity: sha512-9p2TghluF2LTChFMLWsDRD5N78SZDsILdUk4gyqYxBXluCyxoPiOq+Fqt7DKM+LUd33+OgRkdrc+cPR93AypCQ==}
     engines: {node: '>=0.10'}
@@ -6068,6 +6082,13 @@ packages:
     peerDependencies:
       react: '>=17.0.0'
 
+  react-hot-toast@2.6.0:
+    resolution: {integrity: sha512-bH+2EBMZ4sdyou/DPrfgIouFpcRLCJ+HoCA32UoAYHn6T3Ur5yfcDCeSr5mwldl6pFOsiocmrXMuoCJ1vV8bWg==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>=16'
+      react-dom: '>=16'
+
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
@@ -7390,6 +7411,24 @@ packages:
       immer:
         optional: true
       react:
+        optional: true
+
+  zustand@5.0.12:
+    resolution: {integrity: sha512-i77ae3aZq4dhMlRhJVCYgMLKuSiZAaUPAct2AksxQ+gOtimhGMdXljRT21P5BNpeT4kXlLIckvkPM029OljD7g==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
         optional: true
 
 snapshots:
@@ -12124,6 +12163,10 @@ snapshots:
       merge2: 1.4.1
       slash: 3.0.0
 
+  goober@2.1.18(csstype@3.2.3):
+    dependencies:
+      csstype: 3.2.3
+
   google-libphonenumber@3.2.44: {}
 
   gopd@1.2.0: {}
@@ -14032,6 +14075,13 @@ snapshots:
     dependencies:
       react: 18.2.0
 
+  react-hot-toast@2.6.0(react-dom@18.3.1(react@18.2.0))(react@18.2.0):
+    dependencies:
+      csstype: 3.2.3
+      goober: 2.1.18(csstype@3.2.3)
+      react: 18.2.0
+      react-dom: 18.3.1(react@18.2.0)
+
   react-is@16.13.1: {}
 
   react-is@17.0.2: {}
@@ -15571,3 +15621,9 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.2.79
       react: 18.2.0
+
+  zustand@5.0.12(@types/react@18.2.79)(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0)):
+    optionalDependencies:
+      '@types/react': 18.2.79
+      react: 18.2.0
+      use-sync-external-store: 1.6.0(react@18.2.0)

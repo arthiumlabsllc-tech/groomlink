@@ -96,6 +96,39 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response): P
   }
 }
 
+export async function uploadAvatar(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    if (!req.file) {
+      errorResponse(res, 'NO_FILE', 'No file uploaded', 400);
+      return;
+    }
+
+    // Generate the avatar URL path
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Update user's avatar in database
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatar: avatarUrl },
+      select: {
+        id: true,
+        avatar: true,
+      },
+    });
+
+    logger.info(`Avatar uploaded for user: ${req.user.id}`);
+    successResponse(res, { avatarUrl: user.avatar });
+  } catch (error) {
+    logger.error('Avatar upload failed', { error, userId: req.user?.id });
+    errorResponse(res, 'UPLOAD_FAILED', (error as Error).message, 500);
+  }
+}
+
 export async function updateLocation(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {
