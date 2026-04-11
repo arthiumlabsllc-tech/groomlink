@@ -94,7 +94,7 @@ export const authValidations = {
 export const salonValidations = {
   createSalon: validate([
     body('businessName').trim().isLength({ min: 2, max: 100 }).withMessage('Business name must be 2-100 characters'),
-    body('type').isIn(['BARBERSHOP', 'SALON', 'SPA', 'NAIL_SALON', 'BEAUTY_PARLOR']).withMessage('Invalid salon type'),
+    body('type').isIn(['BARBERSHOP', 'HAIR_SALON', 'PEDICURE_SALON', 'NAIL_SALON', 'SPA', 'BEAUTY_SALON']).withMessage('Invalid salon type'),
     body('phoneNumber').matches(/^\+233[0-9]{9}$/).withMessage('Invalid phone number format'),
     body('address').trim().isLength({ min: 5, max: 200 }).withMessage('Address must be 5-200 characters'),
     body('city').trim().isLength({ min: 2, max: 50 }).withMessage('City must be 2-50 characters'),
