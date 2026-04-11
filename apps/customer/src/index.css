@@ -30,6 +30,23 @@ body {
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6;
+  }
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 768px) {
+  /* Improve touch targets on mobile */
+  button, a {
+    min-height: 44px;
+  }
+  
+  /* Better spacing on mobile */
+  .space-y-6 {
+    margin-top: 0;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 1rem;
   }
 }

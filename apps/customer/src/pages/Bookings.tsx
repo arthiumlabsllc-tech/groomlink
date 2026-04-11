@@ -178,24 +178,24 @@ export default function Bookings() {
   const currentBookings = bookings[activeTab]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
-          <p className="text-gray-600 mt-1">Manage your appointments</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Bookings</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Manage your appointments</p>
         </div>
         <button 
           onClick={() => navigate('/explore')}
-          className="btn-primary flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+          className="btn-primary flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-sm w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" />
-          Book a Salon
+          <span className="sm:inline">Book a Salon</span>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-gray-200">
+      <div className="flex gap-2 sm:gap-4 border-b border-gray-200 overflow-x-auto pb-1">
         {tabs.map((tab) => (
           <button 
             key={tab.key} 
