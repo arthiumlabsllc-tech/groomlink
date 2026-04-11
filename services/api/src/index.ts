@@ -51,6 +51,7 @@ const allowedOrigins = [
   'https://dash.groomlinkgh.com',
   'https://partners.groomlinkgh.com',
   'https://support.groomlinkgh.com',
+  'https://my.groomlinkgh.com',
 ];
 
 app.use(cors({

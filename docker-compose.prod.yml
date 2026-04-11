@@ -135,6 +135,18 @@ services:
     networks:
       - groomlink-network
 
+  # Customer Dashboard (Web App)
+  customer:
+    build:
+      context: ./apps/customer
+      dockerfile: Dockerfile
+    container_name: groomlink-customer
+    restart: always
+    ports:
+      - "8084:80"
+    networks:
+      - groomlink-network
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
