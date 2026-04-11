@@ -339,6 +339,16 @@ export async function getSystemHealth(req: AuthenticatedRequest, res: Response):
       prisma.user.count({ where: { lastLoginAt: { gte: new Date(Date.now() - 24*60*60*1000) } } }),
     ]);
 
+    // Dashboard stats - salon status counts and bookings in last 24h
+    const [approvedSalons, pendingSalons, rejectedSalons, bookingsLast24h] = await Promise.all([
+      prisma.salon.count({ where: { status: 'APPROVED' } }),
+      prisma.salon.count({ where: { status: 'PENDING' } }),
+      prisma.salon.count({ where: { status: 'REJECTED' } }),
+      prisma.booking.count({
+        where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
+      }),
+    ]);
+
     // Error rate (suspicious activities in last hour as proxy)
     const recentSuspicious = await prisma.userActivity.count({
       where: { suspicious: true, createdAt: { gte: new Date(Date.now() - 60*60*1000) } }
@@ -369,6 +379,14 @@ export async function getSystemHealth(req: AuthenticatedRequest, res: Response):
         salons: salonCount, 
         bookings: bookingCount, 
         activeSessions24h: activeSessionCount 
+      },
+      stats: {
+        totalUsers: userCount,
+        totalBookings: bookingCount,
+        bookingsLast24h,
+        pendingSalons,
+        approvedSalons,
+        rejectedSalons,
       },
       suspiciousActivitiesLastHour: recentSuspicious,
       timestamp: new Date().toISOString(),
