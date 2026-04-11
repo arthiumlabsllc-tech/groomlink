@@ -1,10 +1,9 @@
-import { PrismaClient } from '@prisma/client';
-
 // Mock Prisma Client
 export const mockPrisma = {
   user: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -13,6 +12,7 @@ export const mockPrisma = {
   salon: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -21,6 +21,7 @@ export const mockPrisma = {
   booking: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -29,13 +30,16 @@ export const mockPrisma = {
   payment: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
     count: jest.fn(),
   },
   coupon: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -44,6 +48,48 @@ export const mockPrisma = {
     create: jest.fn(),
     findMany: jest.fn(),
     update: jest.fn(),
+  },
+  service: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  worker: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  availability: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  salonQueue: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
+  review: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    aggregate: jest.fn(),
   },
   $transaction: jest.fn(),
   $disconnect: jest.fn(),

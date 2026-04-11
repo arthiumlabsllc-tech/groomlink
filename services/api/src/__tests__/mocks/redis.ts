@@ -1,5 +1,3 @@
-
-
 export const mockRedis = {
   get: jest.fn(),
   set: jest.fn(),
@@ -10,6 +8,12 @@ export const mockRedis = {
   ttl: jest.fn(),
   ping: jest.fn(),
   quit: jest.fn(),
+  zadd: jest.fn(),
+  zrem: jest.fn(),
+  zrange: jest.fn(),
+  zscore: jest.fn(),
+  zcard: jest.fn(),
+  exists: jest.fn(),
 };
 
 jest.mock('../../config/redis', () => ({
