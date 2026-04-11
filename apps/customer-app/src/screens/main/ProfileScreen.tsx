@@ -5,6 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Linking,
+  Image,
 } from 'react-native';
 import {
   Text,
@@ -20,6 +22,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 
@@ -48,8 +52,10 @@ export default function ProfileScreen() {
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showLanguageDialog, setShowLanguageDialog] = useState(false);
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: Partial<{ firstName: string; lastName: string; email: string }>) =>
@@ -100,6 +106,94 @@ export default function ProfileScreen() {
     return user?.firstName || 'User';
   };
 
+  // Image picker handler
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to update your profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        // For now, update local state with the URI
+        // TODO: Upload to server when backend supports it
+        setProfileImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  };
+
+  // Notification toggle handler
+  const handleNotificationToggle = async (enabled: boolean) => {
+    if (enabled) {
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        
+        if (finalStatus !== 'granted') {
+          Alert.alert('Permission Required', 'Please enable notifications in your device settings to receive updates.');
+          return;
+        }
+        
+        // Get push token for future use
+        // const token = await Notifications.getExpoPushTokenAsync();
+        setNotificationsEnabled(true);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to enable notifications. Please try again.');
+      }
+    } else {
+      setNotificationsEnabled(false);
+    }
+  };
+
+  // Open terms and privacy in browser
+  const openTerms = () => {
+    Linking.openURL('https://groomlinkgh.com/terms').catch(() => {
+      Alert.alert('Error', 'Could not open terms page. Please visit groomlinkgh.com/terms');
+    });
+  };
+
+  // Open privacy policy in browser
+  const openPrivacy = () => {
+    Linking.openURL('https://groomlinkgh.com/privacy').catch(() => {
+      Alert.alert('Error', 'Could not open privacy page. Please visit groomlinkgh.com/privacy');
+    });
+  };
+
+  // Open email for support
+  const openSupport = () => {
+    Linking.openURL('mailto:support@groomlinkgh.com?subject=Help%20Request%20from%20GroomLink%20App').catch(() => {
+      Alert.alert('Contact Support', 'Email us at support@groomlinkgh.com for help.');
+    });
+  };
+
+  // Terms & Privacy handler
+  const handleTermsPress = () => {
+    Alert.alert(
+      'Terms & Privacy',
+      'View our terms and privacy policies online.',
+      [
+        { text: 'Terms of Service', onPress: openTerms },
+        { text: 'Privacy Policy', onPress: openPrivacy },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
   const renderSettingItem = (icon: string, label: string, onPress?: () => void, rightElement?: React.ReactNode) => (
     <TouchableOpacity style={styles.settingItem} onPress={onPress} disabled={!onPress}>
       <View style={styles.settingLeft}>
@@ -118,13 +212,17 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <Avatar.Text
-              size={100}
-              label={getInitials()}
-              style={styles.avatar}
-              labelStyle={styles.avatarLabel}
-            />
-            <TouchableOpacity style={styles.editAvatarButton}>
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.profileImage} />
+            ) : (
+              <Avatar.Text
+                size={100}
+                label={getInitials()}
+                style={styles.avatar}
+                labelStyle={styles.avatarLabel}
+              />
+            )}
+            <TouchableOpacity style={styles.editAvatarButton} onPress={pickImage}>
               <Ionicons name="camera" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -245,21 +343,21 @@ export default function ProfileScreen() {
               undefined,
               <Switch
                 value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
+                onValueChange={handleNotificationToggle}
                 color={COLORS.primaryGreen}
               />
             )}
             <Divider style={styles.settingDivider} />
-            {renderSettingItem('language-outline', 'Language', undefined, (
+            {renderSettingItem('language-outline', 'Language', () => setShowLanguageDialog(true), (
               <View style={styles.settingRight}>
                 <Text variant="bodyMedium" style={styles.settingValue}>English</Text>
                 <Ionicons name="chevron-forward" size={20} color={COLORS.border} />
               </View>
             ))}
             <Divider style={styles.settingDivider} />
-            {renderSettingItem('help-circle-outline', 'Help & Support')}
+            {renderSettingItem('help-circle-outline', 'Help & Support', openSupport)}
             <Divider style={styles.settingDivider} />
-            {renderSettingItem('document-text-outline', 'Terms & Privacy')}
+            {renderSettingItem('document-text-outline', 'Terms & Privacy', handleTermsPress)}
           </View>
         </View>
 
@@ -310,6 +408,25 @@ export default function ProfileScreen() {
             </Button>
           </Dialog.Actions>
         </Dialog>
+
+        {/* Language Dialog */}
+        <Dialog
+          visible={showLanguageDialog}
+          onDismiss={() => setShowLanguageDialog(false)}
+          style={styles.dialog}
+        >
+          <Dialog.Title style={styles.dialogTitle}>Language</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={styles.dialogText}>
+              Currently only English is available. More languages coming soon!
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowLanguageDialog(false)} textColor={COLORS.primaryGreen}>
+              OK
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </SafeAreaView>
   );
@@ -339,6 +456,12 @@ const styles = StyleSheet.create({
   },
   avatar: {
     backgroundColor: COLORS.primaryGreen,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.background,
   },
   avatarLabel: {
     fontSize: 36,

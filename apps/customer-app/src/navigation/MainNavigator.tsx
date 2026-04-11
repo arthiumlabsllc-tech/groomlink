@@ -11,6 +11,7 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
 import BookingScreen from '../screens/main/BookingScreen';
 import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen';
+import RateBookingScreen from '../screens/main/RateBookingScreen';
 
 // Design System Colors
 const COLORS = {
@@ -62,6 +63,16 @@ function BookingsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="BookingsMain" component={BookingsScreen} />
+      <Stack.Screen 
+        name="RateBooking" 
+        component={RateBookingScreen} 
+        options={{ 
+          title: 'Rate Booking',
+          headerShown: true,
+          headerStyle: { backgroundColor: '#FFFFFF' },
+          headerTitleStyle: { color: '#111827' },
+        }} 
+      />
     </Stack.Navigator>
   );
 }

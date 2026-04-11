@@ -165,15 +165,39 @@ export async function getMySalons(req: AuthenticatedRequest, res: Response): Pro
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
 
-    const { salons, total } = await salonService.getSalons(
-      { status: undefined },
-      page,
-      limit
-    );
+    // Query salons directly by ownerId from the database
+    const [salons, total] = await Promise.all([
+      prisma.salon.findMany({
+        where: { ownerId: req.user.id },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          workers: {
+            where: { isActive: true },
+            select: {
+              id: true,
+              fullName: true,
+              avatar: true,
+              specialties: true,
+              rating: true,
+              reviewCount: true,
+            },
+          },
+          services: {
+            where: { isActive: true },
+          },
+          _count: {
+            select: {
+              reviews: true,
+            },
+          },
+        },
+      }),
+      prisma.salon.count({ where: { ownerId: req.user.id } }),
+    ]);
     
-    // Filter by owner
-    const mySalons = salons.filter((s: any) => s.ownerId === req.user!.id);
-    paginatedResponse(res, mySalons, page, limit, mySalons.length);
+    paginatedResponse(res, salons, page, limit, total);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }

@@ -1,12 +1,13 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
 import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import * as Location from 'expo-location';
 import { Salon } from '../../types';
-import apiClient from '../../api/client';
+import { salonApi } from '../../api/salon';
 import { useAuthStore } from '../../store/authStore';
 
 // Design System Colors
@@ -24,39 +25,88 @@ const COLORS = {
 
 type NavigationProp = any;
 
-const fetchFeaturedSalons = async (): Promise<Salon[]> => {
-  const response = await apiClient.get('/salons?limit=10');
-  return response.data.data;
-};
-
-const fetchNearbySalons = async (): Promise<Salon[]> => {
-  const response = await apiClient.get('/salons/nearby');
-  return response.data.data;
-};
+interface LocationState {
+  lat: number | null;
+  lng: number | null;
+  permissionDenied: boolean;
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [location, setLocation] = useState<LocationState>({
+    lat: null,
+    lng: null,
+    permissionDenied: false,
+  });
+
+  // Request location permission on mount
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocation(prev => ({ ...prev, permissionDenied: true }));
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setLocation({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        permissionDenied: false,
+      });
+    } catch (error) {
+      console.log('Location permission error:', error);
+      setLocation(prev => ({ ...prev, permissionDenied: true }));
+    }
+  };
 
   const { data: featuredSalons, isLoading: featuredLoading, error: featuredError, refetch: refetchFeatured } = useQuery({
     queryKey: ['featured-salons'],
-    queryFn: fetchFeaturedSalons,
+    queryFn: () => salonApi.searchSalons({ limit: 10 }),
   });
 
+  // Extract salons array from the response
+  const featuredSalonsList = featuredSalons?.salons || [];
+
   const { data: nearbySalons, isLoading: nearbyLoading, error: nearbyError, refetch: refetchNearby } = useQuery({
-    queryKey: ['nearby-salons'],
-    queryFn: fetchNearbySalons,
+    queryKey: ['nearby-salons', location.lat, location.lng],
+    queryFn: async (): Promise<Salon[]> => {
+      if (location.lat && location.lng) {
+        return salonApi.getNearbySalons(location.lat, location.lng);
+      }
+      // Fallback: fetch all approved salons if no location
+      const result = await salonApi.searchSalons({ limit: 10 });
+      return result.salons;
+    },
+    enabled: !location.permissionDenied || location.lat !== null,
   });
 
   const isLoading = featuredLoading || nearbyLoading;
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    // Re-request location on refresh if denied
+    if (location.permissionDenied) {
+      await requestLocationPermission();
+    }
     await Promise.all([refetchFeatured(), refetchNearby()]);
     setRefreshing(false);
-  }, [refetchFeatured, refetchNearby]);
+  }, [refetchFeatured, refetchNearby, location.permissionDenied]);
+
+  // Navigate to Search tab (handles cross-tab navigation properly)
+  const navigateToSearch = useCallback((filter?: string) => {
+    // Use the parent navigator to switch tabs
+    navigation.navigate('Search', { filter });
+  }, [navigation]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -167,7 +217,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>Featured Salons</Text>
-            <Button onPress={() => navigation.navigate('Search')} textColor={COLORS.primaryGreen}>See All</Button>
+            <Button onPress={() => navigateToSearch()} textColor={COLORS.primaryGreen}>See All</Button>
           </View>
           {featuredLoading ? (
             <View style={styles.horizontalLoading}>{renderLoading()}</View>
@@ -175,7 +225,7 @@ export default function HomeScreen() {
             <View style={styles.horizontalLoading}>{renderError()}</View>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {featuredSalons?.map((salon) => renderSalonCard(salon, true))}
+              {featuredSalonsList.map((salon) => renderSalonCard(salon, true))}
             </ScrollView>
           )}
         </View>
@@ -184,7 +234,7 @@ export default function HomeScreen() {
         <View style={[styles.section, styles.nearbySection]}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>Nearby Salons</Text>
-            <Button onPress={() => navigation.navigate('Search')} textColor={COLORS.primaryGreen}>See All</Button>
+            <Button onPress={() => navigateToSearch()} textColor={COLORS.primaryGreen}>See All</Button>
           </View>
           {nearbyLoading ? (
             renderLoading()

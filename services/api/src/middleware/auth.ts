@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest, AuthenticatedUser } from '../types';
 import { verifyToken } from '../utils/jwt';
 import { errorResponse } from '../utils/response';
+import prisma from '../config/database';
 
 // Export enums for use in routes and controllers
 // Using const object with `as const` to create a type-compatible pattern with Prisma
@@ -141,7 +142,6 @@ export function requirePageAccess(page: string) {
     }
 
     // For regular ADMIN, check page permissions
-    const { default: prisma } = await import('../config/database');
     const permission = await prisma.adminPermission.findUnique({
       where: { userId: req.user.id }
     });

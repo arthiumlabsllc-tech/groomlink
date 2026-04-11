@@ -56,7 +56,9 @@ export default function SearchScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<SearchRouteProp>();
   
-  const [searchQuery, setSearchQuery] = useState(route.params?.query || '');
+  // Safely access route params with fallback
+  const initialQuery = route.params?.query || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedType, setSelectedType] = useState('');
   const [minRating, setMinRating] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,7 +73,12 @@ export default function SearchScreen() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['search-salons', filters],
     queryFn: () => salonApi.searchSalons(filters),
+    // Don't retry on error - show error state instead
+    retry: false,
   });
+
+  // Safely extract salons array from response
+  const salons = data?.salons || [];
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -215,7 +222,7 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        data={data?.salons || []}
+        data={salons}
         keyExtractor={(item) => item.id}
         renderItem={renderSalonCard}
         ListHeaderComponent={renderHeader}

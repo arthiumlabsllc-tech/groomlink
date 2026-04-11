@@ -18,8 +18,10 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { bookingApi } from '../../api/booking';
 import { Booking } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 
 // Design System Colors
 const COLORS = {
@@ -57,13 +59,35 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function BookingsScreen() {
   const navigation = useNavigation<any>();
+  const { isAuthenticated, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: bookings, isLoading, error, refetch } = useQuery({
     queryKey: ['bookings'],
     queryFn: () => bookingApi.getMyBookings(),
+    retry: false,
+    enabled: isAuthenticated,
   });
+
+  // Check if error is an auth error (401)
+  const isAuthError = useMemo(() => {
+    if (!error) return false;
+    if (axios.isAxiosError(error)) {
+      return error.response?.status === 401;
+    }
+    return false;
+  }, [error]);
+
+  const errorMessage = useMemo(() => {
+    if (isAuthError) {
+      return 'Your session has expired. Please log in again.';
+    }
+    if (axios.isAxiosError(error)) {
+      return error.response?.data?.message || 'Failed to load bookings';
+    }
+    return 'Failed to load bookings';
+  }, [error, isAuthError]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -211,14 +235,33 @@ export default function BookingsScreen() {
     );
   };
 
-  if (error) {
+  if (error && !isAuthError && !bookings) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color={COLORS.accentRed} />
-          <Text variant="titleMedium" style={styles.errorTitle}>Failed to load bookings</Text>
+          <Text variant="titleMedium" style={styles.errorTitle}>{errorMessage}</Text>
           <Button mode="contained" onPress={() => refetch()} style={styles.retryButton}>
             Retry
+          </Button>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isAuthError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="lock-closed-outline" size={64} color={COLORS.accentRed} />
+          <Text variant="titleMedium" style={styles.errorTitle}>Session Expired</Text>
+          <Text variant="bodyMedium" style={styles.errorSubtitle}>{errorMessage}</Text>
+          <Button 
+            mode="contained" 
+            onPress={() => logout()} 
+            style={styles.retryButton}
+          >
+            Log In Again
           </Button>
         </View>
       </SafeAreaView>
@@ -485,6 +528,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: COLORS.accentRed,
     marginBottom: 16,
+  },
+  errorSubtitle: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 32,
   },
   retryButton: {
     backgroundColor: COLORS.primaryGreen,

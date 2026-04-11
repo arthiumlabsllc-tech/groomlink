@@ -68,12 +68,6 @@
         {
           "locationAlwaysAndWhenInUsePermission": "GroomLink needs your location to find nearby salons and barbershops."
         }
-      ],
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": ""
-        }
       ]
     ],
     "owner": "gr3enink"

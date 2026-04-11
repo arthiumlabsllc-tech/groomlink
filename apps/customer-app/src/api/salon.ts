@@ -41,8 +41,12 @@ export const salonApi = {
 
   // Get nearby salons
   getNearbySalons: async (lat: number, lng: number, radius: number = 10): Promise<Salon[]> => {
-    const response = await apiClient.get(`/salons/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
-    return response.data.data;
+    const params = new URLSearchParams();
+    params.append('lat', lat.toString());
+    params.append('lng', lng.toString());
+    params.append('radius', radius.toString());
+    const response = await apiClient.get(`/salons/nearby?${params.toString()}`);
+    return response.data.data || [];
   },
 
   // Get salon by ID
