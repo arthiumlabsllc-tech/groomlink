@@ -133,6 +133,8 @@ class ApiClient {
 
     if (this.token) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
+    } else {
+      console.warn('No auth token found in localStorage');
     }
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -142,6 +144,13 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+      console.error(`API Error [${response.status}]:`, error);
+      
+      // If 401, clear the token as it's invalid
+      if (response.status === 401) {
+        this.setToken(null);
+      }
+      
       throw new Error(error.message || 'Request failed');
     }
 
@@ -174,8 +183,14 @@ class ApiClient {
     });
     if (response.success && response.data.tokens?.accessToken) {
       this.setToken(response.data.tokens.accessToken);
+      // Log user role for debugging
+      console.log('User logged in with role:', response.data.user?.role);
     }
     return response;
+  }
+
+  async getCurrentUser() {
+    return this.request<{ success: boolean; data: { id: string; role: string; email: string; phoneNumber: string; firstName: string; lastName: string } }>('/users/profile');
   }
 
   // Salon
