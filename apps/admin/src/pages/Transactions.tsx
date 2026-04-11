@@ -15,11 +15,16 @@ export function Transactions() {
   const transactions = transactionsData?.data || [];
   const totalRevenue = stats?.totalRevenue || 0;
 
-  const filteredTransactions = transactions.filter((txn) =>
-    txn.user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    txn.user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    txn.booking?.salon.businessName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTransactions = transactions.filter((txn) => {
+    const searchLower = searchTerm.toLowerCase();
+    const firstName = txn.user.firstName;
+    const lastName = txn.user.lastName;
+    return (
+      (firstName ? firstName.toLowerCase().includes(searchLower) : false) ||
+      (lastName ? lastName.toLowerCase().includes(searchLower) : false) ||
+      (txn.booking?.salon.businessName.toLowerCase().includes(searchLower) ?? false)
+    );
+  });
 
   const handleRefund = async (id: string) => {
     if (confirm('Are you sure you want to refund this transaction?')) {
@@ -146,7 +151,7 @@ export function Transactions() {
             <div className="space-y-2 text-sm bg-gray-50 rounded-lg p-3">
               <div className="flex justify-between">
                 <span className="text-gray-500">User:</span>
-                <span className="font-medium text-gray-800">{txn.user.firstName} {txn.user.lastName}</span>
+                <span className="font-medium text-gray-800">{txn.user.firstName || 'Unknown'} {txn.user.lastName || ''}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Salon:</span>
@@ -203,7 +208,7 @@ export function Transactions() {
                     <span className="font-mono text-sm font-medium text-gray-800">{txn.id.slice(0, 8)}...</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-800">{txn.user.firstName} {txn.user.lastName}</span>
+                    <span className="text-sm text-gray-800">{txn.user.firstName || 'Unknown'} {txn.user.lastName || ''}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-600">{txn.booking?.salon.businessName || '—'}</span>

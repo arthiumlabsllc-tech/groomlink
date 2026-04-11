@@ -71,6 +71,14 @@ export function Settings() {
     }
   }, [settings]);
 
+  // Initialize maintenance mode state when settings load
+  useEffect(() => {
+    if (settings) {
+      setMaintenanceEnabled(settings.maintenanceMode ?? false);
+      setMaintenanceMessage(settings.maintenanceMsg ?? '');
+    }
+  }, [settings]);
+
   const handleGeneralSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError(null);

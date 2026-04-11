@@ -26,9 +26,9 @@ export interface Salon {
   createdAt: string;
   owner: {
     id: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber: string | null;
     email: string | null;
     createdAt?: string;
   };
@@ -48,9 +48,9 @@ export interface Salon {
 export interface SalonDetails extends Salon {
   workers?: Array<{
     id: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber: string | null;
     email: string | null;
     specialization: string | null;
     isActive: boolean;
@@ -80,14 +80,14 @@ export interface SalonDetails extends Salon {
     createdAt: string;
     customer: {
       id: string;
-      firstName: string;
-      lastName: string;
-      phoneNumber: string;
+      firstName: string | null;
+      lastName: string | null;
+      phoneNumber: string | null;
     };
     worker?: {
       id: string;
-      firstName: string;
-      lastName: string;
+      firstName: string | null;
+      lastName: string | null;
     };
     services: Array<{
       name: string;

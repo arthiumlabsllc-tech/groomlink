@@ -73,11 +73,12 @@ export function Users() {
   const totalCount = usersData?.pagination?.total || 0;
 
   const filteredUsers = users.filter((user) => {
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phoneNumber.includes(searchTerm) ||
-      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
+      (user.firstName?.toLowerCase().includes(searchLower) ?? false) ||
+      (user.lastName?.toLowerCase().includes(searchLower) ?? false) ||
+      (user.phoneNumber?.includes(searchTerm) ?? false) ||
+      (user.email?.toLowerCase().includes(searchLower) ?? false);
     
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesSuspicious = !showSuspiciousOnly || user.hasSuspiciousActivity;
@@ -269,7 +270,7 @@ export function Users() {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-12 h-12 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-md">
-                    {user.firstName.charAt(0)}
+                    {user.firstName ? user.firstName[0].toUpperCase() : 'U'}
                   </div>
                   {user.hasSuspiciousActivity && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#CE1126] rounded-full flex items-center justify-center">
@@ -278,7 +279,7 @@ export function Users() {
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{user.firstName} {user.lastName}</p>
+                  <p className="font-semibold text-gray-800">{user.firstName || 'Unknown'} {user.lastName || ''}</p>
                   <p className="text-xs text-gray-500">{user.email || '—'}</p>
                 </div>
               </div>
@@ -371,7 +372,7 @@ export function Users() {
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-medium shadow-sm">
-                          {user.firstName.charAt(0)}
+                          {user.firstName ? user.firstName[0].toUpperCase() : 'U'}
                         </div>
                         {user.hasSuspiciousActivity && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#CE1126] rounded-full flex items-center justify-center">
@@ -380,7 +381,7 @@ export function Users() {
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">{user.firstName} {user.lastName}</p>
+                        <p className="font-medium text-gray-800">{user.firstName || 'Unknown'} {user.lastName || ''}</p>
                         <p className="text-sm text-gray-500">{user.email || '—'}</p>
                       </div>
                     </div>
@@ -603,7 +604,7 @@ export function Users() {
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <div className="w-20 h-20 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                          {userDetails.firstName.charAt(0)}
+                          {userDetails.firstName ? userDetails.firstName[0].toUpperCase() : 'U'}
                         </div>
                         {userDetails.hasSuspiciousActivity && (
                           <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#CE1126] rounded-full flex items-center justify-center">
@@ -612,7 +613,7 @@ export function Users() {
                         )}
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-800">{userDetails.firstName} {userDetails.lastName}</h3>
+                        <h3 className="text-xl font-bold text-gray-800">{userDetails.firstName || 'Unknown'} {userDetails.lastName || ''}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           {getRoleBadge(userDetails.role)}
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${

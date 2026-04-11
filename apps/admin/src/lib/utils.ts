@@ -23,7 +23,8 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date));
 }
 
-export function formatPhoneNumber(phone: string): string {
+export function formatPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return 'N/A';
   // Format Ghana phone numbers: +233 XX XXX XXXX
   if (phone.startsWith('+233')) {
     return phone.replace(/(\+233)(\d{2})(\d{3})(\d{4})/, '$1 $2 $3 $4');

@@ -5,9 +5,9 @@ export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
 export interface User {
   id: string;
-  phoneNumber: string;
-  firstName: string;
-  lastName: string;
+  phoneNumber: string | null;
+  firstName: string | null;
+  lastName: string | null;
   email: string | null;
   role: UserRole;
   status: UserStatus;

@@ -17,8 +17,8 @@ export interface Transaction {
     };
     customer: {
       id: string;
-      firstName: string;
-      lastName: string;
+      firstName: string | null;
+      lastName: string | null;
     };
     service: {
       id: string;
@@ -27,9 +27,9 @@ export interface Transaction {
   };
   user: {
     id: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber: string | null;
   };
 }
 

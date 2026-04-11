@@ -89,10 +89,13 @@ export function Salons() {
   const totalCount = salonsData?.pagination?.total || 0;
 
   const filteredSalons = salons.filter((salon) => {
+    const searchLower = searchTerm.toLowerCase();
+    const firstName = salon.owner.firstName;
+    const lastName = salon.owner.lastName;
     const matchesSearch = 
-      salon.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      salon.owner.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      salon.owner.lastName.toLowerCase().includes(searchTerm.toLowerCase());
+      salon.businessName.toLowerCase().includes(searchLower) ||
+      (firstName ? firstName.toLowerCase().includes(searchLower) : false) ||
+      (lastName ? lastName.toLowerCase().includes(searchLower) : false);
     return matchesSearch;
   });
 
@@ -272,7 +275,7 @@ export function Salons() {
             <div className="space-y-2 text-sm bg-gray-50 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-600">
                 <span className="font-medium w-16 text-gray-500">Owner:</span>
-                <span className="font-medium text-gray-800">{salon.owner.firstName} {salon.owner.lastName}</span>
+                <span className="font-medium text-gray-800">{salon.owner.firstName || 'Unknown'} {salon.owner.lastName || ''}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Phone size={14} className="text-gray-400" />
@@ -365,7 +368,7 @@ export function Salons() {
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{salon.owner.firstName} {salon.owner.lastName}</p>
+                      <p className="text-sm font-medium text-gray-800">{salon.owner.firstName || 'Unknown'} {salon.owner.lastName || ''}</p>
                       <div className="flex items-center gap-1.5 mt-1">
                         <Phone size={14} className="text-gray-400" />
                         <span className="text-sm text-gray-500">{formatPhoneNumber(salon.phoneNumber)}</span>
@@ -785,10 +788,10 @@ export function Salons() {
                   <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Owner</h4>
                   <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-semibold">
-                      {salonDetails.owner.firstName.charAt(0)}
+                      {salonDetails.owner.firstName && salonDetails.owner.firstName.length > 0 ? salonDetails.owner.firstName[0].toUpperCase() : 'U'}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{salonDetails.owner.firstName} {salonDetails.owner.lastName}</p>
+                      <p className="font-medium text-gray-800">{salonDetails.owner.firstName || 'Unknown'} {salonDetails.owner.lastName || ''}</p>
                       <p className="text-sm text-gray-500">{formatPhoneNumber(salonDetails.owner.phoneNumber)}</p>
                       {salonDetails.owner.email && (
                         <p className="text-sm text-gray-500">{salonDetails.owner.email}</p>
@@ -847,7 +850,7 @@ export function Salons() {
                       {salonDetails.recentBookings.slice(0, 5).map(booking => (
                         <div key={booking.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                           <div>
-                            <p className="font-medium text-gray-800">{booking.customer.firstName} {booking.customer.lastName}</p>
+                            <p className="font-medium text-gray-800">{booking.customer.firstName || 'Unknown'} {booking.customer.lastName || ''}</p>
                             <p className="text-xs text-gray-500">{booking.scheduledDate} at {booking.scheduledTime}</p>
                           </div>
                           <div className="text-right">

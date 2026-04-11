@@ -143,7 +143,7 @@ export function Layout() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white leading-tight">GroomLink</h1>
-                <p className="text-[10px] text-[#FCD116] font-medium uppercase tracking-wider">Admin</p>
+                <p className="text-[10px] text-[#FCD116] font-medium uppercase tracking-wider">GroomLink Ghana Administrator</p>
               </div>
             </div>
           ) : (
@@ -274,7 +274,7 @@ export function Layout() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-white leading-tight">GroomLink</h1>
-              <p className="text-[10px] text-[#FCD116] font-medium uppercase tracking-wider">Admin</p>
+              <p className="text-[10px] text-[#FCD116] font-medium uppercase tracking-wider">GroomLink Ghana Administrator</p>
             </div>
           </div>
           <button

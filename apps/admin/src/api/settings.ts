@@ -6,6 +6,8 @@ export interface SiteSettings {
   phoneNumber: string;
   address: string;
   logoUrl: string | null;
+  maintenanceMode: boolean;
+  maintenanceMsg: string | null;
 }
 
 export interface MaintenanceSettings {
