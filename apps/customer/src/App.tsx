@@ -9,6 +9,7 @@ import Bookings from './pages/Bookings';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import SalonDetail from './pages/SalonDetail';
+import BookSalon from './pages/BookSalon';
 import { useAuthStore } from './store/auth';
 
 function App() {
@@ -74,6 +75,13 @@ function App() {
         <Route path="/salon/:id" element={
           <ProtectedRoute>
             <SalonDetail />
+          </ProtectedRoute>
+        } />
+        
+        {/* Booking Page - Protected */}
+        <Route path="/salon/:id/book" element={
+          <ProtectedRoute>
+            <BookSalon />
           </ProtectedRoute>
         } />
         

@@ -108,6 +108,19 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Salon API functions
+export const salonApi = {
+  getSalonServices: async (salonId: string): Promise<{ services: Service[] }> => {
+    const response = await apiClient.get(`/salons/${salonId}/services`);
+    return response.data.data;
+  },
+
+  getSalonStaff: async (salonId: string): Promise<{ staff: Worker[] }> => {
+    const response = await apiClient.get(`/salons/${salonId}/staff`);
+    return response.data.data;
+  },
+};
+
 // Booking API functions
 export const bookingApi = {
   getMyBookings: async (status?: string): Promise<Booking[]> => {

@@ -72,8 +72,7 @@ interface BookingData {
 
 type BookingStep = 'service' | 'staff' | 'datetime' | 'confirm' | 'success';
 
-const GHANA_GREEN = '#006B3F';
-const GHANA_GOLD = '#FCD116';
+
 
 const formatPrice = (price: string | number): string => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -335,10 +334,7 @@ export default function BookSalon() {
     return parseFloat(selectedService.price);
   }, [selectedService]);
 
-  const totalDuration = useMemo(() => {
-    if (!selectedService) return 0;
-    return selectedService.duration;
-  }, [selectedService]);
+
 
   const isSlotAvailable = (time: string): boolean => {
     const slot = availableSlots.find((s) => s.time === time);

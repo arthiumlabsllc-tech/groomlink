@@ -198,8 +198,7 @@ export default function SalonDetail() {
   }
 
   const handleBookNow = () => {
-    // For now, show a message. Can be updated to navigate to /bookings
-    alert('Booking feature coming soon!')
+    navigate(`/salon/${id}/book`)
   }
 
   if (loading) {
