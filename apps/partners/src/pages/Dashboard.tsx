@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   Calendar, DollarSign, Clock, CheckCircle, TrendingUp, 
   Plus, ArrowRight, Scissors, Users
@@ -9,12 +9,20 @@ import { api, DashboardStats, Booking, Service, Worker } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { salonId, loading: salonLoading } = useSalon()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!api.isAuthenticated() && !salonLoading) {
+      navigate('/login')
+    }
+  }, [salonLoading, navigate])
 
   useEffect(() => {
     const fetchData = async () => {
