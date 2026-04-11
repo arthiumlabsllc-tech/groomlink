@@ -28,6 +28,7 @@ export interface Salon {
   services: Service[];
   workers: Worker[];
   distance?: number;
+  acceptsWalkIns?: boolean;
 }
 
 export interface OpeningHours {

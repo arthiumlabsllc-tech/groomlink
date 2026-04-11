@@ -15,6 +15,7 @@ import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { initializeSocket } from './config/socket';
 import { maintenanceCheck } from './middleware/maintenance';
+import { initScheduler } from './jobs/scheduler';
 
 // Load environment variables
 dotenv.config();
@@ -160,6 +161,9 @@ async function startServer() {
       logger.info(`🚀 Server running on port ${PORT}`);
       logger.info(`📚 API Documentation: http://localhost:${PORT}/api/health`);
       logger.info(`🔌 WebSocket server ready`);
+
+      // Initialize background job scheduler
+      initScheduler();
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

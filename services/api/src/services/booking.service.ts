@@ -1,7 +1,25 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
+import redis from '../config/redis';
 import { BookingStatus, PaymentStatus } from '@prisma/client';
 import * as smsService from './sms.service';
+import Redlock from 'redlock';
+import { bookingConfig } from '../config/booking';
+import { emitSlotUpdated, emitBookingConfirmed, emitBookingCancelled } from '../config/socket';
+
+// Redlock instance for distributed locking
+let redlock: Redlock;
+function getRedlock(): Redlock {
+  if (!redlock) {
+    redlock = new Redlock([redis], {
+      driftFactor: 0.01,
+      retryCount: 3,
+      retryDelay: 200,
+      retryJitter: 200,
+    });
+  }
+  return redlock;
+}
 
 export interface CreateBookingData {
   salonId: string;
@@ -38,99 +56,159 @@ export async function createBooking(customerId: string, data: CreateBookingData)
   endDate.setHours(startHour, startMinute + service.duration);
   const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
 
-  // Check for conflicts
-  const conflictingBooking = await prisma.booking.findFirst({
-    where: {
-      salonId,
-      workerId: workerId || undefined,
-      date,
-      status: { notIn: ['CANCELLED', 'NO_SHOW'] },
-      OR: [
-        {
-          // New booking starts during existing booking
-          startTime: { lte: startTime },
-          endTime: { gt: startTime },
-        },
-        {
-          // New booking ends during existing booking
-          startTime: { lt: endTime },
-          endTime: { gte: endTime },
-        },
-        {
-          // New booking contains existing booking
-          startTime: { gte: startTime },
-          endTime: { lte: endTime },
-        },
-      ],
-    },
-  });
+  // Check worker availability if workerId is provided
+  if (workerId) {
+    const worker = await prisma.worker.findUnique({
+      where: { id: workerId },
+      select: { isActive: true, isOnLeave: true },
+    });
 
-  if (conflictingBooking) {
-    throw new Error('Time slot is not available');
+    if (!worker) {
+      throw new Error('Staff member not found');
+    }
+
+    if (!worker.isActive || worker.isOnLeave) {
+      throw new Error('Staff is currently unavailable');
+    }
   }
 
-  // Create booking
-  const booking = await prisma.booking.create({
-    data: {
-      customerId,
-      salonId,
-      workerId: workerId || null,
-      serviceId,
-      date,
-      startTime,
-      endTime,
-      totalAmount: service.price,
-      finalAmount: service.discountPrice || service.price,
-      customerNotes,
-      status: BookingStatus.PENDING,
-    },
-    include: {
-      salon: {
-        select: {
-          id: true,
-          businessName: true,
-          address: true,
-          phoneNumber: true,
-        },
-      },
-      service: true,
-      worker: {
-        select: {
-          id: true,
-          fullName: true,
-          avatar: true,
-        },
-      },
-    },
+  // Check closing time validation
+  const salon = await prisma.salon.findUnique({
+    where: { id: salonId },
+    select: { closingTime: true },
   });
 
-  logger.info(`Booking created: ${booking.id} by customer: ${customerId}`);
-
-  // Send confirmation SMS to customer
-  const customer = await prisma.user.findUnique({
-    where: { id: customerId },
-    select: { phoneNumber: true },
-  });
-
-  if (customer && customer.phoneNumber) {
-    await smsService.sendBookingConfirmation(
-      customer.phoneNumber,
-      booking.id,
-      booking.salon.businessName,
-      date,
-      startTime
-    );
-
-    // Schedule 2-hour reminder
-    await smsService.scheduleBookingReminder(
-      customer.phoneNumber,
-      booking.salon.businessName,
-      date,
-      startTime
-    );
+  if (salon) {
+    const closingMinutes = timeToMinutes(salon.closingTime);
+    const endMinutes = timeToMinutes(endTime);
+    if (endMinutes > closingMinutes) {
+      throw new Error('Booking would extend past salon closing time');
+    }
   }
 
-  return booking;
+  // Create lock key for this booking slot
+  const dateStr = date.toISOString().split('T')[0];
+  const lockKey = `booking-lock:${salonId}:${workerId || 'any'}:${dateStr}:${startTime}`;
+
+  // Acquire distributed lock to prevent race conditions
+  const lock = await getRedlock().acquire([lockKey], 5000);
+
+  try {
+    // Use transaction with serializable isolation for conflict check and insert
+    const booking = await prisma.$transaction(async (tx) => {
+      // Check for conflicts within transaction
+      const conflictingBooking = await tx.booking.findFirst({
+        where: {
+          salonId,
+          workerId: workerId || undefined,
+          date,
+          status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+          OR: [
+            {
+              // New booking starts during existing booking
+              startTime: { lte: startTime },
+              endTime: { gt: startTime },
+            },
+            {
+              // New booking ends during existing booking
+              startTime: { lt: endTime },
+              endTime: { gte: endTime },
+            },
+            {
+              // New booking contains existing booking
+              startTime: { gte: startTime },
+              endTime: { lte: endTime },
+            },
+          ],
+        },
+      });
+
+      if (conflictingBooking) {
+        throw new Error('Time slot is not available');
+      }
+
+      // Create booking with hold expiry
+      return tx.booking.create({
+        data: {
+          customerId,
+          salonId,
+          workerId: workerId || null,
+          serviceId,
+          date,
+          startTime,
+          endTime,
+          totalAmount: service.price,
+          finalAmount: service.discountPrice || service.price,
+          customerNotes,
+          status: BookingStatus.PENDING,
+          holdExpiresAt: new Date(Date.now() + bookingConfig.holdDurationSeconds * 1000),
+        },
+        include: {
+          salon: {
+            select: {
+              id: true,
+              businessName: true,
+              address: true,
+              phoneNumber: true,
+            },
+          },
+          service: true,
+          worker: {
+            select: {
+              id: true,
+              fullName: true,
+              avatar: true,
+            },
+          },
+        },
+      });
+    });
+
+    logger.info(`Booking created: ${booking.id} by customer: ${customerId}`);
+
+    // Invalidate availability cache
+    await invalidateAvailabilityCache(salonId, workerId || undefined, date);
+
+    // Emit slot:updated event for real-time sync
+    emitSlotUpdated(salonId, {
+      workerId: workerId,
+      date: date.toISOString().split('T')[0],
+      action: 'booked',
+    });
+
+    // Send confirmation SMS to customer
+    const customer = await prisma.user.findUnique({
+      where: { id: customerId },
+      select: { phoneNumber: true },
+    });
+
+    if (customer && customer.phoneNumber) {
+      await smsService.sendBookingConfirmation(
+        customer.phoneNumber,
+        booking.id,
+        booking.salon.businessName,
+        date,
+        startTime
+      );
+
+      // Schedule 2-hour reminder
+      await smsService.scheduleBookingReminder(
+        customer.phoneNumber,
+        booking.salon.businessName,
+        date,
+        startTime
+      );
+    }
+
+    return booking;
+  } finally {
+    // Always release the lock
+    try {
+      await lock.release();
+    } catch (releaseError) {
+      logger.error('Failed to release booking lock', { releaseError });
+    }
+  }
 }
 
 export async function getBookingById(id: string, userId: string, userRole: string) {
@@ -269,6 +347,9 @@ export async function confirmBooking(id: string, salonOwnerId: string) {
     },
   });
 
+  // Emit booking:confirmed event to customer
+  emitBookingConfirmed(booking.customerId, { bookingId: id, status: 'CONFIRMED' });
+
   logger.info(`Booking confirmed: ${id}`);
   return updated;
 }
@@ -321,7 +402,7 @@ export async function cancelBooking(id: string, userId: string, userRole: string
     throw new Error('Booking not found or cannot be cancelled');
   }
 
-  // Check cancellation policy (3 hours before for customers)
+  // Check cancellation policy (configurable hours before for customers)
   if (userRole === 'CUSTOMER') {
     const bookingDateTime = new Date(booking.date);
     const [hours, minutes] = booking.startTime.split(':').map(Number);
@@ -330,8 +411,8 @@ export async function cancelBooking(id: string, userId: string, userRole: string
     const now = new Date();
     const hoursUntilBooking = (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    if (hoursUntilBooking < 3) {
-      throw new Error('Bookings can only be cancelled at least 3 hours before the appointment time');
+    if (hoursUntilBooking < bookingConfig.cancellationGraceHours) {
+      throw new Error(`Bookings can only be cancelled at least ${bookingConfig.cancellationGraceHours} hours before the appointment time`);
     }
   }
 
@@ -358,6 +439,23 @@ export async function cancelBooking(id: string, userId: string, userRole: string
 
   logger.info(`Booking cancelled: ${id} by ${userRole}`);
 
+  // Invalidate availability cache
+  await invalidateAvailabilityCache(booking.salonId, booking.workerId || undefined, booking.date);
+
+  // Emit slot:updated event for real-time sync
+  emitSlotUpdated(booking.salonId, {
+    workerId: booking.workerId || undefined,
+    date: booking.date.toISOString().split('T')[0],
+    action: 'cancelled',
+  });
+
+  // Emit booking:cancelled event to customer
+  emitBookingCancelled(booking.customerId, {
+    bookingId: id,
+    reason,
+    cancelledBy: userRole,
+  });
+
   // Send cancellation SMS (only if customer has phone number)
   if (booking.customer.phoneNumber) {
     await smsService.sendCancellationSMS(
@@ -370,8 +468,128 @@ export async function cancelBooking(id: string, userId: string, userRole: string
   return updated;
 }
 
-export async function getAvailableSlots(salonId: string, workerId: string | undefined, date: Date) {
+// Constants for slot generation
+const CACHE_TTL_SECONDS = 60; // Redis cache TTL
+
+// Valid slot durations in minutes
+const VALID_SLOT_DURATIONS = [15, 30, 45, 60, 90, 120];
+
+/**
+ * Generate cache key for availability
+ */
+function getAvailabilityCacheKey(salonId: string, workerId: string | undefined, date: Date): string {
+  const dateStr = date.toISOString().split('T')[0];
+  return `availability:${salonId}:${workerId || 'any'}:${dateStr}`;
+}
+
+/**
+ * Invalidate availability cache for a salon/worker/date
+ */
+async function invalidateAvailabilityCache(
+  salonId: string,
+  workerId: string | undefined,
+  date: Date
+): Promise<void> {
+  try {
+    const cacheKey = getAvailabilityCacheKey(salonId, workerId, date);
+    await redis.del(cacheKey);
+    logger.debug(`Invalidated availability cache: ${cacheKey}`);
+  } catch (error) {
+    logger.error('Failed to invalidate availability cache', { error });
+  }
+}
+
+/**
+ * Convert time string (HH:mm) to minutes since midnight
+ */
+function timeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+/**
+ * Convert minutes since midnight to time string (HH:mm)
+ */
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
+/**
+ * Check if two time ranges overlap
+ */
+function timeRangesOverlap(
+  start1: number,
+  end1: number,
+  start2: number,
+  end2: number
+): boolean {
+  return start1 < end2 && end1 > start2;
+}
+
+export async function getAvailableSlots(
+  salonId: string,
+  workerId: string | undefined,
+  date: Date,
+  serviceDuration: number = 30
+): Promise<{ startTime: string; endTime: string; available: boolean }[]> {
+  // Validate service duration
+  if (!VALID_SLOT_DURATIONS.includes(serviceDuration)) {
+    throw new Error(`Invalid service duration. Must be one of: ${VALID_SLOT_DURATIONS.join(', ')} minutes`);
+  }
+
+  // Check 30-day booking window
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const requestedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const daysDiff = Math.floor((requestedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysDiff > bookingConfig.maxBookingDaysAhead) {
+    throw new Error(`Bookings can only be made up to ${bookingConfig.maxBookingDaysAhead} days in advance`);
+  }
+
+  // Check if date is in the past
+  if (daysDiff < 0) {
+    return [];
+  }
+
   const dayOfWeek = date.getDay();
+
+  // Check if worker is on leave (if workerId provided)
+  if (workerId) {
+    const worker = await prisma.worker.findUnique({
+      where: { id: workerId },
+      select: { isOnLeave: true },
+    });
+    if (worker && worker.isOnLeave) {
+      return [];
+    }
+  }
+
+  // Check if there's a specific date override that closes the day
+  const dateOverride = await prisma.availability.findFirst({
+    where: {
+      workerId: workerId || undefined,
+      specificDate: date,
+      isClosed: true,
+    },
+  });
+  if (dateOverride) {
+    return [];
+  }
+
+  // Try to get from cache first
+  const cacheKey = getAvailabilityCacheKey(salonId, workerId, date);
+  try {
+    const cachedSlots = await redis.get(cacheKey);
+    if (cachedSlots) {
+      logger.debug(`Cache hit for availability: ${cacheKey}`);
+      return JSON.parse(cachedSlots);
+    }
+  } catch (error) {
+    logger.error('Redis cache read error', { error });
+  }
 
   // Get salon working hours
   const salon = await prisma.salon.findUnique({
@@ -392,7 +610,7 @@ export async function getAvailableSlots(salonId: string, workerId: string | unde
     return [];
   }
 
-  // Get existing bookings for the date
+  // Get existing bookings for the date (with buffer time consideration)
   const existingBookings = await prisma.booking.findMany({
     where: {
       salonId,
@@ -406,45 +624,86 @@ export async function getAvailableSlots(salonId: string, workerId: string | unde
     },
   });
 
-  // Generate time slots (30-minute intervals)
+  // Convert bookings to time ranges with buffer
+  const bookedRanges = existingBookings.map((booking) => ({
+    start: timeToMinutes(booking.startTime),
+    end: timeToMinutes(booking.endTime) + bookingConfig.bufferMinutes,
+  }));
+
+  // Get worker break times if workerId is provided
+  let breakRanges: { start: number; end: number }[] = [];
+  if (workerId) {
+    const availabilities = await prisma.availability.findMany({
+      where: {
+        workerId,
+        dayOfWeek,
+        isAvailable: true,
+      },
+      select: {
+        isBreakSlot: true,
+        breakStart: true,
+        breakEnd: true,
+      },
+    });
+
+    breakRanges = availabilities
+      .filter((a) => a.isBreakSlot && a.breakStart && a.breakEnd)
+      .map((a) => ({
+        start: timeToMinutes(a.breakStart!),
+        end: timeToMinutes(a.breakEnd!),
+      }));
+  }
+
+  // Calculate minimum start time for today
+  let minStartMinutes = 0;
+  if (daysDiff === 0) {
+    // Today - add minimum advance buffer
+    minStartMinutes = timeToMinutes(`${now.getHours()}:${now.getMinutes()}`) + bookingConfig.bufferMinutes;
+  }
+
+  // Generate time slots based on service duration
   const slots: { startTime: string; endTime: string; available: boolean }[] = [];
-  const [openHour, openMinute] = salon.openingTime.split(':').map(Number);
-  const [closeHour, closeMinute] = salon.closingTime.split(':').map(Number);
+  const openMinutes = timeToMinutes(salon.openingTime);
+  const closeMinutes = timeToMinutes(salon.closingTime);
 
-  let currentHour = openHour;
-  let currentMinute = openMinute;
+  let currentMinutes = openMinutes;
 
-  while (currentHour < closeHour || (currentHour === closeHour && currentMinute < closeMinute)) {
-    const startTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
-    
-    // Add 30 minutes for end time
-    let endHour = currentHour;
-    let endMinute = currentMinute + 30;
-    if (endMinute >= 60) {
-      endHour += 1;
-      endMinute -= 60;
+  while (currentMinutes + serviceDuration <= closeMinutes) {
+    const slotStart = currentMinutes;
+    const slotEnd = currentMinutes + serviceDuration;
+
+    // Skip slots that start before minimum allowed time (for today)
+    if (slotStart < minStartMinutes) {
+      currentMinutes += serviceDuration;
+      continue;
     }
-    const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
 
-    // Check if slot is available
-    const isBooked = existingBookings.some(
-      (booking) =>
-        (startTime >= booking.startTime && startTime < booking.endTime) ||
-        (endTime > booking.startTime && endTime <= booking.endTime)
+    // Check if slot overlaps with any booked range (including buffer)
+    const isBooked = bookedRanges.some((range) =>
+      timeRangesOverlap(slotStart, slotEnd, range.start, range.end)
+    );
+
+    // Check if slot overlaps with any break time
+    const isBreak = breakRanges.some((breakRange) =>
+      timeRangesOverlap(slotStart, slotEnd, breakRange.start, breakRange.end)
     );
 
     slots.push({
-      startTime,
-      endTime,
-      available: !isBooked,
+      startTime: minutesToTime(slotStart),
+      endTime: minutesToTime(slotEnd),
+      available: !isBooked && !isBreak,
     });
 
     // Move to next slot
-    currentMinute += 30;
-    if (currentMinute >= 60) {
-      currentHour += 1;
-      currentMinute -= 60;
-    }
+    currentMinutes += serviceDuration;
+  }
+
+  // Cache the results
+  try {
+    await redis.setex(cacheKey, CACHE_TTL_SECONDS, JSON.stringify(slots));
+    logger.debug(`Cached availability: ${cacheKey}`);
+  } catch (error) {
+    logger.error('Redis cache write error', { error });
   }
 
   return slots;
@@ -454,7 +713,7 @@ export async function rescheduleBooking(
   id: string,
   userId: string,
   data: { date: Date; startTime: string }
-) {
+): Promise<{ booking: any; rescheduleFee?: number }> {
   const booking = await prisma.booking.findFirst({
     where: {
       id,
@@ -494,6 +753,19 @@ export async function rescheduleBooking(
     throw new Error('Time slot is not available');
   }
 
+  // Check if reschedule fee applies (within the configured window of original appointment)
+  let rescheduleFee: number | undefined;
+  const bookingDateTime = new Date(booking.date);
+  const [origHour, origMin] = booking.startTime.split(':').map(Number);
+  bookingDateTime.setHours(origHour, origMin, 0, 0);
+  
+  const now = new Date();
+  const hoursUntilBooking = (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+  
+  if (hoursUntilBooking < bookingConfig.rescheduleWindowHours) {
+    rescheduleFee = bookingConfig.rescheduleFeeGhs;
+  }
+
   const updated = await prisma.booking.update({
     where: { id },
     data: {
@@ -503,8 +775,33 @@ export async function rescheduleBooking(
     },
   });
 
-  logger.info(`Booking rescheduled: ${id}`);
-  return updated;
+  logger.info(`Booking rescheduled: ${id}${rescheduleFee ? ` with fee: ${rescheduleFee} GHS` : ''}`);
+
+  // Invalidate availability cache for both old and new dates
+  await invalidateAvailabilityCache(booking.salonId, booking.workerId || undefined, booking.date);
+  if (booking.date.getTime() !== data.date.getTime()) {
+    await invalidateAvailabilityCache(booking.salonId, booking.workerId || undefined, data.date);
+  }
+
+  // Emit slot:updated events for both old and new dates
+  const oldDateStr = booking.date.toISOString().split('T')[0];
+  const newDateStr = data.date.toISOString().split('T')[0];
+
+  emitSlotUpdated(booking.salonId, {
+    workerId: booking.workerId || undefined,
+    date: oldDateStr,
+    action: 'reschedule-from',
+  });
+
+  if (oldDateStr !== newDateStr) {
+    emitSlotUpdated(booking.salonId, {
+      workerId: booking.workerId || undefined,
+      date: newDateStr,
+      action: 'reschedule-to',
+    });
+  }
+
+  return { booking: updated, rescheduleFee };
 }
 
 export async function rateBooking(

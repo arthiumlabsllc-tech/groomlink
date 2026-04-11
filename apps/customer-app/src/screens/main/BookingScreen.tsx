@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import {
   Text,
@@ -17,7 +18,6 @@ import {
   ActivityIndicator,
   Surface,
   TextInput,
-  ProgressBar,
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,8 +25,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { salonApi } from '../../api/salon';
 import { bookingApi, AvailableSlot } from '../../api/booking';
-import { Service, Worker } from '../../types';
+import { Service, Worker, OpeningHours } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
+import AvailabilityCalendar from '../../components/AvailabilityCalendar';
+import TimeSlotSelector, { TimeSlotData } from '../../components/TimeSlotSelector';
+import { useSocket } from '../../hooks/useSocket';
+import { useWorkerPreference } from '../../hooks/useWorkerPreference';
 
 // Design System Colors
 const COLORS = {
@@ -43,20 +47,26 @@ const COLORS = {
 
 type BookingRouteProp = RouteProp<MainStackParamList, 'Booking'>;
 
-interface TimeSlot {
-  time: string;
-  available: boolean;
-}
+const getDayOfWeek = (date: Date): keyof OpeningHours => {
+  const days: (keyof OpeningHours)[] = [
+    'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
+  ];
+  return days[date.getDay()];
+};
 
-const generateTimeSlots = (): TimeSlot[] => {
-  const slots: TimeSlot[] = [];
-  for (let hour = 8; hour <= 20; hour++) {
-    slots.push({ time: `${hour.toString().padStart(2, '0')}:00`, available: true });
-    if (hour < 20) {
-      slots.push({ time: `${hour.toString().padStart(2, '0')}:30`, available: true });
-    }
-  }
-  return slots;
+const formatTime = (time: string) => {
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minutes} ${ampm}`;
+};
+
+const formatDuration = (minutes: number) => {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
 };
 
 export default function BookingScreen() {
@@ -64,13 +74,28 @@ export default function BookingScreen() {
   const route = useRoute<BookingRouteProp>();
   const queryClient = useQueryClient();
   const { salonId, workerId, services: preselectedServices } = route.params;
+  
+  // Slot update toast animation
+  const slotUpdateAnim = useRef(new Animated.Value(0)).current;
+  const [showSlotUpdateToast, setShowSlotUpdateToast] = useState(false);
 
+  // Selected state
   const [selectedServices, setSelectedServices] = useState<string[]>(preselectedServices || []);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedWorker, setSelectedWorker] = useState<string | null>(workerId || null);
   const [notes, setNotes] = useState('');
-  const [showCalendar, setShowCalendar] = useState(false);
+
+  // Worker preference hook
+  const { lastWorkerId, saveWorkerPreference } = useWorkerPreference(salonId);
+
+  // Pre-select worker from preference if no worker was passed
+  useEffect(() => {
+    if (!workerId && lastWorkerId && !selectedWorker) {
+      // Check if the worker is still valid for this salon
+      setSelectedWorker(lastWorkerId);
+    }
+  }, [lastWorkerId, workerId, selectedWorker]);
 
   // Fetch salon data
   const { data: salon, isLoading: salonLoading } = useQuery({
@@ -85,10 +110,43 @@ export default function BookingScreen() {
   });
 
   // Fetch available slots
-  const formattedDate = selectedDate.toISOString().split('T')[0];
-  const { data: availableSlots, isLoading: slotsLoading } = useQuery({
-    queryKey: ['available-slots', salonId, formattedDate, selectedWorker],
-    queryFn: () => bookingApi.getAvailableSlots(salonId, formattedDate, selectedWorker || undefined),
+  const { data: availableSlots, isLoading: slotsLoading, refetch: refetchSlots } = useQuery({
+    queryKey: ['available-slots', salonId, selectedDate, selectedWorker],
+    queryFn: () => bookingApi.getAvailableSlots(salonId, selectedDate, selectedWorker || undefined),
+    enabled: !!selectedDate,
+  });
+
+  // Socket.io for real-time updates
+  const { isConnected, lastUpdate } = useSocket({
+    salonId,
+    onSlotUpdated: (data) => {
+      // Show toast notification
+      setShowSlotUpdateToast(true);
+      Animated.sequence([
+        Animated.timing(slotUpdateAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.delay(3000),
+        Animated.timing(slotUpdateAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setShowSlotUpdateToast(false));
+      
+      // Refetch slots if the date matches
+      if (data.date === selectedDate) {
+        refetchSlots();
+      }
+    },
+    onBookingConfirmed: (data) => {
+      Alert.alert('Booking Confirmed', `Your booking has been confirmed!`);
+    },
+    onBookingRejected: (data) => {
+      Alert.alert('Booking Rejected', data.reason || 'Please try another time slot.');
+    },
   });
 
   // Create booking mutation
@@ -103,6 +161,11 @@ export default function BookingScreen() {
         customerNotes: data.notes,
       }),
     onSuccess: (booking) => {
+      // Save worker preference on successful booking
+      if (selectedWorker) {
+        saveWorkerPreference(selectedWorker);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       navigation.navigate('BookingConfirmation', { bookingId: booking.id });
     },
@@ -133,9 +196,22 @@ export default function BookingScreen() {
       .reduce((sum, s) => sum + s.duration, 0);
   }, [salon?.services, selectedServices]);
 
+  const handleDateSelect = useCallback((date: string) => {
+    setSelectedDate(date);
+    setSelectedTime(null); // Reset time when date changes
+  }, []);
+
+  const handleTimeSelect = useCallback((time: string) => {
+    setSelectedTime(time);
+  }, []);
+
   const handleConfirmBooking = () => {
     if (selectedServices.length === 0) {
       Alert.alert('Select Services', 'Please select at least one service');
+      return;
+    }
+    if (!selectedDate) {
+      Alert.alert('Select Date', 'Please select a date');
       return;
     }
     if (!selectedTime) {
@@ -143,59 +219,46 @@ export default function BookingScreen() {
       return;
     }
 
-    // For simplicity, we'll book the first selected service
-    // In a real app, you might want to handle multiple services
     const primaryService = selectedServices[0];
     
     createBookingMutation.mutate({
       serviceId: primaryService,
-      date: selectedDate.toISOString(),
+      date: selectedDate,
       startTime: selectedTime,
       workerId: selectedWorker || undefined,
       notes: notes || undefined,
     });
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  // Convert available slots to TimeSlotData format
+  const timeSlotData: TimeSlotData[] = useMemo(() => {
+    if (!availableSlots) return [];
+    
+    return availableSlots.map((slot: AvailableSlot) => ({
+      time: slot.time,
+      available: slot.available,
+      isBreak: false, // API should provide this info
+    }));
+  }, [availableSlots]);
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
+  // Get salon closing time info
+  const salonHours = useMemo(() => {
+    if (!salon?.openingHours || !selectedDate) return null;
+    
+    const date = new Date(selectedDate);
+    const dayOfWeek = getDayOfWeek(date);
+    const hours = salon.openingHours[dayOfWeek];
+    
+    return hours;
+  }, [salon?.openingHours, selectedDate]);
 
-  const formatDuration = (minutes: number) => {
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
-  };
-
-  const getDates = () => {
-    const dates: Date[] = [];
-    for (let i = 0; i < 14; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      dates.push(date);
-    }
-    return dates;
-  };
-
-  const isSlotAvailable = (time: string): boolean => {
-    if (!availableSlots) return true;
-    const slot = availableSlots.find(s => s.time === time);
-    return slot?.available ?? true;
-  };
-
-  const timeSlots = generateTimeSlots();
+  // Get last available slot
+  const lastAvailableSlot = useMemo(() => {
+    if (!timeSlotData.length) return undefined;
+    const available = timeSlotData.filter(s => s.available);
+    if (available.length === 0) return undefined;
+    return available[available.length - 1].time;
+  }, [timeSlotData]);
 
   const getStepProgress = () => {
     let completed = 0;
@@ -252,7 +315,38 @@ export default function BookingScreen() {
               <Text style={[styles.stepText, selectedTime ? styles.stepTextActive : undefined]}>Time</Text>
             </View>
           </View>
+          
+          {/* Real-time connection indicator */}
+          {isConnected && (
+            <View style={styles.connectionIndicator}>
+              <View style={styles.connectionDot} />
+              <Text style={styles.connectionText}>Live</Text>
+            </View>
+          )}
         </View>
+
+        {/* Slot Update Toast */}
+        {showSlotUpdateToast && (
+          <Animated.View
+            style={[
+              styles.slotUpdateToast,
+              {
+                opacity: slotUpdateAnim,
+                transform: [
+                  {
+                    translateY: slotUpdateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-20, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Ionicons name="refresh" size={16} color={COLORS.accentGold} />
+            <Text style={styles.toastText}>Slots updated - someone just booked</Text>
+          </Animated.View>
+        )}
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Services Section */}
@@ -329,70 +423,35 @@ export default function BookingScreen() {
             </View>
           )}
 
-          {/* Date Selection */}
+          {/* Date Selection - AvailabilityCalendar */}
           <View style={styles.section}>
             <Text variant="titleMedium" style={styles.sectionTitle}>2. Select Date</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datesScroll}>
-              {getDates().map((date, index) => {
-                const isSelected = date.toDateString() === selectedDate.toDateString();
-                const isToday = date.toDateString() === new Date().toDateString();
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[styles.dateItem, isSelected && styles.dateItemSelected]}
-                    onPress={() => setSelectedDate(date)}
-                  >
-                    <Text variant="labelSmall" style={[styles.dateDay, isSelected && styles.dateTextSelected]}>
-                      {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                    </Text>
-                    <Text variant="titleMedium" style={[styles.dateNumber, isSelected && styles.dateTextSelected]}>
-                      {date.getDate()}
-                    </Text>
-                    {isToday && (
-                      <View style={styles.todayIndicator} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <AvailabilityCalendar
+              salonId={salonId}
+              workerId={selectedWorker || undefined}
+              serviceDuration={totalDuration}
+              onDateSelect={handleDateSelect}
+              selectedDate={selectedDate}
+            />
           </View>
 
-          {/* Time Selection */}
-          <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>3. Select Time</Text>
-            {slotsLoading ? (
-              <ActivityIndicator size="small" color={COLORS.primaryGreen} style={styles.slotsLoader} />
-            ) : (
-              <View style={styles.timeGrid}>
-                {timeSlots.map((slot) => {
-                  const isAvailable = isSlotAvailable(slot.time);
-                  const isSelected = selectedTime === slot.time;
-                  return (
-                    <TouchableOpacity
-                      key={slot.time}
-                      style={[
-                        styles.timeSlot,
-                        isSelected && styles.timeSlotSelected,
-                        !isAvailable && styles.timeSlotUnavailable,
-                      ]}
-                      onPress={() => isAvailable && setSelectedTime(slot.time)}
-                      disabled={!isAvailable}
-                    >
-                      <Text
-                        style={[
-                          styles.timeSlotText,
-                          isSelected && styles.timeSlotTextSelected,
-                          !isAvailable && styles.timeSlotTextUnavailable,
-                        ]}
-                      >
-                        {formatTime(slot.time)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </View>
+          {/* Time Selection - TimeSlotSelector */}
+          {selectedDate && (
+            <View style={styles.section}>
+              <Text variant="titleMedium" style={styles.sectionTitle}>3. Select Time</Text>
+              {slotsLoading ? (
+                <ActivityIndicator size="small" color={COLORS.primaryGreen} style={styles.slotsLoader} />
+              ) : (
+                <TimeSlotSelector
+                  slots={timeSlotData}
+                  selectedTime={selectedTime || undefined}
+                  onTimeSelect={handleTimeSelect}
+                  closingTime={salonHours?.close}
+                  lastAvailableSlot={lastAvailableSlot}
+                />
+              )}
+            </View>
+          )}
 
           {/* Notes */}
           <View style={styles.section}>
@@ -502,6 +561,49 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginHorizontal: 8,
   },
+  connectionIndicator: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  connectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primaryGreen,
+  },
+  connectionText: {
+    fontSize: 10,
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
+  },
+  // Slot Update Toast
+  slotUpdateToast: {
+    position: 'absolute',
+    top: 80,
+    left: 16,
+    right: 16,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 100,
+  },
+  toastText: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
   // Sections
   section: {
     padding: 16,
@@ -597,89 +699,9 @@ const styles = StyleSheet.create({
     color: COLORS.primaryGreen,
     fontWeight: '600',
   },
-  // Dates
-  datesScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-  },
-  dateItem: {
-    width: 64,
-    height: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    borderRadius: 16,
-    backgroundColor: COLORS.cardBackground,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  dateItemSelected: {
-    backgroundColor: COLORS.primaryGreen,
-    borderColor: COLORS.primaryGreen,
-  },
-  dateDay: {
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-    fontSize: 12,
-  },
-  dateNumber: {
-    fontWeight: '700',
-    fontSize: 20,
-    color: COLORS.textPrimary,
-  },
-  dateTextSelected: {
-    color: '#fff',
-  },
-  todayIndicator: {
-    position: 'absolute',
-    bottom: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.accentGold,
-  },
   // Time Slots
   slotsLoader: {
     paddingVertical: 20,
-  },
-  timeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  timeSlot: {
-    width: '23%',
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: COLORS.cardBackground,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  timeSlotSelected: {
-    backgroundColor: COLORS.primaryGreen,
-    borderColor: COLORS.primaryGreen,
-  },
-  timeSlotUnavailable: {
-    backgroundColor: COLORS.background,
-    borderColor: COLORS.border,
-    opacity: 0.5,
-  },
-  timeSlotText: {
-    fontWeight: '500',
-    color: COLORS.textPrimary,
-  },
-  timeSlotTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  timeSlotTextUnavailable: {
-    color: COLORS.textSecondary,
   },
   // Notes
   notesInput: {

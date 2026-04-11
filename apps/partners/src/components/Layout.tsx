@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, Calendar, Users, Scissors, Star, Settings, 
-  Menu, X, Bell, LogOut
+  Menu, X, Bell, LogOut, ListOrdered
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -16,6 +16,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { name: 'Queue', icon: ListOrdered, path: '/queue' },
     { name: 'Bookings', icon: Calendar, path: '/bookings' },
     { name: 'Staff', icon: Users, path: '/staff' },
     { name: 'Services', icon: Scissors, path: '/services' },

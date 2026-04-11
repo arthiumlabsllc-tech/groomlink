@@ -2,15 +2,18 @@ import { useState, useEffect } from 'react'
 import { Users, Plus, Phone, Mail, MoreVertical } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Worker } from '../lib/api'
+import { useSalon } from '../store/SalonContext'
 
 export default function Staff() {
+  const { salonId, loading: salonLoading } = useSalon()
   const [staff, setStaff] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchStaff = async () => {
+      if (!salonId) return
       try {
-        const response = await api.getWorkers('salon-1')
+        const response = await api.getWorkers(salonId)
         if (response.success) {
           setStaff(response.data)
         }
@@ -21,7 +24,7 @@ export default function Staff() {
       }
     }
     fetchStaff()
-  }, [])
+  }, [salonId])
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase()

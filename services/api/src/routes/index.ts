@@ -11,6 +11,7 @@ import adminRoutes from './admin.routes';
 import supportRoutes from './support.routes';
 import uploadRoutes from './upload.routes';
 import impersonationRoutes from './impersonation.routes';
+import queueRoutes from './queue.routes';
 
 const router: RouterType = Router();
 
@@ -32,5 +33,6 @@ router.use('/admin', adminRoutes);
 router.use('/support', supportRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/impersonation', impersonationRoutes);
+router.use('/queue', queueRoutes);
 
 export default router;

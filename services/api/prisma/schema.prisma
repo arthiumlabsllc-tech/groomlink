@@ -111,6 +111,7 @@ model User {
   performedImpersonations ImpersonationLog[] @relation("PerformedBy")
   adminPermission  AdminPermission?
   activities       UserActivity[]
+  salonQueues      SalonQueue[]
   
   @@index([phoneNumber])
   @@index([role])
@@ -174,6 +175,7 @@ model Salon {
   reviews       Review[]
   favorites     Favorite[]
   documents     Document[]
+  salonQueues   SalonQueue[]
   
   @@index([ownerId])
   @@index([type])
@@ -202,6 +204,7 @@ model Worker {
   
   // Status
   isActive      Boolean   @default(true) @map("is_active")
+  isOnLeave     Boolean   @default(false) @map("is_on_leave")
   
   // Timestamps
   createdAt     DateTime  @default(now()) @map("created_at")
@@ -215,6 +218,7 @@ model Worker {
   reviews       Review[]
   workerServices WorkerService[]
   favoritedBy   FavoriteStaff[]
+  salonQueues   SalonQueue[]
   
   @@index([salonId])
   @@map("workers")
@@ -253,6 +257,7 @@ model Service {
   salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
   bookings      Booking[]
   workerServices WorkerService[]
+  salonQueues   SalonQueue[]
   
   @@index([salonId])
   @@index([category])
@@ -277,6 +282,10 @@ model Booking {
   // Notes
   customerNotes String?       @map("customer_notes")
   salonNotes    String?       @map("salon_notes")
+  
+  // Booking hold and reminder tracking
+  holdExpiresAt DateTime?     @map("hold_expires_at")
+  reminderSent  Boolean       @default(false) @map("reminder_sent")
   
   // Timestamps
   createdAt     DateTime      @default(now()) @map("created_at")
@@ -391,6 +400,12 @@ model Availability {
   startTime     String    @map("start_time") // HH:mm format
   endTime       String    @map("end_time")   // HH:mm format
   isAvailable   Boolean   @default(true) @map("is_available")
+  isClosed      Boolean   @default(false) @map("is_closed")
+  
+  // Break time fields
+  isBreakSlot   Boolean   @default(false) @map("is_break_slot")
+  breakStart    String?   @map("break_start") // HH:mm format
+  breakEnd      String?   @map("break_end")   // HH:mm format
   
   // Specific date overrides (for holidays, time off)
   specificDate  DateTime? @map("specific_date")
@@ -526,6 +541,50 @@ model SiteSettings {
   transactionFeePercent Decimal? @db.Decimal(5,2)
   updatedAt             DateTime @updatedAt
   updatedBy             String?
+}
+
+enum UserActivityAction {
+  LOGIN
+  LOGOUT
+  BOOKING_CREATE
+  BOOKING_CANCEL
+  QUEUE_JOIN
+  QUEUE_LEAVE
+  PROFILE_UPDATE
+  PASSWORD_CHANGE
+  SUSPICIOUS_LOGIN
+}
+
+model SalonQueue {
+  id            String      @id @default(uuid())
+  salonId       String      @map("salon_id")
+  salon         Salon       @relation(fields: [salonId], references: [id])
+  customerId    String      @map("customer_id")
+  customer      User        @relation(fields: [customerId], references: [id])
+  serviceId     String?     @map("service_id")
+  service       Service?    @relation(fields: [serviceId], references: [id])
+  workerId      String?     @map("worker_id")
+  worker        Worker?     @relation(fields: [workerId], references: [id])
+  position      Int
+  status        QueueStatus @default(WAITING)
+  joinedAt      DateTime    @default(now()) @map("joined_at")
+  calledAt      DateTime?   @map("called_at")
+  completedAt   DateTime?   @map("completed_at")
+  estimatedWait Int?        @map("estimated_wait")
+  notes         String?
+
+  @@index([salonId, status])
+  @@index([customerId])
+  @@map("salon_queues")
+}
+
+enum QueueStatus {
+  WAITING
+  CALLED
+  IN_SERVICE
+  COMPLETED
+  SKIPPED
+  LEFT
 }
 
 model UserActivity {

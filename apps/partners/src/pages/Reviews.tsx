@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Star, MessageSquare } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api } from '../lib/api'
+import { useSalon } from '../store/SalonContext'
 
 interface Review {
   id: string
@@ -14,14 +15,16 @@ interface Review {
 type SortOption = 'recent' | 'highest' | 'lowest'
 
 export default function Reviews() {
+  const { salonId, loading: salonLoading } = useSalon()
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<SortOption>('recent')
 
   useEffect(() => {
     const fetchReviews = async () => {
+      if (!salonId) return
       try {
-        const response = await api.getReviews('salon-1')
+        const response = await api.getReviews(salonId)
         if (response.success) {
           setReviews(response.data.reviews || [])
         }
@@ -32,7 +35,7 @@ export default function Reviews() {
       }
     }
     fetchReviews()
-  }, [])
+  }, [salonId])
 
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)

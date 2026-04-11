@@ -6,18 +6,21 @@ import {
 } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, DashboardStats, Booking } from '../lib/api'
+import { useSalon } from '../store/SalonContext'
 
 export default function Dashboard() {
+  const { salonId, loading: salonLoading } = useSalon()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!salonId) return
       try {
         const [statsRes, bookingsRes] = await Promise.all([
           api.getDashboardStats(),
-          api.getBookings('salon-1')
+          api.getBookings(salonId)
         ])
         if (statsRes.success) {
           setStats(statsRes.data)
@@ -32,7 +35,7 @@ export default function Dashboard() {
       }
     }
     fetchData()
-  }, [])
+  }, [salonId])
 
   const statCards = [
     { 
@@ -92,6 +95,17 @@ export default function Dashboard() {
 
   return (
     <Layout activeTab="dashboard">
+      {(salonLoading || loading) ? (
+        <div className="text-center py-12">
+          <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-500 mt-4">Loading...</p>
+        </div>
+      ) : !salonId ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No salon found. Please contact support.</p>
+        </div>
+      ) : (
+      <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500">Welcome back! Here's what's happening today.</p>
@@ -205,6 +219,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </Layout>
   )
 }

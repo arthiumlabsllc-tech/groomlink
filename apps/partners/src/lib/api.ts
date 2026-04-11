@@ -68,6 +68,43 @@ export interface DashboardStats {
   averageRating: number;
 }
 
+export interface QueueEntry {
+  id: string;
+  customerId: string;
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+  };
+  serviceId?: string;
+  service?: {
+    id: string;
+    name: string;
+    duration: number;
+    price: string;
+  };
+  workerId?: string;
+  worker?: {
+    id: string;
+    fullName: string;
+  };
+  position: number;
+  status: 'WAITING' | 'CALLED' | 'IN_SERVICE' | 'COMPLETED' | 'SKIPPED';
+  estimatedWait: number;
+  joinedAt: string;
+  calledAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+export interface QueueStatus {
+  entries: QueueEntry[];
+  totalWaiting: number;
+  averageWait: number;
+  currentlyServing?: QueueEntry;
+}
+
 // API Client
 class ApiClient {
   private baseUrl: string;
@@ -142,7 +179,13 @@ class ApiClient {
 
   // Salon
   async getMySalon() {
-    return this.request<{ success: boolean; data: Salon }>('/salons/my');
+    // The backend returns paginated results from /salons/my/list
+    const response = await this.request<{ success: boolean; data: Salon[]; pagination: { total: number } }>('/salons/my/list');
+    // Return the first salon (salon owners typically have one salon)
+    if (response.success && response.data && response.data.length > 0) {
+      return { success: true, data: response.data[0] };
+    }
+    return { success: false, data: null };
   }
 
   async updateSalon(id: string, data: Partial<Salon>) {
@@ -230,6 +273,35 @@ class ApiClient {
     return this.request<{ success: boolean }>(`/reviews/${reviewId}/reply`, {
       method: 'POST',
       body: JSON.stringify({ reply }),
+    });
+  }
+
+  // Queue Management
+  async getQueue(salonId: string) {
+    return this.request<{ success: boolean; data: QueueStatus }>(`/queue/salon/${salonId}`);
+  }
+
+  async callNext(queueId: string) {
+    return this.request<{ success: boolean; data: QueueEntry }>(`/queue/${queueId}/call-next`, {
+      method: 'POST',
+    });
+  }
+
+  async startService(queueId: string) {
+    return this.request<{ success: boolean; data: QueueEntry }>(`/queue/${queueId}/start`, {
+      method: 'POST',
+    });
+  }
+
+  async completeService(queueId: string) {
+    return this.request<{ success: boolean; data: QueueEntry }>(`/queue/${queueId}/complete`, {
+      method: 'POST',
+    });
+  }
+
+  async skipCustomer(queueId: string) {
+    return this.request<{ success: boolean; data: QueueEntry }>(`/queue/${queueId}/skip`, {
+      method: 'POST',
     });
   }
 

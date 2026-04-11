@@ -2,18 +2,21 @@ import { useState, useEffect } from 'react'
 import { Scissors, Plus, Clock, Tag } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Service } from '../lib/api'
+import { useSalon } from '../store/SalonContext'
 
 const categories = ['All', 'Haircut', 'Braiding', 'Styling', 'Coloring', 'Treatment', 'Beard']
 
 export default function Services() {
+  const { salonId, loading: salonLoading } = useSalon()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('All')
 
   useEffect(() => {
     const fetchServices = async () => {
+      if (!salonId) return
       try {
-        const response = await api.getServices('salon-1')
+        const response = await api.getServices(salonId)
         if (response.success) {
           setServices(response.data)
         }
@@ -24,7 +27,7 @@ export default function Services() {
       }
     }
     fetchServices()
-  }, [])
+  }, [salonId])
 
   const filteredServices = activeCategory === 'All' 
     ? services 

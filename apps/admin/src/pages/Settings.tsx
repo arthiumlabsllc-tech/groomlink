@@ -630,7 +630,7 @@ export function Settings() {
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
-n                  type="submit"
+                  type="submit"
                   disabled={updatePaymentSettings.isPending}
                   className="flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >

@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import logger from './logger';
 import * as bookingService from '../services/booking.service';
+import * as queueService from '../services/queue.service';
 
 let io: SocketIOServer;
 
@@ -123,6 +124,59 @@ export function initializeSocket(server: HttpServer): SocketIOServer {
       }
     });
 
+    // Join queue via Socket
+    socket.on('join:queue', async (data: {
+      salonId: string;
+      customerId: string;
+      serviceId?: string;
+      workerId?: string;
+      notes?: string;
+    }) => {
+      try {
+        const entry = await queueService.joinQueue({
+          salonId: data.salonId,
+          customerId: data.customerId,
+          serviceId: data.serviceId,
+          workerId: data.workerId,
+          notes: data.notes,
+        });
+
+        socket.emit('queue:joined', {
+          success: true,
+          entry,
+        });
+
+        logger.info(`Queue join via socket: ${entry.id}`);
+      } catch (error) {
+        socket.emit('queue:joined', {
+          success: false,
+          error: (error as Error).message,
+        });
+      }
+    });
+
+    // Leave queue via Socket
+    socket.on('leave:queue', async (data: {
+      queueId: string;
+      customerId: string;
+    }) => {
+      try {
+        const entry = await queueService.leaveQueue(data.queueId, data.customerId);
+
+        socket.emit('queue:left', {
+          success: true,
+          entry,
+        });
+
+        logger.info(`Queue leave via socket: ${entry.id}`);
+      } catch (error) {
+        socket.emit('queue:left', {
+          success: false,
+          error: (error as Error).message,
+        });
+      }
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.id}`);
     });
@@ -151,14 +205,71 @@ export function emitToSalon(salonId: string, event: string, data: any) {
   }
 }
 
-export function emitSlotUpdated(salonId: string, workerId: string | undefined, date: Date, slots: any[]) {
+export function emitSlotUpdated(
+  salonId: string,
+  data: { workerId?: string; date: string; action: string }
+): void {
   if (io) {
-    io.emit('slot:updated', {
+    io.to(`salon:${salonId}`).emit('slot:updated', {
       salonId,
-      workerId,
-      date: date.toISOString(),
-      slots,
+      workerId: data.workerId,
+      date: data.date,
+      action: data.action,
     });
+  }
+}
+
+export function emitBookingConfirmed(userId: string, bookingData: any): void {
+  if (io) {
+    io.to(`user:${userId}`).emit('booking:confirmed', bookingData);
+  }
+}
+
+export function emitBookingRejected(userId: string, bookingData: any): void {
+  if (io) {
+    io.to(`user:${userId}`).emit('booking:rejected', bookingData);
+  }
+}
+
+export function emitBookingCancelled(userId: string, bookingData: any): void {
+  if (io) {
+    io.to(`user:${userId}`).emit('booking:cancelled', bookingData);
+  }
+}
+
+export function emitBookingReminder(userId: string, bookingData: any): void {
+  if (io) {
+    io.to(`user:${userId}`).emit('booking:reminder', {
+      booking: bookingData,
+      message: 'Your appointment is coming up soon',
+    });
+  }
+}
+
+export function emitStaffUnavailable(
+  salonId: string,
+  workerData: { workerId: string; workerName: string; reason?: string }
+): void {
+  if (io) {
+    io.to(`salon:${salonId}`).emit('staff:unavailable', workerData);
+  }
+}
+
+export function emitSalonClosed(
+  salonId: string,
+  data: { date: string; reason?: string }
+): void {
+  if (io) {
+    io.to(`salon:${salonId}`).emit('salon:closed', data);
+  }
+}
+
+export function emitScheduleChanged(
+  salonId: string,
+  data: { workerId?: string; date: string; changes: any }
+): void {
+  if (io) {
+    io.to(`salon:${salonId}`).emit('schedule:changed', data);
   }
 }
 

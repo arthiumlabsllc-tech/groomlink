@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   RefreshControl,
   TouchableOpacity,
   Image,
+  Modal,
+  TextInput,
 } from 'react-native';
 import {
   Text,
@@ -21,6 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { salonApi } from '../../api/salon';
 import { reviewApi } from '../../api/review';
+import { queueApi, QueueStatus, MyQueuePosition } from '../../api/queue';
 import { Salon, Review, Service } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
 
@@ -47,6 +50,16 @@ export default function SalonDetailScreen() {
   const { salonId } = route.params;
   const [refreshing, setRefreshing] = useState(false);
 
+  // Queue state
+  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
+  const [myPosition, setMyPosition] = useState<MyQueuePosition | null>(null);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [queueNotes, setQueueNotes] = useState('');
+  const [joiningQueue, setJoiningQueue] = useState(false);
+  const [leavingQueue, setLeavingQueue] = useState(false);
+
   const { data: salon, isLoading: salonLoading, error: salonError, refetch: refetchSalon } = useQuery({
     queryKey: ['salon', salonId],
     queryFn: () => salonApi.getSalonById(salonId),
@@ -57,11 +70,68 @@ export default function SalonDetailScreen() {
     queryFn: () => reviewApi.getSalonReviews(salonId),
   });
 
+  // Fetch queue data
+  const fetchQueueData = useCallback(async () => {
+    setQueueLoading(true);
+    try {
+      const [status, position] = await Promise.all([
+        queueApi.getSalonQueue(salonId),
+        queueApi.getMyPosition(salonId)
+      ]);
+      setQueueStatus(status);
+      setMyPosition(position);
+    } catch (err) {
+      console.error('Failed to fetch queue data:', err);
+    } finally {
+      setQueueLoading(false);
+    }
+  }, [salonId]);
+
+  useEffect(() => {
+    fetchQueueData();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchQueueData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchQueueData]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchSalon(), refetchReviews()]);
+    await Promise.all([refetchSalon(), refetchReviews(), fetchQueueData()]);
     setRefreshing(false);
-  }, [refetchSalon, refetchReviews]);
+  }, [refetchSalon, refetchReviews, fetchQueueData]);
+
+  const handleJoinQueue = async () => {
+    setJoiningQueue(true);
+    try {
+      await queueApi.joinQueue({
+        salonId,
+        serviceId: selectedServiceId || undefined,
+        notes: queueNotes || undefined
+      });
+      await fetchQueueData();
+      setShowJoinModal(false);
+      setSelectedServiceId('');
+      setQueueNotes('');
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Failed to join queue');
+    } finally {
+      setJoiningQueue(false);
+    }
+  };
+
+  const handleLeaveQueue = async () => {
+    if (!myPosition?.queueId) return;
+    setLeavingQueue(true);
+    try {
+      await queueApi.leaveQueue(myPosition.queueId);
+      setMyPosition(null);
+      await fetchQueueData();
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Failed to leave queue');
+    } finally {
+      setLeavingQueue(false);
+    }
+  };
 
   const handleBookNow = () => {
     navigation.navigate('Booking', { salonId });
@@ -264,6 +334,95 @@ export default function SalonDetailScreen() {
           )}
         </View>
 
+        {/* Queue Section */}
+        {salon.acceptsWalkIns && (
+          <View style={styles.queueSection}>
+            <View style={styles.queueHeader}>
+              <Text variant="titleMedium" style={styles.sectionTitle}>Live Queue</Text>
+              <View style={styles.liveIndicator}>
+                <View style={styles.pulseDot}>
+                  <View style={styles.pulseRing} />
+                  <View style={styles.pulseCore} />
+                </View>
+                <Text style={styles.liveText}>Live</Text>
+              </View>
+            </View>
+
+            <Card style={styles.queueCard}>
+              <Card.Content>
+                {queueLoading && !queueStatus ? (
+                  <ActivityIndicator color={COLORS.primaryGreen} />
+                ) : (
+                  <View>
+                    {/* Queue Stats */}
+                    <View style={styles.queueStats}>
+                      <View style={styles.queueStat}>
+                        <View style={[styles.queueIconContainer, { backgroundColor: `${COLORS.primaryGreen}15` }]}>
+                          <Ionicons name="people" size={24} color={COLORS.primaryGreen} />
+                        </View>
+                        <View>
+                          <Text variant="headlineSmall" style={styles.queueStatNumber}>
+                            {queueStatus?.totalWaiting || 0}
+                          </Text>
+                          <Text variant="bodySmall" style={styles.queueStatLabel}>waiting</Text>
+                        </View>
+                      </View>
+                      <View style={styles.queueStat}>
+                        <View style={[styles.queueIconContainer, { backgroundColor: `${COLORS.accentGold}25` }]}>
+                          <Ionicons name="time-outline" size={24} color={COLORS.primaryGreen} />
+                        </View>
+                        <View>
+                          <Text variant="headlineSmall" style={styles.queueStatNumber}>
+                            ~{queueStatus?.averageWait || 0}
+                          </Text>
+                          <Text variant="bodySmall" style={styles.queueStatLabel}>min wait</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* My Position or Join Button */}
+                    {myPosition ? (
+                      <View style={styles.myPositionCard}>
+                        <View>
+                          <Text variant="bodySmall" style={styles.positionLabel}>Your Position</Text>
+                          <Text variant="headlineMedium" style={styles.positionNumber}>
+                            #{myPosition.position}
+                          </Text>
+                          <Text variant="bodySmall" style={styles.positionWait}>
+                            Est. wait: ~{myPosition.estimatedWait} min
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.leaveQueueButton, leavingQueue && styles.buttonDisabled]}
+                          onPress={handleLeaveQueue}
+                          disabled={leavingQueue}
+                        >
+                          {leavingQueue ? (
+                            <ActivityIndicator size="small" color={COLORS.accentRed} />
+                          ) : (
+                            <>
+                              <Ionicons name="exit-outline" size={18} color={COLORS.accentRed} />
+                              <Text style={styles.leaveQueueText}>Leave</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.joinQueueButton}
+                        onPress={() => setShowJoinModal(true)}
+                      >
+                        <Ionicons name="add-circle-outline" size={20} color="#fff" />
+                        <Text style={styles.joinQueueButtonText}>Join Walk-in Queue</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </Card.Content>
+            </Card>
+          </View>
+        )}
+
         {/* Services Section */}
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>Services</Text>
@@ -295,6 +454,118 @@ export default function SalonDetailScreen() {
             )}
           </View>
         </View>
+
+        {/* Join Queue Modal */}
+        <Modal
+          visible={showJoinModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowJoinModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text variant="titleLarge" style={styles.modalTitle}>Join Walk-in Queue</Text>
+                <TouchableOpacity
+                  onPress={() => setShowJoinModal(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <Text variant="bodyMedium" style={styles.modalDescription}>
+                Join the queue and we'll notify you when it's your turn. You can wait nearby!
+              </Text>
+
+              {/* Service Selection */}
+              {salon.services && salon.services.length > 0 && (
+                <View style={styles.serviceSelection}>
+                  <Text variant="bodyMedium" style={styles.inputLabel}>Select Service (Optional)</Text>
+                  <ScrollView style={styles.serviceList} showsVerticalScrollIndicator={false}>
+                    <TouchableOpacity
+                      style={[
+                        styles.serviceOption,
+                        selectedServiceId === '' && styles.serviceOptionSelected
+                      ]}
+                      onPress={() => setSelectedServiceId('')}
+                    >
+                      <Text style={[
+                        styles.serviceOptionText,
+                        selectedServiceId === '' && styles.serviceOptionTextSelected
+                      ]}>
+                        Any service
+                      </Text>
+                      {selectedServiceId === '' && (
+                        <Ionicons name="checkmark-circle" size={20} color={COLORS.primaryGreen} />
+                      )}
+                    </TouchableOpacity>
+                    {salon.services.map((service) => (
+                      <TouchableOpacity
+                        key={service.id}
+                        style={[
+                          styles.serviceOption,
+                          selectedServiceId === service.id && styles.serviceOptionSelected
+                        ]}
+                        onPress={() => setSelectedServiceId(service.id)}
+                      >
+                        <View style={styles.serviceOptionContent}>
+                          <Text style={[
+                            styles.serviceOptionText,
+                            selectedServiceId === service.id && styles.serviceOptionTextSelected
+                          ]}>
+                            {service.name}
+                          </Text>
+                          <Text style={styles.serviceOptionPrice}>
+                            GH₵ {service.price.toFixed(2)}
+                          </Text>
+                        </View>
+                        {selectedServiceId === service.id && (
+                          <Ionicons name="checkmark-circle" size={20} color={COLORS.primaryGreen} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Notes Input */}
+              <View style={styles.notesInput}>
+                <Text variant="bodyMedium" style={styles.inputLabel}>Notes (Optional)</Text>
+                <TextInput
+                  value={queueNotes}
+                  onChangeText={setQueueNotes}
+                  placeholder="Any special requests..."
+                  multiline
+                  numberOfLines={3}
+                  style={styles.textInput}
+                  placeholderTextColor={COLORS.textSecondary}
+                />
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowJoinModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.confirmButton, joiningQueue && styles.buttonDisabled]}
+                  onPress={handleJoinQueue}
+                  disabled={joiningQueue}
+                >
+                  {joiningQueue ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>Join Queue</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -614,5 +885,246 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Queue Section Styles
+  queueSection: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  queueHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pulseDot: {
+    width: 12,
+    height: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.primaryGreen,
+    opacity: 0.4,
+  },
+  pulseCore: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primaryGreen,
+  },
+  liveText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  queueCard: {
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  queueStats: {
+    flexDirection: 'row',
+    gap: 24,
+    marginBottom: 16,
+  },
+  queueStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  queueIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  queueStatNumber: {
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  queueStatLabel: {
+    color: COLORS.textSecondary,
+  },
+  myPositionCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: `${COLORS.primaryGreen}20`,
+  },
+  positionLabel: {
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  positionNumber: {
+    fontWeight: '700',
+    color: COLORS.primaryGreen,
+  },
+  positionWait: {
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  leaveQueueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: `${COLORS.accentRed}15`,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  leaveQueueText: {
+    color: COLORS.accentRed,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  joinQueueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.primaryGreen,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  joinQueueButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalDescription: {
+    color: COLORS.textSecondary,
+    marginBottom: 20,
+  },
+  serviceSelection: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  serviceList: {
+    maxHeight: 200,
+  },
+  serviceOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: COLORS.background,
+  },
+  serviceOptionSelected: {
+    backgroundColor: `${COLORS.primaryGreen}15`,
+    borderWidth: 1,
+    borderColor: `${COLORS.primaryGreen}30`,
+  },
+  serviceOptionContent: {
+    flex: 1,
+  },
+  serviceOptionText: {
+    color: COLORS.textPrimary,
+    fontSize: 15,
+  },
+  serviceOptionTextSelected: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
+  },
+  serviceOptionPrice: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  notesInput: {
+    marginBottom: 20,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    backgroundColor: COLORS.background,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryGreen,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

@@ -18,12 +18,17 @@ import {
   Car,
   Wind,
   Footprints,
-  Heart
+  Heart,
+  Users,
+  X,
+  LogOut,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
-import apiClient from '../lib/api'
+import apiClient, { queueApi, QueueStatus, MyQueuePosition, Service } from '../lib/api'
 
 // Types
-interface Service {
+interface ServiceLocal {
   id: string
   name: string
   description: string | null
@@ -82,7 +87,7 @@ interface Salon {
   acceptsWalkIns: boolean
   rating: number
   reviewCount: number
-  services?: Service[]
+  services?: ServiceLocal[]
   workers?: Worker[]
   reviews?: Review[]
   ownerId: string
@@ -157,6 +162,16 @@ export default function SalonDetail() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'services' | 'staff' | 'reviews'>('services')
 
+  // Queue state
+  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null)
+  const [myPosition, setMyPosition] = useState<MyQueuePosition | null>(null)
+  const [queueLoading, setQueueLoading] = useState(false)
+  const [showJoinModal, setShowJoinModal] = useState(false)
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('')
+  const [queueNotes, setQueueNotes] = useState('')
+  const [joiningQueue, setJoiningQueue] = useState(false)
+  const [leavingQueue, setLeavingQueue] = useState(false)
+
   useEffect(() => {
     if (!id) {
       setError('Salon ID is required')
@@ -192,6 +207,77 @@ export default function SalonDetail() {
 
     fetchSalon()
   }, [id])
+
+  // Fetch queue status and my position
+  useEffect(() => {
+    if (!id) return
+
+    const fetchQueueData = async () => {
+      setQueueLoading(true)
+      try {
+        const [status, position] = await Promise.all([
+          queueApi.getSalonQueue(id),
+          queueApi.getMyPosition(id).catch(() => null)
+        ])
+        setQueueStatus(status)
+        setMyPosition(position)
+      } catch (err) {
+        console.error('Failed to fetch queue data:', err)
+      } finally {
+        setQueueLoading(false)
+      }
+    }
+
+    fetchQueueData()
+
+    // Poll every 30 seconds
+    const interval = setInterval(fetchQueueData, 30000)
+    return () => clearInterval(interval)
+  }, [id])
+
+  const handleJoinQueue = async () => {
+    if (!id) return
+    setJoiningQueue(true)
+    try {
+      await queueApi.joinQueue({
+        salonId: id,
+        serviceId: selectedServiceId || undefined,
+        notes: queueNotes || undefined
+      })
+      // Refresh queue data
+      const [status, position] = await Promise.all([
+        queueApi.getSalonQueue(id),
+        queueApi.getMyPosition(id)
+      ])
+      setQueueStatus(status)
+      setMyPosition(position)
+      setShowJoinModal(false)
+      setSelectedServiceId('')
+      setQueueNotes('')
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Failed to join queue')
+    } finally {
+      setJoiningQueue(false)
+    }
+  }
+
+  const handleLeaveQueue = async () => {
+    if (!myPosition?.queueId) return
+    setLeavingQueue(true)
+    try {
+      await queueApi.leaveQueue(myPosition.queueId)
+      setMyPosition(null)
+      // Refresh queue status
+      if (id) {
+        const status = await queueApi.getSalonQueue(id)
+        setQueueStatus(status)
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Failed to leave queue')
+    } finally {
+      setLeavingQueue(false)
+    }
+  }
 
   const handleBack = () => {
     navigate('/explore')
@@ -414,6 +500,173 @@ export default function SalonDetail() {
             </div>
           </div>
         </div>
+
+        {/* Live Queue Section */}
+        {salon.acceptsWalkIns && (
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Live Queue</h2>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ghana-green opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-ghana-green"></span>
+                </span>
+                <span className="text-sm text-gray-500">Live</span>
+              </div>
+            </div>
+
+            {queueLoading && !queueStatus ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 text-ghana-green animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Queue Status */}
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-ghana-green/10 flex items-center justify-center">
+                      <Users className="w-6 h-6 text-ghana-green" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {queueStatus?.totalWaiting || 0}
+                      </p>
+                      <p className="text-sm text-gray-500">people waiting</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-ghana-gold/20 flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-ghana-green" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        ~{queueStatus?.averageWait || 0}
+                      </p>
+                      <p className="text-sm text-gray-500">min wait</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* My Position or Join Button */}
+                {myPosition ? (
+                  <div className="bg-gradient-to-r from-ghana-green/10 to-ghana-gold/10 rounded-xl p-4 border border-ghana-green/20">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Your Position</p>
+                        <p className="text-3xl font-bold text-ghana-green">
+                          #{myPosition.position}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Est. wait: ~{myPosition.estimatedWait} minutes
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleLeaveQueue}
+                        disabled={leavingQueue}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                      >
+                        {leavingQueue ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <LogOut className="w-4 h-4" />
+                        )}
+                        Leave Queue
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowJoinModal(true)}
+                    className="w-full py-3 bg-ghana-green text-white font-medium rounded-lg hover:bg-ghana-green/90 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Users className="w-5 h-5" />
+                    Join Walk-in Queue
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Join Queue Modal */}
+        {showJoinModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">Join Walk-in Queue</h3>
+                <button
+                  onClick={() => setShowJoinModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-gray-600 mb-4">
+                Join the queue and we'll notify you when it's your turn. You can wait nearby!
+              </p>
+
+              {/* Service Selection */}
+              {salon.services && salon.services.length > 0 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Service (Optional)
+                  </label>
+                  <select
+                    value={selectedServiceId}
+                    onChange={(e) => setSelectedServiceId(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent"
+                  >
+                    <option value="">Any service</option>
+                    {salon.services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name} - GH₵{parseFloat(service.price).toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={queueNotes}
+                  onChange={(e) => setQueueNotes(e.target.value)}
+                  placeholder="Any special requests..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowJoinModal(false)}
+                  className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleJoinQueue}
+                  disabled={joiningQueue}
+                  className="flex-1 py-2 bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {joiningQueue ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    'Join Queue'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">

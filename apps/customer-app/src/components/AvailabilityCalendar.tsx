@@ -1,0 +1,465 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text as RNText,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
+import { bookingApi, AvailableSlot } from '../api/booking';
+
+// Design System Colors (Ghana theme)
+const COLORS = {
+  primaryGreen: '#006B3F',
+  accentGold: '#FCD116',
+  accentRed: '#CE1126',
+  dark: '#1a1a2e',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+  lightGray: '#D1D5DB',
+  availableGreen: '#006B3F',
+  unavailableRed: '#EF4444',
+  pastGray: '#9CA3AF',
+};
+
+const MAX_BOOKING_DAYS_AHEAD = 30;
+
+interface AvailabilityCalendarProps {
+  salonId: string;
+  workerId?: string;
+  serviceDuration: number;
+  onDateSelect: (date: string) => void;
+  selectedDate?: string;
+}
+
+interface DayAvailability {
+  date: string;
+  hasSlots: boolean;
+  isFullyBooked: boolean;
+  isClosed: boolean;
+  isLoading: boolean;
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+export default function AvailabilityCalendar({
+  salonId,
+  workerId,
+  serviceDuration,
+  onDateSelect,
+  selectedDate,
+}: AvailabilityCalendarProps) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, DayAvailability>>({});
+
+  // Generate calendar days for the current month view
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startPadding = firstDay.getDay();
+    
+    const days: (Date | null)[] = [];
+    
+    // Add padding for days before the first of the month
+    for (let i = 0; i < startPadding; i++) {
+      days.push(null);
+    }
+    
+    // Add all days of the month
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      days.push(new Date(year, month, d));
+    }
+    
+    return days;
+  }, [currentMonth]);
+
+  // Get today and max booking date
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const maxBookingDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + MAX_BOOKING_DAYS_AHEAD);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, []);
+
+  // Fetch availability for visible dates when month changes
+  const { refetch: fetchAvailability } = useQuery({
+    queryKey: ['calendar-availability', salonId, currentMonth.toISOString().slice(0, 7), workerId],
+    queryFn: async () => {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      
+      const results: Record<string, DayAvailability> = {};
+      
+      // Fetch slots for each day in the visible month (within booking window)
+      const fetchPromises: Promise<void>[] = [];
+      
+      for (let d = 1; d <= lastDay.getDate(); d++) {
+        const date = new Date(year, month, d);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        // Skip past dates and dates beyond booking window
+        if (date < today || date > maxBookingDate) {
+          results[dateStr] = {
+            date: dateStr,
+            hasSlots: false,
+            isFullyBooked: false,
+            isClosed: true,
+            isLoading: false,
+          };
+          continue;
+        }
+        
+        // Mark as loading initially
+        results[dateStr] = {
+          date: dateStr,
+          hasSlots: false,
+          isFullyBooked: false,
+          isClosed: false,
+          isLoading: true,
+        };
+        
+        // Fetch slots for this date
+        const promise = bookingApi.getAvailableSlots(salonId, dateStr, workerId)
+          .then((slots: AvailableSlot[]) => {
+            const availableSlots = slots.filter(s => s.available);
+            const isClosed = slots.length === 0;
+            const isFullyBooked = slots.length > 0 && availableSlots.length === 0;
+            
+            results[dateStr] = {
+              date: dateStr,
+              hasSlots: availableSlots.length > 0,
+              isFullyBooked,
+              isClosed,
+              isLoading: false,
+            };
+          })
+          .catch(() => {
+            results[dateStr] = {
+              date: dateStr,
+              hasSlots: false,
+              isFullyBooked: false,
+              isClosed: true,
+              isLoading: false,
+            };
+          });
+        
+        fetchPromises.push(promise);
+      }
+      
+      // Wait for all fetches to complete
+      await Promise.all(fetchPromises);
+      return results;
+    },
+    enabled: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Update availability map when data changes
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await fetchAvailability();
+      if (result.data) {
+        setAvailabilityMap(result.data);
+      }
+    };
+    fetchData();
+  }, [currentMonth, salonId, workerId]);
+
+  const goToPrevMonth = useCallback(() => {
+    const prevMonth = new Date(currentMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    
+    // Don't allow going to past months
+    if (prevMonth.getMonth() >= today.getMonth() || prevMonth.getFullYear() > today.getFullYear()) {
+      setCurrentMonth(prevMonth);
+    }
+  }, [currentMonth, today]);
+
+  const goToNextMonth = useCallback(() => {
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setCurrentMonth(nextMonth);
+  }, [currentMonth]);
+
+  const handleDatePress = useCallback((date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const availability = availabilityMap[dateStr];
+    
+    // Only allow selecting if not past, within window, and has slots
+    if (date >= today && date <= maxBookingDate && availability?.hasSlots) {
+      onDateSelect(dateStr);
+    }
+  }, [availabilityMap, today, maxBookingDate, onDateSelect]);
+
+  const getDateStyle = useCallback((date: Date | null) => {
+    if (!date) return null;
+    
+    const dateStr = date.toISOString().split('T')[0];
+    const availability = availabilityMap[dateStr];
+    const isPast = date < today;
+    const isBeyondWindow = date > maxBookingDate;
+    const isSelected = selectedDate === dateStr;
+    
+    let backgroundColor = COLORS.cardBackground;
+    let borderColor = COLORS.border;
+    let textColor = COLORS.textPrimary;
+    let isSelectable = false;
+    
+    if (isPast || isBeyondWindow) {
+      backgroundColor = COLORS.background;
+      borderColor = COLORS.border;
+      textColor = COLORS.pastGray;
+    } else if (availability?.isLoading) {
+      backgroundColor = COLORS.cardBackground;
+      borderColor = COLORS.border;
+      textColor = COLORS.textSecondary;
+    } else if (availability?.isClosed || availability?.isFullyBooked) {
+      backgroundColor = COLORS.background;
+      borderColor = COLORS.lightGray;
+      textColor = COLORS.textSecondary;
+    } else if (availability?.hasSlots) {
+      backgroundColor = `${COLORS.availableGreen}15`; // Light green tint
+      borderColor = COLORS.availableGreen;
+      textColor = COLORS.availableGreen;
+      isSelectable = true;
+    }
+    
+    // Selected state overrides everything
+    if (isSelected) {
+      borderColor = COLORS.accentGold;
+    }
+    
+    return {
+      backgroundColor,
+      borderColor,
+      textColor,
+      isSelectable,
+      isSelected,
+      isLoading: availability?.isLoading,
+    };
+  }, [availabilityMap, selectedDate, today, maxBookingDate]);
+
+  const renderDayCell = (date: Date | null, index: number) => {
+    if (!date) {
+      return <View key={`empty-${index}`} style={styles.emptyCell} />;
+    }
+    
+    const style = getDateStyle(date);
+    if (!style) return null;
+    
+    const { backgroundColor, borderColor, textColor, isSelectable, isSelected, isLoading } = style;
+    const isToday = date.toDateString() === today.toDateString();
+    
+    return (
+      <TouchableOpacity
+        key={date.toISOString()}
+        style={[
+          styles.dayCell,
+          { backgroundColor, borderColor },
+          isSelected && styles.dayCellSelected,
+        ]}
+        onPress={() => handleDatePress(date)}
+        disabled={!isSelectable}
+        activeOpacity={0.7}
+      >
+        <RNText style={[styles.dayNumber, { color: textColor }]}>
+          {date.getDate()}
+        </RNText>
+        {isToday && <View style={styles.todayDot} />}
+        {isLoading && (
+          <ActivityIndicator size="small" color={COLORS.textSecondary} />
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const monthYear = `${MONTHS[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+  const canGoPrev = currentMonth.getMonth() > today.getMonth() || currentMonth.getFullYear() > today.getFullYear();
+
+  return (
+    <View style={styles.container}>
+      {/* Month Navigation */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={goToPrevMonth}
+          disabled={!canGoPrev}
+          style={[styles.navButton, !canGoPrev && styles.navButtonDisabled]}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={canGoPrev ? COLORS.textPrimary : COLORS.border}
+          />
+        </TouchableOpacity>
+        
+        <RNText style={styles.monthTitle}>{monthYear}</RNText>
+        
+        <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+          <Ionicons name="chevron-forward" size={24} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+      </View>
+      
+      {/* Weekday Headers */}
+      <View style={styles.weekdayRow}>
+        {WEEKDAYS.map((day) => (
+          <View key={day} style={styles.weekdayCell}>
+            <RNText style={styles.weekdayText}>{day}</RNText>
+          </View>
+        ))}
+      </View>
+      
+      {/* Calendar Grid */}
+      <View style={styles.calendarGrid}>
+        {calendarDays.map((date, index) => renderDayCell(date, index))}
+      </View>
+      
+      {/* Legend */}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: COLORS.availableGreen }]} />
+          <RNText style={styles.legendText}>Available</RNText>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: COLORS.lightGray }]} />
+          <RNText style={styles.legendText}>Unavailable</RNText>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: COLORS.pastGray }]} />
+          <RNText style={styles.legendText}>Past</RNText>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendBorder, { borderColor: COLORS.accentGold }]} />
+          <RNText style={styles.legendText}>Selected</RNText>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  navButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  navButtonDisabled: {
+    opacity: 0.5,
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  weekdayRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  weekdayCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  weekdayText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  emptyCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    padding: 2,
+  },
+  dayCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 2,
+    margin: 2,
+  },
+  dayCellSelected: {
+    borderWidth: 3,
+  },
+  dayNumber: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  todayDot: {
+    position: 'absolute',
+    bottom: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.accentGold,
+  },
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendBorder: {
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+    borderWidth: 2,
+  },
+  legendText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+});

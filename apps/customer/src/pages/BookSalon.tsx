@@ -18,8 +18,9 @@ import {
   CheckCircle2,
   CalendarDays,
   RefreshCw,
+  Users,
 } from 'lucide-react';
-import apiClient, { bookingApi, paymentApi } from '../lib/api';
+import apiClient, { bookingApi, paymentApi, queueApi, QueueStatus } from '../lib/api';
 
 // Types
 interface Service {
@@ -162,6 +163,10 @@ export default function BookSalon() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [initializingPayment, setInitializingPayment] = useState(false);
 
+  // Queue state
+  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
+  const [queueLoading, setQueueLoading] = useState(false);
+
   // Fetch salon data
   useEffect(() => {
     if (!salonId) {
@@ -229,6 +234,25 @@ export default function BookSalon() {
     };
 
     fetchStaff();
+  }, [salonId]);
+
+  // Fetch queue status
+  useEffect(() => {
+    if (!salonId) return;
+
+    const fetchQueueStatus = async () => {
+      setQueueLoading(true);
+      try {
+        const status = await queueApi.getSalonQueue(salonId);
+        setQueueStatus(status);
+      } catch (err) {
+        console.error('Failed to fetch queue status:', err);
+      } finally {
+        setQueueLoading(false);
+      }
+    };
+
+    fetchQueueStatus();
   }, [salonId]);
 
   // Fetch available slots when date or worker changes
@@ -488,6 +512,23 @@ export default function BookSalon() {
         <h2 className="text-2xl font-bold text-gray-900">Select a Service</h2>
         <p className="text-gray-600 mt-1">Choose the service you'd like to book</p>
       </div>
+
+      {/* Queue Info Banner */}
+      {queueStatus && queueStatus.totalWaiting > 0 && (
+        <div className="bg-ghana-gold/10 border border-ghana-gold/30 rounded-xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-ghana-gold/20 flex items-center justify-center flex-shrink-0">
+            <Users className="w-5 h-5 text-ghana-green" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              {queueStatus.totalWaiting} {queueStatus.totalWaiting === 1 ? 'person' : 'people'} currently at this salon
+            </p>
+            <p className="text-xs text-gray-600">
+              Walk-in wait time: ~{queueStatus.averageWait} minutes
+            </p>
+          </div>
+        </div>
+      )}
 
       {loadingServices ? (
         <div className="flex items-center justify-center py-12">

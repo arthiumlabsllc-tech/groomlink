@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { Search, Calendar, Clock, User, Filter } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Booking } from '../lib/api'
+import { useSalon } from '../store/SalonContext'
 
 type TabFilter = 'all' | 'upcoming' | 'completed' | 'cancelled'
 
 export default function Bookings() {
+  const { salonId, loading: salonLoading } = useSalon()
   const [activeTab, setActiveTab] = useState<TabFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -13,8 +15,9 @@ export default function Bookings() {
 
   useEffect(() => {
     const fetchBookings = async () => {
+      if (!salonId) return
       try {
-        const response = await api.getBookings('salon-1')
+        const response = await api.getBookings(salonId)
         if (response.success) {
           setBookings(response.data)
         }
@@ -25,7 +28,7 @@ export default function Bookings() {
       }
     }
     fetchBookings()
-  }, [])
+  }, [salonId])
 
   const getStatusBadge = (status: string) => {
     const styles = {

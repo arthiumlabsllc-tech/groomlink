@@ -9,6 +9,7 @@ export type AuthStackParamList = {
 
 export type MainStackParamList = {
   DashboardMain: undefined;
+  QueueMain: undefined;
   BookingDetail: { bookingId: string };
   EditSalon: undefined;
   BookingsMain: undefined;
@@ -56,6 +57,7 @@ export interface StaffMember {
 
 export type TabParamList = {
   Dashboard: undefined;
+  Queue: undefined;
   Bookings: undefined;
   Services: undefined;
   Staff: undefined;

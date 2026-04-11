@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import DashboardScreen from '../screens/main/DashboardScreen';
+import QueueScreen from '../screens/main/QueueScreen';
 import BookingsScreen from '../screens/main/BookingsScreen';
 import ServicesScreen from '../screens/main/ServicesScreen';
 import StaffScreen from '../screens/main/StaffScreen';
@@ -35,6 +36,26 @@ function DashboardStack() {
       <Stack.Screen name="DashboardMain" component={DashboardScreen} options={{ headerShown: false }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
       <Stack.Screen name="EditSalon" component={EditSalonScreen} options={{ title: 'Edit Salon' }} />
+    </Stack.Navigator>
+  );
+}
+
+function QueueStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#FFFFFF',
+        },
+        headerTintColor: '#111827',
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+        headerShadowVisible: false,
+        headerBackTitleVisible: false,
+      }}
+    >
+      <Stack.Screen name="QueueMain" component={QueueScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
@@ -123,6 +144,8 @@ export default function MainNavigator() {
           
           if (route.name === 'Dashboard') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Queue') {
+            iconName = focused ? 'list' : 'list-outline';
           } else if (route.name === 'Bookings') {
             iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Services') {
@@ -157,6 +180,13 @@ export default function MainNavigator() {
         component={DashboardStack}
         options={{
           tabBarLabel: 'Home',
+        }}
+      />
+      <Tab.Screen 
+        name="Queue" 
+        component={QueueStack}
+        options={{
+          tabBarLabel: 'Queue',
         }}
       />
       <Tab.Screen 
