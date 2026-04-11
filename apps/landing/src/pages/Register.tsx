@@ -312,7 +312,13 @@ export default function Register() {
     if (userType === 'salon-owner') {
       window.location.href = 'https://partners.groomlinkgh.com'
     } else {
-      window.location.href = 'https://app.groomlinkgh.com'
+      // Get token from localStorage for customer redirect
+      const accessToken = localStorage.getItem('accessToken')
+      if (accessToken) {
+        window.location.href = `https://my.groomlinkgh.com?token=${accessToken}`
+      } else {
+        window.location.href = 'https://my.groomlinkgh.com'
+      }
     }
   }
 

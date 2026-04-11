@@ -200,7 +200,12 @@ export default function Login() {
               window.location.href = redirectUrl
             }
           } else if (userType === 'customer') {
-            window.location.href = 'https://groomlinkgh.com'
+            const tokens = data.data?.tokens || data.tokens
+            if (tokens?.accessToken) {
+              window.location.href = `https://my.groomlinkgh.com?token=${tokens.accessToken}`
+            } else {
+              window.location.href = 'https://my.groomlinkgh.com'
+            }
           } else {
             window.location.href = 'https://partners.groomlinkgh.com'
           }

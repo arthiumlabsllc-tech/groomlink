@@ -53,9 +53,31 @@ export interface CreateBookingData {
 }
 
 export interface AvailableSlot {
-  startTime: string;
-  endTime: string;
+  time: string;
   available: boolean;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  duration: number;
+  price: string;
+  isActive: boolean;
+}
+
+export interface Worker {
+  id: string;
+  fullName: string;
+  phoneNumber: string | null;
+  email: string | null;
+  bio: string | null;
+  specialties: string[];
+  rating: number;
+  reviewCount: number;
+  isActive: boolean;
+  avatar: string | null;
 }
 
 const apiClient = axios.create({
