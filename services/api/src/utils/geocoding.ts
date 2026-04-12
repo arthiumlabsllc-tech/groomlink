@@ -5,6 +5,19 @@ export interface GeocodingResult {
   lng: number;
 }
 
+interface GeocodingResponse {
+  status: string;
+  results: Array<{
+    geometry: {
+      location: {
+        lat: number;
+        lng: number;
+      };
+    };
+  }>;
+  error_message?: string;
+}
+
 /**
  * Geocodes an address using Google Maps Geocoding API
  * @param address - The full address to geocode
@@ -29,7 +42,7 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult |
     logger.debug(`Geocoding address: ${address}`);
 
     const response = await fetch(url);
-    const data = await response.json();
+    const data = (await response.json()) as GeocodingResponse;
 
     if (data.status === 'OK' && data.results && data.results.length > 0) {
       const location = data.results[0].geometry.location;

@@ -70,8 +70,6 @@ export async function createSalon(ownerId: string, data: CreateSalonData) {
       address: data.address,
       city: data.city,
       region: data.region,
-      latitude,
-      longitude,
       openingTime: data.openingTime,
       closingTime: data.closingTime,
       workingDays: data.workingDays,
@@ -81,8 +79,10 @@ export async function createSalon(ownerId: string, data: CreateSalonData) {
       acceptsWalkIns: data.acceptsWalkIns,
       logo: data.logo,
       images: data.images,
-      ownerId,
       status: SalonStatus.PENDING, // Requires admin approval
+      ownerId,
+      latitude: typeof latitude === 'number' ? latitude : null,
+      longitude: typeof longitude === 'number' ? longitude : null,
     },
   });
 
