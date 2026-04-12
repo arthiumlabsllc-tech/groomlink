@@ -139,8 +139,8 @@ model Salon {
   ghanaPostGPS  String?     @map("ghana_post_gps")
   city          String
   region        String      @default("Greater Accra")
-  latitude      Float
-  longitude     Float
+  latitude      Float?
+  longitude     Float?
   
   // Media
   logo          String?

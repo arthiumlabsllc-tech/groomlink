@@ -214,6 +214,9 @@ export default function Settings() {
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Location coordinates will be automatically determined from your address
+              </p>
             </div>
 
             <div>

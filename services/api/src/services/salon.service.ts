@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { SalonType, SalonStatus, Prisma } from '@prisma/client';
+import { geocodeAddress, formatAddressForGeocoding } from '../utils/geocoding';
 
 export interface CreateSalonData {
   businessName: string;
@@ -12,8 +13,8 @@ export interface CreateSalonData {
   address: string;
   city: string;
   region: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   openingTime: string;
   closingTime: string;
   workingDays: string[];
@@ -41,9 +42,45 @@ export interface SalonFilters {
 }
 
 export async function createSalon(ownerId: string, data: CreateSalonData) {
+  // If latitude/longitude not provided, try to geocode the address
+  let latitude: number | null = data.latitude ?? null;
+  let longitude: number | null = data.longitude ?? null;
+  
+  if ((!latitude || !longitude) && data.address) {
+    const fullAddress = formatAddressForGeocoding(data.address, data.city, data.region);
+    const geocodingResult = await geocodeAddress(fullAddress);
+    
+    if (geocodingResult) {
+      latitude = geocodingResult.lat;
+      longitude = geocodingResult.lng;
+      logger.info(`Auto-geocoded salon address to lat: ${latitude}, lng: ${longitude}`);
+    } else {
+      logger.warn(`Could not geocode address for new salon, location will be null`);
+    }
+  }
+
   const salon = await prisma.salon.create({
     data: {
-      ...data,
+      businessName: data.businessName,
+      description: data.description,
+      type: data.type,
+      phoneNumber: data.phoneNumber,
+      email: data.email,
+      website: data.website,
+      address: data.address,
+      city: data.city,
+      region: data.region,
+      latitude,
+      longitude,
+      openingTime: data.openingTime,
+      closingTime: data.closingTime,
+      workingDays: data.workingDays,
+      hasParking: data.hasParking,
+      hasWifi: data.hasWifi,
+      hasAC: data.hasAC,
+      acceptsWalkIns: data.acceptsWalkIns,
+      logo: data.logo,
+      images: data.images,
       ownerId,
       status: SalonStatus.PENDING, // Requires admin approval
     },
@@ -182,9 +219,36 @@ export async function updateSalon(id: string, ownerId: string, data: UpdateSalon
     throw new Error('Salon not found or you do not have permission');
   }
 
+  // Check if address-related fields are being updated
+  const isAddressUpdated = 
+    data.address !== undefined || 
+    data.city !== undefined || 
+    data.region !== undefined;
+
+  // Prepare update data
+  const updateData: Prisma.SalonUpdateInput = { ...data };
+
+  // If address is updated, try to geocode the new address
+  if (isAddressUpdated && (data.address || salon.address)) {
+    const newAddress = data.address ?? salon.address;
+    const newCity = data.city ?? salon.city;
+    const newRegion = data.region ?? salon.region;
+    
+    const fullAddress = formatAddressForGeocoding(newAddress, newCity, newRegion);
+    const geocodingResult = await geocodeAddress(fullAddress);
+    
+    if (geocodingResult) {
+      updateData.latitude = geocodingResult.lat;
+      updateData.longitude = geocodingResult.lng;
+      logger.info(`Auto-geocoded updated salon address to lat: ${geocodingResult.lat}, lng: ${geocodingResult.lng}`);
+    } else {
+      logger.warn(`Could not geocode updated address for salon ${id}, location coordinates will remain unchanged`);
+    }
+  }
+
   const updated = await prisma.salon.update({
     where: { id },
-    data,
+    data: updateData,
   });
 
   logger.info(`Salon updated: ${id}`);

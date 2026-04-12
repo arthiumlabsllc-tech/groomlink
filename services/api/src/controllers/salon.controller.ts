@@ -25,8 +25,8 @@ const createSalonSchema = z.object({
   address: z.string(),
   city: z.string(),
   region: z.string(),
-  latitude: z.number(),
-  longitude: z.number(),
+  latitude: z.number().optional(), // Optional - will be auto-geocoded from address
+  longitude: z.number().optional(), // Optional - will be auto-geocoded from address
   openingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
   closingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
   workingDays: z.array(z.string()),

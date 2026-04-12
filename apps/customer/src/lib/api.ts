@@ -109,6 +109,67 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Salon types
+export interface NearbySalon {
+  id: string;
+  businessName: string;
+  description: string | null;
+  type: string;
+  status: string;
+  phoneNumber: string;
+  email: string | null;
+  address: string;
+  city: string;
+  region: string;
+  latitude: number | null;
+  longitude: number | null;
+  logo: string | null;
+  images: string[];
+  openingTime: string | null;
+  closingTime: string | null;
+  workingDays: string[];
+  hasParking: boolean;
+  hasWifi: boolean;
+  hasAC: boolean;
+  acceptsWalkIns: boolean;
+  rating: number;
+  reviewCount: number;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+  distance: number; // Distance in km from the search location
+}
+
+export interface NearbySalonsResponse {
+  success: boolean;
+  data: NearbySalon[];
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Map salon data type
+export interface MapSalon {
+  id: string;
+  businessName: string;
+  type: string;
+  latitude: number | null;
+  longitude: number | null;
+  rating: number;
+  reviewCount: number;
+  openingTime: string | null;
+  closingTime: string | null;
+  workingDays: string[];
+  city: string;
+  address: string;
+  phoneNumber: string;
+  isOpen?: boolean;
+  distance?: number;
+}
+
 // Salon API functions
 export const salonApi = {
   getSalonServices: async (salonId: string): Promise<{ services: Service[] }> => {
@@ -119,6 +180,36 @@ export const salonApi = {
   getSalonStaff: async (salonId: string): Promise<{ staff: Worker[] }> => {
     const response = await apiClient.get(`/salons/${salonId}/staff`);
     return response.data.data;
+  },
+
+  getNearbySalons: async (
+    lat: number,
+    lng: number,
+    radius: number = 10,
+    page: number = 1,
+    limit: number = 12
+  ): Promise<NearbySalonsResponse> => {
+    const params = new URLSearchParams();
+    params.append('lat', lat.toString());
+    params.append('lng', lng.toString());
+    params.append('radius', radius.toString());
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    const response = await apiClient.get(`/salons/nearby?${params.toString()}`);
+    return response.data;
+  },
+
+  getSalonsForMap: async (
+    lat?: number,
+    lng?: number,
+    radius: number = 10
+  ): Promise<{ success: boolean; data: MapSalon[] }> => {
+    const params = new URLSearchParams();
+    if (lat !== undefined) params.append('lat', lat.toString());
+    if (lng !== undefined) params.append('lng', lng.toString());
+    params.append('radius', radius.toString());
+    const response = await apiClient.get(`/salons/map?${params.toString()}`);
+    return response.data;
   },
 };
 
