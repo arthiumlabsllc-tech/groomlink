@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { SalonStatus, PaymentStatus, UserRole, UserStatus, Prisma } from '@prisma/client';
 import { sendWelcomeEmail } from '../services/email.service';
 import { activityService } from '../services/activity.service';
+import logger from '../config/logger';
 
 const couponSchema = z.object({
   code: z.string().min(3),
@@ -638,10 +639,10 @@ const siteSettingsSchema = z.object({
 // Payment Settings Schema
 const paymentSettingsSchema = z.object({
   paymentGateway: z.string().default('paystack'),
-  paystackPublicKey: z.union([z.string(), z.null()]).optional(),
-  paystackSecretKey: z.union([z.string(), z.null()]).optional(),
+  paystackPublicKey: z.string().max(500).optional().nullable(),
+  paystackSecretKey: z.string().max(500).optional().nullable(),
   isPaymentTestMode: z.boolean().optional(),
-  transactionFeePercent: z.union([z.number(), z.null()]).min(0).max(100).optional(),
+  transactionFeePercent: z.number().min(0).max(100).nullable().optional(),
 }).transform((data) => ({
   ...data,
   // Convert empty strings to undefined
@@ -751,7 +752,7 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
       updateData.paystackPublicKey = data.paystackPublicKey || null;
     }
 
-    if (data.paystackSecretKey !== undefined && !data.paystackSecretKey.includes('****')) {
+    if (data.paystackSecretKey !== undefined && data.paystackSecretKey !== null && !data.paystackSecretKey.includes('****')) {
       updateData.paystackSecretKey = data.paystackSecretKey || null;
     }
     // If secret key contains '****', don't update it
