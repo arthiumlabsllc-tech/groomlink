@@ -638,11 +638,16 @@ const siteSettingsSchema = z.object({
 // Payment Settings Schema
 const paymentSettingsSchema = z.object({
   paymentGateway: z.string().default('paystack'),
-  paystackPublicKey: z.string().optional(),
-  paystackSecretKey: z.string().optional(),
+  paystackPublicKey: z.union([z.string(), z.null()]).optional(),
+  paystackSecretKey: z.union([z.string(), z.null()]).optional(),
   isPaymentTestMode: z.boolean().optional(),
-  transactionFeePercent: z.number().min(0).max(100).optional().nullable(),
-});
+  transactionFeePercent: z.union([z.number(), z.null()]).min(0).max(100).optional(),
+}).transform((data) => ({
+  ...data,
+  // Convert empty strings to undefined
+  paystackPublicKey: data.paystackPublicKey === '' ? undefined : data.paystackPublicKey,
+  paystackSecretKey: data.paystackSecretKey === '' ? undefined : data.paystackSecretKey,
+}));
 
 export async function getSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {

@@ -613,16 +613,28 @@ export function Settings() {
                 </div>
               </div>
 
-              {/* Transaction Fee - Read Only */}
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Transaction Fee</p>
-                    <p className="text-xs text-gray-500">Applied to all payment transactions</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-semibold text-gray-800">{paymentFormData.transactionFeePercent}%</p>
-                    <p className="text-xs text-gray-500">capped at GHS 100</p>
+              {/* Transaction Fee - Editable */}
+              <div className="p-4 bg-white border-2 border-gray-100 rounded-xl">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700">Transaction Fee (%)</p>
+                    <p className="text-xs text-gray-500 mb-3">Percentage applied to all payment transactions</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={paymentFormData.transactionFeePercent}
+                        onChange={(e) => setPaymentFormData({ 
+                          ...paymentFormData, 
+                          transactionFeePercent: parseFloat(e.target.value) || 0 
+                        })}
+                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#006B3F] focus:border-transparent outline-none text-lg font-semibold"
+                      />
+                      <span className="text-lg font-semibold text-gray-700">%</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Capped at GHS 100 per transaction</p>
                   </div>
                 </div>
               </div>
