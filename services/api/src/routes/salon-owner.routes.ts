@@ -31,7 +31,12 @@ router.get('/:salonId/today', authenticateToken, requireRole(UserRole.SALON_OWNE
 router.put('/:salonId/bookings/:bookingId/status', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.updateBookingStatus);
 
 // Analytics & Earnings
+router.get('/:salonId/dashboard-stats', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.getDashboardStats);
 router.get('/:salonId/analytics', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.getAnalytics);
 router.get('/:salonId/earnings', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.getEarnings);
+
+// Reviews Management
+router.get('/:salonId/reviews', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.getSalonReviews);
+router.post('/:salonId/reviews/:reviewId/reply', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.replyToReview);
 
 export default router;

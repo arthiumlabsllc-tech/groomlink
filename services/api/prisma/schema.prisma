@@ -346,6 +346,10 @@ model Review {
   rating        Int       // 1-5
   comment       String?
   
+  // Salon reply
+  salonReply    String?   @map("salon_reply")
+  salonRepliedAt DateTime? @map("salon_replied_at")
+  
   // Timestamps
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")

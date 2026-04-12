@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Star, MessageSquare } from 'lucide-react'
+import { Star, MessageSquare, Store, ArrowRightCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -15,7 +16,7 @@ interface Review {
 type SortOption = 'recent' | 'highest' | 'lowest'
 
 export default function Reviews() {
-  const { salonId, loading: salonLoading } = useSalon()
+  const { salonId, loading: salonLoading, hasSalon } = useSalon()
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<SortOption>('recent')
@@ -76,6 +77,29 @@ export default function Reviews() {
 
   return (
     <Layout activeTab="reviews">
+      {/* No Salon Setup Warning */}
+      {hasSalon === false && !loading && (
+        <div className="card text-center py-12 mb-6">
+          <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Store className="w-10 h-10 text-ghana-gold" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Set up your salon first</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            You need to create your salon profile before you can view reviews.
+          </p>
+          <Link 
+            to="/settings" 
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            Create Salon Profile
+            <ArrowRightCircle className="w-5 h-5" />
+          </Link>
+        </div>
+      )}
+
+      {/* Normal Reviews UI - only show if hasSalon is true */}
+      {(hasSalon === true || hasSalon === null) && (
+        <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Reviews</h1>
         <p className="text-gray-500">Customer feedback and ratings</p>
@@ -171,6 +195,8 @@ export default function Reviews() {
             Reviews will appear here when customers rate your services. Keep providing excellent service!
           </p>
         </div>
+      )}
+        </>
       )}
     </Layout>
   )

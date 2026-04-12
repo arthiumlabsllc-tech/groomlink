@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
-  Calendar, DollarSign, Clock, CheckCircle, TrendingUp, 
-  Plus, ArrowRight, Scissors, Users
+  Calendar, DollarSign, Clock, CheckCircle, TrendingUp,
+  Plus, ArrowRight, Scissors, Users, Store, ArrowRightCircle
 } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, DashboardStats, Booking, Service, Worker } from '../lib/api'
@@ -10,7 +10,7 @@ import { useSalon } from '../store/SalonContext'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { salonId, loading: salonLoading } = useSalon()
+  const { salonId, loading: salonLoading, hasSalon, error: salonError } = useSalon()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [services, setServices] = useState<Service[]>([])
@@ -29,7 +29,7 @@ export default function Dashboard() {
       if (!salonId) return
       try {
         const [statsRes, bookingsRes, servicesRes, workersRes] = await Promise.all([
-          api.getDashboardStats(),
+          api.getDashboardStats(salonId),
           api.getBookings(salonId),
           api.getServices(salonId),
           api.getWorkers(salonId)
@@ -120,6 +120,71 @@ export default function Dashboard() {
         <div className="text-center py-12">
           <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-gray-500 mt-4">Loading...</p>
+        </div>
+      ) : hasSalon === false ? (
+        // New partner without a salon - show setup prompt
+        <div className="max-w-2xl mx-auto">
+          <div className="card text-center py-12">
+            <div className="w-20 h-20 bg-ghana-green/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Store className="w-10 h-10 text-ghana-green" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to GroomLink Partners!</h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Your account is set up and ready. Now let's create your salon profile to start managing your business.
+            </p>
+            <Link 
+              to="/settings" 
+              className="btn-primary inline-flex items-center gap-2 px-6 py-3 text-base"
+            >
+              Create Your Salon Profile
+              <ArrowRightCircle className="w-5 h-5" />
+            </Link>
+            <p className="text-sm text-gray-500 mt-6">
+              You'll need to add your salon details, services, and staff to start accepting bookings.
+            </p>
+          </div>
+
+          {/* Quick Tips */}
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="card p-4">
+              <div className="w-10 h-10 bg-ghana-gold/10 rounded-lg flex items-center justify-center mb-3">
+                <Store className="w-5 h-5 text-ghana-gold" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Set Up Salon</h3>
+              <p className="text-sm text-gray-600">Add your business name, location, and operating hours.</p>
+            </div>
+            <div className="card p-4">
+              <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center mb-3">
+                <Scissors className="w-5 h-5 text-ghana-green" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Add Services</h3>
+              <p className="text-sm text-gray-600">Define your services, prices, and how long each takes.</p>
+            </div>
+            <div className="card p-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Add Staff</h3>
+              <p className="text-sm text-gray-600">Add your team members and their specialties.</p>
+            </div>
+          </div>
+        </div>
+      ) : salonError ? (
+        // Error state (wrong role, auth error, etc.)
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-ghana-red/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-10 h-10 text-ghana-red" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Something went wrong</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            {salonError}
+          </p>
+          <button 
+            onClick={() => navigate('/login')} 
+            className="btn-primary"
+          >
+            Sign In Again
+          </button>
         </div>
       ) : salonId ? (
       <>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Scissors, Plus, Clock, Tag } from 'lucide-react'
+import { Scissors, Plus, Clock, Tag, Store, ArrowRightCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, Service } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -8,7 +9,7 @@ import AddServiceModal from '../components/AddServiceModal'
 const categories = ['All', 'Haircut', 'Braiding', 'Styling', 'Coloring', 'Treatment', 'Beard']
 
 export default function Services() {
-  const { salonId, loading: salonLoading } = useSalon()
+  const { salonId, loading: salonLoading, hasSalon } = useSalon()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('All')
@@ -51,6 +52,29 @@ export default function Services() {
 
   return (
     <Layout activeTab="services">
+      {/* No Salon Setup Warning */}
+      {hasSalon === false && !loading && (
+        <div className="card text-center py-12 mb-6">
+          <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Store className="w-10 h-10 text-ghana-gold" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Set up your salon first</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            You need to create your salon profile before you can add services.
+          </p>
+          <Link 
+            to="/settings" 
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            Create Salon Profile
+            <ArrowRightCircle className="w-5 h-5" />
+          </Link>
+        </div>
+      )}
+
+      {/* Normal Services UI - only show if hasSalon is true */}
+      {(hasSalon === true || hasSalon === null) && (
+        <>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Services</h1>
@@ -142,6 +166,8 @@ export default function Services() {
             Add Your First Service
           </button>
         </div>
+      )}
+        </>
       )}
 
       <AddServiceModal 

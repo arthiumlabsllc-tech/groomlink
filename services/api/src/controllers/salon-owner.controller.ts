@@ -45,6 +45,11 @@ const staffServicePriceSchema = z.object({
   priceOverride: z.number().min(0).optional(),
 });
 
+// Review Reply Schema
+const replyToReviewSchema = z.object({
+  reply: z.string().min(1).max(1000),
+});
+
 // Verify salon ownership
 async function verifySalonOwnership(salonId: string, ownerId: string) {
   const salon = await prisma.salon.findFirst({
@@ -559,6 +564,194 @@ export async function updateBookingStatus(req: AuthenticatedRequest, res: Respon
 
     successResponse(res, booking);
   } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Dashboard Stats
+export async function getDashboardStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { salonId } = req.params;
+
+    if (!await verifySalonOwnership(salonId, req.user.id)) {
+      errorResponse(res, 'FORBIDDEN', 'You do not own this salon', 403);
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const [
+      todayBookings,
+      todayRevenue,
+      pendingBookings,
+      completedBookings,
+      weeklyBookings,
+      weeklyRevenue,
+      newCustomers,
+      averageRating,
+    ] = await Promise.all([
+      // Today's bookings count
+      prisma.booking.count({
+        where: {
+          salonId,
+          date: { gte: today, lt: tomorrow },
+          status: { not: 'CANCELLED' },
+        },
+      }),
+      // Today's revenue
+      prisma.payment.aggregate({
+        where: {
+          booking: { salonId, date: { gte: today, lt: tomorrow } },
+          status: 'SUCCESS',
+        },
+        _sum: { amount: true },
+      }),
+      // Pending bookings (all time)
+      prisma.booking.count({
+        where: { salonId, status: 'PENDING' },
+      }),
+      // Completed bookings (all time)
+      prisma.booking.count({
+        where: { salonId, status: 'COMPLETED' },
+      }),
+      // Weekly bookings count
+      prisma.booking.count({
+        where: {
+          salonId,
+          createdAt: { gte: weekAgo },
+          status: { not: 'CANCELLED' },
+        },
+      }),
+      // Weekly revenue
+      prisma.payment.aggregate({
+        where: {
+          booking: { salonId },
+          status: 'SUCCESS',
+          createdAt: { gte: weekAgo },
+        },
+        _sum: { amount: true },
+      }),
+      // New customers in the last week
+      prisma.booking.groupBy({
+        by: ['customerId'],
+        where: {
+          salonId,
+          createdAt: { gte: weekAgo },
+        },
+      }),
+      // Average rating
+      prisma.review.aggregate({
+        where: { salonId },
+        _avg: { rating: true },
+      }),
+    ]);
+
+    successResponse(res, {
+      todayBookings,
+      todayRevenue: todayRevenue._sum.amount || 0,
+      pendingBookings,
+      completedBookings,
+      weeklyBookings,
+      weeklyRevenue: weeklyRevenue._sum.amount || 0,
+      newCustomers: newCustomers.length,
+      averageRating: averageRating._avg.rating || 0,
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Reviews Management
+export async function getSalonReviews(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { salonId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    if (!await verifySalonOwnership(salonId, req.user.id)) {
+      errorResponse(res, 'FORBIDDEN', 'You do not own this salon', 403);
+      return;
+    }
+
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { salonId },
+        include: {
+          customer: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+          booking: {
+            select: { id: true, service: { select: { name: true } } },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.review.count({ where: { salonId } }),
+    ]);
+
+    successResponse(res, { reviews, pagination: { page, limit, total } });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function replyToReview(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { salonId, reviewId } = req.params;
+    const data = replyToReviewSchema.parse(req.body);
+
+    if (!await verifySalonOwnership(salonId, req.user.id)) {
+      errorResponse(res, 'FORBIDDEN', 'You do not own this salon', 403);
+      return;
+    }
+
+    // Verify the review belongs to this salon
+    const review = await prisma.review.findFirst({
+      where: { id: reviewId, salonId },
+    });
+
+    if (!review) {
+      errorResponse(res, 'NOT_FOUND', 'Review not found', 404);
+      return;
+    }
+
+    const updatedReview = await prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        salonReply: data.reply,
+        salonRepliedAt: new Date(),
+      },
+    });
+
+    successResponse(res, updatedReview);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
   }
 }

@@ -3,6 +3,7 @@ import logger from '../config/logger';
 import redis from '../config/redis';
 import { BookingStatus, PaymentStatus } from '@prisma/client';
 import * as smsService from './sms.service';
+import * as emailService from './email.service';
 import Redlock from 'redlock';
 import { bookingConfig } from '../config/booking';
 import { emitSlotUpdated, emitBookingConfirmed, emitBookingCancelled } from '../config/socket';
@@ -150,6 +151,12 @@ export async function createBooking(customerId: string, data: CreateBookingData)
               businessName: true,
               address: true,
               phoneNumber: true,
+              owner: {
+                select: {
+                  id: true,
+                  email: true,
+                },
+              },
             },
           },
           service: true,
@@ -158,6 +165,15 @@ export async function createBooking(customerId: string, data: CreateBookingData)
               id: true,
               fullName: true,
               avatar: true,
+            },
+          },
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phoneNumber: true,
             },
           },
         },
@@ -177,27 +193,66 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     });
 
     // Send confirmation SMS to customer
-    const customer = await prisma.user.findUnique({
-      where: { id: customerId },
-      select: { phoneNumber: true },
-    });
-
-    if (customer && customer.phoneNumber) {
-      await smsService.sendBookingConfirmation(
-        customer.phoneNumber,
+    if (booking.customer.phoneNumber) {
+      smsService.sendBookingConfirmation(
+        booking.customer.phoneNumber,
         booking.id,
         booking.salon.businessName,
         date,
         startTime
-      );
+      ).catch((err) => logger.error('Failed to send booking confirmation SMS', { err }));
 
       // Schedule 2-hour reminder
-      await smsService.scheduleBookingReminder(
-        customer.phoneNumber,
+      smsService.scheduleBookingReminder(
+        booking.customer.phoneNumber,
         booking.salon.businessName,
         date,
         startTime
-      );
+      ).catch((err) => logger.error('Failed to schedule booking reminder SMS', { err }));
+    }
+
+    // Send booking confirmation emails (fire-and-forget)
+    const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
+    
+    // Send to customer
+    if (booking.customer.email) {
+      emailService.sendBookingConfirmationEmail(
+        booking.customer.email,
+        {
+          customerName: customerFullName,
+          bookingReference: booking.id,
+          salonName: booking.salon.businessName,
+          salonAddress: booking.salon.address,
+          salonPhone: booking.salon.phoneNumber || undefined,
+          serviceName: booking.service.name,
+          workerName: booking.worker?.fullName || undefined,
+          date: date.toISOString(),
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          totalAmount: Number(booking.totalAmount),
+          finalAmount: Number(booking.finalAmount),
+          customerNotes: customerNotes || undefined,
+        }
+      ).catch((err) => logger.error('Failed to send booking confirmation email to customer', { err }));
+    }
+
+    // Send to salon owner
+    if (booking.salon.owner?.email) {
+      emailService.sendNewBookingNotificationEmail(
+        booking.salon.owner.email,
+        {
+          customerName: customerFullName,
+          bookingReference: booking.id,
+          serviceName: booking.service.name,
+          workerName: booking.worker?.fullName || undefined,
+          date: date.toISOString(),
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          finalAmount: Number(booking.finalAmount),
+          customerPhone: booking.customer.phoneNumber || undefined,
+          customerNotes: customerNotes || undefined,
+        }
+      ).catch((err) => logger.error('Failed to send new booking notification email to salon owner', { err }));
     }
 
     return booking;

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, Calendar, Users, Scissors, Star, Settings, 
-  Menu, X, Bell, LogOut, ListOrdered, Check, BellOff
+  Menu, X, Bell, LogOut, ListOrdered, Check, BellOff, AlertCircle
 } from 'lucide-react'
 import { useSalon } from '../store/SalonContext';
 import { useNotificationStore, Notification } from '../store/notifications';
@@ -73,7 +73,7 @@ interface LayoutProps {
 export default function Layout({ children, activeTab }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
-  const { salon } = useSalon();
+  const { salon, hasSalon } = useSalon();
   const { 
     notifications, 
     unreadCount, 
@@ -116,8 +116,11 @@ export default function Layout({ children, activeTab }: LayoutProps) {
     };
   }, [isDropdownOpen, closeDropdown]);
 
-  const salonName = salon?.businessName || 'My Salon';
-  const initials = salonName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const salonName = salon?.businessName || (hasSalon === false ? 'Setup Required' : 'My Salon');
+  const initials = salon?.businessName 
+    ? salon.businessName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '??';
+  const needsSetup = hasSalon === false;
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -175,15 +178,24 @@ export default function Layout({ children, activeTab }: LayoutProps) {
 
         {/* Salon Info & Logout */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-[#151525]">
+          {needsSetup && (
+            <Link
+              to="/settings"
+              className="flex items-center gap-2 px-3 py-2 mb-3 bg-ghana-gold/20 rounded-lg border border-ghana-gold/30 text-ghana-gold text-sm hover:bg-ghana-gold/30 transition-colors"
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Complete salon setup</span>
+            </Link>
+          )}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-ghana-gold/20 rounded-full flex items-center justify-center border border-ghana-gold/30">
-              <span className="text-ghana-gold font-semibold text-sm">{initials}</span>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${needsSetup ? 'bg-ghana-gold/20 border-ghana-gold/30' : 'bg-ghana-gold/20 border-ghana-gold/30'}`}>
+              <span className={`font-semibold text-sm ${needsSetup ? 'text-ghana-gold' : 'text-ghana-gold'}`}>{initials}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium text-white text-sm truncate">{salonName}</div>
-              <div className="text-xs text-gray-400">Salon Partner</div>
+              <div className="text-xs text-gray-400">{needsSetup ? 'Setup in progress' : 'Salon Partner'}</div>
             </div>
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <div className={`w-2 h-2 rounded-full ${needsSetup ? 'bg-ghana-gold' : 'bg-green-500'}`}></div>
           </div>
           <button 
             onClick={handleLogout}

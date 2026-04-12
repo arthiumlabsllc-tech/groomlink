@@ -3,6 +3,7 @@ import logger from '../config/logger';
 import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import axios from 'axios';
 import crypto from 'crypto';
+import * as emailService from './email.service';
 
 export interface InitializePaymentData {
   bookingId: string;
@@ -439,7 +440,38 @@ export async function initializePayment(
 export async function verifyAndCompletePayment(paymentId: string, reference: string): Promise<PaymentResult> {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
-    include: { booking: true },
+    include: {
+      booking: {
+        include: {
+          salon: {
+            select: {
+              id: true,
+              businessName: true,
+              owner: {
+                select: {
+                  id: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!payment) {
@@ -479,11 +511,13 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
   }
 
   if (isSuccess) {
+    const completedAt = new Date();
+    
     await prisma.payment.update({
       where: { id: paymentId },
       data: {
         status: PaymentStatus.SUCCESS,
-        completedAt: new Date(),
+        completedAt,
       },
     });
 
@@ -494,6 +528,51 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     });
 
     logger.info(`Payment completed: ${paymentId}`);
+
+    // Send payment receipt emails (fire-and-forget)
+    const booking = payment.booking;
+    const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
+    const paymentMethod = payment.provider.replace(/_/g, ' ');
+    const formattedDate = new Date(booking.date).toLocaleDateString('en-GB');
+
+    // Send to customer
+    if (booking.customer.email) {
+      emailService.sendPaymentReceiptEmail(
+        booking.customer.email,
+        {
+          customerName: customerFullName,
+          bookingReference: booking.id,
+          paymentReference: payment.providerRef || undefined,
+          salonName: booking.salon.businessName,
+          serviceName: booking.service.name,
+          date: booking.date.toISOString(),
+          startTime: booking.startTime,
+          amount: Number(payment.amount),
+          currency: payment.currency,
+          paymentMethod,
+          paidAt: completedAt.toISOString(),
+        }
+      ).catch((err) => logger.error('Failed to send payment receipt email to customer', { err }));
+    }
+
+    // Send to salon owner
+    if (booking.salon.owner?.email) {
+      emailService.sendPaymentReceivedNotificationEmail(
+        booking.salon.owner.email,
+        {
+          customerName: customerFullName,
+          bookingReference: booking.id,
+          paymentReference: payment.providerRef || undefined,
+          serviceName: booking.service.name,
+          date: booking.date.toISOString(),
+          startTime: booking.startTime,
+          amount: Number(payment.amount),
+          currency: payment.currency,
+          paymentMethod,
+          paidAt: completedAt.toISOString(),
+        }
+      ).catch((err) => logger.error('Failed to send payment received notification email to salon owner', { err }));
+    }
     
     return { success: true, reference, message: 'Payment verified successfully.' };
   } else {
@@ -634,15 +713,49 @@ export async function handlePaystackWebhook(
       case 'charge.success': {
         const payment = await prisma.payment.findFirst({
           where: { providerRef: data.reference },
+          include: {
+            booking: {
+              include: {
+                salon: {
+                  select: {
+                    id: true,
+                    businessName: true,
+                    owner: {
+                      select: {
+                        id: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                customer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (payment) {
+          const completedAt = new Date();
+          
           // Update payment status
           await prisma.payment.update({
             where: { id: payment.id },
             data: {
               status: PaymentStatus.SUCCESS,
-              completedAt: new Date(),
+              completedAt,
               providerData: data,
             },
           });
@@ -654,6 +767,50 @@ export async function handlePaystackWebhook(
           });
 
           logger.info(`Payment completed via webhook: ${payment.id}`);
+
+          // Send payment receipt emails (fire-and-forget)
+          const booking = payment.booking;
+          const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
+          const paymentMethod = payment.provider.replace(/_/g, ' ');
+
+          // Send to customer
+          if (booking.customer.email) {
+            emailService.sendPaymentReceiptEmail(
+              booking.customer.email,
+              {
+                customerName: customerFullName,
+                bookingReference: booking.id,
+                paymentReference: payment.providerRef || undefined,
+                salonName: booking.salon.businessName,
+                serviceName: booking.service.name,
+                date: booking.date.toISOString(),
+                startTime: booking.startTime,
+                amount: Number(payment.amount),
+                currency: payment.currency,
+                paymentMethod,
+                paidAt: completedAt.toISOString(),
+              }
+            ).catch((err) => logger.error('Failed to send payment receipt email to customer', { err }));
+          }
+
+          // Send to salon owner
+          if (booking.salon.owner?.email) {
+            emailService.sendPaymentReceivedNotificationEmail(
+              booking.salon.owner.email,
+              {
+                customerName: customerFullName,
+                bookingReference: booking.id,
+                paymentReference: payment.providerRef || undefined,
+                serviceName: booking.service.name,
+                date: booking.date.toISOString(),
+                startTime: booking.startTime,
+                amount: Number(payment.amount),
+                currency: payment.currency,
+                paymentMethod,
+                paidAt: completedAt.toISOString(),
+              }
+            ).catch((err) => logger.error('Failed to send payment received notification email to salon owner', { err }));
+          }
         }
         break;
       }

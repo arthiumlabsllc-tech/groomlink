@@ -357,8 +357,11 @@ export interface EmailOTPVerifyResponse {
 
 /**
  * Verify email OTP and login/register user
+ * @param email - User's email address
+ * @param code - OTP code
+ * @param requestedRole - Optional role to assign to new users (defaults to CUSTOMER)
  */
-export async function verifyEmailOTPAndLogin(email: string, code: string): Promise<EmailOTPVerifyResponse | null> {
+export async function verifyEmailOTPAndLogin(email: string, code: string, requestedRole?: UserRole): Promise<EmailOTPVerifyResponse | null> {
   // First verify the OTP
   const isValid = await verifyEmailOTP(email, code);
   if (!isValid) {
@@ -370,13 +373,16 @@ export async function verifyEmailOTPAndLogin(email: string, code: string): Promi
     where: { email },
   });
 
+  // Determine the role for new users - use requested role or default to CUSTOMER
+  const newUserRole = requestedRole || UserRole.CUSTOMER;
+
   if (!user) {
     // User doesn't exist - they need to register
-    // Return a temporary verification token for registration
+    // Return a temporary verification token for registration with the requested role
     const tempToken = generateToken({
       userId: 'pending',
       phoneNumber: email, // Use email as identifier for pending users
-      role: UserRole.CUSTOMER,
+      role: newUserRole,
     });
     
     return {
@@ -386,7 +392,7 @@ export async function verifyEmailOTPAndLogin(email: string, code: string): Promi
         firstName: '',
         lastName: '',
         email,
-        role: UserRole.CUSTOMER,
+        role: newUserRole,
         isVerified: true,
       },
       tokens: {

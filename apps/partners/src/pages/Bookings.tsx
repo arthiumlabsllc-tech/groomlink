@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Search, Calendar, Clock, User, Filter } from 'lucide-react'
+import { Search, Calendar, Clock, User, Filter, Store, ArrowRightCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, Booking } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -7,7 +8,7 @@ import { useSalon } from '../store/SalonContext'
 type TabFilter = 'all' | 'upcoming' | 'completed' | 'cancelled'
 
 export default function Bookings() {
-  const { salonId, loading: salonLoading } = useSalon()
+  const { salonId, loading: salonLoading, hasSalon } = useSalon()
   const [activeTab, setActiveTab] = useState<TabFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -63,6 +64,29 @@ export default function Bookings() {
 
   return (
     <Layout activeTab="bookings">
+      {/* No Salon Setup Warning */}
+      {hasSalon === false && !loading && (
+        <div className="card text-center py-12 mb-6">
+          <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Store className="w-10 h-10 text-ghana-gold" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Set up your salon first</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            You need to create your salon profile before you can manage bookings.
+          </p>
+          <Link 
+            to="/settings" 
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            Create Salon Profile
+            <ArrowRightCircle className="w-5 h-5" />
+          </Link>
+        </div>
+      )}
+
+      {/* Normal Bookings UI - only show if hasSalon is true */}
+      {(hasSalon === true || hasSalon === null) && (
+        <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
         <p className="text-gray-500">Manage your salon appointments</p>
@@ -162,6 +186,8 @@ export default function Bookings() {
               : 'You don\'t have any bookings yet. Bookings will appear here when customers make appointments.'}
           </p>
         </div>
+      )}
+        </>
       )}
     </Layout>
   )

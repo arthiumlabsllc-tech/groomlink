@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { 
   Users, Clock, CheckCircle, SkipForward, Play, Volume2,
-  RefreshCw, AlertCircle
+  RefreshCw, AlertCircle, Store, ArrowRightCircle
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, QueueEntry, QueueStatus } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
 export default function Queue() {
-  const { salonId, loading: salonLoading } = useSalon()
+  const { salonId, loading: salonLoading, hasSalon } = useSalon()
   const [queueData, setQueueData] = useState<QueueStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -122,9 +123,22 @@ export default function Queue() {
           <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-gray-500 mt-4">Loading queue...</p>
         </div>
-      ) : !salonId ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No salon found. Please contact support.</p>
+      ) : hasSalon === false ? (
+        <div className="card text-center py-12">
+          <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Store className="w-10 h-10 text-ghana-gold" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Set up your salon first</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            You need to create your salon profile before you can manage your queue.
+          </p>
+          <Link 
+            to="/settings" 
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            Create Salon Profile
+            <ArrowRightCircle className="w-5 h-5" />
+          </Link>
         </div>
       ) : (
         <>

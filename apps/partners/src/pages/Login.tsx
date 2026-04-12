@@ -38,7 +38,8 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const response = await api.verifyEmailOTP(formData.email, formData.otp)
+      // Pass SALON_OWNER role for partners app login
+      const response = await api.verifyEmailOTP(formData.email, formData.otp, 'SALON_OWNER')
       if (response.success) {
         navigate('/')
       }

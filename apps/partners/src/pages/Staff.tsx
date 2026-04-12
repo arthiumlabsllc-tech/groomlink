@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Users, Plus, Phone, Mail, MoreVertical } from 'lucide-react'
+import { Users, Plus, Phone, Mail, MoreVertical, Store, ArrowRightCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, Worker } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 import AddStaffModal from '../components/AddStaffModal'
 
 export default function Staff() {
-  const { salonId, loading: salonLoading } = useSalon()
+  const { salonId, loading: salonLoading, hasSalon } = useSalon()
   const [staff, setStaff] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -36,6 +37,29 @@ export default function Staff() {
 
   return (
     <Layout activeTab="staff">
+      {/* No Salon Setup Warning */}
+      {hasSalon === false && !loading && (
+        <div className="card text-center py-12 mb-6">
+          <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Store className="w-10 h-10 text-ghana-gold" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Set up your salon first</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            You need to create your salon profile before you can add staff members.
+          </p>
+          <Link 
+            to="/settings" 
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            Create Salon Profile
+            <ArrowRightCircle className="w-5 h-5" />
+          </Link>
+        </div>
+      )}
+
+      {/* Normal Staff UI - only show if hasSalon is true */}
+      {(hasSalon === true || hasSalon === null) && (
+        <>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Staff Members</h1>
@@ -137,6 +161,8 @@ export default function Staff() {
             Add Your First Team Member
           </button>
         </div>
+      )}
+        </>
       )}
 
       <AddStaffModal 

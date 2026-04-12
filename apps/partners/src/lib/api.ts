@@ -184,10 +184,22 @@ class ApiClient {
         const error = await response.json().catch(() => ({ message: 'An error occurred' }));
         console.error(`API Error [${response.status}]:`, error);
 
-        // If 401, clear the token as it's invalid
+        // Only clear token on 401 from authentication-related endpoints
+        // A 401 from auth endpoints means the token is invalid/expired
+        // A 401 from other endpoints might mean different things
+        // A 403 (Forbidden) should NOT clear the token - user is authenticated but lacks permissions
         if (response.status === 401) {
-          this.setToken(null);
+          const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint === '/users/profile';
+          if (isAuthEndpoint) {
+            console.log('401 from auth endpoint - clearing token');
+            this.setToken(null);
+          } else {
+            // For non-auth endpoints, 401 might indicate token expiry
+            // But we should let the calling code handle it
+            console.log('401 from non-auth endpoint:', endpoint);
+          }
         }
+        // Note: 403 errors should NOT clear the token - user is authenticated but doesn't have permission
 
         throw new Error(error.message || 'Request failed');
       }
@@ -222,10 +234,10 @@ class ApiClient {
     });
   }
 
-  async verifyEmailOTP(email: string, code: string) {
+  async verifyEmailOTP(email: string, code: string, role?: 'CUSTOMER' | 'SALON_OWNER') {
     const response = await this.request<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: { id: string; role: string; firstName: string; lastName: string }; isNewUser: boolean } }>('/auth/otp/email/verify', {
       method: 'POST',
-      body: JSON.stringify({ email, code }),
+      body: JSON.stringify({ email, code, role: role || 'SALON_OWNER' }),
     });
     if (response.success && response.data.tokens?.accessToken) {
       this.setToken(response.data.tokens.accessToken);
@@ -240,6 +252,27 @@ class ApiClient {
   }
 
   // Salon
+  async createSalon(data: {
+    businessName: string;
+    type: string;
+    phoneNumber: string;
+    address: string;
+    city: string;
+    region: string;
+    latitude: number;
+    longitude: number;
+    openingTime: string;
+    closingTime: string;
+    workingDays: string[];
+    description?: string;
+    email?: string;
+  }) {
+    return this.request<{ success: boolean; data: Salon }>('/salons', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getMySalon() {
     try {
       // The backend returns paginated results from /salons/my/list
@@ -314,30 +347,31 @@ class ApiClient {
 
   // Bookings
   async getBookings(salonId: string, date?: string) {
-    const params = new URLSearchParams({ salonId });
+    const params = new URLSearchParams();
     if (date) params.append('date', date);
-    return this.request<{ success: boolean; data: Booking[] }>(`/bookings?${params}`);
+    const query = params.toString() ? `?${params}` : '';
+    return this.request<{ success: boolean; data: Booking[] }>(`/bookings/salon/${salonId}${query}`);
   }
 
-  async updateBookingStatus(id: string, status: string) {
-    return this.request<{ success: boolean; data: Booking }>(`/bookings/${id}/status`, {
+  async updateBookingStatus(salonId: string, bookingId: string, status: string) {
+    return this.request<{ success: boolean; data: Booking }>(`/salon-owner/${salonId}/bookings/${bookingId}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
   }
 
   // Dashboard
-  async getDashboardStats() {
-    return this.request<{ success: boolean; data: DashboardStats }>('/dashboard/stats');
+  async getDashboardStats(salonId: string) {
+    return this.request<{ success: boolean; data: DashboardStats }>(`/salon-owner/${salonId}/dashboard-stats`);
   }
 
   // Reviews
   async getReviews(salonId: string) {
-    return this.request<{ success: boolean; data: { reviews: { id: string; rating: number; comment: string; customer: { firstName: string }; createdAt: string }[] } }>(`/reviews?salonId=${salonId}`);
+    return this.request<{ success: boolean; data: { reviews: { id: string; rating: number; comment: string; customer: { firstName: string; lastName?: string }; createdAt: string }[] } }>(`/salon-owner/${salonId}/reviews`);
   }
 
-  async replyToReview(reviewId: string, reply: string) {
-    return this.request<{ success: boolean }>(`/reviews/${reviewId}/reply`, {
+  async replyToReview(salonId: string, reviewId: string, reply: string) {
+    return this.request<{ success: boolean }>(`/salon-owner/${salonId}/reviews/${reviewId}/reply`, {
       method: 'POST',
       body: JSON.stringify({ reply }),
     });

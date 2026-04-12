@@ -35,6 +35,7 @@ const emailSchema = z.object({
 const verifyEmailOTPSchema = z.object({
   email: z.string().email('Invalid email format'),
   code: z.string().length(6, 'OTP must be 6 digits'),
+  role: z.enum(['CUSTOMER', 'SALON_OWNER']).optional(),
 });
 
 const completeRegistrationSchema = z.object({
@@ -155,8 +156,8 @@ export async function requestEmailOTP(req: Request, res: Response): Promise<void
 
 export async function verifyEmailOTP(req: Request, res: Response): Promise<void> {
   try {
-    const { email, code } = verifyEmailOTPSchema.parse(req.body);
-    const result = await authService.verifyEmailOTPAndLogin(email, code);
+    const { email, code, role } = verifyEmailOTPSchema.parse(req.body);
+    const result = await authService.verifyEmailOTPAndLogin(email, code, role);
     
     if (result) {
       successResponse(res, result);

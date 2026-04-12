@@ -12,6 +12,7 @@ interface SalonContextType {
   salonId: string | null
   loading: boolean
   error: string | null
+  hasSalon: boolean | null // null = still loading, true = has salon, false = no salon (new partner)
   refetch: () => Promise<void>
 }
 
@@ -23,6 +24,7 @@ export function SalonProvider({ children }: { children: ReactNode }) {
   const [salon, setSalon] = useState<Salon | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasSalon, setHasSalon] = useState<boolean | null>(null) // null = unknown/loading
 
   const fetchSalon = async () => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -43,27 +45,65 @@ export function SalonProvider({ children }: { children: ReactNode }) {
           if (userResponse.success) {
             console.log('Current user role:', userResponse.data.role)
             if (userResponse.data.role !== 'SALON_OWNER') {
+              // This is a real error - user has wrong role
               setError(`Access denied: Your account role is '${userResponse.data.role}'. Partners dashboard requires SALON_OWNER role. Please contact support.`)
-              return // Don't proceed to fetch salon
+              setHasSalon(false)
+              return
             }
           }
         } catch (userErr: any) {
           console.error('Failed to get user info:', userErr)
-          // If it's an authentication error (401), don't proceed
+          // If it's an authentication error (401), that's a real auth problem
           const errorMessage = userErr?.message || ''
           if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Authentication')) {
             setError('Authentication failed. Please log in again.')
+            setHasSalon(false)
             return
           }
-          // For other errors, continue to try fetching salon
+          // For other errors (network, etc.), continue to try fetching salon
         }
 
-        const response = await api.getMySalon()
-        if (response.success && response.data) {
-          setSalon(response.data)
-        } else {
-          console.warn('No salon found for this user')
-          setError('No salon found. Please create a salon first or contact support.')
+        // Try to fetch the salon
+        try {
+          const response = await api.getMySalon()
+          if (response.success && response.data) {
+            // User has a salon - this is the normal case for existing partners
+            setSalon(response.data)
+            setHasSalon(true)
+            setError(null)
+          } else {
+            // No salon found - this is a VALID state for new partners!
+            console.log('No salon found for this user - new partner without salon')
+            setSalon(null)
+            setHasSalon(false)
+            setError(null) // NOT an error - just means they need to create a salon
+          }
+        } catch (salonErr: any) {
+          // Check if it's a 404 or "not found" type error - that's OK for new partners
+          const errMsg = salonErr?.message || ''
+          if (errMsg.includes('404') || errMsg.includes('Not Found') || errMsg.includes('no salon')) {
+            console.log('No salon found for this user - new partner without salon')
+            setSalon(null)
+            setHasSalon(false)
+            setError(null)
+          } else if (errMsg.includes('401') || errMsg.includes('Unauthorized')) {
+            // 401 from salon endpoint - token expired, this is a real auth issue
+            console.error('Auth error fetching salon:', salonErr)
+            setError('Authentication failed. Please log in again.')
+            setHasSalon(false)
+          } else if (errMsg.includes('403') || errMsg.includes('Forbidden')) {
+            // 403 - user is authenticated but may not have permissions yet
+            // This could happen for new SALON_OWNER users who haven't created their salon
+            console.log('Permission issue - may be new partner without salon')
+            setSalon(null)
+            setHasSalon(false)
+            setError(null) // Not an error - just needs to create salon
+          } else {
+            // Other errors (network, etc.) - set a retryable error but don't clear token
+            console.error('Network/server error fetching salon:', salonErr)
+            setError('Unable to load salon data. Please check your connection and try again.')
+            setHasSalon(null) // Unknown state - retry might help
+          }
         }
       }
 
@@ -73,11 +113,13 @@ export function SalonProvider({ children }: { children: ReactNode }) {
       console.error('Failed to fetch salon:', err)
       const errorMessage = (err as Error).message || 'Failed to fetch salon'
       
-      // Check if it's an authentication error
+      // Only set auth errors - network/timeout errors are retryable
       if (errorMessage.includes('token') || errorMessage.includes('UNAUTHORIZED') || errorMessage.includes('Authentication')) {
         setError('Authentication failed. Please log in again.')
+        setHasSalon(false)
       } else {
         setError(errorMessage)
+        setHasSalon(null) // Unknown state
       }
     } finally {
       if (timeoutId) clearTimeout(timeoutId)
@@ -95,6 +137,7 @@ export function SalonProvider({ children }: { children: ReactNode }) {
       salonId: salon?.id || null, 
       loading, 
       error,
+      hasSalon,
       refetch: fetchSalon 
     }}>
       {children}
