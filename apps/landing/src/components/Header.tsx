@@ -1,5 +1,5 @@
-import { Menu, X, Scissors } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Menu, X, Scissors, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 
 const API_BASE_URL = 'https://groomlinkgh.com/api'
@@ -29,6 +29,19 @@ const DEFAULT_SETTINGS: SiteSettings = {
 export default function Header({ scrolled }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS)
+  const [loginDropdownOpen, setLoginDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setLoginDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     const fetchSiteSettings = async () => {
@@ -106,16 +119,54 @@ export default function Header({ scrolled }: HeaderProps) {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link 
-              to="/login" 
-              className={`font-medium px-4 py-2 rounded-lg border-2 transition-all ${
-                scrolled 
-                  ? 'text-ghana-green border-ghana-green hover:bg-ghana-green hover:text-white' 
-                  : 'text-white border-white/50 hover:border-white hover:bg-white/10'
-              }`}
-            >
-              Sign In
-            </Link>
+            {/* Login Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setLoginDropdownOpen(!loginDropdownOpen)}
+                className={`font-medium px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-1 ${
+                  scrolled 
+                    ? 'text-ghana-green border-ghana-green hover:bg-ghana-green hover:text-white' 
+                    : 'text-white border-white/50 hover:border-white hover:bg-white/10'
+                }`}
+              >
+                Sign In
+                <ChevronDown className={`w-4 h-4 transition-transform ${loginDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {loginDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                  <a
+                    href="https://my.groomlinkgh.com/login"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    onClick={() => setLoginDropdownOpen(false)}
+                  >
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Customer</div>
+                      <div className="text-xs text-gray-500">Book salon services</div>
+                    </div>
+                  </a>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <a
+                    href="https://partners.groomlinkgh.com/login"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    onClick={() => setLoginDropdownOpen(false)}
+                  >
+                    <div className="w-10 h-10 bg-ghana-green/10 rounded-full flex items-center justify-center">
+                      <Scissors className="w-5 h-5 text-ghana-green" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Salon Owner</div>
+                      <div className="text-xs text-gray-500">Manage your salon</div>
+                    </div>
+                  </a>
+                </div>
+              )}
+            </div>
             <Link 
               to="/register" 
               className="bg-ghana-green hover:bg-ghana-green/90 text-white font-medium px-5 py-2 rounded-lg transition-all shadow-sm hover:shadow-md"
@@ -155,13 +206,33 @@ export default function Header({ scrolled }: HeaderProps) {
               </a>
             ))}
             <hr className="border-gray-100" />
-            <Link 
-              to="/login" 
-              className="block text-center text-ghana-green font-medium py-2 border-2 border-ghana-green rounded-lg hover:bg-ghana-green hover:text-white transition-all"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign In
-            </Link>
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-500 uppercase">Sign in as:</div>
+              <a
+                href="https://my.groomlinkgh.com/login"
+                className="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <div>
+                  <div className="font-medium">Customer</div>
+                  <div className="text-xs opacity-75">Book salon services</div>
+                </div>
+              </a>
+              <a
+                href="https://partners.groomlinkgh.com/login"
+                className="flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Scissors className="w-5 h-5" />
+                <div>
+                  <div className="font-medium">Salon Owner</div>
+                  <div className="text-xs opacity-75">Manage your salon</div>
+                </div>
+              </a>
+            </div>
             <Link 
               to="/register" 
               className="block text-center bg-ghana-green text-white font-medium py-3 rounded-lg hover:bg-ghana-green/90 transition-all"

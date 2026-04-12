@@ -273,7 +273,8 @@ export default function Register() {
             email: formData.email.toLowerCase().trim(),
             phoneNumber: formattedPhone,
             firstName: formData.firstName,
-            lastName: formData.lastName
+            lastName: formData.lastName,
+            role: userType === 'salon-owner' ? 'SALON_OWNER' : 'CUSTOMER'
           })
         })
 
