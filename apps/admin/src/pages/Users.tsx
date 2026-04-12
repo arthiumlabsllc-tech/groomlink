@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { 
   Search, Ban, Eye, Phone, Calendar, Loader2, CheckCircle, LogIn, Users as UsersIcon,
   Plus, X, Mail, MapPin, Shield, AlertTriangle, CreditCard, Clock, Activity,
-  UserCheck, UserX, AlertCircle
+  UserCheck, UserX, AlertCircle, Trash2
 } from 'lucide-react';
 import { 
   useUsers, useBlockUser, useUnblockUser, useCreateCustomer, 
-  useUserDetails, useUserActivities, useBanUser, useUnbanUser 
+  useUserDetails, useUserActivities, useBanUser, useUnbanUser, useDeleteUser
 } from '../hooks';
 import { formatDate, formatPhoneNumber, formatCurrency } from '../lib/utils';
 import api from '../api/client';
@@ -55,7 +55,9 @@ export function Users() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showBanModal, setShowBanModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; firstName: string | null; lastName: string | null; email: string | null; role: string } | null>(null);
   const [banReason, setBanReason] = useState('');
   const [formData, setFormData] = useState<CreateCustomerFormData>(initialFormData);
   const [activeTab, setActiveTab] = useState<DetailTab>('profile');
@@ -66,6 +68,7 @@ export function Users() {
   const createCustomer = useCreateCustomer();
   const banUserMutation = useBanUser();
   const unbanUserMutation = useUnbanUser();
+  const deleteUserMutation = useDeleteUser();
   const { data: userDetails, isLoading: detailsLoading } = useUserDetails(selectedUserId || '');
   const { data: userActivities, isLoading: activitiesLoading } = useUserActivities(selectedUserId || '');
 
@@ -162,6 +165,23 @@ export function Users() {
   const openBanModal = (id: string) => {
     setSelectedUserId(id);
     setShowBanModal(true);
+  };
+
+  const openDeleteModal = (user: { id: string; firstName: string | null; lastName: string | null; email: string | null; role: string }) => {
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUserMutation.mutateAsync(userToDelete.id);
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      alert('Failed to delete user. Please try again.');
+    }
   };
 
   const getRoleBadgeStyle = (role: string) => {
@@ -345,6 +365,15 @@ export function Users() {
                   <CheckCircle size={16} />
                 </button>
               )}
+              {user.role !== 'SUPER_ADMIN' && (
+                <button 
+                  onClick={() => openDeleteModal(user)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm"
+                  title="Delete user"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -453,6 +482,15 @@ export function Users() {
                           title="Unban user"
                         >
                           <CheckCircle size={18} />
+                        </button>
+                      )}
+                      {user.role !== 'SUPER_ADMIN' && (
+                        <button 
+                          onClick={() => openDeleteModal(user)}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete user"
+                        >
+                          <Trash2 size={18} />
                         </button>
                       )}
                     </div>
@@ -908,6 +946,49 @@ export function Users() {
                 >
                   {banUserMutation.isPending && <Loader2 className="animate-spin" size={16} />}
                   Ban User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {showDeleteModal && userToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800">Delete User</h2>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="text-red-600" size={24} />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800">
+                    {userToDelete.firstName || 'Unknown'} {userToDelete.lastName || ''}
+                  </p>
+                  <p className="text-sm text-gray-500">{userToDelete.email || '—'}</p>
+                </div>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this user? This action cannot be undone. All associated data including bookings, payments, and salon information will be permanently removed.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => { setShowDeleteModal(false); setUserToDelete(null); }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteUserMutation.isPending}
+                  className="px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {deleteUserMutation.isPending && <Loader2 className="animate-spin" size={16} />}
+                  Delete User
                 </button>
               </div>
             </div>

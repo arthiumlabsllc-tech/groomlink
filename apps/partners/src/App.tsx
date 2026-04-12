@@ -11,6 +11,7 @@ import Settings from './pages/Settings'
 import Queue from './pages/Queue'
 import { SalonProvider } from './store/SalonContext'
 import { api } from './lib/api'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 // Component to handle token from URL
 function TokenHandler({ children }: { children: React.ReactNode }) {
@@ -36,13 +37,41 @@ function App() {
         <TokenHandler>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/queue" element={<Queue />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/staff" element={<Staff />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/reviews" element={<Reviews />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/queue" element={
+              <ProtectedRoute>
+                <Queue />
+              </ProtectedRoute>
+            } />
+            <Route path="/bookings" element={
+              <ProtectedRoute>
+                <Bookings />
+              </ProtectedRoute>
+            } />
+            <Route path="/staff" element={
+              <ProtectedRoute>
+                <Staff />
+              </ProtectedRoute>
+            } />
+            <Route path="/services" element={
+              <ProtectedRoute>
+                <Services />
+              </ProtectedRoute>
+            } />
+            <Route path="/reviews" element={
+              <ProtectedRoute>
+                <Reviews />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </TokenHandler>

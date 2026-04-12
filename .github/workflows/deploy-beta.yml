@@ -42,6 +42,11 @@ jobs:
           CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+          SMTP_HOST=${{ secrets.BETA_SMTP_HOST }}
+          SMTP_PORT=${{ secrets.BETA_SMTP_PORT }}
+          SMTP_USER=${{ secrets.BETA_SMTP_USER }}
+          SMTP_PASSWORD=${{ secrets.BETA_SMTP_PASSWORD }}
+          EMAIL_FROM=${{ secrets.BETA_EMAIL_FROM }}
           ENVFILE
           
           # Deploy

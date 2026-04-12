@@ -76,7 +76,7 @@ export const authApi = {
 
   // Get current user profile
   getProfile: async () => {
-    const response = await apiClient.get('/user/profile');
+    const response = await apiClient.get('/users/profile');
     return response.data;
   },
 

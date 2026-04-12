@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Calendar, Users, Scissors, Star, Settings, 
   Menu, X, Bell, LogOut, ListOrdered
 } from 'lucide-react'
+import { useSalon } from '../store/SalonContext';
 
 interface LayoutProps {
   children: React.ReactNode
@@ -13,6 +14,10 @@ interface LayoutProps {
 export default function Layout({ children, activeTab }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
+  const { salon } = useSalon();
+
+  const salonName = salon?.businessName || 'My Salon';
+  const initials = salonName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -72,11 +77,11 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-[#151525]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-ghana-gold/20 rounded-full flex items-center justify-center border border-ghana-gold/30">
-              <span className="text-ghana-gold font-semibold text-sm">KB</span>
+              <span className="text-ghana-gold font-semibold text-sm">{initials}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-white text-sm truncate">Kofi's Barbershop</div>
-              <div className="text-xs text-gray-400">Pro Plan</div>
+              <div className="font-medium text-white text-sm truncate">{salonName}</div>
+              <div className="text-xs text-gray-400">Salon Partner</div>
             </div>
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
           </div>

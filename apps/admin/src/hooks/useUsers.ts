@@ -98,3 +98,14 @@ export function useSuspiciousActivities(page: number = 1, limit: number = 20) {
     queryFn: () => usersApi.getSuspiciousActivities(page, limit),
   });
 }
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (userId: string) => usersApi.deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [USERS_KEY] });
+    },
+  });
+}

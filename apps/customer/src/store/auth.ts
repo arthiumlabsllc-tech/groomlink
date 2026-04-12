@@ -113,6 +113,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem('customer_user');
     localStorage.removeItem('customer_temp_token');
     set({ token: null, user: null, isAuthenticated: false });
-    window.location.href = 'https://groomlinkgh.com/login';
+    window.location.href = 'https://my.groomlinkgh.com/login';
   },
 }));

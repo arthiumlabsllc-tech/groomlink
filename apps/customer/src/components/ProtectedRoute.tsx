@@ -14,7 +14,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   if (!isAuthenticated) {
     // Redirect to main login page with redirect parameter
     const currentUrl = encodeURIComponent(window.location.href);
-    window.location.href = `https://groomlinkgh.com/login?redirect=${currentUrl}`;
+    window.location.href = `https://my.groomlinkgh.com/login?redirect=${currentUrl}`;
     return null;
   }
   

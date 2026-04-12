@@ -24,11 +24,11 @@ const footerLinks = {
     { name: 'Find a Salon', href: '/register' },
     { name: 'How It Works', href: '#how-it-works' },
     { name: 'Pricing', href: '#pricing' },
-    { name: 'Customer Login', href: '/login' },
+    { name: 'Customer Login', href: 'https://my.groomlinkgh.com/login' },
   ],
   forSalons: [
     { name: 'Partner With Us', href: '/register' },
-    { name: 'Salon Login', href: '/login' },
+    { name: 'Salon Login', href: 'https://partners.groomlinkgh.com/login' },
     { name: 'Success Stories', href: '#' },
     { name: 'Business Resources', href: '#' },
   ],

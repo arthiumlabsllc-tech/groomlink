@@ -1,5 +1,6 @@
 // API Configuration for Partners Dashboard
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://groomlinkgh.com/api';
+// Use relative URL in development (Vite proxy handles it), production URL in production
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://groomlinkgh.com/api');
 
 // Types
 export interface Salon {
@@ -126,6 +127,9 @@ class ApiClient {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -137,24 +141,34 @@ class ApiClient {
       console.warn('No auth token found in localStorage');
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-      console.error(`API Error [${response.status}]:`, error);
-      
-      // If 401, clear the token as it's invalid
-      if (response.status === 401) {
-        this.setToken(null);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+        console.error(`API Error [${response.status}]:`, error);
+
+        // If 401, clear the token as it's invalid
+        if (response.status === 401) {
+          this.setToken(null);
+        }
+
+        throw new Error(error.message || 'Request failed');
       }
-      
-      throw new Error(error.message || 'Request failed');
-    }
 
-    return response.json();
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   // Auth
