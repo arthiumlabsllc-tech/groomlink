@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import SalonDetail from './pages/SalonDetail';
 import BookSalon from './pages/BookSalon';
 import PaymentCallback from './pages/PaymentCallback';
+import NotFound from './pages/NotFound';
 import { useAuthStore } from './store/auth';
 
 function App() {
@@ -97,7 +98,7 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

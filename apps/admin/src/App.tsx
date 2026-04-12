@@ -11,6 +11,7 @@ import { SupportStaff } from './pages/SupportStaff';
 import { AdminManagement } from './pages/AdminManagement';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
+import NotFound from './pages/NotFound';
 import { useAuth } from './hooks';
 import './App.css';
 
@@ -136,6 +137,7 @@ function AppRoutes() {
           } 
         />
       </Route>
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

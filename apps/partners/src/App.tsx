@@ -9,6 +9,7 @@ import Services from './pages/Services'
 import Reviews from './pages/Reviews'
 import Settings from './pages/Settings'
 import Queue from './pages/Queue'
+import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
 import { api } from './lib/api'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -72,7 +73,7 @@ function App() {
                 <Settings />
               </ProtectedRoute>
             } />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </TokenHandler>
       </BrowserRouter>

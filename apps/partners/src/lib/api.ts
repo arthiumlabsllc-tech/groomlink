@@ -31,6 +31,26 @@ export interface Service {
   isActive: boolean;
 }
 
+export interface CreateServicePayload {
+  name: string;
+  description?: string;
+  category: string;
+  duration: number;
+  price: number;
+  discountPrice?: number;
+  image?: string;
+}
+
+export interface UpdateServicePayload {
+  name?: string;
+  description?: string;
+  category?: string;
+  duration?: number;
+  price?: number;
+  discountPrice?: number;
+  image?: string;
+}
+
 export interface Worker {
   id: string;
   fullName: string;
@@ -105,6 +125,18 @@ export interface QueueStatus {
   totalWaiting: number;
   averageWait: number;
   currentlyServing?: QueueEntry;
+}
+
+export type NotificationType = 'BOOKING_CONFIRMED' | 'BOOKING_CANCELLED' | 'BOOKING_REMINDER' | 'BOOKING_COMPLETED' | 'PAYMENT_RECEIVED' | 'REVIEW_REQUEST' | 'PROMOTION' | 'SYSTEM';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data: Record<string, any> | null;
+  isRead: boolean;
+  createdAt: string;
 }
 
 // API Client
@@ -232,50 +264,50 @@ class ApiClient {
 
   // Services
   async getServices(salonId: string) {
-    return this.request<{ success: boolean; data: Service[] }>(`/services?salonId=${salonId}`);
+    return this.request<{ success: boolean; data: Service[] }>(`/salon-owner/${salonId}/services`);
   }
 
-  async createService(data: Partial<Service>) {
-    return this.request<{ success: boolean; data: Service }>('/services', {
+  async createService(salonId: string, data: CreateServicePayload) {
+    return this.request<{ success: boolean; data: Service }>(`/salon-owner/${salonId}/services`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateService(id: string, data: Partial<Service>) {
-    return this.request<{ success: boolean; data: Service }>(`/services/${id}`, {
+  async updateService(salonId: string, serviceId: string, data: UpdateServicePayload) {
+    return this.request<{ success: boolean; data: Service }>(`/salon-owner/${salonId}/services/${serviceId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteService(id: string) {
-    return this.request<{ success: boolean }>(`/services/${id}`, {
+  async deleteService(salonId: string, serviceId: string) {
+    return this.request<{ success: boolean }>(`/salon-owner/${salonId}/services/${serviceId}`, {
       method: 'DELETE',
     });
   }
 
   // Workers
   async getWorkers(salonId: string) {
-    return this.request<{ success: boolean; data: Worker[] }>(`/workers?salonId=${salonId}`);
+    return this.request<{ success: boolean; data: Worker[] }>(`/salon-owner/${salonId}/staff`);
   }
 
-  async createWorker(data: Partial<Worker>) {
-    return this.request<{ success: boolean; data: Worker }>('/workers', {
+  async createWorker(salonId: string, data: Partial<Worker>) {
+    return this.request<{ success: boolean; data: Worker }>(`/salon-owner/${salonId}/staff`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateWorker(id: string, data: Partial<Worker>) {
-    return this.request<{ success: boolean; data: Worker }>(`/workers/${id}`, {
+  async updateWorker(salonId: string, staffId: string, data: Partial<Worker>) {
+    return this.request<{ success: boolean; data: Worker }>(`/salon-owner/${salonId}/staff/${staffId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteWorker(id: string) {
-    return this.request<{ success: boolean }>(`/workers/${id}`, {
+  async deleteWorker(salonId: string, staffId: string) {
+    return this.request<{ success: boolean }>(`/salon-owner/${salonId}/staff/${staffId}`, {
       method: 'DELETE',
     });
   }
@@ -337,6 +369,17 @@ class ApiClient {
   async skipCustomer(queueId: string) {
     return this.request<{ success: boolean; data: QueueEntry }>(`/queue/${queueId}/skip`, {
       method: 'POST',
+    });
+  }
+
+  // Notifications
+  async getNotifications() {
+    return this.request<{ success: boolean; data: { notifications: Notification[]; unreadCount: number } }>('/notifications');
+  }
+
+  async markNotificationAsRead(id: string) {
+    return this.request<{ success: boolean }>(`/notifications/${id}/read`, {
+      method: 'PUT',
     });
   }
 

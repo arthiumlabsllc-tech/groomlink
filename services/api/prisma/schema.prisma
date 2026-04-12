@@ -296,7 +296,7 @@ model Booking {
   
   // Relations
   customerId    String        @map("customer_id")
-  customer      User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  customer      User          @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
   salonId       String        @map("salon_id")
   salon         Salon         @relation(fields: [salonId], references: [id])
   workerId      String?       @map("worker_id")
@@ -334,7 +334,7 @@ model Payment {
   bookingId     String          @unique @map("booking_id")
   booking       Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   userId        String          @map("user_id")
-  user          User            @relation(fields: [userId], references: [id])
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId])
   @@index([status])
@@ -505,8 +505,8 @@ model ImpersonationLog {
   userAgent     String?   @map("user_agent")
   
   // Relations
-  staff         User      @relation("PerformedBy", fields: [staffId], references: [id])
-  targetUser    User      @relation("ImpersonatedBy", fields: [targetUserId], references: [id])
+  staff         User      @relation("PerformedBy", fields: [staffId], references: [id], onDelete: Cascade)
+  targetUser    User      @relation("ImpersonatedBy", fields: [targetUserId], references: [id], onDelete: Cascade)
   
   @@index([staffId])
   @@index([targetUserId])
@@ -560,7 +560,7 @@ model SalonQueue {
   salonId       String      @map("salon_id")
   salon         Salon       @relation(fields: [salonId], references: [id])
   customerId    String      @map("customer_id")
-  customer      User        @relation(fields: [customerId], references: [id])
+  customer      User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   serviceId     String?     @map("service_id")
   service       Service?    @relation(fields: [serviceId], references: [id])
   workerId      String?     @map("worker_id")

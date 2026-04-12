@@ -3,26 +3,30 @@ import { Users, Plus, Phone, Mail, MoreVertical } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Worker } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
+import AddStaffModal from '../components/AddStaffModal'
 
 export default function Staff() {
   const { salonId, loading: salonLoading } = useSalon()
   const [staff, setStaff] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
+
+  const fetchStaff = async () => {
+    if (!salonId) return
+    try {
+      setLoading(true)
+      const response = await api.getWorkers(salonId)
+      if (response.success) {
+        setStaff(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch staff:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchStaff = async () => {
-      if (!salonId) return
-      try {
-        const response = await api.getWorkers(salonId)
-        if (response.success) {
-          setStaff(response.data)
-        }
-      } catch (error) {
-        console.error('Failed to fetch staff:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchStaff()
   }, [salonId])
 
@@ -37,7 +41,10 @@ export default function Staff() {
           <h1 className="text-2xl font-bold text-gray-900">Staff Members</h1>
           <p className="text-gray-500">Manage your team members</p>
         </div>
-        <button className="btn-primary flex items-center justify-center gap-2">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="btn-primary flex items-center justify-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add Staff
         </button>
@@ -122,12 +129,21 @@ export default function Staff() {
           <p className="text-gray-500 max-w-md mx-auto mb-6">
             Add your first team member to start managing your salon staff and assign them to bookings.
           </p>
-          <button className="btn-primary flex items-center justify-center gap-2 mx-auto">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary flex items-center justify-center gap-2 mx-auto"
+          >
             <Plus className="w-5 h-5" />
             Add Your First Team Member
           </button>
         </div>
       )}
+
+      <AddStaffModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={fetchStaff}
+      />
     </Layout>
   )
 }
