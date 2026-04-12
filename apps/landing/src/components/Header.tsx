@@ -167,12 +167,12 @@ export default function Header({ scrolled }: HeaderProps) {
                 </div>
               )}
             </div>
-            <Link 
-              to="/register" 
+            <a
+              href="https://my.groomlinkgh.com/login"
               className="bg-ghana-green hover:bg-ghana-green/90 text-white font-medium px-5 py-2 rounded-lg transition-all shadow-sm hover:shadow-md"
             >
               Get Started
-            </Link>
+            </a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -233,13 +233,13 @@ export default function Header({ scrolled }: HeaderProps) {
                 </div>
               </a>
             </div>
-            <Link 
-              to="/register" 
+            <a
+              href="https://my.groomlinkgh.com/login"
               className="block text-center bg-ghana-green text-white font-medium py-3 rounded-lg hover:bg-ghana-green/90 transition-all"
               onClick={() => setMobileMenuOpen(false)}
             >
               Get Started
-            </Link>
+            </a>
           </div>
         </div>
       </nav>
