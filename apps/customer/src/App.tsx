@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Explore from './pages/Explore';
 import Bookings from './pages/Bookings';
@@ -58,6 +59,9 @@ function App() {
         }}
       />
       <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+        
         {/* Protected routes */}
         <Route path="/" element={
           <ProtectedRoute>
