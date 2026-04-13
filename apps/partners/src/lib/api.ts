@@ -19,6 +19,9 @@ export interface Salon {
   services: Service[];
   workers: Worker[];
   operatingHours?: Record<string, string>;
+  logo?: string | null;
+  coverImage?: string | null;
+  images?: string[];
 }
 
 export interface Service {
@@ -430,6 +433,50 @@ class ApiClient {
   async markNotificationAsRead(id: string) {
     return this.request<{ success: boolean }>(`/notifications/${id}/read`, {
       method: 'PUT',
+    });
+  }
+
+  // Image Uploads - Using fetch directly for multipart/form-data
+  async uploadSalonLogo(salonId: string, file: File): Promise<{ success: boolean; data: { logo: string } }> {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${this.baseUrl}/uploads/salon/${salonId}/logo`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    return response.json();
+  }
+
+  async uploadSalonCover(salonId: string, file: File): Promise<{ success: boolean; data: { coverImage: string } }> {
+    const formData = new FormData();
+    formData.append('cover', file);
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${this.baseUrl}/uploads/salon/${salonId}/cover`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    return response.json();
+  }
+
+  async uploadSalonGallery(salonId: string, files: File[]): Promise<{ success: boolean; data: { images: string[] } }> {
+    const formData = new FormData();
+    files.forEach(f => formData.append('gallery', f));
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${this.baseUrl}/uploads/salon/${salonId}/gallery`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    return response.json();
+  }
+
+  async deleteGalleryImage(salonId: string, imageUrl: string): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/uploads/salon/${salonId}/gallery`, {
+      method: 'DELETE',
+      body: JSON.stringify({ imageUrl }),
     });
   }
 

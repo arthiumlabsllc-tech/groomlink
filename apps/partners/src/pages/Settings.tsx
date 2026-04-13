@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar } from 'lucide-react'
+import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2 } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Salon } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -87,6 +87,22 @@ export default function Settings() {
     facebook: '',
     businessHours: defaultBusinessHours
   })
+
+  // Image upload state
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([])
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([])
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingGallery, setUploadingGallery] = useState(false)
+  const [deletingImage, setDeletingImage] = useState<string | null>(null)
+
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchSalon = async () => {
@@ -250,10 +266,145 @@ export default function Settings() {
   const updateBusinessHour = (index: number, field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
-      businessHours: prev.businessHours.map((hour, i) => 
+      businessHours: prev.businessHours.map((hour, i) =>
         i === index ? { ...hour, [field]: value } : hour
       )
     }))
+  }
+  
+  // Image upload handlers
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB')
+      return
+    }
+    setLogoFile(file)
+    setLogoPreview(URL.createObjectURL(file))
+    setError(null)
+  }
+  
+  const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB')
+      return
+    }
+    setCoverFile(file)
+    setCoverPreview(URL.createObjectURL(file))
+    setError(null)
+  }
+  
+  const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+      
+    const currentImages = salon?.images?.length || 0
+    const newPreviews = galleryPreviews.length
+    const totalAfterUpload = currentImages + newPreviews + files.length
+      
+    if (totalAfterUpload > 10) {
+      setError(`Maximum 10 gallery images allowed. You currently have ${currentImages} images.`)
+      return
+    }
+      
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Each file must be less than 10MB')
+        return
+      }
+    }
+      
+    setGalleryFiles(prev => [...prev, ...files])
+    const previews = files.map(f => URL.createObjectURL(f))
+    setGalleryPreviews(prev => [...prev, ...previews])
+    setError(null)
+  }
+  
+  const handleUploadLogo = async () => {
+    if (!salon?.id || !logoFile) return
+    setUploadingLogo(true)
+    setError(null)
+    try {
+      const response = await api.uploadSalonLogo(salon.id, logoFile)
+      if (response.success) {
+        setLogoFile(null)
+        setLogoPreview(null)
+        await refetch()
+      } else {
+        setError('Failed to upload logo')
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to upload logo')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+  
+  const handleUploadCover = async () => {
+    if (!salon?.id || !coverFile) return
+    setUploadingCover(true)
+    setError(null)
+    try {
+      const response = await api.uploadSalonCover(salon.id, coverFile)
+      if (response.success) {
+        setCoverFile(null)
+        setCoverPreview(null)
+        await refetch()
+      } else {
+        setError('Failed to upload cover image')
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to upload cover image')
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+  
+  const handleUploadGallery = async () => {
+    if (!salon?.id || galleryFiles.length === 0) return
+    setUploadingGallery(true)
+    setError(null)
+    try {
+      const response = await api.uploadSalonGallery(salon.id, galleryFiles)
+      if (response.success) {
+        setGalleryFiles([])
+        setGalleryPreviews([])
+        await refetch()
+      } else {
+        setError('Failed to upload gallery images')
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to upload gallery images')
+    } finally {
+      setUploadingGallery(false)
+    }
+  }
+  
+  const handleDeleteGalleryImage = async (imageUrl: string) => {
+    if (!salon?.id) return
+    setDeletingImage(imageUrl)
+    setError(null)
+    try {
+      const response = await api.deleteGalleryImage(salon.id, imageUrl)
+      if (response.success) {
+        await refetch()
+      } else {
+        setError('Failed to delete image')
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete image')
+    } finally {
+      setDeletingImage(null)
+    }
+  }
+  
+  const removePendingGalleryImage = (index: number) => {
+    URL.revokeObjectURL(galleryPreviews[index])
+    setGalleryPreviews(prev => prev.filter((_, i) => i !== index))
+    setGalleryFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   if (loading) {
@@ -619,6 +770,257 @@ export default function Settings() {
                 value={formData.region}
                 onChange={(e) => setFormData({ ...formData, region: e.target.value })}
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Images Section */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Image className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Salon Images</h2>
+              <p className="text-sm text-gray-500">Upload your logo, cover photo, and gallery images</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Logo Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+              <div className="flex items-start gap-4">
+                <div className="relative">
+                  <div 
+                    className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    {logoPreview || salon?.logo ? (
+                      <img 
+                        src={logoPreview || salon?.logo || ''} 
+                        alt="Logo" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Camera className="w-8 h-8 text-gray-400" />
+                    )}
+                  </div>
+                  {uploadingLogo && (
+                    <div className="absolute inset-0 bg-white/80 rounded-full flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoSelect}
+                    className="hidden"
+                  />
+                  <p className="text-sm text-gray-600 mb-2">
+                    A square image works best. This will appear as your salon icon.
+                  </p>
+                  <p className="text-xs text-gray-400 mb-3">Max 10MB. JPG, PNG, or WebP.</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Choose File
+                    </button>
+                    {logoFile && (
+                      <button
+                        type="button"
+                        onClick={handleUploadLogo}
+                        disabled={uploadingLogo}
+                        className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {uploadingLogo ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            Upload Logo
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cover Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cover Image</label>
+              <div className="space-y-3">
+                <div 
+                  className="relative h-40 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  {coverPreview || salon?.coverImage ? (
+                    <img 
+                      src={coverPreview || salon?.coverImage || ''} 
+                      alt="Cover" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <Image className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Click to upload cover image</p>
+                    </div>
+                  )}
+                  {uploadingCover && (
+                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-ghana-green" />
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCoverSelect}
+                  className="hidden"
+                />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      A wide image works best for your salon header.
+                    </p>
+                    <p className="text-xs text-gray-400">Max 10MB. JPG, PNG, or WebP.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => coverInputRef.current?.click()}
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Choose File
+                    </button>
+                    {coverFile && (
+                      <button
+                        type="button"
+                        onClick={handleUploadCover}
+                        disabled={uploadingCover}
+                        className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {uploadingCover ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            Upload Cover
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Gallery Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gallery <span className="text-gray-400 font-normal">({salon?.images?.length || 0}/10 images)</span>
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                Show off your salon! Upload up to 10 photos of your space and work.
+              </p>
+              
+              {/* Existing Gallery Images */}
+              {(salon?.images && salon.images.length > 0) && (
+                <div className="grid grid-cols-5 gap-3 mb-3">
+                  {salon.images.map((img, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group">
+                      <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                      {deletingImage === img ? (
+                        <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteGalleryImage(img)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Pending Gallery Images */}
+              {galleryPreviews.length > 0 && (
+                <div className="grid grid-cols-5 gap-3 mb-3">
+                  {galleryPreviews.map((preview, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group border-2 border-ghana-green">
+                      <img src={preview} alt={`Pending ${idx + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-ghana-green/10" />
+                      <button
+                        type="button"
+                        onClick={() => removePendingGalleryImage(idx)}
+                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={handleGallerySelect}
+                className="hidden"
+              />
+              
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  Add Photos
+                </button>
+                {galleryFiles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleUploadGallery}
+                    disabled={uploadingGallery}
+                    className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {uploadingGallery ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading {galleryFiles.length} image{galleryFiles.length > 1 ? 's' : ''}...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload {galleryFiles.length} Image{galleryFiles.length > 1 ? 's' : ''}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

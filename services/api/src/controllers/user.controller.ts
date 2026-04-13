@@ -465,8 +465,55 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
 
     const userId = req.user.id;
 
+    // Check if user owns salons - prevent deletion if they do
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        _count: {
+          select: {
+            salons: true,
+          },
+        },
+      },
+    });
+
+    if (user && user._count.salons > 0) {
+      errorResponse(
+        res,
+        'DELETE_FAILED',
+        `Cannot delete account while you own ${user._count.salons} salon(s). Please transfer or delete your salons first.`,
+        400
+      );
+      return;
+    }
+
     // Start a transaction to delete all user data
     await prisma.$transaction(async (tx: TransactionClient) => {
+      // Delete user's activities first
+      await tx.userActivity.deleteMany({
+        where: { userId },
+      });
+
+      // Delete impersonation logs where user is the staff
+      await tx.impersonationLog.deleteMany({
+        where: { staffId: userId },
+      });
+
+      // Delete impersonation logs where user is the target
+      await tx.impersonationLog.deleteMany({
+        where: { targetUserId: userId },
+      });
+
+      // Delete admin permissions if any
+      await tx.adminPermission.deleteMany({
+        where: { userId },
+      });
+
+      // Delete user's salon queue entries
+      await tx.salonQueue.deleteMany({
+        where: { customerId: userId },
+      });
+
       // Delete user's reviews
       await tx.review.deleteMany({
         where: { customerId: userId },
@@ -484,6 +531,11 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
 
       // Delete user's notifications
       await tx.notification.deleteMany({
+        where: { userId },
+      });
+
+      // Delete user's payments
+      await tx.payment.deleteMany({
         where: { userId },
       });
 
@@ -604,6 +656,15 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
     // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id },
+      include: {
+        _count: {
+          select: {
+            salons: true,
+            bookings: true,
+            payments: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -611,8 +672,47 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
       return;
     }
 
+    // Prevent deletion of users with active salons (business owners)
+    // Their salons should be transferred or deleted first
+    if (user._count.salons > 0 && user.role === 'SALON_OWNER') {
+      errorResponse(
+        res,
+        'DELETE_FAILED',
+        `Cannot delete user who owns ${user._count.salons} salon(s). Please transfer or delete salons first.`,
+        400
+      );
+      return;
+    }
+
     // Start a transaction to delete all user data
+    // Note: Most relations have onDelete: Cascade, but we need to handle
+    // records that might have circular references or need special handling
     await prisma.$transaction(async (tx: TransactionClient) => {
+      // Delete user's activities first (no dependencies)
+      await tx.userActivity.deleteMany({
+        where: { userId: id },
+      });
+
+      // Delete impersonation logs where user is the staff
+      await tx.impersonationLog.deleteMany({
+        where: { staffId: id },
+      });
+
+      // Delete impersonation logs where user is the target
+      await tx.impersonationLog.deleteMany({
+        where: { targetUserId: id },
+      });
+
+      // Delete admin permissions if any
+      await tx.adminPermission.deleteMany({
+        where: { userId: id },
+      });
+
+      // Delete user's salon queue entries
+      await tx.salonQueue.deleteMany({
+        where: { customerId: id },
+      });
+
       // Delete user's reviews
       await tx.review.deleteMany({
         where: { customerId: id },
@@ -633,7 +733,13 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
         where: { userId: id },
       });
 
-      // Anonymize user's bookings
+      // Delete user's payments (these should cascade from user, but we do it explicitly)
+      await tx.payment.deleteMany({
+        where: { userId: id },
+      });
+
+      // Anonymize user's bookings (keep for business records but remove PII)
+      // Note: Bookings will cascade delete when user is deleted, but we anonymize first
       await tx.booking.updateMany({
         where: { customerId: id },
         data: {
@@ -641,7 +747,7 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
         },
       });
 
-      // Delete the user
+      // Delete the user - this will cascade delete remaining relations
       await tx.user.delete({
         where: { id },
       });
