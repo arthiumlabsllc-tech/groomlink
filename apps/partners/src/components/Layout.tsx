@@ -89,9 +89,21 @@ export default function Layout({ children, activeTab }: LayoutProps) {
   const bellRef = useRef<HTMLButtonElement>(null);
 
   // Fetch notifications on mount and start polling
+  // Also listen for auth:login event to restart polling after login
   useEffect(() => {
     const cleanup = startPolling();
-    return cleanup;
+
+    const handleAuthLogin = () => {
+      console.log('Layout: auth:login event received - starting notification polling')
+      cleanup() // Stop any existing polling
+      startPolling() // Start fresh polling
+    }
+    window.addEventListener('auth:login', handleAuthLogin)
+
+    return () => {
+      cleanup()
+      window.removeEventListener('auth:login', handleAuthLogin)
+    }
   }, [startPolling]);
 
   // Close dropdown when clicking outside

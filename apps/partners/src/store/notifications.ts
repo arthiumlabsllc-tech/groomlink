@@ -24,6 +24,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   isDropdownOpen: false,
 
   fetchNotifications: async () => {
+    // Check for token before making API call to prevent race condition
+    if (!api.getToken()) {
+      console.log('Notifications: No auth token found - skipping fetch');
+      return;
+    }
+
     try {
       set({ isLoading: true });
       const response = await api.getNotifications();
@@ -60,12 +66,22 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   startPolling: () => {
+    // Check for token before starting polling
+    if (!api.getToken()) {
+      console.log('Notifications: No auth token found - not starting polling');
+      // Return a no-op cleanup function
+      return () => {};
+    }
+
     // Fetch immediately
     get().fetchNotifications();
-    
+
     // Then poll every 30 seconds
     const intervalId = setInterval(() => {
-      get().fetchNotifications();
+      // Check token on each poll in case user logged out
+      if (api.getToken()) {
+        get().fetchNotifications();
+      }
     }, 30000);
 
     return () => clearInterval(intervalId);

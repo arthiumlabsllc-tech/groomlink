@@ -28,7 +28,17 @@ export function SalonProvider({ children }: { children: ReactNode }) {
 
   const fetchSalon = async () => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null
-    
+
+    // CRITICAL: Check for token BEFORE making any API calls
+    // This prevents race condition where SalonProvider mounts before login completes
+    const token = api.getToken()
+    if (!token) {
+      console.log('SalonContext: No auth token found - skipping fetch')
+      setLoading(false)
+      setHasSalon(null)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -130,6 +140,17 @@ export function SalonProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchSalon()
+
+    // Listen for auth:login event to re-fetch after login
+    const handleAuthLogin = () => {
+      console.log('SalonContext: auth:login event received - fetching salon')
+      fetchSalon()
+    }
+    window.addEventListener('auth:login', handleAuthLogin)
+
+    return () => {
+      window.removeEventListener('auth:login', handleAuthLogin)
+    }
   }, [])
 
   return (

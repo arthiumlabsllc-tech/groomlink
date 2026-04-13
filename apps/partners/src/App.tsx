@@ -18,7 +18,7 @@ import { SalonSetupWrapper } from './components/SalonSetupWrapper'
 // Component to handle token from URL
 function TokenHandler({ children }: { children: React.ReactNode }) {
   const [searchParams] = useSearchParams()
-  
+
   useEffect(() => {
     const token = searchParams.get('token')
     if (token) {
@@ -26,9 +26,11 @@ function TokenHandler({ children }: { children: React.ReactNode }) {
       api.setToken(token)
       // Remove token from URL for security
       window.history.replaceState({}, document.title, window.location.pathname)
+      // Dispatch auth:login event to notify SalonContext and other listeners
+      window.dispatchEvent(new CustomEvent('auth:login'))
     }
   }, [searchParams])
-  
+
   return <>{children}</>
 }
 

@@ -41,6 +41,9 @@ export default function Login() {
       // Pass SALON_OWNER role for partners app login
       const response = await api.verifyEmailOTP(formData.email, formData.otp, 'SALON_OWNER')
       if (response.success) {
+        // Dispatch auth:login event to notify SalonContext and other listeners
+        // that the token is now available in localStorage
+        window.dispatchEvent(new CustomEvent('auth:login'))
         navigate('/')
       }
     } catch (err: any) {

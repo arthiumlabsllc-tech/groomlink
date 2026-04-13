@@ -424,6 +424,10 @@ class ApiClient {
   isAuthenticated() {
     return !!this.token;
   }
+
+  getToken() {
+    return this.token;
+  }
 }
 
 export const api = new ApiClient();
