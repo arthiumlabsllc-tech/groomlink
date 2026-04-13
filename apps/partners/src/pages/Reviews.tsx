@@ -26,8 +26,10 @@ export default function Reviews() {
       if (!salonId) return
       try {
         const response = await api.getReviews(salonId)
-        if (response.success) {
-          setReviews(response.data.reviews || [])
+        if (response.success && response.data) {
+          setReviews(Array.isArray(response.data.reviews) ? response.data.reviews : [])
+        } else {
+          setReviews([])
         }
       } catch (error) {
         console.error('Failed to fetch reviews:', error)
@@ -117,7 +119,7 @@ export default function Reviews() {
           </div>
           <div className="flex-1 w-full sm:w-auto">
             {[5, 4, 3, 2, 1].map((star) => {
-              const count = reviews.filter(r => r.rating === star).length
+              const count = (reviews || []).filter(r => r.rating === star).length
               const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0
               return (
                 <div key={star} className="flex items-center gap-3 mb-1">

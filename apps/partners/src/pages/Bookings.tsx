@@ -19,8 +19,10 @@ export default function Bookings() {
       if (!salonId) return
       try {
         const response = await api.getBookings(salonId)
-        if (response.success) {
-          setBookings(response.data)
+        if (response.success && response.data) {
+          setBookings(Array.isArray(response.data) ? response.data : [])
+        } else {
+          setBookings([])
         }
       } catch (error) {
         console.error('Failed to fetch bookings:', error)
@@ -41,7 +43,7 @@ export default function Bookings() {
     return styles[status as keyof typeof styles] || styles.pending
   }
 
-  const filteredBookings = bookings.filter(booking => {
+  const filteredBookings = (bookings || []).filter(booking => {
     const matchesTab = activeTab === 'all' || booking.status === activeTab
     const customerName = `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.toLowerCase()
     const matchesSearch = customerName.includes(searchQuery.toLowerCase()) || 

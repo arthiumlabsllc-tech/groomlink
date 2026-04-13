@@ -34,17 +34,17 @@ export default function Dashboard() {
           api.getServices(salonId),
           api.getWorkers(salonId)
         ])
-        if (statsRes.success) {
+        if (statsRes.success && statsRes.data) {
           setStats(statsRes.data)
         }
-        if (bookingsRes.success) {
-          setBookings(bookingsRes.data)
+        if (bookingsRes.success && bookingsRes.data) {
+          setBookings(Array.isArray(bookingsRes.data) ? bookingsRes.data : [])
         }
-        if (servicesRes.success) {
-          setServices(servicesRes.data)
+        if (servicesRes.success && servicesRes.data) {
+          setServices(Array.isArray(servicesRes.data) ? servicesRes.data : [])
         }
-        if (workersRes.success) {
-          setWorkers(workersRes.data)
+        if (workersRes.success && workersRes.data) {
+          setWorkers(Array.isArray(workersRes.data) ? workersRes.data : [])
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
@@ -55,8 +55,8 @@ export default function Dashboard() {
     fetchData()
   }, [salonId])
 
-  const activeServicesCount = services.filter(s => s.isActive).length
-  const activeWorkersCount = workers.filter(w => w.isActive).length
+  const activeServicesCount = (services || []).filter(s => s.isActive).length
+  const activeWorkersCount = (workers || []).filter(w => w.isActive).length
 
   const statCards = [
     { 
@@ -97,7 +97,7 @@ export default function Dashboard() {
     },
   ]
 
-  const todayBookings = bookings.slice(0, 5).map((booking, index) => ({
+  const todayBookings = (bookings || []).slice(0, 5).map((booking, index) => ({
     id: booking.id || index,
     customer: `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
     service: booking.service?.name || 'Service',

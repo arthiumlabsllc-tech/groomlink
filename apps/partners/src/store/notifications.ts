@@ -33,13 +33,18 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await api.getNotifications();
-      if (response.success) {
-        const { notifications, unreadCount } = response.data;
+      if (response.success && response.data) {
+        // Ensure notifications is always an array and unreadCount is a number
+        const notifications = Array.isArray(response.data.notifications) ? response.data.notifications : [];
+        const unreadCount = typeof response.data.unreadCount === 'number' ? response.data.unreadCount : 0;
         set({ notifications, unreadCount, isLoading: false });
+      } else {
+        // If response is not successful or data is missing, reset to defaults
+        set({ notifications: [], unreadCount: 0, isLoading: false });
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
-      set({ isLoading: false });
+      set({ notifications: [], unreadCount: 0, isLoading: false });
     }
   },
 

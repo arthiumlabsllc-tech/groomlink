@@ -1,6 +1,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { api } from '../lib/api'
 
+interface User {
+  id: string
+  role: string
+  email: string
+  phoneNumber: string
+  firstName: string
+  lastName: string
+}
+
 interface Salon {
   id: string
   businessName: string
@@ -10,6 +19,7 @@ interface Salon {
 interface SalonContextType {
   salon: Salon | null
   salonId: string | null
+  user: User | null
   loading: boolean
   error: string | null
   hasSalon: boolean | null // null = still loading, true = has salon, false = no salon (new partner)
@@ -22,6 +32,7 @@ const FETCH_TIMEOUT = 15000 // 15 seconds overall timeout
 
 export function SalonProvider({ children }: { children: ReactNode }) {
   const [salon, setSalon] = useState<Salon | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasSalon, setHasSalon] = useState<boolean | null>(null) // null = unknown/loading
@@ -52,8 +63,10 @@ export function SalonProvider({ children }: { children: ReactNode }) {
         // First check if user is authenticated and has the right role
         try {
           const userResponse = await api.getCurrentUser()
-          if (userResponse.success) {
+          if (userResponse.success && userResponse.data) {
             console.log('Current user role:', userResponse.data.role)
+            // Store user data for email pre-fill in settings
+            setUser(userResponse.data)
             if (userResponse.data.role !== 'SALON_OWNER') {
               // This is a real error - user has wrong role
               setError(`Access denied: Your account role is '${userResponse.data.role}'. Partners dashboard requires SALON_OWNER role. Please contact support.`)
@@ -157,6 +170,7 @@ export function SalonProvider({ children }: { children: ReactNode }) {
     <SalonContext.Provider value={{ 
       salon, 
       salonId: salon?.id || null, 
+      user,
       loading, 
       error,
       hasSalon,

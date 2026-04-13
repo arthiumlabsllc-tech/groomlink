@@ -66,7 +66,7 @@ const getClosingTime = (businessHours: BusinessHour[]): string => {
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { salon: contextSalon, refetch, hasSalon } = useSalon()
+  const { salon: contextSalon, refetch, hasSalon, user } = useSalon()
   const [salon, setSalon] = useState<Salon | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -96,6 +96,10 @@ export default function Settings() {
           console.log('Settings: No salon detected, showing creation form')
           setIsNewPartner(true)
           setLoading(false)
+          // Pre-fill email from user context if available (new partner flow)
+          if (user?.email) {
+            setFormData(prev => ({ ...prev, email: user.email }))
+          }
           return
         }
 
@@ -121,17 +125,25 @@ export default function Settings() {
         } else {
           // No salon found - this is a new partner
           setIsNewPartner(true)
+          // Pre-fill email from user context if available
+          if (user?.email) {
+            setFormData(prev => ({ ...prev, email: user.email }))
+          }
         }
       } catch (error) {
         console.error('Failed to fetch salon:', error)
         // If error indicates no salon, treat as new partner
         setIsNewPartner(true)
+        // Pre-fill email from user context if available
+        if (user?.email) {
+          setFormData(prev => ({ ...prev, email: user.email }))
+        }
       } finally {
         setLoading(false)
       }
     }
     fetchSalon()
-  }, [hasSalon])
+  }, [hasSalon, user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

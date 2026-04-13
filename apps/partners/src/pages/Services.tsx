@@ -20,8 +20,10 @@ export default function Services() {
     try {
       setLoading(true)
       const response = await api.getServices(salonId)
-      if (response.success) {
-        setServices(response.data)
+      if (response.success && response.data) {
+        setServices(Array.isArray(response.data) ? response.data : [])
+      } else {
+        setServices([])
       }
     } catch (error) {
       console.error('Failed to fetch services:', error)
@@ -35,8 +37,8 @@ export default function Services() {
   }, [salonId])
 
   const filteredServices = activeCategory === 'All' 
-    ? services 
-    : services.filter(s => s.category?.toLowerCase() === activeCategory.toLowerCase())
+    ? (services || []) 
+    : (services || []).filter(s => s.category?.toLowerCase() === activeCategory.toLowerCase())
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
