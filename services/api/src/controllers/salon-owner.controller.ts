@@ -548,7 +548,7 @@ export async function updateBookingStatus(req: AuthenticatedRequest, res: Respon
       return;
     }
 
-    const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW'];
+    const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
     if (!validStatuses.includes(status)) {
       errorResponse(res, 'VALIDATION_ERROR', 'Invalid status', 400);
       return;

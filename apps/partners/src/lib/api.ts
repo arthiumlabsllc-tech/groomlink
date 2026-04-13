@@ -68,10 +68,10 @@ export interface Worker {
 export interface Booking {
   id: string;
   customerId: string;
-  customer: { firstName: string; lastName: string; phoneNumber: string };
+  customer: { firstName: string; lastName: string; phoneNumber: string; email?: string };
   salonId: string;
   serviceId: string;
-  service: { name: string; price: string };
+  service: { name: string; price: string; duration?: number };
   workerId?: string;
   worker?: { fullName: string };
   date: string;

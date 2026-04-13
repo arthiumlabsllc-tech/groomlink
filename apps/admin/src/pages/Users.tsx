@@ -178,9 +178,11 @@ export function Users() {
       await deleteUserMutation.mutateAsync(userToDelete.id);
       setShowDeleteModal(false);
       setUserToDelete(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete user:', error);
-      alert('Failed to delete user. Please try again.');
+      // Extract error message from backend response
+      const errorMessage = error?.response?.data?.error?.message || 'Failed to delete user. Please try again.';
+      alert(errorMessage);
     }
   };
 
@@ -972,9 +974,16 @@ export function Users() {
                   <p className="text-sm text-gray-500">{userToDelete.email || '—'}</p>
                 </div>
               </div>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-4">
                 Are you sure you want to delete this user? This action cannot be undone. All associated data including bookings, payments, and salon information will be permanently removed.
               </p>
+              {userToDelete.role === 'SALON_OWNER' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-amber-800">
+                    <strong>Warning:</strong> This user is a salon owner. You cannot delete salon owners who have active salons. Please transfer or delete their salons first.
+                  </p>
+                </div>
+              )}
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => { setShowDeleteModal(false); setUserToDelete(null); }}

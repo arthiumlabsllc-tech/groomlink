@@ -54,7 +54,8 @@ export interface CreateBookingData {
 }
 
 export interface AvailableSlot {
-  time: string;
+  startTime: string;
+  endTime: string;
   available: boolean;
 }
 
@@ -236,10 +237,11 @@ export const bookingApi = {
     return response.data.data;
   },
 
-  getAvailableSlots: async (salonId: string, date: string, workerId?: string): Promise<AvailableSlot[]> => {
+  getAvailableSlots: async (salonId: string, date: string, workerId?: string, serviceDuration?: number): Promise<AvailableSlot[]> => {
     const params = new URLSearchParams();
     params.append('date', date);
     if (workerId) params.append('workerId', workerId);
+    if (serviceDuration) params.append('duration', serviceDuration.toString());
     const response = await apiClient.get(`/bookings/slots/${salonId}?${params.toString()}`);
     return response.data.data;
   },

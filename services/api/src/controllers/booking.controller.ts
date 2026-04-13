@@ -156,6 +156,7 @@ export async function getAvailableSlots(req: AuthenticatedRequest, res: Response
     const { salonId } = req.params;
     const workerId = req.query.workerId as string | undefined;
     const dateStr = req.query.date as string;
+    const duration = parseInt(req.query.duration as string) || undefined;
 
     if (!dateStr) {
       errorResponse(res, 'MISSING_DATE', 'Date is required', 400);
@@ -163,7 +164,7 @@ export async function getAvailableSlots(req: AuthenticatedRequest, res: Response
     }
 
     const date = new Date(dateStr);
-    const slots = await bookingService.getAvailableSlots(salonId, workerId, date);
+    const slots = await bookingService.getAvailableSlots(salonId, workerId, date, duration);
     successResponse(res, slots);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);

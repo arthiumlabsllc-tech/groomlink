@@ -58,7 +58,8 @@ interface Salon {
 }
 
 interface AvailableSlot {
-  time: string;
+  startTime: string;
+  endTime: string;
   available: boolean;
 }
 
@@ -266,7 +267,8 @@ export default function BookSalon() {
         const slots = await bookingApi.getAvailableSlots(
           salonId,
           dateStr,
-          selectedWorker?.id
+          selectedWorker?.id,
+          selectedService.duration
         );
         setAvailableSlots(slots);
       } catch (err) {
@@ -399,8 +401,8 @@ export default function BookSalon() {
 
 
   const isSlotAvailable = (time: string): boolean => {
-    const slot = availableSlots.find((s) => s.time === time);
-    return slot?.available ?? true;
+    const slot = availableSlots.find((s) => s.startTime === time);
+    return slot?.available ?? false;
   };
 
   // Generate time slots from 8 AM to 8 PM
