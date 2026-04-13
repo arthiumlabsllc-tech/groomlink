@@ -167,8 +167,10 @@ class ApiClient {
       ...options.headers,
     };
 
-    if (this.token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
+    // Always read token fresh from localStorage to avoid stale closure issues
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
     } else {
       console.warn('No auth token found in localStorage');
     }
@@ -185,18 +187,20 @@ class ApiClient {
         console.error(`API Error [${response.status}]:`, error);
 
         // Only clear token on 401 from authentication-related endpoints
+        // Auth endpoints are: /auth/login, /auth/verify-otp, /auth/register, /auth/refresh, etc.
         // A 401 from auth endpoints means the token is invalid/expired
-        // A 401 from other endpoints might mean different things
+        // A 401 from other endpoints (like /users/profile) should NOT clear the token automatically
         // A 403 (Forbidden) should NOT clear the token - user is authenticated but lacks permissions
         if (response.status === 401) {
-          const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint === '/users/profile';
+          // Only consider actual auth endpoints (paths starting with /auth/)
+          const isAuthEndpoint = endpoint.startsWith('/auth/');
           if (isAuthEndpoint) {
             console.log('401 from auth endpoint - clearing token');
             this.setToken(null);
           } else {
             // For non-auth endpoints, 401 might indicate token expiry
-            // But we should let the calling code handle it
-            console.log('401 from non-auth endpoint:', endpoint);
+            // But we should let the calling code handle it, not auto-clear the token
+            console.log('401 from non-auth endpoint:', endpoint, '- NOT clearing token');
           }
         }
         // Note: 403 errors should NOT clear the token - user is authenticated but doesn't have permission
