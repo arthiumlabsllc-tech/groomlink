@@ -71,6 +71,8 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       EMAIL_FROM: ${EMAIL_FROM}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      # Paystack Payment
+      PAYSTACK_CALLBACK_URL: ${PAYSTACK_CALLBACK_URL}
     ports:
       - "3000:3000"
     depends_on:

@@ -1397,3 +1397,161 @@ export async function getPublicSiteSettings(req: AuthenticatedRequest, res: Resp
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }
+
+// Booking Statistics
+export async function getBookingStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const period = (req.query.period as string) || '30d';
+    
+    // Parse period to days
+    let days = 30;
+    if (period === '7d') days = 7;
+    else if (period === '90d') days = 90;
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Get booking counts by status within the period
+    const [
+      totalBookings,
+      completedBookings,
+      cancelledBookings,
+      pendingBookings,
+      confirmedBookings,
+      inProgressBookings,
+      noShowBookings,
+    ] = await Promise.all([
+      prisma.booking.count({
+        where: { createdAt: { gte: startDate } }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startDate }, status: 'COMPLETED' }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startDate }, status: 'CANCELLED' }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startDate }, status: 'PENDING' }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startDate }, status: 'CONFIRMED' }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startDate }, status: 'IN_PROGRESS' }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startDate }, status: 'NO_SHOW' }
+      }),
+    ]);
+
+    // Get daily breakdown for charts
+    const dailyBreakdown = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+      SELECT DATE(created_at) as date, COUNT(*) as count
+      FROM bookings
+      WHERE created_at >= ${startDate}
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `;
+
+    // Format daily breakdown
+    const daily = dailyBreakdown.map((row) => ({
+      date: row.date.toISOString().split('T')[0],
+      count: Number(row.count),
+    }));
+
+    // Fill in missing dates with zero counts
+    const filledDaily: Array<{ date: string; count: number }> = [];
+    const dateMap = new Map(daily.map(d => [d.date, d.count]));
+    
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      filledDaily.push({
+        date: dateStr,
+        count: dateMap.get(dateStr) || 0,
+      });
+    }
+
+    successResponse(res, {
+      period,
+      total: totalBookings,
+      completed: completedBookings,
+      cancelled: cancelledBookings,
+      pending: pendingBookings,
+      confirmed: confirmedBookings,
+      inProgress: inProgressBookings,
+      noShow: noShowBookings,
+      dailyBreakdown: filledDaily,
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Revenue Statistics
+export async function getRevenueStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const period = (req.query.period as string) || '30d';
+    
+    // Parse period to days
+    let days = 30;
+    if (period === '7d') days = 7;
+    else if (period === '90d') days = 90;
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Get revenue stats within the period
+    const revenueStats = await prisma.payment.aggregate({
+      where: {
+        createdAt: { gte: startDate },
+        status: PaymentStatus.SUCCESS,
+      },
+      _sum: { amount: true },
+      _count: true,
+      _avg: { amount: true },
+    });
+
+    // Get daily breakdown for charts
+    const dailyBreakdown = await prisma.$queryRaw`
+      SELECT DATE(created_at) as date, SUM(CAST(amount AS DECIMAL)) as total
+      FROM payments
+      WHERE created_at >= ${startDate} AND status = 'SUCCESS'
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    ` as Array<{ date: Date; total: unknown }>;
+
+    // Format daily breakdown
+    const daily = dailyBreakdown.map((row) => ({
+      date: row.date.toISOString().split('T')[0],
+      amount: Number(row.total),
+    }));
+
+    // Fill in missing dates with zero amounts
+    const filledDaily: Array<{ date: string; amount: number }> = [];
+    const dateMap = new Map(daily.map(d => [d.date, d.amount]));
+    
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      filledDaily.push({
+        date: dateStr,
+        amount: dateMap.get(dateStr) || 0,
+      });
+    }
+
+    successResponse(res, {
+      period,
+      totalRevenue: Number(revenueStats._sum.amount || 0),
+      transactionCount: revenueStats._count,
+      averageTransaction: Number(revenueStats._avg.amount || 0),
+      dailyBreakdown: filledDaily,
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}

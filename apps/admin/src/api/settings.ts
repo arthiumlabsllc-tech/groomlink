@@ -2,7 +2,7 @@ import apiClient from './client';
 
 export interface SiteSettings {
   siteName: string;
-  contactEmail: string;
+  email: string;
   phoneNumber: string;
   address: string;
   logoUrl: string | null;

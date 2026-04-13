@@ -160,7 +160,7 @@ class PaystackPaymentProvider {
           email,
           reference,
           channels,
-          callback_url: 'https://my.groomlinkgh.com/bookings?payment=callback',
+          callback_url: process.env.PAYSTACK_CALLBACK_URL || 'https://my.groomlinkgh.com/bookings?payment=callback',
           metadata: {
             bookingId,
             provider,

@@ -312,7 +312,8 @@ export default function BookSalon() {
       const paymentResponse = await paymentApi.initialize({
         bookingId: response.id,
         provider: selectedPaymentMethod,
-        phoneNumber: phoneNumber.replace(/\s/g, ''), // Remove spaces
+        // Prepend +233 country code - phoneNumber state contains only 9 digits
+        phoneNumber: `+233${phoneNumber.replace(/\s/g, '').replace(/\D/g, '')}`,
       });
       
       // Store booking info for after payment return

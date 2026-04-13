@@ -28,6 +28,8 @@ router.post('/transactions/:id/refund', authenticateToken, requireAdminOrHigher,
 // System Health & Metrics
 router.get('/health', authenticateToken, requireAdminOrHigher, adminController.getSystemHealth);
 router.get('/metrics', authenticateToken, requireAdminOrHigher, adminController.getSystemMetrics);
+router.get('/bookings/stats', authenticateToken, requireAdminOrHigher, adminController.getBookingStats);
+router.get('/revenue/stats', authenticateToken, requireAdminOrHigher, adminController.getRevenueStats);
 
 // Recent Activities
 router.get('/activities', authenticateToken, requireAdminOrHigher, adminController.getRecentActivities);

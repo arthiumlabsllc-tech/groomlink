@@ -54,7 +54,7 @@ export function Settings() {
 
   const [formData, setFormData] = useState({
     siteName: '',
-    contactEmail: '',
+    email: '',
     phoneNumber: '',
     address: '',
     logoUrl: '',
@@ -86,7 +86,7 @@ export function Settings() {
     if (settings) {
       setFormData({
         siteName: settings.siteName || '',
-        contactEmail: settings.contactEmail || '',
+        email: settings.email || '',
         phoneNumber: settings.phoneNumber || '',
         address: settings.address || '',
         logoUrl: settings.logoUrl || '',
@@ -278,8 +278,8 @@ export function Settings() {
                 </label>
                 <input
                   type="email"
-                  value={formData.contactEmail}
-                  onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
                   placeholder="support@groomlinkgh.com"
                 />
