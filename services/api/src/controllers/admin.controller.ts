@@ -404,33 +404,33 @@ export async function getSystemMetrics(req: AuthenticatedRequest, res: Response)
     startDate.setDate(startDate.getDate() - days);
 
     const [
-      dailyBookings,
-      dailyRevenue,
-      userGrowth,
-      salonGrowth,
+      dailyBookingsRaw,
+      dailyRevenueRaw,
+      userGrowthRaw,
+      salonGrowthRaw,
     ] = await Promise.all([
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
         SELECT DATE(created_at) as date, COUNT(*) as count
         FROM bookings
         WHERE created_at >= ${startDate}
         GROUP BY DATE(created_at)
         ORDER BY date ASC
       `,
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ date: Date; total: unknown }>>`
         SELECT DATE(created_at) as date, SUM(CAST(amount AS DECIMAL)) as total
         FROM payments
         WHERE created_at >= ${startDate} AND status = 'SUCCESS'
         GROUP BY DATE(created_at)
         ORDER BY date ASC
       `,
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
         SELECT DATE(created_at) as date, COUNT(*) as count
         FROM users
         WHERE created_at >= ${startDate}
         GROUP BY DATE(created_at)
         ORDER BY date ASC
       `,
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
         SELECT DATE(created_at) as date, COUNT(*) as count
         FROM salons
         WHERE created_at >= ${startDate}
@@ -438,6 +438,24 @@ export async function getSystemMetrics(req: AuthenticatedRequest, res: Response)
         ORDER BY date ASC
       `,
     ]);
+
+    // Convert bigint to number for JSON serialization
+    const dailyBookings = dailyBookingsRaw.map(row => ({
+      date: row.date.toISOString().split('T')[0],
+      count: Number(row.count),
+    }));
+    const dailyRevenue = dailyRevenueRaw.map(row => ({
+      date: row.date.toISOString().split('T')[0],
+      total: Number(row.total),
+    }));
+    const userGrowth = userGrowthRaw.map(row => ({
+      date: row.date.toISOString().split('T')[0],
+      count: Number(row.count),
+    }));
+    const salonGrowth = salonGrowthRaw.map(row => ({
+      date: row.date.toISOString().split('T')[0],
+      count: Number(row.count),
+    }));
 
     successResponse(res, {
       period: `${days}d`,

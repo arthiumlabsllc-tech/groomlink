@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as adminController from '../controllers/admin.controller';
+import * as supportTicketController from '../controllers/support-ticket.controller';
 import { authenticateToken, requireAdminOrHigher, requireSuperAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -63,5 +64,13 @@ router.get('/salons', authenticateToken, requireAdminOrHigher, adminController.a
 // Customer management  
 router.post('/customers', authenticateToken, requireAdminOrHigher, adminController.adminCreateCustomer);
 router.get('/users/:id', authenticateToken, requireAdminOrHigher, adminController.adminGetUserDetails);
+
+// Support Tickets
+router.get('/support/tickets', authenticateToken, requireAdminOrHigher, supportTicketController.getAllTickets);
+router.get('/support/tickets/:id', authenticateToken, requireAdminOrHigher, supportTicketController.getTicketById);
+router.put('/support/tickets/:id/status', authenticateToken, requireAdminOrHigher, supportTicketController.updateTicketStatus);
+router.post('/support/tickets/:id/messages', authenticateToken, requireAdminOrHigher, supportTicketController.sendTicketMessage);
+router.get('/support/tickets/:id/messages', authenticateToken, requireAdminOrHigher, supportTicketController.getTicketMessages);
+router.put('/support/tickets/:id/assign', authenticateToken, requireAdminOrHigher, supportTicketController.assignTicket);
 
 export default router;

@@ -112,6 +112,9 @@ model User {
   adminPermission  AdminPermission?
   activities       UserActivity[]
   salonQueues      SalonQueue[]
+  tickets          SupportTicket[] @relation("UserTickets")
+  assignedTickets  SupportTicket[] @relation("AssignedTickets")
+  ticketMessages   TicketMessage[]
   
   @@index([phoneNumber])
   @@index([role])
@@ -591,6 +594,20 @@ enum QueueStatus {
   LEFT
 }
 
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model UserActivity {
   id         String   @id @default(cuid())
   userId     String
@@ -606,4 +623,51 @@ model UserActivity {
   @@index([userId])
   @@index([suspicious])
   @@index([createdAt])
+}
+
+model SupportTicket {
+  id            String                @id @default(uuid())
+  subject       String
+  description   String
+  status        SupportTicketStatus   @default(OPEN)
+  priority      SupportTicketPriority @default(MEDIUM)
+  category      String?
+  
+  // Relations
+  userId        String                @map("user_id")
+  user          User                  @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
+  assignedToId  String?               @map("assigned_to_id")
+  assignedTo    User?                 @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages      TicketMessage[]
+  
+  // Timestamps
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+  
+  @@index([userId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id            String        @id @default(uuid())
+  content       String
+  isFromUser    Boolean       @default(true) @map("is_from_user")
+  
+  // Relations
+  ticketId      String        @map("ticket_id")
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId      String        @map("sender_id")
+  sender        User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt     DateTime      @default(now()) @map("created_at")
+  
+  @@index([ticketId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("ticket_messages")
 }

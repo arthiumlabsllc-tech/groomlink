@@ -111,30 +111,32 @@ export const usersApi = {
     return response.data;
   },
 
-  // Get user by ID
-  getById: async (id: string): Promise<User> => {
-    const response = await apiClient.get(`/users/${id}`);
+  // Get user by ID (admin - includes basic user info)
+  // Note: For detailed user info with bookings/payments, use getDetails() instead
+  getById: async (id: string): Promise<UserDetails> => {
+    const response = await apiClient.get(`/admin/users/${id}`);
     return response.data.data;
   },
 
   // Block/suspend user
   block: async (id: string, reason?: string): Promise<User> => {
-    const response = await apiClient.post(`/users/${id}/block`, { reason });
+    const response = await apiClient.post(`/admin/users/${id}/ban`, { reason });
     return response.data.data;
   },
 
   // Unblock user
   unblock: async (id: string): Promise<User> => {
-    const response = await apiClient.post(`/users/${id}/unblock`);
+    const response = await apiClient.post(`/admin/users/${id}/unban`);
     return response.data.data;
   },
 
   // Get user bookings
   getUserBookings: async (id: string, page: number = 1, limit: number = 20) => {
-    const response = await apiClient.get(`/users/${id}/bookings`, {
+    const response = await apiClient.get(`/admin/users/${id}`, {
       params: { page, limit },
     });
-    return response.data;
+    // Return bookings from user details
+    return { data: response.data.data.bookings || [] };
   },
 
   // Create customer (admin)
