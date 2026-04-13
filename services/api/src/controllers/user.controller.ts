@@ -716,29 +716,7 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
             where: { salonId: salon.id },
           });
 
-          // Delete all services for this salon
-          const services = await tx.service.findMany({
-            where: { salonId: salon.id },
-            select: { id: true },
-          });
-
-          for (const service of services) {
-            // Delete worker-service relationships for this service
-            await tx.workerService.deleteMany({
-              where: { serviceId: service.id },
-            });
-
-            // Delete salon queue entries for this service
-            await tx.salonQueue.deleteMany({
-              where: { serviceId: service.id },
-            });
-          }
-
-          await tx.service.deleteMany({
-            where: { salonId: salon.id },
-          });
-
-          // Delete all bookings for this salon (and their payments/reviews)
+          // Delete all bookings for this salon FIRST (they reference services via FK)
           const bookings = await tx.booking.findMany({
             where: { salonId: salon.id },
             select: { id: true },
@@ -757,6 +735,28 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
           }
 
           await tx.booking.deleteMany({
+            where: { salonId: salon.id },
+          });
+
+          // Now delete services (after bookings are gone)
+          const services = await tx.service.findMany({
+            where: { salonId: salon.id },
+            select: { id: true },
+          });
+
+          for (const service of services) {
+            // Delete worker-service relationships for this service
+            await tx.workerService.deleteMany({
+              where: { serviceId: service.id },
+            });
+
+            // Delete salon queue entries for this service
+            await tx.salonQueue.deleteMany({
+              where: { serviceId: service.id },
+            });
+          }
+
+          await tx.service.deleteMany({
             where: { salonId: salon.id },
           });
 
