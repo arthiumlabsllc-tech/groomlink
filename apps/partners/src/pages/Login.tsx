@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Scissors, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react'
+import { Scissors, Mail, Lock, ArrowLeft, Loader2, User } from 'lucide-react'
 import { api } from '../lib/api'
 
-type Step = 'input' | 'otp'
+type Step = 'input' | 'otp' | 'register'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -15,6 +15,8 @@ export default function Login() {
   const [formData, setFormData] = useState({
     email: '',
     otp: '',
+    firstName: '',
+    lastName: '',
   })
 
   const handleRequestEmailOtp = async (e: React.FormEvent) => {
@@ -41,13 +43,45 @@ export default function Login() {
       // Pass SALON_OWNER role for partners app login
       const response = await api.verifyEmailOTP(formData.email, formData.otp, 'SALON_OWNER')
       if (response.success) {
+        // Check if this is a new user who needs to complete registration
+        if (response.data.isNewUser) {
+          // New user - show registration form to collect firstName and lastName
+          setStep('register')
+        } else {
+          // Existing user - token is already stored by api.verifyEmailOTP
+          // Dispatch auth:login event to notify SalonContext and other listeners
+          window.dispatchEvent(new CustomEvent('auth:login'))
+          navigate('/')
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Invalid OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCompleteRegistration = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await api.completeRegistration({
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: 'SALON_OWNER'
+      })
+      
+      if (response.success) {
+        // Token is already stored by api.completeRegistration
         // Dispatch auth:login event to notify SalonContext and other listeners
-        // that the token is now available in localStorage
         window.dispatchEvent(new CustomEvent('auth:login'))
         navigate('/')
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid OTP')
+      setError(err.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -57,8 +91,10 @@ export default function Login() {
     e.preventDefault()
     if (step === 'input') {
       handleRequestEmailOtp(e)
-    } else {
+    } else if (step === 'otp') {
       handleVerifyEmailOtp(e)
+    } else if (step === 'register') {
+      handleCompleteRegistration(e)
     }
   }
 
@@ -169,6 +205,65 @@ export default function Login() {
                   className="w-full text-sm text-ghana-green hover:text-ghana-green/80 font-medium"
                 >
                   Resend OTP
+                </button>
+              </>
+            )}
+
+            {/* Email Login Flow - Step 3: Complete Registration for New Users */}
+            {step === 'register' && (
+              <>
+                <div className="text-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">Complete Your Registration</h2>
+                  <p className="text-sm text-gray-500">Welcome! Please provide your name to get started.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setStep('otp'); setError(''); setFormData({ ...formData, firstName: '', lastName: '' }); }}
+                  className="flex items-center text-sm text-gray-500 hover:text-ghana-green transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Back to OTP
+                </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      className="input-field pl-10"
+                      placeholder="John"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      required
+                      minLength={2}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      className="input-field pl-10"
+                      placeholder="Doe"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      required
+                      minLength={2}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Complete Registration'
+                  )}
                 </button>
               </>
             )}

@@ -251,6 +251,18 @@ class ApiClient {
     return response;
   }
 
+  async completeRegistration(data: { email: string; firstName: string; lastName: string; role?: 'CUSTOMER' | 'SALON_OWNER' }) {
+    const response = await this.request<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: { id: string; role: string; firstName: string; lastName: string }; isNewUser: boolean } }>('/auth/complete-registration', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    if (response.success && response.data.tokens?.accessToken) {
+      this.setToken(response.data.tokens.accessToken);
+      console.log('Registration completed with role:', response.data.user?.role);
+    }
+    return response;
+  }
+
   async getCurrentUser() {
     return this.request<{ success: boolean; data: { id: string; role: string; email: string; phoneNumber: string; firstName: string; lastName: string } }>('/users/profile');
   }
