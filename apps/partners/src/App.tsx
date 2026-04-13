@@ -13,6 +13,7 @@ import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
 import { api } from './lib/api'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { SalonSetupWrapper } from './components/SalonSetupWrapper'
 
 // Component to handle token from URL
 function TokenHandler({ children }: { children: React.ReactNode }) {
@@ -40,37 +41,51 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={
               <ProtectedRoute>
-                <Dashboard />
+                <SalonSetupWrapper>
+                  <Dashboard />
+                </SalonSetupWrapper>
               </ProtectedRoute>
             } />
             <Route path="/queue" element={
               <ProtectedRoute>
-                <Queue />
+                <SalonSetupWrapper>
+                  <Queue />
+                </SalonSetupWrapper>
               </ProtectedRoute>
             } />
             <Route path="/bookings" element={
               <ProtectedRoute>
-                <Bookings />
+                <SalonSetupWrapper>
+                  <Bookings />
+                </SalonSetupWrapper>
               </ProtectedRoute>
             } />
             <Route path="/staff" element={
               <ProtectedRoute>
-                <Staff />
+                <SalonSetupWrapper>
+                  <Staff />
+                </SalonSetupWrapper>
               </ProtectedRoute>
             } />
             <Route path="/services" element={
               <ProtectedRoute>
-                <Services />
+                <SalonSetupWrapper>
+                  <Services />
+                </SalonSetupWrapper>
               </ProtectedRoute>
             } />
             <Route path="/reviews" element={
               <ProtectedRoute>
-                <Reviews />
+                <SalonSetupWrapper>
+                  <Reviews />
+                </SalonSetupWrapper>
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute>
-                <Settings />
+                <SalonSetupWrapper>
+                  <Settings />
+                </SalonSetupWrapper>
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

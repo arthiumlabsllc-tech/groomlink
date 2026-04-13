@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Salon } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -14,7 +15,7 @@ interface BusinessHour {
 }
 
 // Default business hours when salon has no operating hours data
-const defaultBusinessHours: BusinessHour[] = daysOfWeek.map(day => ({ day, open: '09:00', close: '18:00', isOpen: true }))
+const defaultBusinessHours: BusinessHour[] = daysOfWeek.map(day => ({ day, open: '09:00', close: '18:00', isOpen: day !== 'Sunday' }))
 
 // Parse operating hours from salon data
 const parseOperatingHours = (operatingHours: Record<string, string> | null | undefined): BusinessHour[] => {
@@ -47,17 +48,36 @@ const formatOperatingHours = (businessHours: BusinessHour[]): Record<string, str
   return result
 }
 
+// Get working days array from business hours
+const getWorkingDays = (businessHours: BusinessHour[]): string[] => {
+  return businessHours.filter(h => h.isOpen).map(h => h.day.toUpperCase())
+}
+
+// Get opening/closing time from business hours (use first open day's times)
+const getOpeningTime = (businessHours: BusinessHour[]): string => {
+  const openDay = businessHours.find(h => h.isOpen)
+  return openDay?.open || '09:00'
+}
+
+const getClosingTime = (businessHours: BusinessHour[]): string => {
+  const openDay = businessHours.find(h => h.isOpen)
+  return openDay?.close || '18:00'
+}
+
 export default function Settings() {
-  const { salon: contextSalon, refetch } = useSalon()
+  const navigate = useNavigate()
+  const { salon: contextSalon, refetch, hasSalon } = useSalon()
   const [salon, setSalon] = useState<Salon | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isNewPartner, setIsNewPartner] = useState(false)
 
   const [formData, setFormData] = useState({
     businessName: '',
     description: '',
+    type: 'BARBERSHOP',
     address: '',
     city: '',
     region: '',
@@ -71,16 +91,26 @@ export default function Settings() {
   useEffect(() => {
     const fetchSalon = async () => {
       try {
+        // Check if we already know from context that there's no salon
+        if (hasSalon === false) {
+          console.log('Settings: No salon detected, showing creation form')
+          setIsNewPartner(true)
+          setLoading(false)
+          return
+        }
+
         const response = await api.getMySalon()
         if (response.success && response.data) {
           const salonData = response.data
           setSalon(salonData)
+          setIsNewPartner(false)
           // Parse operating hours from salon data if available
           const parsedHours = parseOperatingHours(salonData.operatingHours)
           setFormData(prev => ({
             ...prev,
             businessName: salonData.businessName || '',
             description: salonData.description || '',
+            type: salonData.type || 'BARBERSHOP',
             address: salonData.address || '',
             city: salonData.city || '',
             region: salonData.region || '',
@@ -88,21 +118,46 @@ export default function Settings() {
             email: salonData.email || '',
             businessHours: parsedHours
           }))
+        } else {
+          // No salon found - this is a new partner
+          setIsNewPartner(true)
         }
       } catch (error) {
         console.error('Failed to fetch salon:', error)
+        // If error indicates no salon, treat as new partner
+        setIsNewPartner(true)
       } finally {
         setLoading(false)
       }
     }
     fetchSalon()
-  }, [])
+  }, [hasSalon])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!salon?.id) {
-      setError('No salon ID found. Please try again.')
-      return
+    
+    // Validate required fields for new partners
+    if (isNewPartner) {
+      if (!formData.businessName.trim()) {
+        setError('Business name is required')
+        return
+      }
+      if (!formData.address.trim()) {
+        setError('Address is required')
+        return
+      }
+      if (!formData.city.trim()) {
+        setError('City is required')
+        return
+      }
+      if (!formData.region.trim()) {
+        setError('Region is required')
+        return
+      }
+      if (!formData.phoneNumber.trim()) {
+        setError('Phone number is required')
+        return
+      }
     }
     
     setSaving(true)
@@ -110,31 +165,71 @@ export default function Settings() {
     setError(null)
     
     try {
-      // Prepare update data
-      const updateData = {
-        businessName: formData.businessName,
-        description: formData.description,
-        address: formData.address,
-        city: formData.city,
-        region: formData.region,
-        phoneNumber: formData.phoneNumber,
-        email: formData.email,
-        operatingHours: formatOperatingHours(formData.businessHours)
-      }
-      
-      const response = await api.updateSalon(salon.id, updateData)
-      
-      if (response.success) {
-        setSaved(true)
-        // Refetch salon data to ensure consistency
-        await refetch()
-        setTimeout(() => setSaved(false), 3000)
+      if (isNewPartner) {
+        // Create new salon for new partner
+        const createData = {
+          businessName: formData.businessName,
+          description: formData.description,
+          type: formData.type,
+          address: formData.address,
+          city: formData.city,
+          region: formData.region,
+          phoneNumber: formData.phoneNumber,
+          email: formData.email || undefined,
+          // Default coordinates - in a real app, you'd geocode the address
+          latitude: 5.6037, // Default to Accra
+          longitude: -0.1870,
+          openingTime: getOpeningTime(formData.businessHours),
+          closingTime: getClosingTime(formData.businessHours),
+          workingDays: getWorkingDays(formData.businessHours)
+        }
+        
+        const response = await api.createSalon(createData)
+        
+        if (response.success) {
+          setSaved(true)
+          setIsNewPartner(false)
+          setSalon(response.data)
+          // Refetch salon data to update context
+          await refetch()
+          // Redirect to dashboard after successful creation
+          setTimeout(() => {
+            navigate('/')
+          }, 1500)
+        } else {
+          setError('Failed to create salon. Please try again.')
+        }
       } else {
-        setError('Failed to save settings. Please try again.')
+        // Update existing salon
+        if (!salon?.id) {
+          setError('No salon ID found. Please try again.')
+          return
+        }
+        
+        const updateData = {
+          businessName: formData.businessName,
+          description: formData.description,
+          address: formData.address,
+          city: formData.city,
+          region: formData.region,
+          phoneNumber: formData.phoneNumber,
+          email: formData.email,
+          operatingHours: formatOperatingHours(formData.businessHours)
+        }
+        
+        const response = await api.updateSalon(salon.id, updateData)
+        
+        if (response.success) {
+          setSaved(true)
+          await refetch()
+          setTimeout(() => setSaved(false), 3000)
+        } else {
+          setError('Failed to save settings. Please try again.')
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save settings:', err)
-      setError('Failed to save settings. Please try again.')
+      setError(err?.message || 'Failed to save settings. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -162,12 +257,285 @@ export default function Settings() {
 
   return (
     <Layout activeTab="settings">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500">Salon profile and preferences</p>
-      </div>
+      {isNewPartner ? (
+        // New Partner Setup View
+        <div className="max-w-3xl mx-auto">
+          {/* Welcome Header */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-ghana-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Store className="w-10 h-10 text-ghana-green" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to GroomLink Partners!</h1>
+            <p className="text-gray-600 max-w-md mx-auto">
+              Let's set up your salon profile so you can start accepting bookings and managing your business.
+            </p>
+          </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Progress Steps */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-ghana-green text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
+              <span className="text-sm font-medium text-gray-900">Create Salon</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-200"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">2</div>
+              <span className="text-sm text-gray-500">Add Services</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-200"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">3</div>
+              <span className="text-sm text-gray-500">Add Staff</span>
+            </div>
+          </div>
+
+          {/* Setup Form */}
+          <div className="card">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center">
+                <Store className="w-5 h-5 text-ghana-green" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-gray-900">Create Your Salon</h2>
+                <p className="text-sm text-gray-500">Fill in your business details below</p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Business Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Business Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g., Kofi's Barbershop"
+                  value={formData.businessName}
+                  onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                  required
+                />
+              </div>
+
+              {/* Salon Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Salon Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="input-field"
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                >
+                  <option value="BARBERSHOP">Barbershop</option>
+                  <option value="HAIR_SALON">Hair Salon</option>
+                  <option value="BEAUTY_SALON">Beauty Salon</option>
+                  <option value="NAIL_SALON">Nail Salon</option>
+                  <option value="SPA">Spa</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  className="input-field min-h-[100px] resize-none"
+                  placeholder="Tell customers about your salon..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    className="input-field pl-10"
+                    placeholder="Street address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* City & Region */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g., Accra"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Region <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g., Greater Accra"
+                    value={formData.region}
+                    onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="tel"
+                    className="input-field pl-10"
+                    placeholder="+233 XX XXX XXXX"
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    className="input-field pl-10"
+                    placeholder="salon@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Business Hours */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Business Hours</label>
+                <div className="space-y-2">
+                  {formData.businessHours.map((hour, index) => (
+                    <div key={hour.day} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-24">
+                        <span className="font-medium text-gray-700 text-sm">{hour.day}</span>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={hour.isOpen}
+                          onChange={(e) => updateBusinessHour(index, 'isOpen', e.target.checked)}
+                          className="w-4 h-4 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+                        />
+                        <span className="text-sm text-gray-600">Open</span>
+                      </label>
+                      {hour.isOpen && (
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            type="time"
+                            value={hour.open}
+                            onChange={(e) => updateBusinessHour(index, 'open', e.target.value)}
+                            className="input-field py-1.5 px-2 text-sm w-28"
+                          />
+                          <span className="text-gray-500 text-sm">to</span>
+                          <input
+                            type="time"
+                            value={hour.close}
+                            onChange={(e) => updateBusinessHour(index, 'close', e.target.value)}
+                            className="input-field py-1.5 px-2 text-sm w-28"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full btn-primary flex items-center justify-center gap-2 py-3 text-base"
+                >
+                  {saving ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Creating Salon...
+                    </>
+                  ) : saved ? (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Salon Created! Redirecting...
+                    </>
+                  ) : (
+                    <>
+                      Create Salon & Continue
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Tips */}
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="card p-4">
+              <div className="w-10 h-10 bg-ghana-gold/10 rounded-lg flex items-center justify-center mb-3">
+                <Store className="w-5 h-5 text-ghana-gold" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Step 1: Create Salon</h3>
+              <p className="text-sm text-gray-600">Add your business name, location, and contact details.</p>
+            </div>
+            <div className="card p-4">
+              <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center mb-3">
+                <Scissors className="w-5 h-5 text-ghana-green" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Step 2: Add Services</h3>
+              <p className="text-sm text-gray-600">Define your services, prices, and duration.</p>
+            </div>
+            <div className="card p-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Step 3: Add Staff</h3>
+              <p className="text-sm text-gray-600">Add your team members and their specialties.</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Existing Partner Settings View
+        <>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+            <p className="text-gray-500">Salon profile and preferences</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
         {/* Salon Profile Section */}
         <div className="card">
           <div className="flex items-center gap-3 mb-6">
@@ -387,6 +755,8 @@ export default function Settings() {
           </button>
         </div>
       </form>
+      </>
+      )}
     </Layout>
   )
 }

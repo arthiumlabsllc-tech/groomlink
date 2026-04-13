@@ -123,6 +123,7 @@ export function SalonProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       if (timeoutId) clearTimeout(timeoutId)
+      // CRITICAL: Always set loading to false, no matter what happens
       setLoading(false)
     }
   }
