@@ -87,7 +87,7 @@ export async function getStaff(req: AuthenticatedRequest, res: Response): Promis
       orderBy: { createdAt: 'desc' },
     });
 
-    successResponse(res, { staff });
+    successResponse(res, staff);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
@@ -209,7 +209,7 @@ export async function getServices(req: AuthenticatedRequest, res: Response): Pro
       orderBy: { category: 'asc' },
     });
 
-    successResponse(res, { services });
+    successResponse(res, services);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
