@@ -161,6 +161,16 @@ export async function verifyOTPAndLogin(phoneNumber: string, code: string): Prom
 export async function register(data: RegisterData): Promise<AuthResponse> {
   const { phoneNumber, firstName, lastName, email, password } = data;
 
+  // Check if email is banned
+  if (email) {
+    const bannedEmail = await prisma.bannedEmail.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+    if (bannedEmail) {
+      throw new Error('This email address has been blocked from registration');
+    }
+  }
+
   // Check if user already exists by phone or email
   let existingUser = null;
   
@@ -482,6 +492,14 @@ export interface CompleteRegistrationResponse {
  */
 export async function completeRegistration(data: CompleteRegistrationData): Promise<CompleteRegistrationResponse> {
   const { email, firstName, lastName, phoneNumber, latitude, longitude, address, city, region, role = UserRole.CUSTOMER } = data;
+
+  // Check if email is banned
+  const bannedEmail = await prisma.bannedEmail.findUnique({
+    where: { email: email.toLowerCase() },
+  });
+  if (bannedEmail) {
+    throw new Error('This email address has been blocked from registration');
+  }
 
   // Check if user already exists with this email
   const existingUser = await prisma.user.findUnique({

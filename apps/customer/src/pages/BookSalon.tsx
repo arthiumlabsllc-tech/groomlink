@@ -153,6 +153,7 @@ export default function BookSalon() {
   const [loadingServices, setLoadingServices] = useState(true);
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsLoaded, setSlotsLoaded] = useState(false);
   const [creatingBooking, setCreatingBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -263,6 +264,7 @@ export default function BookSalon() {
     const fetchSlots = async () => {
       try {
         setLoadingSlots(true);
+        setSlotsLoaded(false);
         const dateStr = selectedDate.toISOString().split('T')[0];
         const slots = await bookingApi.getAvailableSlots(
           salonId,
@@ -271,9 +273,12 @@ export default function BookSalon() {
           selectedService.duration
         );
         setAvailableSlots(slots);
+        setSlotsLoaded(true);
       } catch (err) {
-        toast.error('Failed to load available time slots');
+        console.error('Failed to load available time slots:', err);
+        toast.error('Failed to load available time slots. Please try again.');
         setAvailableSlots([]);
+        setSlotsLoaded(true);
       } finally {
         setLoadingSlots(false);
       }
@@ -400,22 +405,17 @@ export default function BookSalon() {
 
 
 
-  const isSlotAvailable = (time: string): boolean => {
-    const slot = availableSlots.find((s) => s.startTime === time);
-    return slot?.available ?? false;
-  };
+  // Use backend slots directly - they are generated based on service duration
+  // If no slots loaded yet, show empty array (loading state handled separately)
+  const displaySlots = useMemo(() => {
+    // Return slots from backend, sorted by start time
+    return [...availableSlots].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }, [availableSlots]);
 
-  // Generate time slots from 8 AM to 8 PM
-  const timeSlots = useMemo(() => {
-    const slots: string[] = [];
-    for (let hour = 8; hour <= 20; hour++) {
-      slots.push(`${hour.toString().padStart(2, '0')}:00`);
-      if (hour < 20) {
-        slots.push(`${hour.toString().padStart(2, '0')}:30`);
-      }
-    }
-    return slots;
-  }, []);
+  // Check if a slot is available - now uses backend slots directly
+  const isSlotAvailable = (slot: AvailableSlot): boolean => {
+    return slot.available;
+  };
 
   const dates = useMemo(() => getDates(30), []);
 
@@ -742,16 +742,26 @@ export default function BookSalon() {
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 text-[#006B3F] animate-spin" />
           </div>
+        ) : !slotsLoaded ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-8 h-8 text-[#006B3F] animate-spin" />
+          </div>
+        ) : displaySlots.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 rounded-xl">
+            <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No available time slots for this date</p>
+            <p className="text-sm text-gray-400 mt-1">Try selecting a different date or staff member</p>
+          </div>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-            {timeSlots.map((time) => {
-              const isAvailable = isSlotAvailable(time);
-              const isSelected = selectedTime === time;
+            {displaySlots.map((slot) => {
+              const isAvailable = isSlotAvailable(slot);
+              const isSelected = selectedTime === slot.startTime;
 
               return (
                 <button
-                  key={time}
-                  onClick={() => isAvailable && setSelectedTime(time)}
+                  key={slot.startTime}
+                  onClick={() => isAvailable && setSelectedTime(slot.startTime)}
                   disabled={!isAvailable}
                   className={`py-3 px-2 rounded-lg text-sm font-medium transition-all ${
                     isSelected
@@ -761,7 +771,7 @@ export default function BookSalon() {
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  {formatTime(time)}
+                  {formatTime(slot.startTime)}
                 </button>
               );
             })}

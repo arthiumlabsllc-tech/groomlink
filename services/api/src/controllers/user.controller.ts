@@ -648,10 +648,11 @@ export async function exportUserData(req: AuthenticatedRequest, res: Response): 
   }
 }
 
-// Admin - Delete user account
+// Admin - Delete user account with full cascade deletion
 export async function adminDeleteUser(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
+    const adminId = req.user?.id;
 
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -672,82 +673,216 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    // Prevent deletion of users with active salons (business owners)
-    // Their salons should be transferred or deleted first
-    if (user._count.salons > 0 && user.role === 'SALON_OWNER') {
-      errorResponse(
-        res,
-        'DELETE_FAILED',
-        `Cannot delete user who owns ${user._count.salons} salon(s). Please transfer or delete salons first.`,
-        400
-      );
-      return;
-    }
-
-    // Start a transaction to delete all user data
-    // Note: Most relations have onDelete: Cascade, but we need to handle
-    // records that might have circular references or need special handling
+    // Start a transaction to delete all user data including salons
     await prisma.$transaction(async (tx: TransactionClient) => {
-      // Delete user's activities first (no dependencies)
+      // 1. If user owns salons, delete all salon-related data first
+      if (user._count.salons > 0) {
+        const salons = await tx.salon.findMany({
+          where: { ownerId: id },
+          select: { id: true },
+        });
+
+        for (const salon of salons) {
+          // Delete all workers and their related data for this salon
+          const workers = await tx.worker.findMany({
+            where: { salonId: salon.id },
+            select: { id: true },
+          });
+
+          for (const worker of workers) {
+            // Delete worker availabilities
+            await tx.availability.deleteMany({
+              where: { workerId: worker.id },
+            });
+
+            // Delete worker-service relationships
+            await tx.workerService.deleteMany({
+              where: { workerId: worker.id },
+            });
+
+            // Delete favorite staff entries for this worker
+            await tx.favoriteStaff.deleteMany({
+              where: { workerId: worker.id },
+            });
+
+            // Delete salon queue entries for this worker
+            await tx.salonQueue.deleteMany({
+              where: { workerId: worker.id },
+            });
+          }
+
+          // Delete all workers for this salon
+          await tx.worker.deleteMany({
+            where: { salonId: salon.id },
+          });
+
+          // Delete all services for this salon
+          const services = await tx.service.findMany({
+            where: { salonId: salon.id },
+            select: { id: true },
+          });
+
+          for (const service of services) {
+            // Delete worker-service relationships for this service
+            await tx.workerService.deleteMany({
+              where: { serviceId: service.id },
+            });
+
+            // Delete salon queue entries for this service
+            await tx.salonQueue.deleteMany({
+              where: { serviceId: service.id },
+            });
+          }
+
+          await tx.service.deleteMany({
+            where: { salonId: salon.id },
+          });
+
+          // Delete all bookings for this salon (and their payments/reviews)
+          const bookings = await tx.booking.findMany({
+            where: { salonId: salon.id },
+            select: { id: true },
+          });
+
+          for (const booking of bookings) {
+            // Delete payment for this booking
+            await tx.payment.deleteMany({
+              where: { bookingId: booking.id },
+            });
+
+            // Delete review for this booking
+            await tx.review.deleteMany({
+              where: { bookingId: booking.id },
+            });
+          }
+
+          await tx.booking.deleteMany({
+            where: { salonId: salon.id },
+          });
+
+          // Delete all reviews for this salon
+          await tx.review.deleteMany({
+            where: { salonId: salon.id },
+          });
+
+          // Delete all favorites for this salon
+          await tx.favorite.deleteMany({
+            where: { salonId: salon.id },
+          });
+
+          // Delete all documents for this salon
+          await tx.document.deleteMany({
+            where: { salonId: salon.id },
+          });
+
+          // Delete all salon queue entries for this salon
+          await tx.salonQueue.deleteMany({
+            where: { salonId: salon.id },
+          });
+        }
+
+        // Finally delete all salons owned by this user
+        await tx.salon.deleteMany({
+          where: { ownerId: id },
+        });
+      }
+
+      // 2. Delete user's activities
       await tx.userActivity.deleteMany({
         where: { userId: id },
       });
 
-      // Delete impersonation logs where user is the staff
+      // 3. Delete impersonation logs where user is the staff
       await tx.impersonationLog.deleteMany({
         where: { staffId: id },
       });
 
-      // Delete impersonation logs where user is the target
+      // 4. Delete impersonation logs where user is the target
       await tx.impersonationLog.deleteMany({
         where: { targetUserId: id },
       });
 
-      // Delete admin permissions if any
+      // 5. Delete admin permissions if any
       await tx.adminPermission.deleteMany({
         where: { userId: id },
       });
 
-      // Delete user's salon queue entries
+      // 6. Delete user's salon queue entries (as customer)
       await tx.salonQueue.deleteMany({
         where: { customerId: id },
       });
 
-      // Delete user's reviews
+      // 7. Delete user's reviews (as customer)
       await tx.review.deleteMany({
         where: { customerId: id },
       });
 
-      // Delete user's favorites
+      // 8. Delete user's favorites
       await tx.favorite.deleteMany({
         where: { userId: id },
       });
 
-      // Delete user's favorite staff
+      // 9. Delete user's favorite staff
       await tx.favoriteStaff.deleteMany({
         where: { userId: id },
       });
 
-      // Delete user's notifications
+      // 10. Delete user's notifications
       await tx.notification.deleteMany({
         where: { userId: id },
       });
 
-      // Delete user's payments (these should cascade from user, but we do it explicitly)
+      // 11. Delete user's payments
       await tx.payment.deleteMany({
         where: { userId: id },
       });
 
-      // Anonymize user's bookings (keep for business records but remove PII)
-      // Note: Bookings will cascade delete when user is deleted, but we anonymize first
-      await tx.booking.updateMany({
+      // 12. Delete user's bookings (as customer) - payments and reviews already deleted above
+      await tx.booking.deleteMany({
         where: { customerId: id },
-        data: {
-          customerNotes: '[DELETED BY ADMIN]',
-        },
       });
 
-      // Delete the user - this will cascade delete remaining relations
+      // 13. Delete user's support tickets and messages
+      const userTickets = await tx.supportTicket.findMany({
+        where: { userId: id },
+        select: { id: true },
+      });
+
+      for (const ticket of userTickets) {
+        // Delete all messages for this ticket
+        await tx.ticketMessage.deleteMany({
+          where: { ticketId: ticket.id },
+        });
+      }
+
+      await tx.supportTicket.deleteMany({
+        where: { userId: id },
+      });
+
+      // 14. Delete ticket messages where user is the sender
+      await tx.ticketMessage.deleteMany({
+        where: { senderId: id },
+      });
+
+      // 15. Ban the email if user has one - save to BannedEmail table
+      if (user.email) {
+        await tx.bannedEmail.upsert({
+          where: { email: user.email },
+          update: {
+            reason: `User deleted by admin on ${new Date().toISOString()}`,
+            bannedBy: adminId,
+            bannedAt: new Date(),
+          },
+          create: {
+            email: user.email,
+            reason: `User deleted by admin on ${new Date().toISOString()}`,
+            bannedBy: adminId,
+            bannedAt: new Date(),
+          },
+        });
+      }
+
+      // 16. Finally delete the user
       await tx.user.delete({
         where: { id },
       });
@@ -756,8 +891,8 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
     // Revoke all refresh tokens
     await revokeAllUserRefreshTokens(id);
 
-    logger.info(`User account deleted by admin: ${id}`);
-    successResponse(res, { message: 'User account deleted successfully' });
+    logger.info(`User account deleted by admin: ${id} (including ${user._count.salons} salons)`);
+    successResponse(res, { message: 'User account and all associated data deleted successfully' });
   } catch (error) {
     logger.error('Admin account deletion failed', { error, userId: req.params.id });
     errorResponse(res, 'DELETE_FAILED', (error as Error).message, 500);

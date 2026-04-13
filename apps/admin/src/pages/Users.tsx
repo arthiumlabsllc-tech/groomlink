@@ -975,15 +975,25 @@ export function Users() {
                 </div>
               </div>
               <p className="text-gray-600 mb-4">
-                Are you sure you want to delete this user? This action cannot be undone. All associated data including bookings, payments, and salon information will be permanently removed.
+                Are you sure you want to permanently delete this user? This action cannot be undone.
               </p>
-              {userToDelete.role === 'SALON_OWNER' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-amber-800">
-                    <strong>Warning:</strong> This user is a salon owner. You cannot delete salon owners who have active salons. Please transfer or delete their salons first.
-                  </p>
-                </div>
-              )}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-800">
+                  <strong>Warning:</strong> All data associated with this user will be permanently deleted, including:
+                </p>
+                <ul className="text-sm text-red-700 mt-2 ml-4 list-disc">
+                  {userToDelete.role === 'SALON_OWNER' && (
+                    <li>All salons they own (workers, services, bookings, reviews)</li>
+                  )}
+                  <li>All bookings (past and upcoming)</li>
+                  <li>All payment records</li>
+                  <li>All reviews and ratings</li>
+                  <li>Favorites and notifications</li>
+                  {userToDelete.email && (
+                    <li>Their email will be banned from future registration</li>
+                  )}
+                </ul>
+              </div>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => { setShowDeleteModal(false); setUserToDelete(null); }}

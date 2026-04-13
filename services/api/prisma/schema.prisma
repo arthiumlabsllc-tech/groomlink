@@ -671,3 +671,13 @@ model TicketMessage {
   @@index([createdAt])
   @@map("ticket_messages")
 }
+
+model BannedEmail {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  reason    String?
+  bannedBy  String?  @map("banned_by")
+  bannedAt  DateTime @default(now()) @map("banned_at")
+  
+  @@map("banned_emails")
+}
