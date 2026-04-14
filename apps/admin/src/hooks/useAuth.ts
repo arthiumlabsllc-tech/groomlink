@@ -11,7 +11,12 @@ export function useAuth() {
   // Get current user from localStorage
   const getStoredUser = (): AdminUser | null => {
     const userStr = localStorage.getItem('admin_user');
-    return userStr ? JSON.parse(userStr) : null;
+    if (!userStr || userStr === 'undefined') return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
   };
 
   // Query for current user
