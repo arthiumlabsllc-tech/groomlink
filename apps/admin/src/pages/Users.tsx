@@ -107,15 +107,13 @@ export function Users() {
       if (response.data.success) {
         const { tokens, user, impersonationLogId } = response.data.data;
         
-        // Store impersonation info
-        localStorage.setItem('auth_token', tokens.accessToken);
-        localStorage.setItem('impersonation_log_id', impersonationLogId);
-        localStorage.setItem('impersonating_user', JSON.stringify(user));
-
         // Determine redirect URL based on role
-        const redirectUrl = user.role === 'SALON_OWNER' 
+        const baseUrl = user.role === 'SALON_OWNER' 
           ? 'https://partners.groomlinkgh.com'
           : 'https://groomlinkgh.com';
+        
+        // Pass token via URL parameter so the target app can store it in its own localStorage
+        const redirectUrl = `${baseUrl}?token=${encodeURIComponent(tokens.accessToken)}&impersonation_log_id=${encodeURIComponent(impersonationLogId)}`;
         
         // Open in new tab
         window.open(redirectUrl, '_blank');

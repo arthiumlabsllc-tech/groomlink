@@ -21,9 +21,15 @@ function TokenHandler({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const token = searchParams.get('token')
+    const impersonationLogId = searchParams.get('impersonation_log_id')
+    
     if (token) {
       // Store the token
       api.setToken(token)
+      // Store impersonation log id if present
+      if (impersonationLogId) {
+        localStorage.setItem('impersonation_log_id', impersonationLogId)
+      }
       // Remove token from URL for security
       window.history.replaceState({}, document.title, window.location.pathname)
       // Dispatch auth:login event to notify SalonContext and other listeners

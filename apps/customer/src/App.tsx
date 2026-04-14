@@ -20,13 +20,18 @@ function App() {
   const setToken = useAuthStore((state) => state.setToken);
 
   useEffect(() => {
-    // Check for token in URL params (from redirect after login)
+    // Check for token in URL params (from redirect after login or impersonation)
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
+    const impersonationLogId = urlParams.get('impersonation_log_id');
     
     if (tokenFromUrl) {
       // Store token and clean up URL
       setToken(tokenFromUrl);
+      // Store impersonation log id if present
+      if (impersonationLogId) {
+        localStorage.setItem('impersonation_log_id', impersonationLogId);
+      }
       // Remove token from URL without reloading
       const newUrl = window.location.pathname + window.location.hash;
       window.history.replaceState({}, document.title, newUrl);
