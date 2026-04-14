@@ -77,6 +77,7 @@ interface Salon {
   latitude: number | null
   longitude: number | null
   logo: string | null
+  coverImage: string | null
   images: string[]
   openingTime: string | null
   closingTime: string | null
@@ -125,13 +126,20 @@ const formatDayName = (day: string): string => {
   return days[day.toUpperCase()] || day
 }
 
-const getSalonImage = (salon: Salon): string => {
+const getSalonCoverImage = (salon: Salon): string => {
+  // Prefer cover image if available
+  if (salon.coverImage) {
+    return salon.coverImage
+  }
+  // Fall back to first gallery image
   if (salon.images && salon.images.length > 0) {
     return salon.images[0]
   }
+  // Fall back to logo
   if (salon.logo) {
     return salon.logo
   }
+  // Default images by salon type
   const defaultImages: Record<string, string> = {
     BARBERSHOP: 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=800&h=400&fit=crop',
     HAIR_SALON: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=400&fit=crop',
@@ -353,7 +361,7 @@ export default function SalonDetail() {
       {/* Hero Image */}
       <div className="relative h-64 sm:h-80 w-full overflow-hidden rounded-xl mb-6">
         <img
-          src={getSalonImage(salon)}
+          src={getSalonCoverImage(salon)}
           alt={salon.businessName || 'Salon'}
           className="w-full h-full object-cover"
           onError={(e) => {
@@ -500,6 +508,28 @@ export default function SalonDetail() {
             </div>
           </div>
         </div>
+
+        {/* Gallery Section */}
+        {salon.images && salon.images.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Gallery</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {salon.images.map((img, idx) => (
+                <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group">
+                  <img
+                    src={img}
+                    alt={`${salon.businessName} - ${idx + 1}`}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Live Queue Section */}
         {salon.acceptsWalkIns && (

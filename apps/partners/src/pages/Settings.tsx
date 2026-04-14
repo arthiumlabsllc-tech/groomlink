@@ -104,6 +104,7 @@ export default function Settings() {
   const coverInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
+  // Initial fetch on mount
   useEffect(() => {
     const fetchSalon = async () => {
       try {
@@ -160,6 +161,13 @@ export default function Settings() {
     }
     fetchSalon()
   }, [hasSalon, user])
+
+  // Sync local salon state with context salon when it changes (e.g., after image uploads)
+  useEffect(() => {
+    if (contextSalon && !isNewPartner) {
+      setSalon(contextSalon)
+    }
+  }, [contextSalon, isNewPartner])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

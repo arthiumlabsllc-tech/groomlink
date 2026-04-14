@@ -125,6 +125,7 @@ export interface NearbySalon {
   latitude: number | null;
   longitude: number | null;
   logo: string | null;
+  coverImage: string | null;
   images: string[];
   openingTime: string | null;
   closingTime: string | null;
