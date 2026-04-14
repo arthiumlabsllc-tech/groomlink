@@ -250,7 +250,9 @@ export default function Settings() {
           region: formData.region,
           phoneNumber: formData.phoneNumber,
           email: formData.email,
-          operatingHours: formatOperatingHours(formData.businessHours)
+          openingTime: getOpeningTime(formData.businessHours),
+          closingTime: getClosingTime(formData.businessHours),
+          workingDays: getWorkingDays(formData.businessHours)
         }
         
         const response = await api.updateSalon(salon.id, updateData)

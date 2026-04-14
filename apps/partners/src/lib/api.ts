@@ -466,7 +466,7 @@ class ApiClient {
 
   async uploadSalonGallery(salonId: string, files: File[]): Promise<{ success: boolean; data: { images: string[] } }> {
     const formData = new FormData();
-    files.forEach(f => formData.append('gallery', f));
+    files.forEach(f => formData.append('images', f));
     const token = localStorage.getItem('auth_token');
     const response = await fetch(`${this.baseUrl}/uploads/salon/${salonId}/gallery`, {
       method: 'POST',

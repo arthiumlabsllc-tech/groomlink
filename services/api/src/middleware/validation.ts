@@ -110,8 +110,8 @@ export const salonValidations = {
     param('id').isUUID().withMessage('Invalid salon ID'),
     body('businessName').optional().trim().isLength({ min: 2, max: 100 }),
     body('phoneNumber').optional().matches(/^\+233[0-9]{9}$/),
-    commonValidations.latitude,
-    commonValidations.longitude,
+    body('latitude').optional().isFloat({ min: -90, max: 90 }),
+    body('longitude').optional().isFloat({ min: -180, max: 180 }),
   ]),
 
   searchSalons: validate([
