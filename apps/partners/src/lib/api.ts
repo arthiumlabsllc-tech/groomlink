@@ -208,7 +208,10 @@ class ApiClient {
         }
         // Note: 403 errors should NOT clear the token - user is authenticated but doesn't have permission
 
-        throw new Error(error.message || 'Request failed');
+        // Create error with status code attached so callers can check for 401
+        const err = new Error(error.message || 'Request failed') as Error & { status: number };
+        (err as any).status = response.status;
+        throw err;
       }
 
       return response.json();

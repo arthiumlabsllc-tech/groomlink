@@ -76,12 +76,17 @@ export function SalonProvider({ children }: { children: ReactNode }) {
           }
         } catch (userErr: any) {
           console.error('Failed to get user info:', userErr)
-          // If it's an authentication error (401), that's a real auth problem
+          // If it's an authentication error (401), the token is invalid - clear it gracefully
           const errorMessage = userErr?.message || ''
-          if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Authentication')) {
-            setError('Authentication failed. Please log in again.')
+          const errorStatus = userErr?.status
+          if (errorStatus === 401 || errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Authentication')) {
+            // Clear the stale/invalid token from localStorage
+            localStorage.removeItem('auth_token')
+            setUser(null)
             setHasSalon(false)
-            return
+            setError(null) // Don't show error - just treat as logged out
+            setLoading(false)
+            return // Don't try anything else
           }
           // For other errors (network, etc.), continue to try fetching salon
         }
