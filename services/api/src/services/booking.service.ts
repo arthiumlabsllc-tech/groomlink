@@ -468,6 +468,15 @@ export async function getBookings(filters: BookingFilters, page: number = 1, lim
             fullName: true,
           },
         },
+        customer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+            email: true,
+          },
+        },
         payment: {
           select: {
             status: true,

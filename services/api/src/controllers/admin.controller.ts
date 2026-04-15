@@ -662,12 +662,15 @@ const paymentSettingsSchema = z.object({
   paystackPublicKey: z.string().max(500).optional().nullable(),
   paystackSecretKey: z.string().max(500).optional().nullable(),
   isPaymentTestMode: z.boolean().optional(),
-  transactionFeePercent: z.number().min(0).max(100).nullable().optional(),
+  transactionFeePercent: z.union([
+    z.number().min(0).max(100),
+    z.null(),
+  ]).optional(),
 }).transform((data) => ({
   ...data,
-  // Convert empty strings to undefined
-  paystackPublicKey: data.paystackPublicKey === '' ? undefined : data.paystackPublicKey,
-  paystackSecretKey: data.paystackSecretKey === '' ? undefined : data.paystackSecretKey,
+  // Convert empty strings to null
+  paystackPublicKey: data.paystackPublicKey === '' ? null : data.paystackPublicKey,
+  paystackSecretKey: data.paystackSecretKey === '' ? null : data.paystackSecretKey,
 }));
 
 export async function getSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
