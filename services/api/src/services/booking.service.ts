@@ -661,7 +661,16 @@ export async function getAvailableSlots(
   }
 
   // Check if salon is open on this day
-  if (!salon.workingDays.includes(dayOfWeek.toString())) {
+  // workingDays can be stored as day names (e.g., 'MONDAY') or numbers (e.g., '1')
+  const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const dayName = dayNames[dayOfWeek];
+  const dayNumber = dayOfWeek.toString();
+  
+  const isWorkingDay = salon.workingDays.some(day => 
+    day.toUpperCase() === dayName || day === dayNumber
+  );
+  
+  if (!isWorkingDay) {
     return [];
   }
 
