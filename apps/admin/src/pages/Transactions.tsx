@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { Search, RefreshCcw, Eye, Loader2, CreditCard, TrendingUp } from 'lucide-react';
-import { useTransactions, useRefundTransaction, useTransactionStats } from '../hooks';
+import { Search, RefreshCcw, Eye, Loader2, CreditCard, TrendingUp, X, User, MapPin, Calendar, Clock, Phone } from 'lucide-react';
+import { useTransactions, useRefundTransaction, useTransactionStats, useTransaction } from '../hooks';
 import { formatCurrency, formatDate } from '../lib/utils';
 
 export function Transactions() {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
 
   const { data: transactionsData, isLoading } = useTransactions(page, 20, statusFilter || undefined);
   const { data: stats } = useTransactionStats('30d');
   const refundTransaction = useRefundTransaction();
+  const { data: transactionDetails, isLoading: detailsLoading } = useTransaction(selectedTransactionId || '');
 
   const transactions = transactionsData?.data || [];
   const totalRevenue = stats?.totalRevenue || 0;
@@ -30,6 +33,11 @@ export function Transactions() {
     if (confirm('Are you sure you want to refund this transaction?')) {
       await refundTransaction.mutateAsync({ id, reason: 'Customer request' });
     }
+  };
+
+  const openDetailModal = (id: string) => {
+    setSelectedTransactionId(id);
+    setShowDetailModal(true);
   };
 
   const getProviderName = (provider: string) => {
@@ -167,7 +175,10 @@ export function Transactions() {
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm">
+              <button 
+                onClick={() => openDetailModal(txn.id)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm"
+              >
                 <Eye size={16} />
                 View
               </button>
@@ -222,7 +233,10 @@ export function Transactions() {
                   <td className="px-6 py-4">{getStatusBadge(txn.status)}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <button 
+                        onClick={() => openDetailModal(txn.id)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
                         <Eye size={18} />
                       </button>
                       {txn.status === 'COMPLETED' && (
@@ -243,6 +257,187 @@ export function Transactions() {
           </table>
         </div>
       </div>
+
+      {/* Transaction Detail Modal */}
+      {showDetailModal && selectedTransactionId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Transaction Details</h2>
+              <button 
+                onClick={() => { setShowDetailModal(false); setSelectedTransactionId(null); }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {detailsLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="animate-spin text-[#006B3F]" size={32} />
+              </div>
+            ) : transactionDetails ? (
+              <div className="p-6 space-y-6">
+                {/* Transaction Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
+                      <CreditCard size={28} className="text-[#006B3F]" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-gray-800">{formatCurrency(transactionDetails.amount, transactionDetails.currency)}</p>
+                      <p className="text-sm text-gray-500 font-mono">{transactionDetails.id}</p>
+                    </div>
+                  </div>
+                  {getStatusBadge(transactionDetails.status)}
+                </div>
+
+                {/* Transaction Info Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Payment Information</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <CreditCard size={18} className="text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Provider</p>
+                          <p className="text-gray-800 font-medium">{getProviderName(transactionDetails.provider)}</p>
+                        </div>
+                      </div>
+                      {transactionDetails.providerTransactionId && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-[18px] flex justify-center">
+                            <span className="text-gray-400 text-xs">#</span>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Provider Reference</p>
+                            <p className="text-gray-800 font-mono text-sm">{transactionDetails.providerTransactionId}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3">
+                        <Calendar size={18} className="text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Created</p>
+                          <p className="text-gray-800">{formatDate(transactionDetails.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Clock size={18} className="text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Last Updated</p>
+                          <p className="text-gray-800">{formatDate(transactionDetails.updatedAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Customer Information</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <User size={18} className="text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Name</p>
+                          <p className="text-gray-800 font-medium">
+                            {transactionDetails.user.firstName || 'Unknown'} {transactionDetails.user.lastName || ''}
+                          </p>
+                        </div>
+                      </div>
+                      {transactionDetails.user.phoneNumber && (
+                        <div className="flex items-center gap-3">
+                          <Phone size={18} className="text-gray-400" />
+                          <div>
+                            <p className="text-xs text-gray-500">Phone</p>
+                            <p className="text-gray-800">{transactionDetails.user.phoneNumber}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Booking Details */}
+                {transactionDetails.booking && (
+                  <div className="border-t border-gray-100 pt-6">
+                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Booking Details</h4>
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <MapPin size={18} className="text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Salon</p>
+                          <p className="text-gray-800 font-medium">{transactionDetails.booking.salon.businessName}</p>
+                        </div>
+                      </div>
+                      {transactionDetails.booking.service && (
+                        <div className="flex items-center gap-3">
+                          <CreditCard size={18} className="text-gray-400" />
+                          <div>
+                            <p className="text-xs text-gray-500">Service</p>
+                            <p className="text-gray-800">{transactionDetails.booking.service.name}</p>
+                          </div>
+                        </div>
+                      )}
+                      {(transactionDetails.booking as any).scheduledDate && (
+                        <div className="flex items-center gap-3">
+                          <Calendar size={18} className="text-gray-400" />
+                          <div>
+                            <p className="text-xs text-gray-500">Scheduled Date</p>
+                            <p className="text-gray-800">{(transactionDetails.booking as any).scheduledDate}</p>
+                          </div>
+                        </div>
+                      )}
+                      {(transactionDetails.booking as any).scheduledTime && (
+                        <div className="flex items-center gap-3">
+                          <Clock size={18} className="text-gray-400" />
+                          <div>
+                            <p className="text-xs text-gray-500">Scheduled Time</p>
+                            <p className="text-gray-800">{(transactionDetails.booking as any).scheduledTime}</p>
+                          </div>
+                        </div>
+                      )}
+                      {(transactionDetails.booking as any).worker && (
+                        <div className="flex items-center gap-3">
+                          <User size={18} className="text-gray-400" />
+                          <div>
+                            <p className="text-xs text-gray-500">Worker</p>
+                            <p className="text-gray-800">{(transactionDetails.booking as any).worker.name || 'Assigned'}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => { setShowDetailModal(false); setSelectedTransactionId(null); }}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Close
+                  </button>
+                  {transactionDetails.status === 'COMPLETED' && (
+                    <button 
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        handleRefund(transactionDetails.id);
+                      }}
+                      disabled={refundTransaction.isPending}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#FCD116] text-[#1a1a2e] rounded-lg hover:bg-[#e6c014] disabled:opacity-50 transition-colors font-medium"
+                    >
+                      <RefreshCcw size={18} />
+                      Refund
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500">Unable to load transaction details</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
