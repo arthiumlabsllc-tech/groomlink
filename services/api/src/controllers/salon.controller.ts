@@ -42,6 +42,11 @@ const createSalonSchema = z.object({
 
 const updateSalonSchema = createSalonSchema.partial().extend({
   operatingHours: z.record(z.string()).optional(),
+  // Completion settings
+  autoCompletionHours: z.number().int().min(1).max(72).optional(),
+  requiresCustomerConfirmation: z.boolean().optional(),
+  completionReminderEnabled: z.boolean().optional(),
+  qrCheckinEnabled: z.boolean().optional(),
 });
 
 export async function getSalons(req: Request, res: Response): Promise<void> {
@@ -369,5 +374,111 @@ export async function getSalonsForMap(req: Request, res: Response): Promise<void
     successResponse(res, result);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// COMPLETION SETTINGS
+// ===========================================
+
+const completionSettingsSchema = z.object({
+  autoCompletionHours: z.number().int().min(1).max(72).optional(),
+  requiresCustomerConfirmation: z.boolean().optional(),
+  completionReminderEnabled: z.boolean().optional(),
+  qrCheckinEnabled: z.boolean().optional(),
+});
+
+/**
+ * Get completion settings for a salon (salon owner only)
+ */
+export async function getCompletionSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+
+    // Verify salon ownership
+    const salon = await prisma.salon.findUnique({
+      where: { id },
+      select: {
+        ownerId: true,
+        autoCompletionHours: true,
+        requiresCustomerConfirmation: true,
+        completionReminderEnabled: true,
+        qrCheckinEnabled: true,
+      },
+    });
+
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    if (salon.ownerId !== req.user.id && req.user.role !== 'ADMIN') {
+      errorResponse(res, 'FORBIDDEN', 'You do not have access to this salon', 403);
+      return;
+    }
+
+    successResponse(res, {
+      autoCompletionHours: salon.autoCompletionHours,
+      requiresCustomerConfirmation: salon.requiresCustomerConfirmation,
+      completionReminderEnabled: salon.completionReminderEnabled,
+      qrCheckinEnabled: salon.qrCheckinEnabled,
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Update completion settings for a salon (salon owner only)
+ */
+export async function updateCompletionSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+    const validatedData = completionSettingsSchema.parse(req.body);
+
+    // Verify salon ownership
+    const salon = await prisma.salon.findUnique({
+      where: { id },
+      select: { ownerId: true },
+    });
+
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    if (salon.ownerId !== req.user.id && req.user.role !== 'ADMIN') {
+      errorResponse(res, 'FORBIDDEN', 'You do not have access to this salon', 403);
+      return;
+    }
+
+    const updatedSalon = await prisma.salon.update({
+      where: { id },
+      data: validatedData,
+      select: {
+        autoCompletionHours: true,
+        requiresCustomerConfirmation: true,
+        completionReminderEnabled: true,
+        qrCheckinEnabled: true,
+      },
+    });
+
+    successResponse(res, updatedSalon);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
   }
 }

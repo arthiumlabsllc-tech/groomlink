@@ -12,6 +12,7 @@ import SalonDetailScreen from '../screens/main/SalonDetailScreen';
 import BookingScreen from '../screens/main/BookingScreen';
 import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen';
 import BookingDetailScreen from '../screens/main/BookingDetailScreen';
+import BookingQRCodeScreen from '../screens/main/BookingQRCodeScreen';
 import RateBookingScreen from '../screens/main/RateBookingScreen';
 
 // Design System Colors
@@ -36,6 +37,7 @@ function HomeStack() {
       <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
       <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} options={{ headerShown: false }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
+      <Stack.Screen name="BookingQRCode" component={BookingQRCodeScreen} options={{ title: 'Check-in Code' }} />
     </Stack.Navigator>
   );
 }
@@ -69,6 +71,16 @@ function BookingsStack() {
         component={BookingDetailScreen} 
         options={{ 
           title: 'Booking Details',
+          headerShown: true,
+          headerStyle: { backgroundColor: '#FFFFFF' },
+          headerTitleStyle: { color: '#111827' },
+        }} 
+      />
+      <Stack.Screen 
+        name="BookingQRCode" 
+        component={BookingQRCodeScreen} 
+        options={{ 
+          title: 'Check-in Code',
           headerShown: true,
           headerStyle: { backgroundColor: '#FFFFFF' },
           headerTitleStyle: { color: '#111827' },

@@ -11,6 +11,9 @@ router.post('/', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALO
 // Capacity check (for group bookings)
 router.post('/check-capacity', authenticateToken, bookingController.checkCapacityHandler);
 
+// QR completion (salon owner only) - must be before /:id catch-all
+router.post('/complete-by-qr', authenticateToken, requireRole(UserRole.SALON_OWNER), bookingController.qrCompleteHandler);
+
 // Specific named routes MUST come BEFORE /:id catch-all route
 router.get('/my', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.getMyBookings);
 router.get('/slots/:salonId', bookingController.getAvailableSlots);
@@ -23,6 +26,9 @@ router.put('/guest/:guestId/checkin', authenticateToken, requireRole(UserRole.SA
 
 // Routes with :id parameter (catch-all) - must be after all specific named routes
 router.get('/:id', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.getBookingById);
+
+// QR code generation (customer only)
+router.get('/:id/qr-code', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.getQRCodeHandler);
 
 // Cancellation route (POST for customer or provider)
 router.post('/:id/cancel', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.cancelBooking);
@@ -41,6 +47,12 @@ router.post('/:id/dispute-no-show', authenticateToken, requireRole(UserRole.CUST
 
 // Rating route
 router.post('/:id/rate', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.rateBooking);
+
+// Customer confirms completion
+router.post('/:id/confirm-completion', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.customerConfirmHandler);
+
+// Raise dispute (customer only)
+router.post('/:id/dispute', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.raiseDisputeHandler);
 
 // Protected routes - Salon Owners
 router.get('/salon/:salonId', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), bookingController.getSalonBookings);

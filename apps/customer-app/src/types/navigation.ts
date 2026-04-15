@@ -16,6 +16,7 @@ export type MainStackParamList = {
   Booking: { salonId: string; workerId?: string; services?: string[] };
   BookingConfirmation: { bookingId: string };
   BookingDetail: { bookingId: string };
+  BookingQRCode: { bookingId: string };
   RateBooking: { bookingId: string };
 };
 

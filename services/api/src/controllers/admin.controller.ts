@@ -8,6 +8,7 @@ import { SalonStatus, PaymentStatus, UserRole, UserStatus, Prisma } from '@prism
 import { sendWelcomeEmail } from '../services/email.service';
 import { activityService } from '../services/activity.service';
 import * as noshowService from '../services/noshow.service';
+import * as completionService from '../services/completion.service';
 import logger from '../config/logger';
 
 const couponSchema = z.object({
@@ -1856,6 +1857,50 @@ export async function resolveDisputeHandler(req: AuthenticatedRequest, res: Resp
     });
 
     successResponse(res, updatedRecord);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'RESOLVE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// COMPLETION DISPUTE RESOLUTION
+// ===========================================
+
+const resolveCompletionDisputeSchema = z.object({
+  resolution: z.string().min(1, 'Resolution is required'),
+  releaseToProvider: z.boolean(),
+  refundToCustomer: z.boolean(),
+});
+
+/**
+ * Resolve a completion dispute (admin only)
+ * PUT /admin/disputes/:id/resolve
+ */
+export async function resolveCompletionDisputeHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const validatedData = resolveCompletionDisputeSchema.parse(req.body);
+
+    const result = await completionService.resolveDispute(
+      id,
+      validatedData.resolution,
+      validatedData.releaseToProvider,
+      validatedData.refundToCustomer
+    );
+
+    logger.info(`Completion dispute resolved by admin`, {
+      bookingId: id,
+      resolution: validatedData.resolution,
+      releaseToProvider: validatedData.releaseToProvider,
+      refundToCustomer: validatedData.refundToCustomer,
+      resolvedBy: req.user?.id,
+    });
+
+    successResponse(res, result);
   } catch (error) {
     if (error instanceof z.ZodError) {
       errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);

@@ -72,6 +72,14 @@ export interface Booking {
   cancellationDeadline?: string;
   noShowFlag?: boolean;
   providerCancelled?: boolean;
+  // Service completion fields
+  serviceCompleted?: boolean;
+  serviceCompletedAt?: string;
+  completionMethod?: 'MANUAL' | 'QR_CODE' | 'AUTO' | 'CUSTOMER_CONFIRMED';
+  customerConfirmed?: boolean;
+  disputeRaised?: boolean;
+  disputeReason?: string;
+  autoCompleteDeadline?: string;
 }
 
 export interface CreateBookingData {
@@ -355,6 +363,21 @@ export const bookingApi = {
 
   disputeNoShow: async (bookingId: string, reason: string): Promise<any> => {
     const response = await apiClient.post(`/bookings/${bookingId}/dispute-no-show`, { reason });
+    return response.data.data;
+  },
+
+  confirmCompletion: async (bookingId: string): Promise<Booking> => {
+    const response = await apiClient.post(`/bookings/${bookingId}/confirm-completion`);
+    return response.data.data;
+  },
+
+  raiseDispute: async (bookingId: string, reason: string): Promise<Booking> => {
+    const response = await apiClient.post(`/bookings/${bookingId}/dispute`, { reason });
+    return response.data.data;
+  },
+
+  getQRCode: async (bookingId: string): Promise<{ qrCodeDataUrl: string }> => {
+    const response = await apiClient.get(`/bookings/${bookingId}/qr-code`);
     return response.data.data;
   },
 };

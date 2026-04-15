@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Calendar, Clock, User, Users, Filter, Store, ArrowRightCircle, X, Check, Phone, Mail, FileText, Scissors, Loader2, AlertTriangle, CheckCircle, Ban, Wallet, AlertCircle } from 'lucide-react'
+import { Search, Calendar, Clock, User, Users, Filter, Store, ArrowRightCircle, X, Check, Phone, Mail, FileText, Scissors, Loader2, AlertTriangle, CheckCircle, Ban, Wallet, AlertCircle, QrCode } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, Booking } from '../lib/api'
@@ -40,6 +40,17 @@ const getPaymentStatusStyles = (paymentStatus?: string, cancelledBy?: string) =>
 const hasServiceTimePassed = (date: string, endTime: string): boolean => {
   const bookingEnd = new Date(`${date}T${endTime}`)
   return new Date() > bookingEnd
+}
+
+// Helper to get completion method label and styles
+const getCompletionMethodInfo = (method?: string) => {
+  const methods: Record<string, { label: string; icon: typeof CheckCircle; color: string; bg: string }> = {
+    MANUAL: { label: 'Completed (Manual)', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-100' },
+    QR: { label: 'Completed (QR)', icon: QrCode, color: 'text-blue-700', bg: 'bg-blue-100' },
+    AUTO: { label: 'Completed (Auto)', icon: Clock, color: 'text-amber-700', bg: 'bg-amber-100' },
+    CUSTOMER: { label: 'Completed (Customer)', icon: User, color: 'text-purple-700', bg: 'bg-purple-100' },
+  }
+  return method ? methods[method] : null
 }
 
 export default function Bookings() {
@@ -324,6 +335,38 @@ export default function Bookings() {
                     </div>
                   )
                 })()}
+
+                {/* Completion Status Badge */}
+                {booking.serviceCompleted && booking.completionMethod && (
+                  <div className="mt-2">
+                    {(() => {
+                      const completionInfo = getCompletionMethodInfo(booking.completionMethod)
+                      if (!completionInfo) return null
+                      const CompletionIcon = completionInfo.icon
+                      return (
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${completionInfo.bg} ${completionInfo.color}`}>
+                          <CompletionIcon className="w-3 h-3" />
+                          {completionInfo.label}
+                          {booking.serviceCompletedAt && (
+                            <span className="opacity-75">
+                              · {new Date(booking.serviceCompletedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </span>
+                      )
+                    })()}
+                  </div>
+                )}
+
+                {/* Dispute Badge */}
+                {booking.disputeRaised && (
+                  <div className="mt-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                      <AlertTriangle className="w-3 h-3" />
+                      Dispute Raised
+                    </span>
+                  </div>
+                )}
               </div>
             )
           })}
@@ -579,6 +622,63 @@ export default function Bookings() {
                       )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Service Completion Details */}
+              {selectedBooking.serviceCompleted && (
+                <div className={`rounded-xl p-4 border ${selectedBooking.disputeRaised ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    {selectedBooking.disputeRaised ? (
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                    ) : (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    )}
+                    <h3 className={`text-sm font-medium ${selectedBooking.disputeRaised ? 'text-red-700' : 'text-green-700'}`}>
+                      {selectedBooking.disputeRaised ? 'Service Completion - Dispute Raised' : 'Service Completion'}
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedBooking.completionMethod && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Completion Method</span>
+                        {(() => {
+                          const completionInfo = getCompletionMethodInfo(selectedBooking.completionMethod)
+                          if (!completionInfo) return <span className="text-sm text-gray-900">{selectedBooking.completionMethod}</span>
+                          const CompletionIcon = completionInfo.icon
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${completionInfo.bg} ${completionInfo.color}`}>
+                              <CompletionIcon className="w-3 h-3" />
+                              {completionInfo.label}
+                            </span>
+                          )
+                        })()}
+                      </div>
+                    )}
+                    {selectedBooking.serviceCompletedAt && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Completed At</span>
+                        <span className="text-sm text-gray-900">
+                          {new Date(selectedBooking.serviceCompletedAt).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {selectedBooking.customerConfirmed !== undefined && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Customer Confirmed</span>
+                        <span className={`text-sm font-medium ${selectedBooking.customerConfirmed ? 'text-green-600' : 'text-amber-600'}`}>
+                          {selectedBooking.customerConfirmed ? 'Yes' : 'Pending'}
+                        </span>
+                      </div>
+                    )}
+                    {selectedBooking.disputeRaised && (
+                      <div className="mt-2 p-3 bg-red-100 rounded-lg">
+                        <p className="text-sm text-red-700">
+                          <span className="font-medium">Dispute Status:</span> A dispute has been raised for this booking. Please contact support for assistance.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

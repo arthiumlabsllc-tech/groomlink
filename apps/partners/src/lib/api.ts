@@ -118,6 +118,19 @@ export interface Booking {
   refundEligible?: boolean;
   cancellationDeadline?: string;
   noShowFlag?: boolean;
+  // Service completion fields
+  serviceCompleted?: boolean;
+  serviceCompletedAt?: string;
+  completionMethod?: 'MANUAL' | 'QR' | 'AUTO' | 'CUSTOMER';
+  customerConfirmed?: boolean;
+  disputeRaised?: boolean;
+}
+
+export interface CompletionSettings {
+  autoCompletionHours: number;
+  requiresCustomerConfirmation: boolean;
+  completionReminderEnabled: boolean;
+  qrCheckinEnabled: boolean;
 }
 
 export interface EarningsSummary {
@@ -458,6 +471,13 @@ class ApiClient {
     });
   }
 
+  async completeByQR(bookingId: string, qrToken: string) {
+    return this.request<{ success: boolean; data: Booking }>('/bookings/complete-by-qr', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, qrToken }),
+    });
+  }
+
   async markNoShow(bookingId: string) {
     return this.request<{ success: boolean; data: Booking }>(`/bookings/${bookingId}/no-show`, {
       method: 'POST',
@@ -468,6 +488,18 @@ class ApiClient {
     return this.request<{ success: boolean; data: Booking }>(`/bookings/${bookingId}/cancel`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
+    });
+  }
+
+  // Completion settings
+  async getCompletionSettings(salonId: string) {
+    return this.request<{ success: boolean; data: CompletionSettings }>(`/salon/${salonId}/completion-settings`);
+  }
+
+  async updateCompletionSettings(salonId: string, settings: CompletionSettings) {
+    return this.request<{ success: boolean; data: CompletionSettings }>(`/salon/${salonId}/completion-settings`, {
+      method: 'PUT',
+      body: JSON.stringify(settings),
     });
   }
 

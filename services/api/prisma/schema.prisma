@@ -121,6 +121,7 @@ model User {
   providerPenalties       ProviderPenalty[]     @relation("ProviderPenalties")
   noShowRecords           NoShowRecord[]        @relation("NoShowRecords")
   policiesUpdated         PlatformPolicy[]      @relation("PolicyUpdatedBy")
+  completionReminders     CompletionReminder[]
 
   // No-show tracking
   noShowCount       Int       @default(0) @map("no_show_count")
@@ -202,6 +203,12 @@ model Salon {
   kycSubmission  KycSubmission?
   salonQueues    SalonQueue[]
   escrowAccounts EscrowAccount[]
+
+  // Service Completion Settings
+  autoCompletionHours            Int     @default(2) @map("auto_completion_hours")
+  requiresCustomerConfirmation   Boolean @default(false) @map("requires_customer_confirmation")
+  completionReminderEnabled      Boolean @default(true) @map("completion_reminder_enabled")
+  qrCheckinEnabled               Boolean @default(true) @map("qr_checkin_enabled")
 
   @@index([ownerId])
   @@index([type])
@@ -356,6 +363,19 @@ model Booking {
   cancellationRecords CancellationRecord[]
   providerPenalties   ProviderPenalty[]
   noShowRecords       NoShowRecord[]
+
+  // Service Completion
+  serviceCompleted        Boolean   @default(false) @map("service_completed")
+  serviceCompletedAt      DateTime? @map("service_completed_at")
+  serviceCompletedBy      String?   @map("service_completed_by")
+  completionMethod        String?   @map("completion_method") // 'manual', 'auto', 'qr_scan', 'customer_confirmation', 'admin_resolution'
+  autoCompletionAttempts  Int       @default(0) @map("auto_completion_attempts")
+  autoCompletionDeadline  DateTime? @map("auto_completion_deadline")
+  customerConfirmed       Boolean   @default(false) @map("customer_confirmed")
+  customerConfirmedAt     DateTime? @map("customer_confirmed_at")
+  disputeRaised           Boolean   @default(false) @map("dispute_raised")
+  disputeReason           String?   @map("dispute_reason")
+  completionReminders     CompletionReminder[]
 
   @@index([customerId])
   @@index([salonId])
@@ -918,4 +938,22 @@ model PlatformPolicy {
   createdAt   DateTime @default(now())
 
   @@map("platform_policies")
+}
+
+model CompletionReminder {
+  id             String    @id @default(uuid())
+  bookingId      String    @map("booking_id")
+  booking        Booking   @relation(fields: [bookingId], references: [id])
+  reminderType   String    @map("reminder_type") // 'manual', 'auto_pending', 'auto_completed'
+  sentToId       String    @map("sent_to")
+  sentTo         User      @relation(fields: [sentToId], references: [id])
+  sentAt         DateTime  @default(now()) @map("sent_at")
+  responded      Boolean   @default(false)
+  respondedAt    DateTime? @map("responded_at")
+  responseAction String?   @map("response_action") // 'completed', 'disputed', 'extended'
+
+  @@index([bookingId])
+  @@index([sentToId])
+  @@index([sentAt])
+  @@map("completion_reminders")
 }

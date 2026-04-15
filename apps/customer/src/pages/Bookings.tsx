@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, MapPin, ChevronRight, X, AlertCircle, Plus, Loader2, Phone, RefreshCw, ShieldAlert, Info, Users, Shield, CheckCircle, Ban } from 'lucide-react'
+import { Calendar, Clock, MapPin, ChevronRight, X, AlertCircle, Plus, Loader2, Phone, RefreshCw, ShieldAlert, Info, Users, Shield, CheckCircle, Ban, QrCode, AlertTriangle, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { bookingApi, Booking, RefundPreview } from '../lib/api'
 
@@ -54,6 +54,20 @@ export default function Bookings() {
   const [rescheduling, setRescheduling] = useState(false)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
+
+  // QR code modal states
+  const [showQRCodeModal, setShowQRCodeModal] = useState(false)
+  const [qrCodeData, setQRCodeData] = useState<string | null>(null)
+  const [loadingQRCode, setLoadingQRCode] = useState(false)
+
+  // Service completion modal states
+  const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [confirmingCompletion, setConfirmingCompletion] = useState(false)
+
+  // Dispute modal states
+  const [showDisputeModal, setShowDisputeModal] = useState(false)
+  const [disputeReason, setDisputeReason] = useState('')
+  const [submittingDispute, setSubmittingDispute] = useState(false)
 
   // Fetch all booking counts on mount
   const fetchCounts = useCallback(async () => {
@@ -262,6 +276,100 @@ export default function Bookings() {
   const getSalonImage = (booking: Booking) => {
     return booking.salon?.logo || 
       `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.salon?.businessName || 'Salon')}&background=006B3F&color=fff&size=100`
+  }
+
+  // Check if appointment time has passed
+  const hasAppointmentTimePassed = (booking: Booking): boolean => {
+    const appointmentDateTime = new Date(`${booking.date.split('T')[0]}T${booking.startTime}`)
+    return new Date() > appointmentDateTime
+  }
+
+  // Get completion method display text
+  const getCompletionMethodText = (method: string | undefined): string => {
+    switch (method) {
+      case 'MANUAL': return 'Manual Check-in'
+      case 'QR_CODE': return 'QR Code Check-in'
+      case 'AUTO': return 'Auto-Completed'
+      case 'CUSTOMER_CONFIRMED': return 'Customer Confirmed'
+      default: return 'Completed'
+    }
+  }
+
+  // Handle QR code display
+  const handleShowQRCode = async () => {
+    if (!selectedBooking) return
+    setLoadingQRCode(true)
+    try {
+      const data = await bookingApi.getQRCode(selectedBooking.id)
+      setQRCodeData(data.qrCodeDataUrl)
+      setShowQRCodeModal(true)
+    } catch (err: any) {
+      toast.error('Failed to load QR code')
+      console.error('Failed to fetch QR code:', err)
+    } finally {
+      setLoadingQRCode(false)
+    }
+  }
+
+  // Handle service completion confirmation
+  const handleConfirmCompletion = async () => {
+    if (!selectedBooking) return
+    setConfirmingCompletion(true)
+    try {
+      await bookingApi.confirmCompletion(selectedBooking.id)
+      toast.success('Service completion confirmed. Payment has been released to the salon.')
+      
+      // Update local state
+      setBookings(prev => ({
+        ...prev,
+        upcoming: prev.upcoming.filter(b => b.id !== selectedBooking.id),
+        past: [...prev.past, { ...selectedBooking, serviceCompleted: true, customerConfirmed: true, completionMethod: 'CUSTOMER_CONFIRMED' }]
+      }))
+      
+      // Update counts
+      setCounts(prev => ({
+        upcoming: Math.max(0, prev.upcoming - 1),
+        past: prev.past + 1,
+        cancelled: prev.cancelled
+      }))
+      
+      setShowCompletionModal(false)
+      setSelectedBooking(null)
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to confirm completion')
+    } finally {
+      setConfirmingCompletion(false)
+    }
+  }
+
+  // Handle dispute submission
+  const handleRaiseDispute = async () => {
+    if (!selectedBooking || !disputeReason.trim()) {
+      toast.error('Please provide a reason for the dispute')
+      return
+    }
+    setSubmittingDispute(true)
+    try {
+      await bookingApi.raiseDispute(selectedBooking.id, disputeReason.trim())
+      toast.success('Dispute raised successfully. Our support team will contact you within 24 hours.')
+      
+      // Update local state
+      setBookings(prev => ({
+        ...prev,
+        upcoming: prev.upcoming.map(b => 
+          b.id === selectedBooking.id 
+            ? { ...b, disputeRaised: true, disputeReason: disputeReason.trim() }
+            : b
+        )
+      }))
+      
+      setShowDisputeModal(false)
+      setDisputeReason('')
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to raise dispute')
+    } finally {
+      setSubmittingDispute(false)
+    }
   }
 
   const tabs = [
@@ -622,8 +730,118 @@ export default function Bookings() {
                   </div>
                 )}
 
+                {/* Service Completion Prompt - For bookings where appointment time has passed */}
+                {activeTab === 'upcoming' && selectedBooking.status === 'CONFIRMED' && hasAppointmentTimePassed(selectedBooking) && !selectedBooking.serviceCompleted && !selectedBooking.disputeRaised && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      <h4 className="font-semibold text-gray-900">Was your service completed?</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Your appointment time has passed. Please confirm if the service was completed.
+                    </p>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setShowCompletionModal(true)}
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Yes, Service Complete
+                      </button>
+                      <button 
+                        onClick={() => setShowDisputeModal(true)}
+                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Issue with Service
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Confirming releases payment to the salon
+                    </p>
+                  </div>
+                )}
+
+                {/* Dispute Status */}
+                {selectedBooking.disputeRaised && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <h4 className="font-semibold text-red-800">Dispute Raised</h4>
+                    </div>
+                    {selectedBooking.disputeReason && (
+                      <p className="text-sm text-red-700 mb-2">
+                        <span className="font-medium">Reason:</span> {selectedBooking.disputeReason}
+                      </p>
+                    )}
+                    <p className="text-xs text-red-600">
+                      Payment is held in escrow until the dispute is resolved. Our support team will contact you within 24 hours.
+                    </p>
+                  </div>
+                )}
+
+                {/* Service Completed Status */}
+                {selectedBooking.serviceCompleted && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <h4 className="font-semibold text-green-800">Service Completed</h4>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-green-700">
+                      <span className="px-2 py-0.5 bg-green-100 rounded-full text-xs font-medium">
+                        {getCompletionMethodText(selectedBooking.completionMethod)}
+                      </span>
+                      {selectedBooking.serviceCompletedAt && (
+                        <span className="text-xs">
+                          {formatDate(selectedBooking.serviceCompletedAt)} at {formatTime(selectedBooking.serviceCompletedAt.split('T')[1]?.slice(0, 5) || '')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
-                {activeTab === 'upcoming' && (
+                {activeTab === 'upcoming' && selectedBooking.status === 'CONFIRMED' && !hasAppointmentTimePassed(selectedBooking) && !selectedBooking.disputeRaised && (
+                  <div className="space-y-3">
+                    {/* QR Code Button */}
+                    <button 
+                      onClick={handleShowQRCode}
+                      disabled={loadingQRCode}
+                      className="w-full btn-secondary flex items-center justify-center gap-2 border-2 border-green-600 text-green-700 hover:bg-green-50"
+                    >
+                      {loadingQRCode ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading QR Code...
+                        </>
+                      ) : (
+                        <>
+                          <QrCode className="w-4 h-4" />
+                          Show QR Code
+                        </>
+                      )}
+                    </button>
+                    
+                    {/* Reschedule and Cancel Buttons */}
+                    <div className="flex gap-3">
+                      <button 
+                        className="flex-1 btn-secondary flex items-center justify-center gap-2"
+                        onClick={openRescheduleModal}
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Reschedule
+                      </button>
+                      <button 
+                        onClick={openCancellationModal}
+                        className="flex-1 btn-primary bg-red-500 hover:bg-red-600 flex items-center justify-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action buttons for PENDING bookings */}
+                {activeTab === 'upcoming' && selectedBooking.status === 'PENDING' && (
                   <div className="flex gap-3">
                     <button 
                       className="flex-1 btn-secondary flex items-center justify-center gap-2"
@@ -905,6 +1123,204 @@ export default function Bookings() {
                       <>
                         <RefreshCw className="w-4 h-4" />
                         Confirm Reschedule
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {showQRCodeModal && selectedBooking && qrCodeData && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Check-in QR Code</h2>
+                <button 
+                  onClick={() => {
+                    setShowQRCodeModal(false)
+                    setQRCodeData(null)
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-white p-4 rounded-xl border border-gray-200 inline-block mb-4">
+                  <img 
+                    src={qrCodeData} 
+                    alt="QR Code for check-in" 
+                    className="w-48 h-48 mx-auto"
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  Show this code to your barber/stylist at the salon
+                </p>
+                <p className="text-xs text-gray-500 mb-4">
+                  Booking Reference
+                </p>
+                <p className="text-lg font-bold text-green-700 font-mono">
+                  {selectedBooking.reference || selectedBooking.id.slice(0, 8)}
+                </p>
+              </div>
+
+              <button 
+                onClick={() => {
+                  setShowQRCodeModal(false)
+                  setQRCodeData(null)
+                }}
+                className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service Completion Confirmation Modal */}
+      {showCompletionModal && selectedBooking && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Confirm Service Completion</h2>
+                <button 
+                  onClick={() => setShowCompletionModal(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800">
+                    This will release payment of <span className="font-bold">GH₵ {(selectedBooking.finalAmount || selectedBooking.totalAmount).toFixed(2)}</span> to the salon. 
+                    Only confirm if the service was completed to your satisfaction.
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium">Service:</span> {selectedBooking.service?.name}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium">Salon:</span> {selectedBooking.salon?.businessName}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Date:</span> {formatDate(selectedBooking.date)} at {formatTime(selectedBooking.startTime)}
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowCompletionModal(false)}
+                    disabled={confirmingCompletion}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleConfirmCompletion}
+                    disabled={confirmingCompletion}
+                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    {confirmingCompletion ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Confirming...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        Yes, Release Payment
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dispute Modal */}
+      {showDisputeModal && selectedBooking && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Report an Issue</h2>
+                <button 
+                  onClick={() => {
+                    setShowDisputeModal(false)
+                    setDisputeReason('')
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    What went wrong?
+                  </label>
+                  <textarea
+                    value={disputeReason}
+                    onChange={(e) => setDisputeReason(e.target.value)}
+                    placeholder="Please describe the issue you experienced..."
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-blue-800 font-medium">Payment Protected</p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Payment will remain held in escrow until the dispute is resolved. 
+                        Support will contact you within 24 hours.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    onClick={() => {
+                      setShowDisputeModal(false)
+                      setDisputeReason('')
+                    }}
+                    disabled={submittingDispute}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleRaiseDispute}
+                    disabled={submittingDispute || !disputeReason.trim()}
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submittingDispute ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="w-4 h-4" />
+                        Submit Dispute
                       </>
                     )}
                   </button>

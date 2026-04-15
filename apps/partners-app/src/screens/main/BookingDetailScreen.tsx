@@ -120,6 +120,57 @@ export default function BookingDetailScreen() {
     }
   };
 
+  const handleComplete = () => {
+    Alert.alert(
+      'Mark Service Complete',
+      'Are you sure you want to mark this service as complete? This will trigger the escrow release process.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Complete',
+          style: 'default',
+          onPress: () => completeMutation.mutate(),
+        },
+      ]
+    );
+  };
+
+  const isAppointmentTimePassed = () => {
+    if (!booking) return false;
+    const appointmentDateTime = new Date(`${booking.date}T${booking.endTime}`);
+    return new Date() >= appointmentDateTime;
+  };
+
+  const getCompletionMethodLabel = (method: string) => {
+    switch (method) {
+      case 'MANUAL':
+        return 'Manual';
+      case 'AUTO':
+        return 'Auto';
+      case 'QR':
+        return 'QR Check-in';
+      case 'CUSTOMER':
+        return 'Customer Confirmed';
+      default:
+        return method;
+    }
+  };
+
+  const getCompletionMethodColor = (method: string) => {
+    switch (method) {
+      case 'MANUAL':
+        return '#3B82F6';
+      case 'AUTO':
+        return '#8B5CF6';
+      case 'QR':
+        return '#10B981';
+      case 'CUSTOMER':
+        return '#F59E0B';
+      default:
+        return '#6B7280';
+    }
+  };
+
   const renderActionButtons = () => {
     if (!booking) return null;
 
@@ -154,21 +205,31 @@ export default function BookingDetailScreen() {
           </View>
         );
       case 'CONFIRMED':
+        const canComplete = isAppointmentTimePassed();
         return (
           <View style={styles.actionButtons}>
-            <Button
-              mode="contained"
-              onPress={() => completeMutation.mutate()}
-              loading={completeMutation.isPending}
-              disabled={completeMutation.isPending}
-              style={styles.completeButton}
-              buttonColor="#10B981"
-              contentStyle={styles.buttonContent}
-              theme={{ roundness: 12 }}
-              icon="check-circle"
-            >
-              Mark Complete
-            </Button>
+            {canComplete ? (
+              <Button
+                mode="contained"
+                onPress={handleComplete}
+                loading={completeMutation.isPending}
+                disabled={completeMutation.isPending}
+                style={styles.completeButton}
+                buttonColor="#10B981"
+                contentStyle={styles.buttonContent}
+                theme={{ roundness: 12 }}
+                icon="check-circle"
+              >
+                {completeMutation.isPending ? 'Processing...' : 'Mark Service Complete'}
+              </Button>
+            ) : (
+              <View style={styles.waitingNotice}>
+                <Ionicons name="time-outline" size={20} color="#6B7280" />
+                <Text variant="bodyMedium" style={styles.waitingText}>
+                  Completion available after appointment time
+                </Text>
+              </View>
+            )}
             <Button
               mode="outlined"
               onPress={() => setCancelDialogVisible(true)}
@@ -183,11 +244,50 @@ export default function BookingDetailScreen() {
         );
       case 'COMPLETED':
         return (
-          <View style={styles.readOnlyNotice}>
-            <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-            <Text variant="bodyMedium" style={styles.readOnlyText}>
-              This booking has been completed.
-            </Text>
+          <View style={styles.completionSection}>
+            <View style={styles.readOnlyNotice}>
+              <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+              <Text variant="bodyMedium" style={styles.readOnlyText}>
+                This booking has been completed.
+              </Text>
+            </View>
+            {booking.serviceCompleted && (
+              <View style={styles.completionDetails}>
+                {booking.completionMethod && (
+                  <View style={styles.completionDetailRow}>
+                    <Text style={styles.completionLabel}>Method</Text>
+                    <View style={[styles.methodBadge, { backgroundColor: getCompletionMethodColor(booking.completionMethod) + '20' }]}>
+                      <Text style={[styles.methodBadgeText, { color: getCompletionMethodColor(booking.completionMethod) }]}>
+                        {getCompletionMethodLabel(booking.completionMethod)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                {booking.serviceCompletedAt && (
+                  <View style={styles.completionDetailRow}>
+                    <Text style={styles.completionLabel}>Completed At</Text>
+                    <Text style={styles.completionValue}>
+                      {format(parseISO(booking.serviceCompletedAt), 'MMM d, yyyy h:mm a')}
+                    </Text>
+                  </View>
+                )}
+                {booking.customerConfirmed !== undefined && (
+                  <View style={styles.completionDetailRow}>
+                    <Text style={styles.completionLabel}>Customer Confirmed</Text>
+                    <View style={[styles.confirmBadge, { backgroundColor: booking.customerConfirmed ? '#10B98120' : '#6B728020' }]}>
+                      <Ionicons 
+                        name={booking.customerConfirmed ? 'checkmark-circle' : 'help-circle'} 
+                        size={14} 
+                        color={booking.customerConfirmed ? '#10B981' : '#6B7280'} 
+                      />
+                      <Text style={[styles.confirmBadgeText, { color: booking.customerConfirmed ? '#10B981' : '#6B7280' }]}>
+                        {booking.customerConfirmed ? 'Yes' : 'Pending'}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         );
       case 'CANCELLED':
@@ -1060,5 +1160,66 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#7C3AED',
     marginTop: 12,
+  },
+  // Completion styles
+  completionSection: {
+    marginTop: 16,
+  },
+  completionDetails: {
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+  },
+  completionDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  completionLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  completionValue: {
+    fontSize: 13,
+    color: '#111827',
+    fontWeight: '500',
+  },
+  methodBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  methodBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  confirmBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  confirmBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  waitingNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F3F4F6',
+    padding: 14,
+    borderRadius: 12,
+  },
+  waitingText: {
+    color: '#6B7280',
+    fontWeight: '500',
   },
 });

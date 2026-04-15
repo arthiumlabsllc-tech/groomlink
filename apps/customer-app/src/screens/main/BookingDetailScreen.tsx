@@ -48,6 +48,8 @@ export default function BookingDetailScreen() {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [groupMembersExpanded, setGroupMembersExpanded] = useState(true);
+  const [disputeModalVisible, setDisputeModalVisible] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -83,6 +85,32 @@ export default function BookingDetailScreen() {
     },
     onError: (error: any) => {
       Alert.alert('Reschedule Failed', error.response?.data?.message || 'Please try again');
+    },
+  });
+
+  const confirmCompletionMutation = useMutation({
+    mutationFn: () => bookingApi.confirmCompletion(bookingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+      Alert.alert('Service Confirmed', 'Thank you for confirming your service completion.');
+    },
+    onError: (error: any) => {
+      Alert.alert('Confirmation Failed', error.response?.data?.message || 'Please try again');
+    },
+  });
+
+  const raiseDisputeMutation = useMutation({
+    mutationFn: (reason: string) => bookingApi.raiseDispute(bookingId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+      setDisputeModalVisible(false);
+      setDisputeReason('');
+      Alert.alert('Dispute Raised', 'Your dispute has been submitted. Our team will review it shortly.');
+    },
+    onError: (error: any) => {
+      Alert.alert('Dispute Failed', error.response?.data?.message || 'Please try again');
     },
   });
 
@@ -158,6 +186,61 @@ export default function BookingDetailScreen() {
 
   const canCancel = booking && (booking.status === 'PENDING' || booking.status === 'CONFIRMED');
   const canReschedule = booking && booking.status === 'CONFIRMED';
+
+  // Check if booking is in the past and needs completion confirmation
+  const isPastBooking = booking && new Date(booking.scheduledDate) < new Date();
+  const needsCompletionConfirmation = booking && 
+    isPastBooking && 
+    booking.status === 'CONFIRMED' && 
+    !booking.serviceCompleted &&
+    !booking.customerConfirmed &&
+    !booking.disputeRaised;
+
+  // Check if booking is confirmed and upcoming (for QR code)
+  const isUpcomingConfirmed = booking && 
+    booking.status === 'CONFIRMED' && 
+    !isPastBooking;
+
+  const handleConfirmCompletion = () => {
+    Alert.alert(
+      'Confirm Service Completion',
+      'Are you sure your service was completed satisfactorily? This will release payment to the provider.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Yes, Confirm', 
+          onPress: () => confirmCompletionMutation.mutate(),
+          style: 'default',
+        },
+      ]
+    );
+  };
+
+  const handleRaiseDispute = () => {
+    setDisputeModalVisible(true);
+  };
+
+  const handleSubmitDispute = () => {
+    if (!disputeReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for the dispute');
+      return;
+    }
+    raiseDisputeMutation.mutate(disputeReason);
+  };
+
+  const handleShowQRCode = () => {
+    navigation.navigate('BookingQRCode', { bookingId });
+  };
+
+  const getCompletionMethodLabel = (method?: string) => {
+    switch (method) {
+      case 'QR_CHECKIN': return 'QR Code Check-in';
+      case 'CUSTOMER_CONFIRMED': return 'Customer Confirmed';
+      case 'AUTO_COMPLETED': return 'Auto-completed';
+      case 'PROVIDER_MARKED': return 'Provider Marked';
+      default: return method || 'Unknown';
+    }
+  };
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -508,6 +591,137 @@ export default function BookingDetailScreen() {
           </Card>
         )}
 
+        {/* Service Completion Status - for completed bookings */}
+        {booking.serviceCompleted && (
+          <Card style={styles.completionCard}>
+            <Card.Content>
+              <View style={styles.completionHeader}>
+                <Ionicons name="checkmark-circle" size={24} color={COLORS.primaryGreen} />
+                <Text variant="titleSmall" style={styles.completionTitle}>
+                  Service Completed
+                </Text>
+              </View>
+              <View style={styles.completionDetails}>
+                <Text variant="bodySmall" style={styles.completionLabel}>
+                  Completion Method
+                </Text>
+                <Text variant="bodyMedium" style={styles.completionValue}>
+                  {getCompletionMethodLabel(booking.completionMethod)}
+                </Text>
+                {booking.serviceCompletedAt && (
+                  <>
+                    <Text variant="bodySmall" style={styles.completionLabel}>
+                      Completed At
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.completionValue}>
+                      {formatDate(booking.serviceCompletedAt)} at {formatTime(booking.serviceCompletedAt.split('T')[1]?.substring(0, 5) || '00:00')}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Dispute Status - for disputed bookings */}
+        {booking.disputeRaised && (
+          <Card style={styles.disputeCard}>
+            <Card.Content>
+              <View style={styles.disputeHeader}>
+                <Ionicons name="warning" size={24} color={COLORS.accentRed} />
+                <Text variant="titleSmall" style={styles.disputeTitle}>
+                  Dispute Raised
+                </Text>
+              </View>
+              <View style={styles.disputeDetails}>
+                <Text variant="bodySmall" style={styles.disputeLabel}>
+                  Reason
+                </Text>
+                <Text variant="bodyMedium" style={styles.disputeReason}>
+                  {booking.disputeReason || 'No reason provided'}
+                </Text>
+              </View>
+              <View style={styles.disputeBadge}>
+                <Text style={styles.disputeBadgeText}>Under Review</Text>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Service Completion Confirmation - for past appointments */}
+        {needsCompletionConfirmation && (
+          <Card style={styles.confirmationCard}>
+            <Card.Content>
+              <View style={styles.confirmationHeader}>
+                <Ionicons name="help-circle" size={28} color={COLORS.accentGold} />
+                <Text variant="titleSmall" style={styles.confirmationTitle}>
+                  Was your service completed?
+                </Text>
+              </View>
+              <Text variant="bodySmall" style={styles.confirmationSubtitle}>
+                Please confirm if your appointment was completed satisfactorily
+              </Text>
+              <View style={styles.confirmationButtons}>
+                <TouchableOpacity
+                  style={styles.confirmCompleteButton}
+                  onPress={handleConfirmCompletion}
+                  disabled={confirmCompletionMutation.isPending}
+                >
+                  {confirmCompletionMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={18} color="#fff" />
+                      <Text style={styles.confirmCompleteButtonText}>
+                        Yes, Service Complete
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.disputeButton}
+                  onPress={handleRaiseDispute}
+                >
+                  <Ionicons name="alert-circle" size={18} color={COLORS.accentRed} />
+                  <Text style={styles.disputeButtonText}>
+                    Issue with Service
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {booking.autoCompletionDeadline && (
+                <Text variant="bodySmall" style={styles.autoCompleteNote}>
+                  Auto-completes on {formatDate(booking.autoCompletionDeadline)}
+                </Text>
+              )}
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* QR Code Button - for upcoming confirmed bookings */}
+        {isUpcomingConfirmed && (
+          <Card style={styles.qrButtonCard}>
+            <Card.Content>
+              <TouchableOpacity
+                style={styles.qrButton}
+                onPress={handleShowQRCode}
+              >
+                <View style={styles.qrButtonIconContainer}>
+                  <Ionicons name="qr-code" size={32} color={COLORS.primaryGreen} />
+                </View>
+                <View style={styles.qrButtonTextContainer}>
+                  <Text variant="titleSmall" style={styles.qrButtonTitle}>
+                    Show QR Code
+                  </Text>
+                  <Text variant="bodySmall" style={styles.qrButtonSubtitle}>
+                    Tap to display your check-in code
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </Card.Content>
+          </Card>
+        )}
+
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           {canCancel && (
@@ -622,6 +836,130 @@ export default function BookingDetailScreen() {
                 Failed to load refund preview
               </Text>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Dispute Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={disputeModalVisible}
+        onRequestClose={() => setDisputeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text variant="titleLarge" style={styles.modalTitle}>Report Issue</Text>
+              <TouchableOpacity 
+                onPress={() => setDisputeModalVisible(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.disputeModalContent}>
+              <View style={styles.disputeIconContainer}>
+                <Ionicons name="alert-circle" size={48} color={COLORS.accentRed} />
+              </View>
+              
+              <Text variant="titleMedium" style={styles.disputeModalTitle}>
+                Issue with Service
+              </Text>
+              
+              <Text variant="bodySmall" style={styles.disputeModalDescription}>
+                Please describe the issue you experienced. Our support team will review your case and contact you within 24 hours.
+              </Text>
+
+              <Text variant="bodySmall" style={styles.reasonLabel}>
+                Describe the issue *
+              </Text>
+              <TextInput
+                style={styles.reasonInput}
+                multiline
+                numberOfLines={4}
+                placeholder="e.g., Service was not performed, quality issues, no-show by provider..."
+                value={disputeReason}
+                onChangeText={setDisputeReason}
+              />
+
+              <Button
+                mode="contained"
+                onPress={handleSubmitDispute}
+                loading={raiseDisputeMutation.isPending}
+                disabled={raiseDisputeMutation.isPending}
+                style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
+                contentStyle={styles.confirmCancelButtonContent}
+              >
+                {raiseDisputeMutation.isPending 
+                  ? 'Submitting...' 
+                  : 'Submit Dispute'
+                }
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Dispute Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={disputeModalVisible}
+        onRequestClose={() => setDisputeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text variant="titleLarge" style={styles.modalTitle}>Report Issue</Text>
+              <TouchableOpacity 
+                onPress={() => setDisputeModalVisible(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.disputeModalContent}>
+              <View style={styles.disputeIconContainer}>
+                <Ionicons name="alert-circle" size={48} color={COLORS.accentRed} />
+              </View>
+              
+              <Text variant="titleMedium" style={styles.disputeModalTitle}>
+                Issue with Service
+              </Text>
+              
+              <Text variant="bodySmall" style={styles.disputeModalDescription}>
+                Please describe the issue you experienced. Our support team will review your case and contact you within 24 hours.
+              </Text>
+
+              <Text variant="bodySmall" style={styles.reasonLabel}>
+                Describe the issue *
+              </Text>
+              <TextInput
+                style={styles.reasonInput}
+                multiline
+                numberOfLines={4}
+                placeholder="e.g., Service was not performed, quality issues, no-show by provider..."
+                value={disputeReason}
+                onChangeText={setDisputeReason}
+              />
+
+              <Button
+                mode="contained"
+                onPress={handleSubmitDispute}
+                loading={raiseDisputeMutation.isPending}
+                disabled={raiseDisputeMutation.isPending}
+                style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
+                contentStyle={styles.confirmCancelButtonContent}
+              >
+                {raiseDisputeMutation.isPending 
+                  ? 'Submitting...' 
+                  : 'Submit Dispute'
+                }
+              </Button>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1160,5 +1498,214 @@ const styles = StyleSheet.create({
     color: COLORS.accentRed,
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  // Service Completion Card
+  completionCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primaryGreen,
+  },
+  completionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  completionTitle: {
+    fontWeight: '600',
+    color: COLORS.primaryGreen,
+  },
+  completionDetails: {
+    gap: 4,
+  },
+  completionLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
+  completionValue: {
+    color: COLORS.textPrimary,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  // Dispute Card
+  disputeCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.accentRed,
+  },
+  disputeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  disputeTitle: {
+    fontWeight: '600',
+    color: COLORS.accentRed,
+  },
+  disputeDetails: {
+    marginBottom: 12,
+  },
+  disputeLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  disputeReason: {
+    color: COLORS.textPrimary,
+    fontWeight: '500',
+  },
+  disputeBadge: {
+    backgroundColor: `${COLORS.accentRed}15`,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  disputeBadgeText: {
+    color: COLORS.accentRed,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  // Confirmation Card
+  confirmationCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: `${COLORS.accentGold}40`,
+  },
+  confirmationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  confirmationTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  confirmationSubtitle: {
+    color: COLORS.textSecondary,
+    marginBottom: 16,
+  },
+  confirmationButtons: {
+    gap: 10,
+  },
+  confirmCompleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 12,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  confirmCompleteButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  disputeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: `${COLORS.accentRed}10`,
+    borderRadius: 12,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: `${COLORS.accentRed}30`,
+    gap: 8,
+  },
+  disputeButtonText: {
+    color: COLORS.accentRed,
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  autoCompleteNote: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 12,
+    fontStyle: 'italic',
+  },
+  // QR Code Button Card
+  qrButtonCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  qrButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  qrButtonIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: `${COLORS.primaryGreen}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrButtonTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  qrButtonTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  qrButtonSubtitle: {
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  // Dispute Modal
+  disputeModalContent: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  disputeIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${COLORS.accentRed}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  disputeModalTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  disputeModalDescription: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
   },
 });

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair } from 'lucide-react'
+import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare } from 'lucide-react'
 import Layout from '../components/Layout'
-import { api, Salon } from '../lib/api'
+import { api, Salon, CompletionSettings } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -108,6 +108,17 @@ export default function Settings() {
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [deletingImage, setDeletingImage] = useState<string | null>(null)
 
+  // Completion settings state
+  const [completionSettings, setCompletionSettings] = useState<CompletionSettings>({
+    autoCompletionHours: 2,
+    requiresCustomerConfirmation: false,
+    completionReminderEnabled: true,
+    qrCheckinEnabled: true,
+  })
+  const [loadingCompletionSettings, setLoadingCompletionSettings] = useState(false)
+  const [savingCompletionSettings, setSavingCompletionSettings] = useState(false)
+  const [completionSettingsSaved, setCompletionSettingsSaved] = useState(false)
+
   const logoInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -184,6 +195,27 @@ export default function Settings() {
       setSalon(contextSalon)
     }
   }, [contextSalon, isNewPartner])
+
+  // Load completion settings when salon is loaded
+  useEffect(() => {
+    const fetchCompletionSettings = async () => {
+      if (!salon?.id || isNewPartner) return
+      
+      setLoadingCompletionSettings(true)
+      try {
+        const response = await api.getCompletionSettings(salon.id)
+        if (response.success && response.data) {
+          setCompletionSettings(response.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch completion settings:', error)
+      } finally {
+        setLoadingCompletionSettings(false)
+      }
+    }
+    
+    fetchCompletionSettings()
+  }, [salon?.id, isNewPartner])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -448,6 +480,30 @@ export default function Settings() {
     URL.revokeObjectURL(galleryPreviews[index])
     setGalleryPreviews(prev => prev.filter((_, i) => i !== index))
     setGalleryFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Handle completion settings save
+  const handleSaveCompletionSettings = async () => {
+    if (!salon?.id) return
+    
+    setSavingCompletionSettings(true)
+    setCompletionSettingsSaved(false)
+    setError(null)
+    
+    try {
+      const response = await api.updateCompletionSettings(salon.id, completionSettings)
+      if (response.success) {
+        setCompletionSettingsSaved(true)
+        setTimeout(() => setCompletionSettingsSaved(false), 3000)
+      } else {
+        setError('Failed to save completion settings')
+      }
+    } catch (err: any) {
+      console.error('Failed to save completion settings:', err)
+      setError(err?.message || 'Failed to save completion settings')
+    } finally {
+      setSavingCompletionSettings(false)
+    }
   }
 
   if (loading) {
@@ -1362,6 +1418,165 @@ export default function Settings() {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Service Completion Settings Section */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-teal-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Service Completion</h2>
+              <p className="text-sm text-gray-500">Configure how services are marked as complete</p>
+            </div>
+            {loadingCompletionSettings && (
+              <div className="ml-auto">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            {/* Auto-Completion Hours */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Auto-Completion Hours
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCompletionSettings(prev => ({ 
+                      ...prev, 
+                      autoCompletionHours: Math.max(1, prev.autoCompletionHours - 1) 
+                    }))}
+                    className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600"
+                    disabled={completionSettings.autoCompletionHours <= 1}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={6}
+                    value={completionSettings.autoCompletionHours}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 2
+                      setCompletionSettings(prev => ({ 
+                        ...prev, 
+                        autoCompletionHours: Math.min(6, Math.max(1, val)) 
+                      }))
+                    }}
+                    className="input-field w-20 text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCompletionSettings(prev => ({ 
+                      ...prev, 
+                      autoCompletionHours: Math.min(6, prev.autoCompletionHours + 1) 
+                    }))}
+                    className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600"
+                    disabled={completionSettings.autoCompletionHours >= 6}
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-gray-500">hours</span>
+              </div>
+              <p className="text-sm text-gray-500 mt-2">
+                Hours after appointment to auto-complete if not manually done
+              </p>
+            </div>
+
+            {/* Customer Confirmation Toggle */}
+            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Customer Confirmation</span>
+                <p className="text-sm text-gray-500">Require customer to confirm service completion before payment release</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={completionSettings.requiresCustomerConfirmation}
+                onChange={(e) => setCompletionSettings(prev => ({ 
+                  ...prev, 
+                  requiresCustomerConfirmation: e.target.checked 
+                }))}
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+              />
+            </label>
+
+            {/* Completion Reminders Toggle */}
+            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Bell className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Completion Reminders</span>
+                <p className="text-sm text-gray-500">Send SMS reminders to mark service complete</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={completionSettings.completionReminderEnabled}
+                onChange={(e) => setCompletionSettings(prev => ({ 
+                  ...prev, 
+                  completionReminderEnabled: e.target.checked 
+                }))}
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+              />
+            </label>
+
+            {/* QR Check-in Toggle */}
+            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <QrCode className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">QR Check-in</span>
+                <p className="text-sm text-gray-500">Allow customers to check in with QR code</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={completionSettings.qrCheckinEnabled}
+                onChange={(e) => setCompletionSettings(prev => ({ 
+                  ...prev, 
+                  qrCheckinEnabled: e.target.checked 
+                }))}
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+              />
+            </label>
+
+            {/* Save Button */}
+            <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+              {completionSettingsSaved && (
+                <span className="text-green-600 font-medium flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Settings saved!
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleSaveCompletionSettings}
+                disabled={savingCompletionSettings || loadingCompletionSettings}
+                className="btn-primary flex items-center gap-2"
+              >
+                {savingCompletionSettings ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Completion Settings
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -96,4 +96,22 @@ export const bookingApi = {
     const response = await apiClient.get('/users/no-show-status');
     return response.data.data;
   },
+
+  // Confirm service completion
+  confirmCompletion: async (id: string): Promise<Booking> => {
+    const response = await apiClient.post(`/bookings/${id}/confirm-completion`);
+    return response.data.data;
+  },
+
+  // Raise a dispute for service completion
+  raiseDispute: async (id: string, reason: string): Promise<Booking> => {
+    const response = await apiClient.post(`/bookings/${id}/dispute`, { reason });
+    return response.data.data;
+  },
+
+  // Get QR code for booking check-in
+  getQRCode: async (id: string): Promise<{ qrCode: string; bookingRef: string }> => {
+    const response = await apiClient.get(`/bookings/${id}/qr-code`);
+    return response.data.data;
+  },
 };

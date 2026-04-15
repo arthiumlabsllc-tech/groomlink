@@ -25,4 +25,8 @@ router.get('/admin/pending', authenticateToken, requireRole(UserRole.ADMIN), sal
 router.post('/:id/approve', authenticateToken, requireRole(UserRole.ADMIN), salonController.approveSalon);
 router.post('/:id/reject', authenticateToken, requireRole(UserRole.ADMIN), salonController.rejectSalon);
 
+// Completion settings (salon owner only)
+router.get('/:id/completion-settings', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonController.getCompletionSettings);
+router.put('/:id/completion-settings', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonController.updateCompletionSettings);
+
 export default router;

@@ -3,7 +3,7 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import * as bookingService from '../services/booking.service';
 import * as cancellationService from '../services/cancellation.service';
 import * as noshowService from '../services/noshow.service';
-import * as paymentService from '../services/payment.service';
+import * as completionService from '../services/completion.service';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import prisma from '../config/database';
@@ -202,7 +202,7 @@ export async function completeBooking(req: AuthenticatedRequest, res: Response):
     }
 
     const { id } = req.params;
-    const result = await paymentService.completeServiceAndRelease(id);
+    const result = await completionService.manualComplete(id, req.user.id);
     successResponse(res, result);
   } catch (error) {
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 400);
@@ -466,6 +466,118 @@ export async function disputeNoShowHandler(req: AuthenticatedRequest, res: Respo
 
     successResponse(res, updatedRecord);
   } catch (error) {
+    errorResponse(res, 'DISPUTE_FAILED', (error as Error).message, 400);
+  }
+}
+
+// ===========================================
+// SERVICE COMPLETION HANDLERS
+// ===========================================
+
+/**
+ * Customer confirms service completion
+ */
+export async function customerConfirmHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+    const result = await completionService.customerConfirmComplete(id, req.user.id);
+    successResponse(res, result);
+  } catch (error) {
+    errorResponse(res, 'CONFIRM_FAILED', (error as Error).message, 400);
+  }
+}
+
+const qrCompleteSchema = z.object({
+  bookingId: z.string().uuid('Booking ID must be a valid UUID'),
+  qrToken: z.string().min(1, 'QR token is required'),
+});
+
+/**
+ * QR code completion by salon owner
+ */
+export async function qrCompleteHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const validatedData = qrCompleteSchema.parse(req.body);
+    const result = await completionService.qrComplete(validatedData.bookingId, req.user.id);
+    successResponse(res, result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'QR_COMPLETE_FAILED', (error as Error).message, 400);
+  }
+}
+
+/**
+ * Get QR code for a booking (customer only)
+ */
+export async function getQRCodeHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+
+    // Verify the booking belongs to the customer
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { customerId: true },
+    });
+
+    if (!booking) {
+      errorResponse(res, 'NOT_FOUND', 'Booking not found', 404);
+      return;
+    }
+
+    if (booking.customerId !== req.user.id) {
+      errorResponse(res, 'FORBIDDEN', 'You can only get QR codes for your own bookings', 403);
+      return;
+    }
+
+    const qrCode = await completionService.generateQRCode(id);
+    successResponse(res, { qrCode });
+  } catch (error) {
+    errorResponse(res, 'QRCODE_FAILED', (error as Error).message, 400);
+  }
+}
+
+const raiseDisputeSchema = z.object({
+  reason: z.string().min(10, 'Dispute reason must be at least 10 characters'),
+});
+
+/**
+ * Raise a dispute for a booking (customer only)
+ */
+export async function raiseDisputeHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+    const validatedData = raiseDisputeSchema.parse(req.body);
+
+    const result = await completionService.raiseDispute(id, req.user.id, validatedData.reason);
+    successResponse(res, result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
     errorResponse(res, 'DISPUTE_FAILED', (error as Error).message, 400);
   }
 }

@@ -139,6 +139,12 @@ export interface Booking {
   paymentStatus?: 'PENDING' | 'HELD_IN_ESCROW' | 'RELEASED' | 'REFUNDED' | 'PENALTY_APPLIED';
   cancelledBy?: 'CUSTOMER' | 'PROVIDER' | 'SYSTEM';
   cancellationReason?: string;
+  // Service completion fields
+  serviceCompleted?: boolean;
+  serviceCompletedAt?: string;
+  completionMethod?: 'MANUAL' | 'AUTO' | 'QR' | 'CUSTOMER';
+  customerConfirmed?: boolean;
+  disputeRaised?: boolean;
 }
 
 export interface DashboardStats {
@@ -147,6 +153,13 @@ export interface DashboardStats {
   totalRevenue: number;
   averageRating: number;
   totalReviews: number;
+}
+
+export interface CompletionSettings {
+  autoCompletionHours: number;
+  requiresCustomerConfirmation: boolean;
+  completionReminderEnabled: boolean;
+  qrCheckinEnabled: boolean;
 }
 
 export interface AuthResponse {

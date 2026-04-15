@@ -6,6 +6,7 @@ import logger from '../config/logger';
 import { bookingConfig } from '../config/booking';
 import { getIO } from '../config/socket';
 import { sendReminderSMS } from '../services/sms.service';
+import { startAutoCompletionJob } from './autoComplete';
 
 /**
  * Initialize all background job schedulers
@@ -33,7 +34,10 @@ export function initScheduler(): void {
     await handleQueueTimeouts();
   });
 
-  logger.info('Background job scheduler initialized with 4 jobs');
+  // Job 5: Auto-completion with reminders - every 30 minutes
+  startAutoCompletionJob();
+
+  logger.info('Background job scheduler initialized with 5 jobs');
 }
 
 /**

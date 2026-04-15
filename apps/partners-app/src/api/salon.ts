@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { Salon, DashboardStats } from '../types';
+import { Salon, DashboardStats, CompletionSettings } from '../types';
 
 export interface CreateSalonData {
   businessName: string;
@@ -50,6 +50,18 @@ export const salonApi = {
   // Update salon
   update: async (id: string, data: Partial<CreateSalonData>): Promise<Salon> => {
     const response = await apiClient.put(`/salons/${id}`, data);
+    return response.data.data;
+  },
+
+  // Get completion settings
+  getCompletionSettings: async (salonId: string): Promise<CompletionSettings> => {
+    const response = await apiClient.get(`/salon/${salonId}/completion-settings`);
+    return response.data.data;
+  },
+
+  // Update completion settings
+  updateCompletionSettings: async (salonId: string, settings: Partial<CompletionSettings>): Promise<CompletionSettings> => {
+    const response = await apiClient.put(`/salon/${salonId}/completion-settings`, settings);
     return response.data.data;
   },
 };

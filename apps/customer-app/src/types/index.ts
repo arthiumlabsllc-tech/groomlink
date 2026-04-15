@@ -98,6 +98,13 @@ export interface Booking {
   refundPercentage?: number;
   cancellationDeadline?: string;
   noShowFlag?: boolean;
+  serviceCompleted?: boolean;
+  serviceCompletedAt?: string;
+  completionMethod?: string;
+  customerConfirmed?: boolean;
+  disputeRaised?: boolean;
+  disputeReason?: string;
+  autoCompletionDeadline?: string;
 }
 
 export interface Review {

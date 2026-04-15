@@ -87,4 +87,7 @@ router.get('/cancellations', authenticateToken, requireAdminOrHigher, adminContr
 router.get('/no-shows', authenticateToken, requireAdminOrHigher, adminController.getNoShowsHandler);
 router.put('/no-shows/:id/resolve', authenticateToken, requireAdminOrHigher, adminController.resolveDisputeHandler);
 
+// Completion Dispute Resolution
+router.put('/disputes/:id/resolve', authenticateToken, requireAdminOrHigher, adminController.resolveCompletionDisputeHandler);
+
 export default router;
