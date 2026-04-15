@@ -662,10 +662,17 @@ const paymentSettingsSchema = z.object({
   paystackPublicKey: z.string().max(500).optional().nullable(),
   paystackSecretKey: z.string().max(500).optional().nullable(),
   isPaymentTestMode: z.boolean().optional(),
-  transactionFeePercent: z.union([
-    z.number().min(0).max(100),
-    z.null(),
-  ]).optional(),
+  transactionFeePercent: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = typeof val === 'string' ? parseFloat(val) : val;
+      return isNaN(num as number) ? null : num;
+    },
+    z.union([
+      z.number().min(0).max(100),
+      z.null(),
+    ])
+  ).optional(),
 }).transform((data) => ({
   ...data,
   // Convert empty strings to null
