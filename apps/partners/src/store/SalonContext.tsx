@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { api } from '../lib/api'
+import { api, Salon } from '../lib/api'
 
 interface User {
   id: string
@@ -8,12 +8,6 @@ interface User {
   phoneNumber: string
   firstName: string
   lastName: string
-}
-
-interface Salon {
-  id: string
-  businessName: string
-  [key: string]: any
 }
 
 interface SalonContextType {

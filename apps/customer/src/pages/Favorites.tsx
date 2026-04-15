@@ -29,7 +29,7 @@ export default function Favorites() {
     try {
       setLoading(true)
       setError(null)
-      const response = await apiClient.get('/user/favorites')
+      const response = await apiClient.get('/users/favorites')
       const favorites = response.data.data || response.data || []
       setFavoritesList(favorites)
     } catch (err) {
@@ -43,7 +43,7 @@ export default function Favorites() {
   const removeFavorite = async (salonId: string) => {
     try {
       setRemovingId(salonId)
-      await apiClient.delete(`/user/favorites/${salonId}`)
+      await apiClient.delete(`/users/favorites/${salonId}`)
       setFavoritesList(prev => prev.filter(item => item.id !== salonId))
     } catch (err) {
       console.error('Error removing favorite:', err)

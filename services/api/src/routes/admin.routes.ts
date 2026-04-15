@@ -73,4 +73,18 @@ router.post('/support/tickets/:id/messages', authenticateToken, requireAdminOrHi
 router.get('/support/tickets/:id/messages', authenticateToken, requireAdminOrHigher, supportTicketController.getTicketMessages);
 router.put('/support/tickets/:id/assign', authenticateToken, requireAdminOrHigher, supportTicketController.assignTicket);
 
+// Escrow Management
+router.get('/escrow', authenticateToken, requireAdminOrHigher, adminController.getEscrowDashboardHandler);
+
+// Platform Policies
+router.get('/policies', authenticateToken, requireAdminOrHigher, adminController.getPoliciesHandler);
+router.put('/policies/:id', authenticateToken, requireAdminOrHigher, adminController.updatePolicyHandler);
+
+// Cancellation Records
+router.get('/cancellations', authenticateToken, requireAdminOrHigher, adminController.getCancellationsHandler);
+
+// No-Show Records
+router.get('/no-shows', authenticateToken, requireAdminOrHigher, adminController.getNoShowsHandler);
+router.put('/no-shows/:id/resolve', authenticateToken, requireAdminOrHigher, adminController.resolveDisputeHandler);
+
 export default router;

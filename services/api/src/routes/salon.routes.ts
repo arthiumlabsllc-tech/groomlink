@@ -12,6 +12,7 @@ router.get('/map', salonController.getSalonsForMap);  // Public endpoint, no aut
 router.get('/:id', salonController.getSalonById);
 router.get('/:id/staff', salonController.getSalonStaff);
 router.get('/:id/services', salonController.getSalonServices);
+router.get('/:id/reviews', salonController.getSalonReviews);  // Public endpoint for reviews
 
 // Protected routes - Salon Owners with validation
 router.post('/', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonValidations.createSalon, salonController.createSalon);

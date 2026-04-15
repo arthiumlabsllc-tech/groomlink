@@ -20,7 +20,7 @@ import {
   RefreshCw,
   Users,
 } from 'lucide-react';
-import apiClient, { bookingApi, paymentApi, queueApi, QueueStatus } from '../lib/api';
+import apiClient, { bookingApi, paymentApi, queueApi, QueueStatus, BookingGuest, NoShowStatus } from '../lib/api';
 
 // Types
 interface Service {
@@ -61,6 +61,9 @@ interface AvailableSlot {
   startTime: string;
   endTime: string;
   available: boolean;
+  remainingSpots?: number;
+  totalSpots?: number;
+  bookedSpots?: number;
 }
 
 interface BookingData {
@@ -70,9 +73,13 @@ interface BookingData {
   date: string;
   startTime: string;
   customerNotes?: string;
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  guests?: BookingGuest[];
+  billingType?: 'individual' | 'combined';
 }
 
-type BookingStep = 'service' | 'staff' | 'datetime' | 'confirm' | 'success';
+type BookingStep = 'service' | 'staff' | 'group' | 'datetime' | 'confirm' | 'success';
 
 type PaymentProvider = 'MTN_MOMO' | 'VODAFONE_CASH' | 'AIRTELTIGO_MONEY' | 'CASH';
 
@@ -169,6 +176,14 @@ export default function BookSalon() {
   const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
   const [queueLoading, setQueueLoading] = useState(false);
 
+  // No-show status state
+  const [noShowStatus, setNoShowStatus] = useState<NoShowStatus | null>(null);
+
+  // Group booking state
+  const [isGroupBooking, setIsGroupBooking] = useState(false);
+  const [guests, setGuests] = useState<BookingGuest[]>([]);
+  const [totalPeople, setTotalPeople] = useState(1);
+
   // Fetch salon data
   useEffect(() => {
     if (!salonId) {
@@ -257,6 +272,20 @@ export default function BookSalon() {
     fetchQueueStatus();
   }, [salonId]);
 
+  // Fetch no-show status
+  useEffect(() => {
+    const fetchNoShowStatus = async () => {
+      try {
+        const status = await bookingApi.getNoShowStatus();
+        setNoShowStatus(status);
+      } catch (err) {
+        console.error('Failed to fetch no-show status:', err);
+      }
+    };
+
+    fetchNoShowStatus();
+  }, []);
+
   // Fetch available slots when date or worker changes
   useEffect(() => {
     if (!salonId || !selectedService) return;
@@ -299,6 +328,10 @@ export default function BookSalon() {
         date: selectedDate.toISOString(),
         startTime: selectedTime,
         customerNotes: notes || undefined,
+        isGroupBooking,
+        totalPeople: isGroupBooking ? 1 + guests.length : 1,
+        guests: isGroupBooking && guests.length > 0 ? guests : undefined,
+        billingType: isGroupBooking ? 'combined' : undefined,
       };
 
       const response = await bookingApi.createBooking(bookingData);
@@ -355,6 +388,17 @@ export default function BookSalon() {
         setCurrentStep('staff');
         break;
       case 'staff':
+        setCurrentStep('group');
+        break;
+      case 'group':
+        // Validate guests if group booking
+        if (isGroupBooking && guests.length > 0) {
+          const invalidGuest = guests.find(g => !g.guestName || !g.serviceId);
+          if (invalidGuest) {
+            toast.error('Please fill in all guest names and select services');
+            return;
+          }
+        }
         setCurrentStep('datetime');
         break;
       case 'datetime':
@@ -375,8 +419,11 @@ export default function BookSalon() {
       case 'staff':
         setCurrentStep('service');
         break;
-      case 'datetime':
+      case 'group':
         setCurrentStep('staff');
+        break;
+      case 'datetime':
+        setCurrentStep('group');
         break;
       case 'confirm':
         setCurrentStep('datetime');
@@ -395,13 +442,24 @@ export default function BookSalon() {
     setSelectedPaymentMethod('CASH');
     setPhoneNumber('');
     setCreatedBooking(null);
+    setIsGroupBooking(false);
+    setGuests([]);
+    setTotalPeople(1);
     setCurrentStep('service');
   };
 
   const totalPrice = useMemo(() => {
     if (!selectedService) return 0;
-    return parseFloat(selectedService.price);
-  }, [selectedService]);
+    let total = parseFloat(selectedService.price);
+    // Add guest service prices
+    guests.forEach(guest => {
+      const guestService = services.find(s => s.id === guest.serviceId);
+      if (guestService) {
+        total += parseFloat(guestService.price);
+      }
+    });
+    return total;
+  }, [selectedService, guests, services]);
 
 
 
@@ -455,6 +513,7 @@ export default function BookSalon() {
     const steps = [
       { key: 'service', label: 'Service', icon: Scissors },
       { key: 'staff', label: 'Staff', icon: User },
+      { key: 'group', label: 'Who\'s Coming', icon: Users },
       { key: 'datetime', label: 'Date & Time', icon: Calendar },
       { key: 'confirm', label: 'Confirm', icon: Check },
     ];
@@ -515,6 +574,40 @@ export default function BookSalon() {
         <h2 className="text-2xl font-bold text-gray-900">Select a Service</h2>
         <p className="text-gray-600 mt-1">Choose the service you'd like to book</p>
       </div>
+
+      {/* No-Show Warning Banner - Restricted */}
+      {noShowStatus?.restricted && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-red-800">
+              Your account is temporarily restricted due to {noShowStatus.noShowCount} no-shows.
+            </p>
+            <p className="text-xs text-red-600 mt-1">
+              You cannot make new bookings until {noShowStatus.restrictedUntil ? new Date(noShowStatus.restrictedUntil).toLocaleDateString('en-GH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'the restriction is lifted'}.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* No-Show Warning Banner - Warning (1-2 no-shows) */}
+      {!noShowStatus?.restricted && noShowStatus && noShowStatus.noShowCount > 0 && noShowStatus.noShowCount < 3 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="w-5 h-5 text-yellow-600" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-yellow-800">
+              You have {noShowStatus.noShowCount} no-show{noShowStatus.noShowCount !== 1 ? 's' : ''}.
+            </p>
+            <p className="text-xs text-yellow-600 mt-1">
+              Please attend your bookings to avoid account restrictions.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Queue Info Banner */}
       {queueStatus && queueStatus.totalWaiting > 0 && (
@@ -679,7 +772,241 @@ export default function BookSalon() {
     </div>
   );
 
-  // Step 3: Select Date & Time
+  // Guest management functions
+  const addGuest = () => {
+    setGuests([...guests, { guestName: '', serviceId: '', guestAgeGroup: 'adult' }]);
+    setTotalPeople(2 + guests.length);
+  };
+
+  const removeGuest = (index: number) => {
+    const newGuests = guests.filter((_, i) => i !== index);
+    setGuests(newGuests);
+    setTotalPeople(1 + newGuests.length);
+  };
+
+  const updateGuest = (index: number, field: keyof BookingGuest, value: string | boolean) => {
+    const newGuests = [...guests];
+    newGuests[index] = { ...newGuests[index], [field]: value };
+    setGuests(newGuests);
+  };
+
+  // Step 3: Group Selection
+  const renderGroupStep = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Who's getting services?</h2>
+        <p className="text-gray-600 mt-1">Are you booking for yourself or with guests?</p>
+      </div>
+
+      {/* Booking Type Selection */}
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => {
+            setIsGroupBooking(false);
+            setGuests([]);
+            setTotalPeople(1);
+          }}
+          className={`p-6 rounded-xl border-2 transition-all text-center ${
+            !isGroupBooking
+              ? 'border-[#006B3F] bg-[#006B3F]/5'
+              : 'border-gray-200 hover:border-gray-300 bg-white'
+          }`}
+        >
+          <div
+            className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ${
+              !isGroupBooking ? 'bg-[#006B3F]' : 'bg-gray-100'
+            }`}
+          >
+            <User className={`w-8 h-8 ${!isGroupBooking ? 'text-white' : 'text-gray-500'}`} />
+          </div>
+          <p className={`font-semibold ${!isGroupBooking ? 'text-[#006B3F]' : 'text-gray-900'}`}>
+            Just Me
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Book for yourself only</p>
+        </button>
+
+        <button
+          onClick={() => {
+            setIsGroupBooking(true);
+            if (guests.length === 0) {
+              addGuest();
+            }
+          }}
+          className={`p-6 rounded-xl border-2 transition-all text-center ${
+            isGroupBooking
+              ? 'border-[#006B3F] bg-[#006B3F]/5'
+              : 'border-gray-200 hover:border-gray-300 bg-white'
+          }`}
+        >
+          <div
+            className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ${
+              isGroupBooking ? 'bg-[#006B3F]' : 'bg-gray-100'
+            }`}
+          >
+            <Users className={`w-8 h-8 ${isGroupBooking ? 'text-white' : 'text-gray-500'}`} />
+          </div>
+          <p className={`font-semibold ${isGroupBooking ? 'text-[#006B3F]' : 'text-gray-900'}`}>
+            With Guests
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Book for multiple people</p>
+        </button>
+      </div>
+
+      {/* Guest Forms */}
+      {isGroupBooking && (
+        <div className="space-y-4">
+          {/* Primary (You) */}
+          <div className="bg-[#006B3F]/5 rounded-xl p-4 border border-[#006B3F]/20">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#006B3F] flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-semibold text-gray-900">You (Primary)</h3>
+            </div>
+            <div className="pl-10">
+              <p className="text-sm text-gray-600">
+                Service: <span className="font-medium text-gray-900">{selectedService?.name}</span>
+              </p>
+              <p className="text-sm text-gray-600">
+                Price: <span className="font-medium text-[#006B3F]">{formatPrice(selectedService?.price || 0)}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Guest Forms */}
+          {guests.map((guest, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl p-4 border border-gray-200 relative"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <User className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Guest {index + 1}</h3>
+                </div>
+                <button
+                  onClick={() => removeGuest(index)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Remove guest"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Guest Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Guest Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={guest.guestName}
+                    onChange={(e) => updateGuest(index, 'guestName', e.target.value)}
+                    placeholder="Enter guest name"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent"
+                  />
+                </div>
+
+                {/* Phone (optional) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-gray-400">(optional)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={guest.guestPhone || ''}
+                    onChange={(e) => updateGuest(index, 'guestPhone', e.target.value)}
+                    placeholder="Enter phone number"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent"
+                  />
+                </div>
+
+                {/* Age Group */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age Group
+                  </label>
+                  <select
+                    value={guest.guestAgeGroup || 'adult'}
+                    onChange={(e) => {
+                      const value = e.target.value as 'child' | 'teen' | 'adult' | 'senior';
+                      updateGuest(index, 'guestAgeGroup', value);
+                      updateGuest(index, 'isChild', value === 'child');
+                    }}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent bg-white"
+                  >
+                    <option value="child">Child (0-12)</option>
+                    <option value="teen">Teen (13-19)</option>
+                    <option value="adult">Adult (20-64)</option>
+                    <option value="senior">Senior (65+)</option>
+                  </select>
+                </div>
+
+                {/* Service Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Service <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={guest.serviceId}
+                    onChange={(e) => updateGuest(index, 'serviceId', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent bg-white"
+                  >
+                    <option value="">Select a service</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name} - {formatPrice(service.price)} ({formatDuration(service.duration)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Special Instructions */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Special Instructions <span className="text-gray-400">(optional)</span>
+                  </label>
+                  <textarea
+                    value={guest.specialInstructions || ''}
+                    onChange={(e) => updateGuest(index, 'specialInstructions', e.target.value)}
+                    placeholder="Any special requests or notes..."
+                    rows={2}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Add Guest Button */}
+          <button
+            onClick={addGuest}
+            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#006B3F] hover:text-[#006B3F] transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Another Guest
+          </button>
+
+          {/* Total Count */}
+          <div className="text-center py-2">
+            <p className="text-sm text-gray-600">
+              Total: <span className="font-semibold text-gray-900">{totalPeople} person(s)</span>
+              <span className="text-gray-500"> (You + {guests.length} guest{guests.length !== 1 ? 's' : ''})</span>
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Step 4: Select Date & Time
   const renderDateTimeStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -757,21 +1084,50 @@ export default function BookSalon() {
             {displaySlots.map((slot) => {
               const isAvailable = isSlotAvailable(slot);
               const isSelected = selectedTime === slot.startTime;
+              const remainingSpots = slot.remainingSpots ?? (slot.available ? 10 : 0);
+              const hasEnoughSpots = remainingSpots >= totalPeople;
+              const isDisabled = !isAvailable || remainingSpots === 0 || !hasEnoughSpots;
+
+              // Determine badge color
+              let badgeColor = '';
+              let badgeText = '';
+              if (remainingSpots === 0) {
+                badgeColor = 'bg-red-100 text-red-600';
+                badgeText = 'Full';
+              } else if (!hasEnoughSpots) {
+                badgeColor = 'bg-red-100 text-red-600';
+                badgeText = `${remainingSpots} left`;
+              } else if (remainingSpots <= 2) {
+                badgeColor = 'bg-amber-100 text-amber-700';
+                badgeText = 'Limited';
+              } else {
+                badgeColor = 'bg-green-100 text-green-700';
+                badgeText = `${remainingSpots} left`;
+              }
 
               return (
                 <button
                   key={slot.startTime}
-                  onClick={() => isAvailable && setSelectedTime(slot.startTime)}
-                  disabled={!isAvailable}
-                  className={`py-3 px-2 rounded-lg text-sm font-medium transition-all ${
+                  onClick={() => !isDisabled && setSelectedTime(slot.startTime)}
+                  disabled={isDisabled}
+                  title={!hasEnoughSpots && remainingSpots > 0 ? 'Not enough spots for your group' : ''}
+                  className={`py-3 px-2 rounded-lg text-sm font-medium transition-all relative ${
                     isSelected
                       ? 'bg-[#006B3F] text-white'
-                      : isAvailable
-                      ? 'bg-white border border-gray-200 hover:border-[#006B3F] text-gray-700'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : isDisabled
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white border border-gray-200 hover:border-[#006B3F] text-gray-700'
                   }`}
                 >
                   {formatTime(slot.startTime)}
+                  {/* Capacity Badge */}
+                  <span
+                    className={`absolute -top-1 -right-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                      isSelected ? 'bg-white/20 text-white' : badgeColor
+                    }`}
+                  >
+                    {isSelected ? `${remainingSpots} left` : badgeText}
+                  </span>
                 </button>
               );
             })}
@@ -872,21 +1228,50 @@ export default function BookSalon() {
 
       {/* Booking Summary */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h3 className="font-semibold text-gray-900">Booking Summary</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Booking Summary</h3>
+          {isGroupBooking && (
+            <span className="px-2 py-1 bg-[#006B3F]/10 text-[#006B3F] text-xs font-medium rounded-full">
+              Group Booking
+            </span>
+          )}
+        </div>
 
         <div className="space-y-3">
+          {/* Primary Service */}
           <div className="flex items-start gap-3">
             <Scissors className="w-5 h-5 text-[#006B3F] mt-0.5" />
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-gray-900">{selectedService?.name}</p>
               <p className="text-sm text-gray-500">
-                {formatDuration(selectedService?.duration || 0)}
+                {isGroupBooking ? 'You (Primary)' : formatDuration(selectedService?.duration || 0)}
               </p>
             </div>
-            <p className="ml-auto font-semibold text-[#006B3F]">
+            <p className="font-semibold text-[#006B3F]">
               {formatPrice(selectedService?.price || 0)}
             </p>
           </div>
+
+          {/* Guest Services */}
+          {isGroupBooking && guests.length > 0 && (
+            <div className="space-y-2 pl-8 border-l-2 border-gray-100">
+              {guests.map((guest, index) => {
+                const guestService = services.find(s => s.id === guest.serviceId);
+                return (
+                  <div key={index} className="flex items-start gap-3">
+                    <User className="w-4 h-4 text-gray-400 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 text-sm">{guestService?.name || 'Service not selected'}</p>
+                      <p className="text-xs text-gray-500">{guest.guestName || `Guest ${index + 1}`}</p>
+                    </div>
+                    <p className="font-semibold text-[#006B3F] text-sm">
+                      {formatPrice(guestService?.price || 0)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="flex items-start gap-3">
             <User className="w-5 h-5 text-[#006B3F] mt-0.5" />
@@ -909,12 +1294,81 @@ export default function BookSalon() {
               <p className="text-sm text-gray-500">{formatTime(selectedTime || '')}</p>
             </div>
           </div>
+
+          {isGroupBooking && (
+            <div className="flex items-start gap-3">
+              <Users className="w-5 h-5 text-[#006B3F] mt-0.5" />
+              <div>
+                <p className="font-medium text-gray-900">
+                  {totalPeople} {totalPeople === 1 ? 'person' : 'people'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  You + {guests.length} guest{guests.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="border-t border-gray-200 pt-4">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600">Total</span>
-            <span className="text-2xl font-bold text-[#006B3F]">{formatPrice(totalPrice)}</span>
+        <div className="border-t border-gray-200 pt-4 space-y-3">
+          {/* Fee Breakdown */}
+          <div className="space-y-2">
+            {/* Service price(s) */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">
+                {selectedService?.name} {isGroupBooking && guests.length > 0 ? '(You)' : ''}
+              </span>
+              <span className="text-gray-900">{formatPrice(selectedService?.price || 0)}</span>
+            </div>
+            
+            {/* Guest services */}
+            {isGroupBooking && guests.length > 0 && guests.map((guest, index) => {
+              const guestService = services.find(s => s.id === guest.serviceId);
+              return (
+                <div key={index} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">
+                    {guestService?.name || 'Service'} ({guest.guestName || `Guest ${index + 1}`})
+                  </span>
+                  <span className="text-gray-900">{formatPrice(guestService?.price || 0)}</span>
+                </div>
+              );
+            })}
+            
+            {/* Platform fee */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 flex items-center gap-1">
+                Platform fee
+                <span className="text-xs text-gray-400">(5%)</span>
+              </span>
+              <span className="text-gray-900">{formatPrice(totalPrice * 0.05)}</span>
+            </div>
+          </div>
+          
+          {/* Total */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+            <div>
+              <span className="text-gray-900 font-semibold">Total Amount</span>
+              {isGroupBooking && (
+                <p className="text-xs text-gray-500">Combined billing for all services</p>
+              )}
+            </div>
+            <span className="text-2xl font-bold text-[#006B3F]">{formatPrice(totalPrice * 1.05)}</span>
+          </div>
+          
+          {/* Security info */}
+          <div className="flex items-start gap-2 text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+            <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span>Your payment is held securely until your service is completed</span>
+          </div>
+          
+          {/* Cancellation policy */}
+          <div className="flex items-start gap-2 text-xs text-gray-500">
+            <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Free cancellation up to 48 hours before. Partial refunds apply for later cancellations.</span>
           </div>
         </div>
       </div>
@@ -998,21 +1452,30 @@ export default function BookSalon() {
     </div>
   );
 
-  // Step 5: Success
+  // Step 6: Success
   const renderSuccessStep = () => (
     <div className="text-center py-8">
       <div className="w-20 h-20 bg-[#006B3F]/10 rounded-full flex items-center justify-center mx-auto mb-6">
         <CheckCircle2 className="w-12 h-12 text-[#006B3F]" />
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-      <p className="text-gray-600 mb-6">
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        {isGroupBooking ? 'Group Booking Confirmed!' : 'Booking Confirmed!'}
+      </h2>
+      <p className="text-gray-600 mb-2">
         {selectedPaymentMethod === 'CASH' 
           ? "Your appointment has been booked. Please pay at the salon when you arrive."
           : "Your appointment has been successfully booked. We've sent a confirmation to your phone."}
       </p>
+      {isGroupBooking && (
+        <p className="text-[#006B3F] font-medium mb-6">
+          {totalPeople} people booked
+        </p>
+      )}
 
       <div className="bg-[#006B3F]/5 rounded-xl p-6 mb-8">
-        <p className="text-sm text-gray-600 mb-1">Booking Reference</p>
+        <p className="text-sm text-gray-600 mb-1">
+          {isGroupBooking ? 'Group Reference' : 'Booking Reference'}
+        </p>
         <p className="text-3xl font-bold text-[#006B3F] tracking-wider">
           {createdBooking?.reference}
         </p>
@@ -1023,6 +1486,9 @@ export default function BookSalon() {
           <p className="text-sm text-yellow-800">
             <span className="font-semibold">Payment:</span> You have selected to pay at the salon. 
             Please arrive 10 minutes early and pay <span className="font-semibold">{formatPrice(totalPrice)}</span> at the reception.
+            {isGroupBooking && (
+              <span className="block mt-1">This covers all {totalPeople} people in your group.</span>
+            )}
           </p>
         </div>
       )}
@@ -1074,6 +1540,7 @@ export default function BookSalon() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           {currentStep === 'service' && renderServiceStep()}
           {currentStep === 'staff' && renderStaffStep()}
+          {currentStep === 'group' && renderGroupStep()}
           {currentStep === 'datetime' && renderDateTimeStep()}
           {currentStep === 'confirm' && renderConfirmStep()}
           {currentStep === 'success' && renderSuccessStep()}

@@ -8,3 +8,4 @@ export * from './useSupport';
 export * from './useSupportStaff';
 export * from './useAdminManagement';
 export * from './useSettings';
+export * from './useAdmin';

@@ -70,6 +70,34 @@ export interface Booking {
   worker: Worker;
   services: Service[];
   createdAt: string;
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  groupBookingRef?: string;
+  groupReference?: string;
+  billingType?: 'combined' | 'separate';
+  guests?: Array<{
+    id: string;
+    guestName: string;
+    guestPhone?: string;
+    guestAgeGroup?: string;
+    isChild?: boolean;
+    specialInstructions?: string;
+    checkedIn?: boolean;
+    serviceId?: string;
+    service?: { id: string; name: string; price: number; duration?: number };
+    staff?: { id: string; fullName: string };
+  }>;
+  escrow?: {
+    id: string;
+    status: string;
+    amountHeld: number;
+    platformFee: number;
+    providerAmount: number;
+  };
+  refundEligible?: boolean;
+  refundPercentage?: number;
+  cancellationDeadline?: string;
+  noShowFlag?: boolean;
 }
 
 export interface Review {
@@ -90,4 +118,20 @@ export interface AuthResponse {
     };
     isNewUser: boolean;
   };
+}
+
+export interface RefundPreview {
+  refundPercentage: number;
+  refundAmount: number;
+  providerAmount: number;
+  platformFee: number;
+  hoursUntilBooking: number;
+  tier: string;
+}
+
+export interface NoShowStatus {
+  restricted: boolean;
+  reason?: string;
+  restrictedUntil?: string;
+  noShowCount: number;
 }

@@ -58,7 +58,35 @@ export interface Worker {
   services: Service[];
 }
 
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+export interface Guest {
+  id: string;
+  guestName: string;
+  guestPhone?: string;
+  guestAgeGroup?: string;
+  isChild?: boolean;
+  specialInstructions?: string;
+  checkedIn?: boolean;
+  service: {
+    id: string;
+    name: string;
+    price: number;
+    duration?: number;
+  };
+  staff?: {
+    id: string;
+    fullName: string;
+  };
+}
+
+export interface Escrow {
+  id: string;
+  status: string;
+  amountHeld: number;
+  platformFee: number;
+  providerAmount: number;
+}
 
 export interface Booking {
   id: string;
@@ -96,6 +124,21 @@ export interface Booking {
   confirmedAt: string | null;
   completedAt: string | null;
   cancelledAt: string | null;
+  // Group booking fields
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  groupBookingRef?: string;
+  billingType?: 'combined' | 'separate';
+  guests?: Guest[];
+  // Escrow fields
+  escrow?: Escrow;
+  refundEligible?: boolean;
+  cancellationDeadline?: string;
+  noShowFlag?: boolean;
+  // Payment status
+  paymentStatus?: 'PENDING' | 'HELD_IN_ESCROW' | 'RELEASED' | 'REFUNDED' | 'PENALTY_APPLIED';
+  cancelledBy?: 'CUSTOMER' | 'PROVIDER' | 'SYSTEM';
+  cancellationReason?: string;
 }
 
 export interface DashboardStats {

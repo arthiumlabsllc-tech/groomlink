@@ -6,6 +6,7 @@ import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import { revokeAllUserRefreshTokens } from '../utils/jwt';
 import { sendWelcomeEmail } from '../services/email.service';
+import * as noshowService from '../services/noshow.service';
 
 // Transaction client type for Prisma transactions
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -213,6 +214,31 @@ export async function addFavorite(req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
+    // Check if favorite already exists for this user+salon combo
+    const existingFavorite = await prisma.favorite.findFirst({
+      where: {
+        userId: req.user.id,
+        salonId,
+      },
+      include: {
+        salon: {
+          select: {
+            id: true,
+            businessName: true,
+            type: true,
+            logo: true,
+            rating: true,
+          },
+        },
+      },
+    });
+
+    if (existingFavorite) {
+      // Return existing favorite instead of creating duplicate
+      successResponse(res, existingFavorite, 200);
+      return;
+    }
+
     const favorite = await prisma.favorite.create({
       data: {
         userId: req.user.id,
@@ -256,6 +282,39 @@ export async function removeFavorite(req: AuthenticatedRequest, res: Response): 
     successResponse(res, { message: 'Favorite removed' });
   } catch (error) {
     errorResponse(res, 'DELETE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function checkIsFavorite(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { salonId } = req.params;
+
+    if (!salonId) {
+      errorResponse(res, 'MISSING_PARAMS', 'Salon ID is required', 400);
+      return;
+    }
+
+    const favorite = await prisma.favorite.findFirst({
+      where: {
+        userId: req.user.id,
+        salonId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    successResponse(res, {
+      isFavorited: !!favorite,
+      favoriteId: favorite?.id || null,
+    });
+  } catch (error) {
+    errorResponse(res, 'CHECK_FAILED', (error as Error).message, 500);
   }
 }
 
@@ -1014,6 +1073,30 @@ export async function getSupportStaff(req: AuthenticatedRequest, res: Response):
     paginatedResponse(res, users, page, limit, total);
   } catch (error) {
     logger.error('Failed to fetch support staff', { error });
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Get no-show status and account restriction for the current user
+ */
+export async function getNoShowStatusHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const restrictionStatus = await noshowService.checkAccountRestriction(req.user.id);
+    
+    successResponse(res, {
+      restricted: restrictionStatus.restricted,
+      reason: restrictionStatus.reason,
+      restrictedUntil: restrictionStatus.restrictedUntil,
+      noShowCount: restrictionStatus.noShowCount,
+    });
+  } catch (error) {
+    logger.error('Failed to get no-show status', { error, userId: req.user?.id });
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }

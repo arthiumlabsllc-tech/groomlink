@@ -1,5 +1,15 @@
 import apiClient from './client';
-import { Booking } from '../types';
+import { Booking, RefundPreview, NoShowStatus } from '../types';
+
+export interface GuestData {
+  guestName: string;
+  guestPhone?: string;
+  guestAgeGroup: 'child' | 'teen' | 'adult' | 'senior';
+  serviceId: string;
+  staffId?: string;
+  specialInstructions?: string;
+  isChild: boolean;
+}
 
 export interface CreateBookingData {
   salonId: string;
@@ -8,11 +18,19 @@ export interface CreateBookingData {
   date: string;
   startTime: string;
   customerNotes?: string;
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  guests?: GuestData[];
+  billingType?: 'combined' | 'separate';
 }
 
 export interface AvailableSlot {
-  time: string;
+  startTime: string;
+  endTime: string;
   available: boolean;
+  remainingSpots?: number;
+  totalSpots?: number;
+  bookedSpots?: number;
 }
 
 export const bookingApi = {
@@ -60,5 +78,22 @@ export const bookingApi = {
   // Rate booking
   rateBooking: async (id: string, rating: number, comment?: string): Promise<void> => {
     await apiClient.post(`/bookings/${id}/rate`, { rating, comment });
+  },
+
+  // Get refund preview for cancellation
+  getRefundPreview: async (id: string): Promise<RefundPreview> => {
+    const response = await apiClient.get(`/bookings/${id}/refund-preview`);
+    return response.data.data;
+  },
+
+  // Dispute a no-show marking
+  disputeNoShow: async (id: string, reason: string): Promise<void> => {
+    await apiClient.post(`/bookings/${id}/dispute-no-show`, { reason });
+  },
+
+  // Get user's no-show status
+  getNoShowStatus: async (): Promise<NoShowStatus> => {
+    const response = await apiClient.get('/users/no-show-status');
+    return response.data.data;
   },
 };

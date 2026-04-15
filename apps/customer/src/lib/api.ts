@@ -42,6 +42,36 @@ export interface Booking {
     id: string;
     rating: number;
   } | null;
+  // Group booking fields
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  groupBookingRef?: string;
+  billingType?: 'combined' | 'separate';
+  guests?: Array<{
+    id: string;
+    guestName: string;
+    guestPhone?: string;
+    guestAgeGroup?: string;
+    isChild?: boolean;
+    specialInstructions?: string;
+    checkedIn?: boolean;
+    service: { id: string; name: string; price: number | string; duration?: number };
+    staff?: { id: string; fullName: string };
+  }>;
+  // Escrow fields
+  escrow?: {
+    id: string;
+    status: string;
+    amountHeld: number | string;
+    platformFee: number | string;
+    providerAmount: number | string;
+  };
+  // Policy fields
+  refundEligible?: boolean;
+  refundPercentage?: number;
+  cancellationDeadline?: string;
+  noShowFlag?: boolean;
+  providerCancelled?: boolean;
 }
 
 export interface CreateBookingData {
@@ -51,12 +81,29 @@ export interface CreateBookingData {
   date: string;
   startTime: string;
   customerNotes?: string;
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  guests?: BookingGuest[];
+  billingType?: 'individual' | 'combined';
+}
+
+export interface BookingGuest {
+  guestName: string;
+  guestPhone?: string;
+  guestAgeGroup?: 'child' | 'teen' | 'adult' | 'senior';
+  serviceId: string;
+  staffId?: string;
+  specialInstructions?: string;
+  isChild?: boolean;
 }
 
 export interface AvailableSlot {
   startTime: string;
   endTime: string;
   available: boolean;
+  remainingSpots?: number;
+  totalSpots?: number;
+  bookedSpots?: number;
 }
 
 export interface Service {
@@ -172,6 +219,26 @@ export interface MapSalon {
   distance?: number;
 }
 
+// Review types
+export interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  customer: {
+    firstName: string;
+    lastName: string;
+    avatar: string | null;
+  };
+}
+
+export interface ReviewsResponse {
+  reviews: Review[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 // Salon API functions
 export const salonApi = {
   getSalonServices: async (salonId: string): Promise<{ services: Service[] }> => {
@@ -213,6 +280,15 @@ export const salonApi = {
     const response = await apiClient.get(`/salons/map?${params.toString()}`);
     return response.data;
   },
+
+  getSalonReviews: async (
+    salonId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<ReviewsResponse> => {
+    const response = await apiClient.get(`/salons/${salonId}/reviews?page=${page}&limit=${limit}`);
+    return response.data.data;
+  },
 };
 
 // Booking API functions
@@ -244,6 +320,41 @@ export const bookingApi = {
     if (workerId) params.append('workerId', workerId);
     if (serviceDuration) params.append('duration', serviceDuration.toString());
     const response = await apiClient.get(`/bookings/slots/${salonId}?${params.toString()}`);
+    return response.data.data;
+  },
+
+  rateBooking: async (bookingId: string, data: { rating: number; comment?: string }): Promise<{ id: string; rating: number; comment: string | null }> => {
+    const response = await apiClient.post(`/bookings/${bookingId}/rate`, data);
+    return response.data.data;
+  },
+
+  checkCapacity: async (salonId: string, date: string, startTime: string, totalPeople: number, staffId?: string): Promise<{ available: boolean; remainingSpots: number }> => {
+    const response = await apiClient.post('/bookings/check-capacity', { salonId, date, startTime, totalPeople, staffId });
+    return response.data.data;
+  },
+
+  getGroupBooking: async (groupRef: string): Promise<Booking[]> => {
+    const response = await apiClient.get(`/bookings/group/${groupRef}`);
+    return response.data.data;
+  },
+
+  getRefundPreview: async (bookingId: string): Promise<RefundPreview> => {
+    const response = await apiClient.get(`/bookings/${bookingId}/refund-preview`);
+    return response.data.data;
+  },
+
+  rescheduleBooking: async (bookingId: string, date: string, time: string, staffId?: string): Promise<Booking> => {
+    const response = await apiClient.put(`/bookings/${bookingId}/reschedule`, { date, time, staffId });
+    return response.data.data;
+  },
+
+  getNoShowStatus: async (): Promise<NoShowStatus> => {
+    const response = await apiClient.get('/users/no-show-status');
+    return response.data.data;
+  },
+
+  disputeNoShow: async (bookingId: string, reason: string): Promise<any> => {
+    const response = await apiClient.post(`/bookings/${bookingId}/dispute-no-show`, { reason });
     return response.data.data;
   },
 };
@@ -330,6 +441,43 @@ export interface JoinQueueData {
   notes?: string;
 }
 
+// Favorite types
+export interface Favorite {
+  id: string;
+  salonId: string;
+  salon: {
+    id: string;
+    businessName: string;
+    address: string;
+    city: string;
+    logo: string | null;
+    images: string[];
+    rating: number;
+    reviewCount: number;
+    type: string;
+    isOpen?: boolean;
+  };
+  createdAt: string;
+}
+
+// Refund preview type
+export interface RefundPreview {
+  refundPercentage: number;
+  refundAmount: number;
+  providerAmount: number;
+  platformFee: number;
+  hoursUntilBooking: number;
+  tier: string;
+}
+
+// No-show status type
+export interface NoShowStatus {
+  restricted: boolean;
+  reason?: string;
+  restrictedUntil?: string;
+  noShowCount: number;
+}
+
 // Queue API functions
 export const queueApi = {
   getSalonQueue: async (salonId: string): Promise<QueueStatus> => {
@@ -347,6 +495,37 @@ export const queueApi = {
   getMyPosition: async (salonId: string): Promise<MyQueuePosition | null> => {
     const response = await apiClient.get(`/queue/my-position/${salonId}`);
     return response.data.data;
+  },
+};
+
+// Favorites API functions
+export const favoritesApi = {
+  getFavorites: async (): Promise<Favorite[]> => {
+    const response = await apiClient.get('/users/favorites');
+    return response.data.data;
+  },
+
+  addFavorite: async (salonId: string): Promise<Favorite> => {
+    const response = await apiClient.post('/users/favorites', { salonId });
+    return response.data.data;
+  },
+
+  removeFavorite: async (favoriteId: string): Promise<void> => {
+    await apiClient.delete(`/users/favorites/${favoriteId}`);
+  },
+
+  checkIsFavorite: async (salonId: string): Promise<{ isFavorited: boolean; favoriteId?: string }> => {
+    try {
+      const response = await apiClient.get(`/users/favorites/check/${salonId}`);
+      return response.data.data;
+    } catch (error: any) {
+      // Handle 404 or other errors gracefully - treat as not favorited
+      if (error.response?.status === 404 || error.response?.status === 401) {
+        return { isFavorited: false, favoriteId: undefined };
+      }
+      // For other errors, still return not favorited to prevent crashes
+      return { isFavorited: false, favoriteId: undefined };
+    }
   },
 };
 

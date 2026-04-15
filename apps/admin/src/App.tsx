@@ -10,6 +10,10 @@ import { Support } from './pages/Support';
 import { SupportStaff } from './pages/SupportStaff';
 import { AdminManagement } from './pages/AdminManagement';
 import { Settings } from './pages/Settings';
+import { Policies } from './pages/Policies';
+import { Escrow } from './pages/Escrow';
+import { Cancellations } from './pages/Cancellations';
+import { NoShows } from './pages/NoShows';
 import { Login } from './pages/Login';
 import NotFound from './pages/NotFound';
 import { useAuth } from './hooks';
@@ -133,6 +137,38 @@ function AppRoutes() {
           element={
             <PermissionGuard pageId="settings">
               <Settings />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="policies" 
+          element={
+            <PermissionGuard pageId="policies">
+              <Policies />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="escrow" 
+          element={
+            <PermissionGuard pageId="escrow">
+              <Escrow />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="cancellations" 
+          element={
+            <PermissionGuard pageId="cancellations">
+              <Cancellations />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="no-shows" 
+          element={
+            <PermissionGuard pageId="no-shows">
+              <NoShows />
             </PermissionGuard>
           } 
         />

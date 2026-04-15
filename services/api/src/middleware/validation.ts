@@ -112,6 +112,7 @@ export const salonValidations = {
     body('phoneNumber').optional().matches(/^\+233[0-9]{9}$/),
     body('latitude').optional().isFloat({ min: -90, max: 90 }),
     body('longitude').optional().isFloat({ min: -180, max: 180 }),
+    body('operatingHours').optional().isObject().withMessage('Operating hours must be an object'),
   ]),
 
   searchSalons: validate([

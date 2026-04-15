@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, Calendar, Users, Scissors, Star, Settings, 
-  Menu, X, Bell, LogOut, ListOrdered, Check, BellOff, AlertCircle
+  Menu, X, Bell, LogOut, ListOrdered, Check, BellOff, AlertCircle, Shield
 } from 'lucide-react'
 import { useSalon } from '../store/SalonContext';
 import { useNotificationStore, Notification } from '../store/notifications';
@@ -141,6 +141,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
     { name: 'Staff', icon: Users, path: '/staff' },
     { name: 'Services', icon: Scissors, path: '/services' },
     { name: 'Reviews', icon: Star, path: '/reviews' },
+    { name: 'Verification', icon: Shield, path: '/kyc' },
     { name: 'Settings', icon: Settings, path: '/settings' },
   ]
 

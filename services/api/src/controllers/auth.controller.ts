@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { successResponse, errorResponse } from '../utils/response';
 import * as authService from '../services/auth.service';
+import { RoleMismatchError } from '../services/auth.service';
 import { z } from 'zod';
 
 const phoneSchema = z.object({
@@ -169,6 +170,11 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
       errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
       return;
     }
+    // Handle role mismatch specifically
+    if (error instanceof RoleMismatchError) {
+      errorResponse(res, 'ROLE_MISMATCH', error.message, 400);
+      return;
+    }
     errorResponse(res, 'VERIFICATION_FAILED', (error as Error).message, 400);
   }
 }
@@ -181,6 +187,11 @@ export async function completeRegistration(req: Request, res: Response): Promise
   } catch (error) {
     if (error instanceof z.ZodError) {
       errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    // Handle role mismatch specifically
+    if (error instanceof RoleMismatchError) {
+      errorResponse(res, 'ROLE_MISMATCH', error.message, 400);
       return;
     }
     errorResponse(res, 'REGISTRATION_FAILED', (error as Error).message, 400);

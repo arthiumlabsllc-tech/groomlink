@@ -1,8 +1,33 @@
 import { Response } from 'express';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import * as bookingService from '../services/booking.service';
+import * as cancellationService from '../services/cancellation.service';
+import * as noshowService from '../services/noshow.service';
+import * as paymentService from '../services/payment.service';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
+import prisma from '../config/database';
+
+// Helper function to add minutes to a time string
+function addMinutesToTime(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const totalMinutes = h * 60 + m + minutes;
+  const newH = Math.floor(totalMinutes / 60) % 24;
+  const newM = totalMinutes % 60;
+  return `${newH.toString().padStart(2, '0')}:${newM.toString().padStart(2, '0')}`;
+}
+
+// Schema for guest in a group booking
+const guestSchema = z.object({
+  guestName: z.string().min(1, 'Guest name is required'),
+  guestPhone: z.string().optional(),
+  guestAgeGroup: z.string().optional(),
+  serviceId: z.string().uuid('Service ID must be a valid UUID'),
+  staffId: z.string().uuid().optional(),
+  priceAmount: z.number().optional(),
+  specialInstructions: z.string().optional(),
+  isChild: z.boolean().optional(),
+});
 
 const createBookingSchema = z.object({
   salonId: z.string().uuid(),
@@ -11,6 +36,11 @@ const createBookingSchema = z.object({
   date: z.string().datetime(),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
   customerNotes: z.string().optional(),
+  // Group booking fields
+  isGroupBooking: z.boolean().optional(),
+  totalPeople: z.number().int().min(1).optional(),
+  guests: z.array(guestSchema).optional(),
+  billingType: z.enum(['combined', 'separate']).optional(),
 });
 
 export async function createBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -20,10 +50,54 @@ export async function createBooking(req: AuthenticatedRequest, res: Response): P
       return;
     }
 
+    // Check account restriction for no-show violations
+    const restriction = await noshowService.checkAccountRestriction(req.user.id);
+    if (restriction.restricted) {
+      errorResponse(res, 'FORBIDDEN', `Your account is restricted from booking due to excessive no-shows. ${restriction.reason || ''} Restriction expires: ${restriction.restrictedUntil?.toLocaleDateString() || 'N/A'}`, 403);
+      return;
+    }
+
     const validatedData = createBookingSchema.parse(req.body);
+
+    // Validate group booking requirements
+    if (validatedData.isGroupBooking) {
+      if (!validatedData.totalPeople || validatedData.totalPeople < 2) {
+        errorResponse(res, 'VALIDATION_ERROR', 'Group bookings require at least 2 people', 400);
+        return;
+      }
+      if (!validatedData.guests || validatedData.guests.length === 0) {
+        errorResponse(res, 'VALIDATION_ERROR', 'Group bookings require at least one guest', 400);
+        return;
+      }
+    }
+
+    // If guests are provided, fetch all unique service IDs to get durations
+    // Use the LONGEST service duration as the booking duration (guests served concurrently)
+    let serviceDuration: number | undefined;
+    if (validatedData.guests && validatedData.guests.length > 0) {
+      const uniqueServiceIds = [...new Set(validatedData.guests.map(g => g.serviceId))];
+      const services = await prisma.service.findMany({
+        where: { id: { in: uniqueServiceIds } },
+        select: { id: true, duration: true },
+      });
+      
+      if (services.length !== uniqueServiceIds.length) {
+        errorResponse(res, 'VALIDATION_ERROR', 'One or more service IDs are invalid', 400);
+        return;
+      }
+      
+      // Find the longest duration
+      serviceDuration = Math.max(...services.map(s => s.duration));
+    }
+
     const data = {
       ...validatedData,
       date: new Date(validatedData.date),
+      // If we calculated a longer duration for group booking, we need to adjust the end time
+      // But the service layer handles end time calculation, so we pass serviceDuration hint
+      // For group bookings, we use the primary serviceId for the main booking
+      // and guests array contains individual services
+      ...(serviceDuration && { serviceDuration }),
     };
 
     const booking = await bookingService.createBooking(req.user.id, data);
@@ -128,8 +202,8 @@ export async function completeBooking(req: AuthenticatedRequest, res: Response):
     }
 
     const { id } = req.params;
-    const booking = await bookingService.completeBooking(id, req.user.id);
-    successResponse(res, booking);
+    const result = await paymentService.completeServiceAndRelease(id);
+    successResponse(res, result);
   } catch (error) {
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 400);
   }
@@ -144,8 +218,23 @@ export async function cancelBooking(req: AuthenticatedRequest, res: Response): P
 
     const { id } = req.params;
     const { reason } = req.body;
-    const booking = await bookingService.cancelBooking(id, req.user.id, req.user.role, reason);
-    successResponse(res, booking);
+    
+    // Determine cancelledBy from user role
+    let cancelledBy: 'customer' | 'provider' | 'system';
+    if (req.user.role === 'SALON_OWNER') {
+      cancelledBy = 'provider';
+    } else {
+      cancelledBy = 'customer';
+    }
+
+    let result;
+    if (cancelledBy === 'provider') {
+      result = await cancellationService.handleProviderCancellation(id, req.user.id, reason);
+    } else {
+      result = await cancellationService.cancelBookingWithRefund(id, cancelledBy, reason);
+    }
+
+    successResponse(res, result);
   } catch (error) {
     errorResponse(res, 'CANCEL_FAILED', (error as Error).message, 400);
   }
@@ -174,6 +263,7 @@ export async function getAvailableSlots(req: AuthenticatedRequest, res: Response
 const rescheduleSchema = z.object({
   date: z.string().datetime(),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+  staffId: z.string().uuid().optional(),
 });
 
 export async function rescheduleBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -186,10 +276,15 @@ export async function rescheduleBooking(req: AuthenticatedRequest, res: Response
     const { id } = req.params;
     const validatedData = rescheduleSchema.parse(req.body);
 
-    const booking = await bookingService.rescheduleBooking(id, req.user.id, {
-      date: new Date(validatedData.date),
-      startTime: validatedData.startTime,
-    });
+    // Convert date to ISO string format for the cancellation service
+    const newDate = new Date(validatedData.date).toISOString();
+    
+    const booking = await cancellationService.rescheduleBooking(
+      id,
+      newDate,
+      validatedData.startTime,
+      validatedData.staffId
+    );
     successResponse(res, booking);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -223,5 +318,154 @@ export async function rateBooking(req: AuthenticatedRequest, res: Response): Pro
       return;
     }
     errorResponse(res, 'RATING_FAILED', (error as Error).message, 400);
+  }
+}
+
+export async function checkCapacityHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { salonId, date, startTime, endTime, totalPeople, staffId } = req.body;
+    
+    if (!salonId || !date || !startTime || !totalPeople) {
+      errorResponse(res, 'MISSING_PARAMS', 'salonId, date, startTime, and totalPeople are required', 400);
+      return;
+    }
+    
+    // Calculate endTime if not provided (use default 30 min)
+    const calcEndTime = endTime || addMinutesToTime(startTime, 30);
+    
+    const result = await bookingService.checkCapacity(
+      salonId,
+      new Date(date),
+      startTime,
+      calcEndTime,
+      totalPeople,
+      staffId
+    );
+    
+    successResponse(res, result);
+  } catch (error) {
+    errorResponse(res, 'CAPACITY_CHECK_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function getGroupBookingHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { groupRef } = req.params;
+    if (!groupRef) {
+      errorResponse(res, 'MISSING_PARAMS', 'Group reference is required', 400);
+      return;
+    }
+    const bookings = await bookingService.getGroupBooking(groupRef);
+    if (!bookings || bookings.length === 0) {
+      errorResponse(res, 'NOT_FOUND', 'Group booking not found', 404);
+      return;
+    }
+    successResponse(res, bookings);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function checkInGuestHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { guestId } = req.params;
+    if (!guestId) {
+      errorResponse(res, 'MISSING_PARAMS', 'Guest ID is required', 400);
+      return;
+    }
+    const guest = await bookingService.checkInGuest(guestId);
+    successResponse(res, guest);
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Get refund preview for a booking before cancellation
+ */
+export async function refundPreviewHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+    const refundCalculation = await cancellationService.getRefundPreview(id);
+    successResponse(res, refundCalculation);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Mark a booking as no-show (provider or admin only)
+ */
+export async function markNoShowHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+    
+    // Determine markedByRole from user role
+    let markedByRole: 'PROVIDER' | 'ADMIN';
+    if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
+      markedByRole = 'ADMIN';
+    } else {
+      markedByRole = 'PROVIDER';
+    }
+
+    const noShowRecord = await noshowService.recordNoShow({
+      bookingId: id,
+      markedById: req.user.id,
+      markedByRole,
+    });
+
+    successResponse(res, noShowRecord);
+  } catch (error) {
+    errorResponse(res, 'NOSHOW_FAILED', (error as Error).message, 400);
+  }
+}
+
+/**
+ * Dispute a no-show record (customer only)
+ */
+export async function disputeNoShowHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      errorResponse(res, 'VALIDATION_ERROR', 'Reason is required', 400);
+      return;
+    }
+
+    // Find the NoShowRecord for this booking
+    const noShowRecord = await prisma.noShowRecord.findUnique({
+      where: { bookingId: id },
+    });
+
+    if (!noShowRecord) {
+      errorResponse(res, 'NOT_FOUND', 'No-show record not found for this booking', 404);
+      return;
+    }
+
+    const updatedRecord = await noshowService.disputeNoShow({
+      noShowRecordId: noShowRecord.id,
+      userId: req.user.id,
+      reason,
+    });
+
+    successResponse(res, updatedRecord);
+  } catch (error) {
+    errorResponse(res, 'DISPUTE_FAILED', (error as Error).message, 400);
   }
 }

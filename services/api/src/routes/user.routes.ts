@@ -14,6 +14,7 @@ router.put('/location', authenticateToken, userController.updateLocation);
 
 // Favorites - Salons
 router.get('/favorites', authenticateToken, userController.getFavorites);
+router.get('/favorites/check/:salonId', authenticateToken, userController.checkIsFavorite);
 router.post('/favorites', authenticateToken, userController.addFavorite);
 router.delete('/favorites/:id', authenticateToken, userController.removeFavorite);
 
@@ -23,6 +24,9 @@ router.delete('/favorites/staff/:staffId', authenticateToken, userController.rem
 
 // Bookings
 router.get('/bookings', authenticateToken, userController.getUserBookings);
+
+// No-Show Status
+router.get('/no-show-status', authenticateToken, userController.getNoShowStatusHandler);
 
 // GDPR/Ghana DPA - Data deletion
 router.delete('/account', authenticateToken, userController.deleteAccount);

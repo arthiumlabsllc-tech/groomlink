@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2 } from 'lucide-react'
+import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Salon } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -85,7 +85,15 @@ export default function Settings() {
     email: '',
     instagram: '',
     facebook: '',
-    businessHours: defaultBusinessHours
+    businessHours: defaultBusinessHours,
+    hasParking: false,
+    hasWifi: false,
+    hasAC: false,
+    acceptsWalkIns: false,
+    maxConcurrentClients: 1,
+    totalChairs: 1,
+    bufferTimeMinutes: 0,
+    operatingModel: 'APPOINTMENTS_ONLY' as 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED'
   })
 
   // Image upload state
@@ -137,7 +145,15 @@ export default function Settings() {
             region: salonData.region || '',
             phoneNumber: salonData.phoneNumber || '',
             email: salonData.email || '',
-            businessHours: parsedHours
+            businessHours: parsedHours,
+            hasParking: salonData.hasParking || false,
+            hasWifi: salonData.hasWifi || false,
+            hasAC: salonData.hasAC || false,
+            acceptsWalkIns: salonData.acceptsWalkIns || false,
+            maxConcurrentClients: salonData.maxConcurrentClients || 1,
+            totalChairs: salonData.totalChairs || 1,
+            bufferTimeMinutes: salonData.bufferTimeMinutes || 0,
+            operatingModel: salonData.operatingModel || 'APPOINTMENTS_ONLY'
           }))
         } else {
           // No salon found - this is a new partner
@@ -217,7 +233,15 @@ export default function Settings() {
           longitude: -0.1870,
           openingTime: getOpeningTime(formData.businessHours),
           closingTime: getClosingTime(formData.businessHours),
-          workingDays: getWorkingDays(formData.businessHours)
+          workingDays: getWorkingDays(formData.businessHours),
+          hasParking: formData.hasParking,
+          hasWifi: formData.hasWifi,
+          hasAC: formData.hasAC,
+          acceptsWalkIns: formData.acceptsWalkIns,
+          maxConcurrentClients: formData.maxConcurrentClients,
+          totalChairs: formData.totalChairs,
+          bufferTimeMinutes: formData.bufferTimeMinutes,
+          operatingModel: formData.operatingModel
         }
         
         const response = await api.createSalon(createData)
@@ -252,7 +276,16 @@ export default function Settings() {
           email: formData.email,
           openingTime: getOpeningTime(formData.businessHours),
           closingTime: getClosingTime(formData.businessHours),
-          workingDays: getWorkingDays(formData.businessHours)
+          workingDays: getWorkingDays(formData.businessHours),
+          operatingHours: formatOperatingHours(formData.businessHours),
+          hasParking: formData.hasParking,
+          hasWifi: formData.hasWifi,
+          hasAC: formData.hasAC,
+          acceptsWalkIns: formData.acceptsWalkIns,
+          maxConcurrentClients: formData.maxConcurrentClients,
+          totalChairs: formData.totalChairs,
+          bufferTimeMinutes: formData.bufferTimeMinutes,
+          operatingModel: formData.operatingModel
         }
         
         const response = await api.updateSalon(salon.id, updateData)
@@ -1081,6 +1114,255 @@ export default function Settings() {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Facilities & Amenities Section */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Facilities & Amenities</h2>
+              <p className="text-sm text-gray-500">Let customers know what your salon offers</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Wifi className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Free WiFi</span>
+                <p className="text-sm text-gray-500">Customers can connect to WiFi</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.hasWifi}
+                onChange={(e) => setFormData({ ...formData, hasWifi: e.target.checked })}
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+              />
+            </label>
+
+            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Car className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Parking Available</span>
+                <p className="text-sm text-gray-500">On-site parking for customers</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.hasParking}
+                onChange={(e) => setFormData({ ...formData, hasParking: e.target.checked })}
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+              />
+            </label>
+
+            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                <Wind className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Air Conditioning</span>
+                <p className="text-sm text-gray-500">Climate controlled environment</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.hasAC}
+                onChange={(e) => setFormData({ ...formData, hasAC: e.target.checked })}
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+              />
+            </label>
+
+            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <Footprints className="w-5 h-5 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Walk-ins Welcome</span>
+                <p className="text-sm text-gray-500">Accept customers without booking</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.acceptsWalkIns}
+                onChange={(e) => setFormData({ ...formData, acceptsWalkIns: e.target.checked })}
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* Salon Capacity Section */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Salon Capacity</h2>
+              <p className="text-sm text-gray-500">Configure your salon's capacity and scheduling preferences</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Max Concurrent Clients */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                How many customers can your salon serve at the same time?
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {[1, 2, 4, 6].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, maxConcurrentClients: num })}
+                    className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                      formData.maxConcurrentClients === num
+                        ? 'border-ghana-green bg-ghana-green/10 text-ghana-green'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">or</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={formData.maxConcurrentClients}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1;
+                      setFormData({ ...formData, maxConcurrentClients: Math.min(50, Math.max(1, val)) });
+                    }}
+                    className="input-field w-20 text-center"
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">
+                This controls how many bookings can overlap for the same time slot
+              </p>
+            </div>
+
+            {/* Total Chairs/Stations */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Total chairs or service stations
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Armchair className="w-5 h-5 text-gray-600" />
+                </div>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={formData.totalChairs}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setFormData({ ...formData, totalChairs: Math.min(50, Math.max(1, val)) });
+                  }}
+                  className="input-field w-24"
+                />
+                <span className="text-gray-500">chairs/stations</span>
+              </div>
+            </div>
+
+            {/* Buffer Time */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Buffer time between appointments (minutes)
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Timer className="w-5 h-5 text-gray-600" />
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  max={60}
+                  step={5}
+                  value={formData.bufferTimeMinutes}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0;
+                    setFormData({ ...formData, bufferTimeMinutes: Math.min(60, Math.max(0, val)) });
+                  }}
+                  className="input-field w-24"
+                />
+                <span className="text-gray-500">minutes</span>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Time to sanitize between customers
+              </p>
+            </div>
+
+            {/* Operating Model */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Operating Model
+              </label>
+              <div className="grid md:grid-cols-2 gap-4">
+                <label
+                  className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    formData.operatingModel === 'APPOINTMENTS_ONLY'
+                      ? 'border-ghana-green bg-ghana-green/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-ghana-green" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-900">Appointments Only</span>
+                    <p className="text-sm text-gray-500">Customers must book in advance</p>
+                  </div>
+                  <input
+                    type="radio"
+                    name="operatingModel"
+                    value="APPOINTMENTS_ONLY"
+                    checked={formData.operatingModel === 'APPOINTMENTS_ONLY'}
+                    onChange={(e) => setFormData({ ...formData, operatingModel: e.target.value as 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED' })}
+                    className="w-5 h-5 text-ghana-green"
+                  />
+                </label>
+
+                <label
+                  className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    formData.operatingModel === 'WALK_INS_ALLOWED'
+                      ? 'border-ghana-green bg-ghana-green/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Footprints className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-900">Walk-ins Allowed</span>
+                    <p className="text-sm text-gray-500">Accept both bookings and walk-ins</p>
+                  </div>
+                  <input
+                    type="radio"
+                    name="operatingModel"
+                    value="WALK_INS_ALLOWED"
+                    checked={formData.operatingModel === 'WALK_INS_ALLOWED'}
+                    onChange={(e) => setFormData({ ...formData, operatingModel: e.target.value as 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED' })}
+                    className="w-5 h-5 text-ghana-green"
+                  />
+                </label>
+              </div>
+              {formData.operatingModel === 'WALK_INS_ALLOWED' && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    <span className="font-medium">Note:</span> 20% of capacity will be reserved for walk-in customers
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

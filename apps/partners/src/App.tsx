@@ -9,6 +9,7 @@ import Services from './pages/Services'
 import Reviews from './pages/Reviews'
 import Settings from './pages/Settings'
 import Queue from './pages/Queue'
+import KYC from './pages/KYC'
 import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
 import { api } from './lib/api'
@@ -94,6 +95,11 @@ function App() {
                 <SalonSetupWrapper>
                   <Settings />
                 </SalonSetupWrapper>
+              </ProtectedRoute>
+            } />
+            <Route path="/kyc" element={
+              <ProtectedRoute>
+                <KYC />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

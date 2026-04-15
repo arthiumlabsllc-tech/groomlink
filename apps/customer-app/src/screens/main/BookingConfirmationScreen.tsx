@@ -67,6 +67,10 @@ export default function BookingConfirmationScreen() {
     return `GLK-${bookingId.substring(0, 8).toUpperCase()}`;
   };
 
+  const generateGroupReference = () => {
+    return booking.groupReference || `GRP-${bookingId.substring(0, 8).toUpperCase()}`;
+  };
+
   const handleShare = async () => {
     if (!booking) return;
     
@@ -125,16 +129,27 @@ export default function BookingConfirmationScreen() {
             Booking Confirmed!
           </Text>
           <Text variant="bodyMedium" style={styles.successSubtitle}>
-            Your appointment has been successfully booked
+            {booking.isGroupBooking 
+              ? `${booking.totalPeople || 1} ${booking.totalPeople === 1 ? 'person has' : 'people have'} been successfully booked`
+              : 'Your appointment has been successfully booked'
+            }
           </Text>
+          {booking.isGroupBooking && (
+            <View style={styles.groupBookingBadge}>
+              <Ionicons name="people" size={16} color="#fff" />
+              <Text style={styles.groupBookingBadgeText}>Group Booking</Text>
+            </View>
+          )}
         </View>
 
         {/* Reference Card */}
         <Card style={styles.referenceCard}>
           <Card.Content style={styles.referenceContent}>
-            <Text variant="labelMedium" style={styles.referenceLabel}>Booking Reference</Text>
+            <Text variant="labelMedium" style={styles.referenceLabel}>
+              {booking.isGroupBooking ? 'Group Reference' : 'Booking Reference'}
+            </Text>
             <Text variant="headlineMedium" style={styles.referenceNumber}>
-              {generateReference()}
+              {booking.isGroupBooking ? generateGroupReference() : generateReference()}
             </Text>
             <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
               <Ionicons name="share-outline" size={20} color={COLORS.accentGold} />
@@ -177,6 +192,52 @@ export default function BookingConfirmationScreen() {
                 ))}
               </View>
             </View>
+
+            {/* Guests - for group bookings */}
+            {booking.isGroupBooking && booking.guests && booking.guests.length > 0 && (
+              <>
+                <Divider style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <View style={styles.detailIconContainer}>
+                    <Ionicons name="people-outline" size={20} color={COLORS.primaryGreen} />
+                  </View>
+                  <View style={styles.detailContent}>
+                    <Text variant="bodySmall" style={styles.detailLabel}>
+                      Guests ({booking.guests.length})
+                    </Text>
+                    {booking.guests.map((guest: any, index: number) => {
+                      const guestService = guest.service || booking.services.find((s: any) => s.id === guest.serviceId);
+                      const staffName = guest.staff?.fullName;
+                      return (
+                        <View key={guest.id || index} style={styles.guestItem}>
+                          <View style={styles.guestHeader}>
+                            <Text variant="bodyMedium" style={styles.guestName}>
+                              {guest.guestName}
+                              {guest.isChild && <Text style={styles.childLabel}> (Child)</Text>}
+                            </Text>
+                            {guest.checkedIn && (
+                              <View style={styles.checkedInBadge}>
+                                <Ionicons name="checkmark-circle" size={14} color={COLORS.primaryGreen} />
+                                <Text style={styles.checkedInText}>Checked In</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text variant="bodySmall" style={styles.guestService}>
+                            {guestService?.name || 'Service'}
+                            {staffName && <Text style={styles.staffName}> • {staffName}</Text>}
+                          </Text>
+                          {guest.specialInstructions && (
+                            <Text variant="bodySmall" style={styles.specialInstructions}>
+                              Note: {guest.specialInstructions}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              </>
+            )}
 
             <Divider style={styles.divider} />
 
@@ -239,6 +300,19 @@ export default function BookingConfirmationScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* Escrow Info */}
+            {booking.escrow && booking.escrow.status === 'HELD' && (
+              <View style={styles.escrowInfoContainer}>
+                <View style={styles.escrowIconRow}>
+                  <Ionicons name="shield-checkmark" size={18} color={COLORS.primaryGreen} />
+                  <Text variant="bodyMedium" style={styles.escrowTitle}>Secure Payment</Text>
+                </View>
+                <Text variant="bodySmall" style={styles.escrowMessage}>
+                  Your payment of GH₵ {booking.escrow.amountHeld.toFixed(2)} is held securely until service completion.
+                </Text>
+              </View>
+            )}
           </Card.Content>
         </Card>
 
@@ -345,6 +419,21 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
+  groupBookingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryGreen,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    gap: 6,
+    marginTop: 12,
+  },
+  groupBookingBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+  },
   // Reference Card
   referenceCard: {
     marginBottom: 16,
@@ -427,6 +516,77 @@ const styles = StyleSheet.create({
   serviceText: {
     marginTop: 4,
     color: COLORS.textPrimary,
+  },
+  guestItem: {
+    marginTop: 8,
+    paddingLeft: 4,
+  },
+  guestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  guestName: {
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  childLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
+  guestService: {
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  staffName: {
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
+  specialInstructions: {
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    marginTop: 2,
+    paddingLeft: 4,
+    borderLeftWidth: 2,
+    borderLeftColor: COLORS.accentGold,
+  },
+  checkedInBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primaryGreen}15`,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 4,
+  },
+  checkedInText: {
+    fontSize: 11,
+    color: COLORS.primaryGreen,
+    fontWeight: '500',
+  },
+  escrowInfoContainer: {
+    backgroundColor: `${COLORS.primaryGreen}08`,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: `${COLORS.primaryGreen}20`,
+  },
+  escrowIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  escrowTitle: {
+    fontWeight: '600',
+    color: COLORS.primaryGreen,
+  },
+  escrowMessage: {
+    color: COLORS.textSecondary,
+    lineHeight: 20,
   },
   divider: {
     marginVertical: 4,

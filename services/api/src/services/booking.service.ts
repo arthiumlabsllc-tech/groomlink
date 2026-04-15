@@ -29,6 +29,20 @@ export interface CreateBookingData {
   date: Date;
   startTime: string;
   customerNotes?: string;
+  // Group booking support
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  guests?: Array<{
+    guestName: string;
+    guestPhone?: string;
+    guestAgeGroup?: string;
+    serviceId: string;
+    staffId?: string;
+    priceAmount?: number;
+    specialInstructions?: string;
+    isChild?: boolean;
+  }>;
+  billingType?: string; // 'combined' or 'separate'
 }
 
 export interface BookingFilters {
@@ -40,7 +54,20 @@ export interface BookingFilters {
 }
 
 export async function createBooking(customerId: string, data: CreateBookingData) {
-  const { salonId, workerId, serviceId, date, startTime, customerNotes } = data;
+  const { 
+    salonId, 
+    workerId, 
+    serviceId, 
+    date, 
+    startTime, 
+    customerNotes,
+    isGroupBooking,
+    totalPeople,
+    guests,
+    billingType,
+  } = data;
+
+  const requestedPeople = totalPeople || 1;
 
   // Get service details for pricing
   const service = await prisma.service.findUnique({
@@ -73,10 +100,10 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     }
   }
 
-  // Check closing time validation
+  // Check closing time validation and get capacity settings
   const salon = await prisma.salon.findUnique({
     where: { id: salonId },
-    select: { closingTime: true },
+    select: { closingTime: true, maxConcurrentClients: true, operatingModel: true },
   });
 
   if (salon) {
@@ -87,9 +114,9 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     }
   }
 
-  // Create lock key for this booking slot
+  // Create lock key for this booking slot (salon-wide for capacity checks)
   const dateStr = date.toISOString().split('T')[0];
-  const lockKey = `booking-lock:${salonId}:${workerId || 'any'}:${dateStr}:${startTime}`;
+  const lockKey = `booking-lock:${salonId}:${dateStr}:${startTime}`;
 
   // Acquire distributed lock to prevent race conditions
   const lock = await getRedlock().acquire([lockKey], 5000);
@@ -97,7 +124,40 @@ export async function createBooking(customerId: string, data: CreateBookingData)
   try {
     // Use transaction with serializable isolation for conflict check and insert
     const booking = await prisma.$transaction(async (tx) => {
-      // Check for conflicts within transaction
+      // CAPACITY CHECK - count total booked people for overlapping time range
+      const overlappingBookings = await tx.booking.findMany({
+        where: {
+          salonId,
+          date,
+          status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+          OR: [
+            { startTime: { lte: startTime }, endTime: { gt: startTime } },
+            { startTime: { lt: endTime }, endTime: { gte: endTime } },
+            { startTime: { gte: startTime }, endTime: { lte: endTime } },
+          ],
+        },
+        select: { totalPeople: true },
+      });
+
+      const currentBookedSpots = overlappingBookings.reduce((sum, b) => sum + (b.totalPeople || 1), 0);
+
+      // Fetch salon capacity
+      const salonData = await tx.salon.findUnique({
+        where: { id: salonId },
+        select: { maxConcurrentClients: true, operatingModel: true },
+      });
+
+      let walkinReserved = 0;
+      if (salonData?.operatingModel === 'walkins_allowed') {
+        walkinReserved = Math.ceil((salonData?.maxConcurrentClients || 1) * 0.2);
+      }
+      const bookableCapacity = (salonData?.maxConcurrentClients || 1) - walkinReserved;
+
+      if (currentBookedSpots + requestedPeople > bookableCapacity) {
+        throw new Error(`Not enough spots available. Only ${Math.max(0, bookableCapacity - currentBookedSpots)} spot(s) remaining for this time slot.`);
+      }
+
+      // PER-WORKER CONFLICT CHECK (keep as additional guard)
       const conflictingBooking = await tx.booking.findFirst({
         where: {
           salonId,
@@ -125,11 +185,16 @@ export async function createBooking(customerId: string, data: CreateBookingData)
       });
 
       if (conflictingBooking) {
-        throw new Error('Time slot is not available');
+        throw new Error('This time slot has already been booked with this staff member. Please select a different time or staff.');
       }
 
-      // Create booking with hold expiry
-      return tx.booking.create({
+      // Generate groupBookingRef for group bookings
+      const groupBookingRef = isGroupBooking 
+        ? `GRP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
+        : undefined;
+
+      // Create booking with hold expiry and group booking fields
+      const newBooking = await tx.booking.create({
         data: {
           customerId,
           salonId,
@@ -143,6 +208,12 @@ export async function createBooking(customerId: string, data: CreateBookingData)
           customerNotes,
           status: BookingStatus.PENDING,
           holdExpiresAt: new Date(Date.now() + bookingConfig.holdDurationSeconds * 1000),
+          // Group booking fields
+          isGroupBooking: isGroupBooking || false,
+          totalPeople: requestedPeople,
+          groupBookingRef,
+          primaryCustomerId: customerId,
+          billingType: billingType || 'combined',
         },
         include: {
           salon: {
@@ -178,6 +249,27 @@ export async function createBooking(customerId: string, data: CreateBookingData)
           },
         },
       });
+
+      // Create BookingGuest records if guests are provided
+      if (guests && guests.length > 0) {
+        await Promise.all(guests.map(guest => 
+          tx.bookingGuest.create({
+            data: {
+              bookingId: newBooking.id,
+              guestName: guest.guestName,
+              guestPhone: guest.guestPhone || null,
+              guestAgeGroup: guest.guestAgeGroup || 'adult',
+              serviceId: guest.serviceId,
+              staffId: guest.staffId || null,
+              priceAmount: guest.priceAmount || null,
+              specialInstructions: guest.specialInstructions || null,
+              isChild: guest.isChild || guest.guestAgeGroup === 'child' || false,
+            }
+          })
+        ));
+      }
+
+      return newBooking;
     });
 
     logger.info(`Booking created: ${booking.id} by customer: ${customerId}`);
@@ -294,7 +386,6 @@ export async function getBookingById(id: string, userId: string, userRole: strin
         select: {
           id: true,
           fullName: true,
-          
           avatar: true,
         },
       },
@@ -308,6 +399,17 @@ export async function getBookingById(id: string, userId: string, userRole: strin
       },
       payment: true,
       review: true,
+      guests: {
+        include: {
+          service: { select: { id: true, name: true, price: true, duration: true } },
+          staff: { select: { id: true, fullName: true, avatar: true } },
+        },
+      },
+      escrow: true,
+      cancellationRecords: {
+        orderBy: { cancellationTime: 'desc' },
+      },
+      noShowRecords: true,
     },
   });
 
@@ -364,13 +466,27 @@ export async function getBookings(filters: BookingFilters, page: number = 1, lim
           select: {
             id: true,
             fullName: true,
-            
           },
         },
         payment: {
           select: {
             status: true,
             provider: true,
+          },
+        },
+        guests: {
+          include: {
+            service: { select: { id: true, name: true, price: true, duration: true } },
+            staff: { select: { id: true, fullName: true } },
+          },
+        },
+        escrow: {
+          select: {
+            id: true,
+            status: true,
+            amountHeld: true,
+            providerAmount: true,
+            platformFee: true,
           },
         },
       },
@@ -539,6 +655,7 @@ function getAvailabilityCacheKey(salonId: string, workerId: string | undefined, 
 
 /**
  * Invalidate availability cache for a salon/worker/date
+ * Uses pattern matching to delete all related cache keys (general salon + specific worker caches)
  */
 async function invalidateAvailabilityCache(
   salonId: string,
@@ -546,9 +663,34 @@ async function invalidateAvailabilityCache(
   date: Date
 ): Promise<void> {
   try {
-    const cacheKey = getAvailabilityCacheKey(salonId, workerId, date);
-    await redis.del(cacheKey);
-    logger.debug(`Invalidated availability cache: ${cacheKey}`);
+    const dateStr = date.toISOString().split('T')[0];
+    // Pattern to match all availability keys for this salon and date
+    // This covers both general salon cache (worker='any') and specific worker caches
+    const pattern = `availability:${salonId}:*:${dateStr}`;
+    
+    // Use SCAN to find all matching keys (more efficient than KEYS for large datasets)
+    let cursor = '0';
+    const keysToDelete: string[] = [];
+    
+    do {
+      const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = result[0];
+      const keys = result[1];
+      if (keys.length > 0) {
+        keysToDelete.push(...keys);
+      }
+    } while (cursor !== '0');
+    
+    // Delete all found keys
+    if (keysToDelete.length > 0) {
+      await redis.del(...keysToDelete);
+      logger.debug(`Invalidated availability cache keys: ${keysToDelete.join(', ')}`);
+    } else {
+      // Fallback: try to delete the specific key if no pattern matches found
+      const specificKey = getAvailabilityCacheKey(salonId, workerId, date);
+      await redis.del(specificKey);
+      logger.debug(`Invalidated specific availability cache: ${specificKey}`);
+    }
   } catch (error) {
     logger.error('Failed to invalidate availability cache', { error });
   }
@@ -646,13 +788,15 @@ export async function getAvailableSlots(
     logger.error('Redis cache read error', { error });
   }
 
-  // Get salon working hours
+  // Get salon working hours and capacity settings
   const salon = await prisma.salon.findUnique({
     where: { id: salonId },
     select: {
       openingTime: true,
       closingTime: true,
       workingDays: true,
+      maxConcurrentClients: true,
+      operatingModel: true,
     },
   });
 
@@ -685,13 +829,15 @@ export async function getAvailableSlots(
     select: {
       startTime: true,
       endTime: true,
+      totalPeople: true,
     },
   });
 
-  // Convert bookings to time ranges with buffer
+  // Convert bookings to time ranges with buffer and totalPeople for capacity tracking
   const bookedRanges = existingBookings.map((booking) => ({
     start: timeToMinutes(booking.startTime),
     end: timeToMinutes(booking.endTime) + bookingConfig.bufferMinutes,
+    totalPeople: booking.totalPeople || 1,
   }));
 
   // Get worker break times if workerId is provided
@@ -726,9 +872,17 @@ export async function getAvailableSlots(
   }
 
   // Generate time slots based on service duration
-  const slots: { startTime: string; endTime: string; available: boolean }[] = [];
+  const slots: { startTime: string; endTime: string; available: boolean; remainingSpots: number; totalSpots: number; bookedSpots: number }[] = [];
   const openMinutes = timeToMinutes(salon.openingTime);
   const closeMinutes = timeToMinutes(salon.closingTime);
+
+  // Calculate walk-in reserved capacity
+  const maxConcurrentClients = salon.maxConcurrentClients || 1;
+  let walkinReserved = 0;
+  if (salon.operatingModel === 'walkins_allowed') {
+    walkinReserved = Math.ceil(maxConcurrentClients * 0.2);
+  }
+  const bookableCapacity = maxConcurrentClients - walkinReserved;
 
   let currentMinutes = openMinutes;
 
@@ -742,20 +896,27 @@ export async function getAvailableSlots(
       continue;
     }
 
-    // Check if slot overlaps with any booked range (including buffer)
-    const isBooked = bookedRanges.some((range) =>
+    // Count overlapping bookings and sum totalPeople for capacity check
+    const overlappingBookings = bookedRanges.filter((range) =>
       timeRangesOverlap(slotStart, slotEnd, range.start, range.end)
     );
+    const bookedSpots = overlappingBookings.reduce((sum, b) => sum + b.totalPeople, 0);
+    const remainingSpots = Math.max(0, bookableCapacity - bookedSpots);
 
     // Check if slot overlaps with any break time
     const isBreak = breakRanges.some((breakRange) =>
       timeRangesOverlap(slotStart, slotEnd, breakRange.start, breakRange.end)
     );
 
+    const available = remainingSpots > 0 && !isBreak;
+
     slots.push({
       startTime: minutesToTime(slotStart),
       endTime: minutesToTime(slotEnd),
-      available: !isBooked && !isBreak,
+      available,
+      remainingSpots,
+      totalSpots: maxConcurrentClients,
+      bookedSpots,
     });
 
     // Move to next slot
@@ -944,4 +1105,122 @@ async function updateRatings(salonId: string, workerId: string | null) {
       },
     });
   }
+}
+
+/**
+ * Check capacity for a given time slot
+ */
+export async function checkCapacity(
+  salonId: string,
+  date: Date,
+  startTime: string,
+  endTime: string,
+  totalPeople: number,
+  staffId?: string
+): Promise<{ hasCapacity: boolean; remainingSpots: number; totalCapacity: number; staffCapacityOk: boolean }> {
+  // Get salon capacity settings
+  const salon = await prisma.salon.findUnique({
+    where: { id: salonId },
+    select: { maxConcurrentClients: true, operatingModel: true },
+  });
+
+  if (!salon) {
+    throw new Error('Salon not found');
+  }
+
+  // Query overlapping bookings and sum totalPeople
+  const overlappingBookings = await prisma.booking.findMany({
+    where: {
+      salonId,
+      date,
+      status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+      OR: [
+        { startTime: { lte: startTime }, endTime: { gt: startTime } },
+        { startTime: { lt: endTime }, endTime: { gte: endTime } },
+        { startTime: { gte: startTime }, endTime: { lte: endTime } },
+      ],
+    },
+    select: { totalPeople: true },
+  });
+
+  const currentBookedSpots = overlappingBookings.reduce((sum, b) => sum + (b.totalPeople || 1), 0);
+
+  // Calculate walk-in reserved capacity
+  let walkinReserved = 0;
+  if (salon.operatingModel === 'walkins_allowed') {
+    walkinReserved = Math.ceil((salon.maxConcurrentClients || 1) * 0.2);
+  }
+  const bookableCapacity = (salon.maxConcurrentClients || 1) - walkinReserved;
+  const remainingSpots = Math.max(0, bookableCapacity - currentBookedSpots);
+  const hasCapacity = remainingSpots >= totalPeople;
+
+  // Check staff capacity if staffId is provided
+  let staffCapacityOk = true;
+  if (staffId) {
+    const worker = await prisma.worker.findUnique({
+      where: { id: staffId },
+      select: { concurrentCapacity: true, isActive: true, isOnLeave: true },
+    });
+
+    if (!worker || !worker.isActive || worker.isOnLeave) {
+      staffCapacityOk = false;
+    } else {
+      // Check if staff has capacity for this slot
+      const staffBookings = await prisma.booking.findMany({
+        where: {
+          workerId: staffId,
+          date,
+          status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+          OR: [
+            { startTime: { lte: startTime }, endTime: { gt: startTime } },
+            { startTime: { lt: endTime }, endTime: { gte: endTime } },
+            { startTime: { gte: startTime }, endTime: { lte: endTime } },
+          ],
+        },
+        select: { totalPeople: true },
+      });
+
+      const staffBookedSpots = staffBookings.reduce((sum, b) => sum + (b.totalPeople || 1), 0);
+      const staffCapacity = worker.concurrentCapacity || 1;
+      staffCapacityOk = staffBookedSpots + totalPeople <= staffCapacity;
+    }
+  }
+
+  return {
+    hasCapacity,
+    remainingSpots,
+    totalCapacity: salon.maxConcurrentClients || 1,
+    staffCapacityOk,
+  };
+}
+
+/**
+ * Get all bookings in a group by groupBookingRef
+ */
+export async function getGroupBooking(groupBookingRef: string) {
+  return prisma.booking.findMany({
+    where: { groupBookingRef },
+    include: {
+      guests: {
+        include: {
+          service: { select: { id: true, name: true, price: true, duration: true } },
+          staff: { select: { id: true, fullName: true } },
+        },
+      },
+      service: true,
+      salon: { select: { id: true, businessName: true } },
+      customer: { select: { id: true, firstName: true, lastName: true, phoneNumber: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+}
+
+/**
+ * Check in a guest for a group booking
+ */
+export async function checkInGuest(guestId: string) {
+  return prisma.bookingGuest.update({
+    where: { id: guestId },
+    data: { checkedIn: true, checkedInAt: new Date() },
+  });
 }

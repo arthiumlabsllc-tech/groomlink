@@ -25,7 +25,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
-import apiClient, { queueApi, QueueStatus, MyQueuePosition, Service } from '../lib/api'
+import apiClient, { queueApi, QueueStatus, MyQueuePosition, favoritesApi, salonApi, Review } from '../lib/api'
 
 // Types
 interface ServiceLocal {
@@ -49,18 +49,6 @@ interface Worker {
   reviewCount: number
   isActive: boolean
   avatar: string | null
-}
-
-interface Review {
-  id: string
-  rating: number
-  comment: string | null
-  createdAt: string
-  customer: {
-    firstName: string
-    lastName: string
-    avatar: string | null
-  }
 }
 
 interface Salon {
@@ -180,6 +168,16 @@ export default function SalonDetail() {
   const [joiningQueue, setJoiningQueue] = useState(false)
   const [leavingQueue, setLeavingQueue] = useState(false)
 
+  // Favorite state
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteId, setFavoriteId] = useState<string | null>(null)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviewsTotal, setReviewsTotal] = useState(0)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+
   useEffect(() => {
     if (!id) {
       setError('Salon ID is required')
@@ -242,6 +240,66 @@ export default function SalonDetail() {
     const interval = setInterval(fetchQueueData, 30000)
     return () => clearInterval(interval)
   }, [id])
+
+  // Check favorite status and fetch reviews on load
+  useEffect(() => {
+    if (!id) return
+
+    const checkFavoriteAndFetchReviews = async () => {
+      // Check favorite status
+      try {
+        const result = await favoritesApi.checkIsFavorite(id)
+        setIsFavorited(result.isFavorited)
+        setFavoriteId(result.favoriteId || null)
+      } catch (err) {
+        // User might not be logged in, ignore error
+        console.log('Could not check favorite status')
+      }
+
+      // Fetch reviews
+      setReviewsLoading(true)
+      try {
+        const response = await salonApi.getSalonReviews(id)
+        setReviews(response?.reviews || [])
+        setReviewsTotal(response?.total || 0)
+      } catch (err) {
+        console.error('Failed to fetch reviews:', err)
+        setReviews([])
+        setReviewsTotal(0)
+      } finally {
+        setReviewsLoading(false)
+      }
+    }
+
+    checkFavoriteAndFetchReviews()
+  }, [id])
+
+  const toggleFavorite = async () => {
+    if (!id || favoriteLoading) return
+
+    setFavoriteLoading(true)
+    try {
+      if (isFavorited && favoriteId) {
+        // Remove from favorites
+        await favoritesApi.removeFavorite(favoriteId)
+        setIsFavorited(false)
+        setFavoriteId(null)
+      } else {
+        // Add to favorites
+        const favorite = await favoritesApi.addFavorite(id)
+        setIsFavorited(true)
+        setFavoriteId(favorite.id)
+      }
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        alert('Please log in to save favorites')
+      } else {
+        alert('Failed to update favorite. Please try again.')
+      }
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
 
   const handleJoinQueue = async () => {
     if (!id) return
@@ -345,7 +403,7 @@ export default function SalonDetail() {
 
   const services = salon.services || []
   const workers = salon.workers || []
-  const reviews = salon.reviews || []
+  // reviews are now fetched separately and stored in state
 
   return (
     <div className="max-w-4xl mx-auto pb-8">
@@ -388,8 +446,16 @@ export default function SalonDetail() {
               <span className="text-lg font-semibold">{salon.rating?.toFixed(1) || '0.0'}</span>
               <span className="text-gray-500">({salon.reviewCount || 0} reviews)</span>
             </div>
-            <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-              <Heart className="w-6 h-6" />
+            <button
+              onClick={toggleFavorite}
+              disabled={favoriteLoading}
+              className={`p-2 transition-colors ${
+                isFavorited
+                  ? 'text-red-500 hover:text-red-600'
+                  : 'text-gray-400 hover:text-red-500'
+              }`}
+            >
+              <Heart className={`w-6 h-6 ${isFavorited ? 'fill-current' : ''}`} />
             </button>
           </div>
           <button
@@ -840,7 +906,11 @@ export default function SalonDetail() {
             {/* Reviews Tab */}
             {activeTab === 'reviews' && (
               <div>
-                {reviews.length === 0 ? (
+                {reviewsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 text-ghana-green animate-spin" />
+                  </div>
+                ) : reviews.length === 0 ? (
                   <div className="text-center py-8">
                     <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No reviews yet</p>
@@ -885,6 +955,11 @@ export default function SalonDetail() {
                         )}
                       </div>
                     ))}
+                    {reviewsTotal > reviews.length && (
+                      <p className="text-center text-sm text-gray-500">
+                        Showing {reviews.length} of {reviewsTotal} reviews
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

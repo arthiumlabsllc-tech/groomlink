@@ -755,6 +755,37 @@ async function main() {
   });
   console.log('✅ Site settings configured');
 
+  // Step 6: Seed platform policies
+  console.log('\n📋 Seeding platform policies...');
+  const policies = [
+    { policyName: 'platform_fee_percentage', policyValue: '10', description: 'Platform fee percentage charged on each booking' },
+    { policyName: 'free_cancellation_hours', policyValue: '48', description: 'Hours before booking when free cancellation is allowed' },
+    { policyName: 'full_refund_hours', policyValue: '48', description: 'Hours before booking for 100% refund eligibility' },
+    { policyName: 'partial_refund_75_hours', policyValue: '24', description: 'Hours before booking for 75% refund eligibility' },
+    { policyName: 'partial_refund_50_hours', policyValue: '12', description: 'Hours before booking for 50% refund eligibility' },
+    { policyName: 'cancellation_processing_fee', policyValue: '2.00', description: 'Fixed processing fee deducted from refunds (GHS)' },
+    { policyName: 'no_show_restriction_threshold', policyValue: '3', description: 'Number of no-shows before account restriction' },
+    { policyName: 'no_show_restriction_days', policyValue: '30', description: 'Days of account restriction after exceeding no-show threshold' },
+    { policyName: 'free_reschedule_hours', policyValue: '12', description: 'Hours before booking when free rescheduling is allowed' },
+    { policyName: 'provider_cancellation_penalty_amount', policyValue: '50', description: 'Penalty amount for provider cancellations (GHS)' },
+  ];
+
+  for (const policy of policies) {
+    await prisma.platformPolicy.upsert({
+      where: { policyName: policy.policyName },
+      update: {
+        policyValue: policy.policyValue,
+        description: policy.description,
+      },
+      create: {
+        policyName: policy.policyName,
+        policyValue: policy.policyValue,
+        description: policy.description,
+      },
+    });
+    console.log(`✅ Policy: ${policy.policyName} = ${policy.policyValue}`);
+  }
+
   // Summary
   console.log('\n' + '='.repeat(60));
   console.log('✨ Production database seed completed!\n');
@@ -764,6 +795,7 @@ async function main() {
   const workerCount = await prisma.worker.count();
   const serviceCount = await prisma.service.count();
   const reviewCount = await prisma.review.count();
+  const policyCount = await prisma.platformPolicy.count();
 
   console.log('📊 Summary:');
   console.log(`   Users: ${userCount} (5 customers + 20 salon owners + 2 admins)`);
@@ -771,6 +803,7 @@ async function main() {
   console.log(`   Workers: ${workerCount}`);
   console.log(`   Services: ${serviceCount}`);
   console.log(`   Reviews: ${reviewCount}`);
+  console.log(`   Platform Policies: ${policyCount}`);
   
   console.log('\n🔐 Test Accounts (Password: Password123!):');
   console.log('   Super Admin: admin@groomlinkgh.com');

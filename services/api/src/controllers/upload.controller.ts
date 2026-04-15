@@ -4,8 +4,12 @@ import { AuthenticatedRequest } from '../types';
 import { successResponse, errorResponse } from '../utils/response';
 import prisma from '../config/database';
 import { uploadService } from '../services/upload.service';
+import logger from '../config/logger';
 
-// File type from multer
+// File type from multer-storage-cloudinary v4.x
+// In v4.x, the file object properties are:
+// - file.path: The Cloudinary URL (replaces file.secure_url from v3.x)
+// - file.filename: The Cloudinary public_id (replaces file.public_id from v3.x)
 interface MulterFile {
   fieldname: string;
   originalname: string;
@@ -13,13 +17,12 @@ interface MulterFile {
   mimetype: string;
   size: number;
   destination?: string;
-  filename?: string;
-  path?: string;
+  filename?: string; // Cloudinary public_id in v4.x
+  path?: string;     // Cloudinary URL in v4.x
   buffer?: Buffer;
-  // Cloudinary adds these
-  public_id?: string;
-  url?: string;
-  secure_url?: string;
+  // Cloudinary v3.x properties (not present in v4.x):
+  // public_id?: string;  // Use filename instead
+  // secure_url?: string; // Use path instead
   format?: string;
   resource_type?: string;
   width?: number;
@@ -36,7 +39,7 @@ class UploadController {
     try {
       const file = req.file as MulterFile;
       
-      if (!file || !file.secure_url) {
+      if (!file || !file.path) {
         errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded', 400);
         return;
       }
@@ -50,7 +53,7 @@ class UploadController {
       // Update user avatar in database
       await prisma.user.update({
         where: { id: userId },
-        data: { avatar: file.secure_url },
+        data: { avatar: file.path },
       });
 
       // Delete old avatar from Cloudinary if exists
@@ -62,10 +65,10 @@ class UploadController {
       }
 
       successResponse(res, {
-        avatar: file.secure_url,
-        publicId: file.public_id,
-        thumbnail: uploadService.getThumbnailUrl(file.public_id || ''),
-        medium: uploadService.getMediumUrl(file.public_id || ''),
+        avatar: file.path,
+        publicId: file.filename,
+        thumbnail: uploadService.getThumbnailUrl(file.filename || ''),
+        medium: uploadService.getMediumUrl(file.filename || ''),
         message: 'Avatar uploaded successfully',
       });
     } catch (error) {
@@ -83,8 +86,13 @@ class UploadController {
       const { salonId } = req.params;
       const file = req.file as MulterFile;
       
-      if (!file || !file.secure_url) {
-        errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded', 400);
+      if (!file) {
+        errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded. Ensure the field name is "logo"', 400);
+        return;
+      }
+
+      if (!file.path) {
+        errorResponse(res, 'UPLOAD_FAILED', 'File upload to Cloudinary failed. Check Cloudinary credentials and configuration.', 400);
         return;
       }
 
@@ -102,7 +110,7 @@ class UploadController {
       // Update salon logo
       await prisma.salon.update({
         where: { id: salonId },
-        data: { logo: file.secure_url },
+        data: { logo: file.path },
       });
 
       // Delete old logo
@@ -114,9 +122,9 @@ class UploadController {
       }
 
       successResponse(res, {
-        logo: file.secure_url,
-        publicId: file.public_id,
-        thumbnail: uploadService.getThumbnailUrl(file.public_id || ''),
+        logo: file.path,
+        publicId: file.filename,
+        thumbnail: uploadService.getThumbnailUrl(file.filename || ''),
         message: 'Logo uploaded successfully',
       });
     } catch (error) {
@@ -134,8 +142,13 @@ class UploadController {
       const { salonId } = req.params;
       const file = req.file as MulterFile;
       
-      if (!file || !file.secure_url) {
-        errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded', 400);
+      if (!file) {
+        errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded. Ensure the field name is "cover"', 400);
+        return;
+      }
+
+      if (!file.path) {
+        errorResponse(res, 'UPLOAD_FAILED', 'File upload to Cloudinary failed. Check Cloudinary credentials and configuration.', 400);
         return;
       }
 
@@ -153,7 +166,7 @@ class UploadController {
       // Update salon cover image
       await prisma.salon.update({
         where: { id: salonId },
-        data: { coverImage: file.secure_url },
+        data: { coverImage: file.path },
       });
 
       // Delete old cover image
@@ -165,9 +178,9 @@ class UploadController {
       }
 
       successResponse(res, {
-        coverImage: file.secure_url,
-        publicId: file.public_id,
-        hero: uploadService.getHeroUrl(file.public_id || ''),
+        coverImage: file.path,
+        publicId: file.filename,
+        hero: uploadService.getHeroUrl(file.filename || ''),
         message: 'Cover image uploaded successfully',
       });
     } catch (error) {
@@ -186,7 +199,7 @@ class UploadController {
       const files = req.files as MulterFile[];
       
       if (!files || files.length === 0) {
-        errorResponse(res, 'UPLOAD_FAILED', 'No files uploaded', 400);
+        errorResponse(res, 'UPLOAD_FAILED', 'No files uploaded. Ensure the field name is "gallery"', 400);
         return;
       }
 
@@ -203,8 +216,8 @@ class UploadController {
 
       // Get URLs from uploaded files
       const newUrls = files
-        .filter(f => f.secure_url)
-        .map(f => f.secure_url as string);
+        .filter(f => f.path)
+        .map(f => f.path as string);
 
       // Add to existing images (max 10)
       const currentImages = salon.images || [];
@@ -236,7 +249,7 @@ class UploadController {
       const { workerId } = req.params;
       const file = req.file as MulterFile;
       
-      if (!file || !file.secure_url) {
+      if (!file || !file.path) {
         errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded', 400);
         return;
       }
@@ -258,7 +271,7 @@ class UploadController {
       // Update worker avatar
       await prisma.worker.update({
         where: { id: workerId },
-        data: { avatar: file.secure_url },
+        data: { avatar: file.path },
       });
 
       // Delete old avatar
@@ -270,9 +283,9 @@ class UploadController {
       }
 
       successResponse(res, {
-        avatar: file.secure_url,
-        publicId: file.public_id,
-        thumbnail: uploadService.getThumbnailUrl(file.public_id || ''),
+        avatar: file.path,
+        publicId: file.filename,
+        thumbnail: uploadService.getThumbnailUrl(file.filename || ''),
         message: 'Worker photo uploaded successfully',
       });
     } catch (error) {
@@ -290,7 +303,7 @@ class UploadController {
       const { serviceId } = req.params;
       const file = req.file as MulterFile;
       
-      if (!file || !file.secure_url) {
+      if (!file || !file.path) {
         errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded', 400);
         return;
       }
@@ -312,7 +325,7 @@ class UploadController {
       // Update service image
       await prisma.service.update({
         where: { id: serviceId },
-        data: { image: file.secure_url },
+        data: { image: file.path },
       });
 
       // Delete old image
@@ -324,8 +337,8 @@ class UploadController {
       }
 
       successResponse(res, {
-        image: file.secure_url,
-        publicId: file.public_id,
+        image: file.path,
+        publicId: file.filename,
         message: 'Service image uploaded successfully',
       });
     } catch (error) {

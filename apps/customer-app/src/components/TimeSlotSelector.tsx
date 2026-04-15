@@ -26,6 +26,9 @@ export interface TimeSlotData {
   time: string;
   available: boolean;
   isBreak?: boolean;
+  remainingSpots?: number;
+  totalSpots?: number;
+  bookedSpots?: number;
 }
 
 interface TimeSlotSelectorProps {
@@ -34,6 +37,7 @@ interface TimeSlotSelectorProps {
   onTimeSelect: (time: string) => void;
   closingTime?: string;
   lastAvailableSlot?: string;
+  totalPeople?: number;
 }
 
 interface GroupedSlots {
@@ -79,6 +83,7 @@ export default function TimeSlotSelector({
   onTimeSelect,
   closingTime,
   lastAvailableSlot,
+  totalPeople = 1,
 }: TimeSlotSelectorProps) {
   const groupedSlots = useMemo(() => groupSlotsByPeriod(slots), [slots]);
   const availableSlotsCount = useMemo(() => getTimeRemaining(slots), [slots]);
@@ -87,6 +92,16 @@ export default function TimeSlotSelector({
   const renderSlot = (slot: TimeSlotData) => {
     const isSelected = selectedTime === slot.time;
     const isAvailable = slot.available && !slot.isBreak;
+    
+    // Check if slot has enough capacity for the group
+    const hasEnoughCapacity = isAvailable && 
+      (slot.remainingSpots === undefined || slot.remainingSpots >= totalPeople);
+    
+    // Determine slot status
+    const isFull = slot.remainingSpots === 0;
+    const isLimited = slot.remainingSpots !== undefined && 
+      slot.remainingSpots > 0 && 
+      slot.remainingSpots < 3;
     
     let backgroundColor = COLORS.cardBackground;
     let borderColor = COLORS.border;
@@ -98,7 +113,7 @@ export default function TimeSlotSelector({
       borderColor = COLORS.lightGray;
       textColor = COLORS.textSecondary;
       showStripes = true;
-    } else if (!slot.available) {
+    } else if (!slot.available || isFull || !hasEnoughCapacity) {
       backgroundColor = COLORS.background;
       borderColor = COLORS.lightGray;
       textColor = COLORS.textSecondary;
@@ -112,6 +127,47 @@ export default function TimeSlotSelector({
       textColor = COLORS.primaryGreen;
     }
     
+    // Remaining spots badge
+    const renderRemainingBadge = () => {
+      if (slot.isBreak || !slot.available) return null;
+      
+      if (isFull) {
+        return (
+          <View style={styles.fullBadge}>
+            <RNText style={styles.fullBadgeText}>Full</RNText>
+          </View>
+        );
+      }
+      
+      if (slot.remainingSpots !== undefined && slot.remainingSpots > 0) {
+        if (!hasEnoughCapacity) {
+          return (
+            <View style={styles.insufficientBadge}>
+              <RNText style={styles.insufficientBadgeText}>
+                {slot.remainingSpots} left (need {totalPeople})
+              </RNText>
+            </View>
+          );
+        }
+        
+        if (isLimited) {
+          return (
+            <View style={styles.limitedBadge}>
+              <RNText style={styles.limitedBadgeText}>{slot.remainingSpots} left</RNText>
+            </View>
+          );
+        }
+        
+        return (
+          <View style={styles.spotsBadge}>
+            <RNText style={styles.spotsBadgeText}>{slot.remainingSpots} left</RNText>
+          </View>
+        );
+      }
+      
+      return null;
+    };
+    
     return (
       <TouchableOpacity
         key={slot.time}
@@ -121,14 +177,15 @@ export default function TimeSlotSelector({
           isSelected && styles.slotChipSelected,
           showStripes && styles.slotChipBreak,
         ]}
-        onPress={() => isAvailable && onTimeSelect(slot.time)}
-        disabled={!isAvailable}
+        onPress={() => hasEnoughCapacity && onTimeSelect(slot.time)}
+        disabled={!hasEnoughCapacity}
         activeOpacity={0.7}
       >
         {slot.isBreak && <View style={styles.breakStripes} />}
         <RNText style={[styles.slotText, { color: textColor }]}>
           {slot.isBreak ? 'Break' : formatTime(slot.time)}
         </RNText>
+        {renderRemainingBadge()}
       </TouchableOpacity>
     );
   };
@@ -281,6 +338,54 @@ const styles = StyleSheet.create({
   slotText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  fullBadge: {
+    backgroundColor: COLORS.accentRed,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  fullBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  limitedBadge: {
+    backgroundColor: COLORS.accentGold,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  limitedBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.dark,
+  },
+  spotsBadge: {
+    backgroundColor: `${COLORS.primaryGreen}20`,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  spotsBadgeText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: COLORS.primaryGreen,
+  },
+  insufficientBadge: {
+    backgroundColor: `${COLORS.textSecondary}20`,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  insufficientBadgeText: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
   },
   policySection: {
     flexDirection: 'row',

@@ -14,6 +14,10 @@ import {
   ChevronRight,
   Shield,
   Settings,
+  FileText,
+  Wallet,
+  XCircle,
+  UserX,
 } from 'lucide-react';
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks';
@@ -28,6 +32,10 @@ const pageIdToPath: Record<string, string> = {
   'support': '/support',
   'support-staff': '/support-staff',
   'settings': '/settings',
+  'policies': '/policies',
+  'escrow': '/escrow',
+  'cancellations': '/cancellations',
+  'no-shows': '/no-shows',
 };
 
 const navItems = [
@@ -39,6 +47,16 @@ const navItems = [
   { path: '/support', label: 'Support', icon: Headphones, pageId: 'support' },
   { path: '/support-staff', label: 'Support Staff', icon: UserPlus, pageId: 'support-staff' },
 ];
+
+// Trust & Safety nav items
+const trustSafetyNavItems = [
+  { path: '/escrow', label: 'Escrow', icon: Wallet, pageId: 'escrow' },
+  { path: '/cancellations', label: 'Cancellations', icon: XCircle, pageId: 'cancellations' },
+  { path: '/no-shows', label: 'No-Shows', icon: UserX, pageId: 'no-shows' },
+];
+
+// Policy nav item
+const policyNavItem = { path: '/policies', label: 'Policies', icon: FileText, pageId: 'policies' };
 
 // Admin nav items (only for SUPER_ADMIN)
 const adminNavItems = [
@@ -195,6 +213,52 @@ export function Layout() {
               </Link>
             );
           })}
+
+          {/* Trust & Safety Section */}
+          {isSidebarOpen && (
+            <div className="px-4 pt-6 pb-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Trust & Safety</p>
+            </div>
+          )}
+          {trustSafetyNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                title={!isSidebarOpen ? item.label : undefined}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#FCD116]'}`} />
+                {isSidebarOpen && <span className="ml-3">{item.label}</span>}
+              </Link>
+            );
+          })}
+
+          {/* Policies Link */}
+          {(() => {
+            const Icon = policyNavItem.icon;
+            const isActive = location.pathname === policyNavItem.path;
+            return (
+              <Link
+                to={policyNavItem.path}
+                title={!isSidebarOpen ? policyNavItem.label : undefined}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#FCD116]'}`} />
+                {isSidebarOpen && <span className="ml-3">{policyNavItem.label}</span>}
+              </Link>
+            );
+          })()}
         </nav>
 
         {/* Settings Link */}
@@ -309,6 +373,50 @@ export function Layout() {
               </Link>
             );
           })}
+
+          {/* Trust & Safety Section */}
+          <div className="px-4 pt-6 pb-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Trust & Safety</p>
+          </div>
+          {trustSafetyNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} />
+                <span className="ml-3">{item.label}</span>
+              </Link>
+            );
+          })}
+
+          {/* Policies Link */}
+          {(() => {
+            const Icon = policyNavItem.icon;
+            const isActive = location.pathname === policyNavItem.path;
+            return (
+              <Link
+                to={policyNavItem.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116]'
+                }`}
+              >
+                <Icon size={20} />
+                <span className="ml-3">{policyNavItem.label}</span>
+              </Link>
+            );
+          })()}
           
           {/* Settings Link */}
           {(() => {

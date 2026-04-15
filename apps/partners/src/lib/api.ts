@@ -22,6 +22,14 @@ export interface Salon {
   logo?: string | null;
   coverImage?: string | null;
   images?: string[];
+  hasParking?: boolean;
+  hasWifi?: boolean;
+  hasAC?: boolean;
+  acceptsWalkIns?: boolean;
+  maxConcurrentClients?: number;
+  totalChairs?: number;
+  bufferTimeMinutes?: number;
+  operatingModel?: 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED';
 }
 
 export interface Service {
@@ -80,6 +88,42 @@ export interface Booking {
   status: string;
   totalAmount: string;
   notes?: string;
+  paymentStatus?: 'PENDING' | 'HELD_IN_ESCROW' | 'RELEASED' | 'REFUNDED' | 'PENALTY_APPLIED';
+  cancelledBy?: 'CUSTOMER' | 'PROVIDER' | 'SYSTEM';
+  cancellationReason?: string;
+  // Group booking fields
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+  groupBookingRef?: string;
+  billingType?: 'combined' | 'separate';
+  guests?: Array<{
+    id: string;
+    guestName: string;
+    guestPhone?: string;
+    guestAgeGroup?: string;
+    isChild?: boolean;
+    specialInstructions?: string;
+    checkedIn?: boolean;
+    service: { id: string; name: string; price: number | string; duration?: number };
+    staff?: { id: string; fullName: string };
+  }>;
+  // Escrow fields
+  escrow?: {
+    id: string;
+    status: string;
+    amountHeld: number | string;
+    platformFee: number | string;
+    providerAmount: number | string;
+  };
+  refundEligible?: boolean;
+  cancellationDeadline?: string;
+  noShowFlag?: boolean;
+}
+
+export interface EarningsSummary {
+  escrowHeld: number;
+  releasedThisMonth: number;
+  pendingPenalties: number;
 }
 
 export interface DashboardStats {
@@ -142,6 +186,26 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface KycSubmission {
+  id: string;
+  salonId: string;
+  businessType: string;
+  ownerLegalName: string;
+  businessRegName?: string;
+  tinNumber?: string;
+  registrationNumber?: string;
+  governmentIdUrl?: string;
+  selfieWithIdUrl?: string;
+  storefrontVideoUrl?: string;
+  interiorVideoUrl?: string;
+  businessCertUrl?: string;
+  proofOfAddressUrl?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string;
+  submittedAt: string;
+  updatedAt: string;
+}
+
 // API Client
 class ApiClient {
   private baseUrl: string;
@@ -186,8 +250,12 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-        console.error(`API Error [${response.status}]:`, error);
+        const errorData = await response.json().catch(() => ({ message: 'An error occurred' }));
+        console.error(`API Error [${response.status}]:`, errorData);
+
+        // Extract error message from the response
+        // Backend returns: { success: false, error: { code, message } }
+        const errorMessage = errorData.error?.message || errorData.message || 'Request failed';
 
         // Only clear token on 401 from authentication-related endpoints
         // Auth endpoints are: /auth/login, /auth/verify-otp, /auth/register, /auth/refresh, etc.
@@ -209,8 +277,9 @@ class ApiClient {
         // Note: 403 errors should NOT clear the token - user is authenticated but doesn't have permission
 
         // Create error with status code attached so callers can check for 401
-        const err = new Error(error.message || 'Request failed') as Error & { status: number };
+        const err = new Error(errorMessage) as Error & { status: number; code?: string };
         (err as any).status = response.status;
+        (err as any).code = errorData.error?.code;
         throw err;
       }
 
@@ -382,6 +451,31 @@ class ApiClient {
     });
   }
 
+  // Booking completion and no-show actions
+  async completeBooking(bookingId: string) {
+    return this.request<{ success: boolean; data: Booking }>(`/bookings/${bookingId}/complete`, {
+      method: 'POST',
+    });
+  }
+
+  async markNoShow(bookingId: string) {
+    return this.request<{ success: boolean; data: Booking }>(`/bookings/${bookingId}/no-show`, {
+      method: 'POST',
+    });
+  }
+
+  async cancelBookingAsProvider(bookingId: string, reason?: string) {
+    return this.request<{ success: boolean; data: Booking }>(`/bookings/${bookingId}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  // Earnings summary for provider
+  async getEarningsSummary(salonId: string) {
+    return this.request<{ success: boolean; data: EarningsSummary }>(`/salon-owner/${salonId}/earnings-summary`);
+  }
+
   // Dashboard
   async getDashboardStats(salonId: string) {
     return this.request<{ success: boolean; data: DashboardStats }>(`/salon-owner/${salonId}/dashboard-stats`);
@@ -481,6 +575,30 @@ class ApiClient {
       method: 'DELETE',
       body: JSON.stringify({ imageUrl }),
     });
+  }
+
+  // KYC
+  async getKycStatus(): Promise<{ success: boolean; data: KycSubmission | null }> {
+    return this.request<{ success: boolean; data: KycSubmission | null }>('/kyc/status');
+  }
+
+  async submitKyc(data: { businessType: string; ownerLegalName: string; businessRegName?: string; tinNumber?: string; registrationNumber?: string }): Promise<{ success: boolean; data: KycSubmission }> {
+    return this.request<{ success: boolean; data: KycSubmission }>('/kyc/submit', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async uploadKycDocument(field: string, file: File): Promise<{ success: boolean; data: { url: string } }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${this.baseUrl}/kyc/upload/${field}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    return response.json();
   }
 
   logout() {

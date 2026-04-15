@@ -5,7 +5,7 @@ import { authenticateToken } from '../middleware/auth';
 const router = Router();
 
 // Protected routes
-router.post('/initiate', authenticateToken, paymentController.initializePayment);
+router.post('/initialize', authenticateToken, paymentController.initializePayment);
 router.post('/verify', authenticateToken, paymentController.verifyPayment);
 router.get('/history', authenticateToken, paymentController.getPaymentHistory);
 router.get('/:id', authenticateToken, paymentController.getPaymentById);

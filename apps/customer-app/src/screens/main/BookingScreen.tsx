@@ -24,9 +24,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { salonApi } from '../../api/salon';
-import { bookingApi, AvailableSlot } from '../../api/booking';
+import { bookingApi, AvailableSlot, GuestData } from '../../api/booking';
+import { NoShowStatus } from '../../types';
 import { Service, Worker, OpeningHours } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
+import { useAuthStore } from '../../store/authStore';
 import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 import TimeSlotSelector, { TimeSlotData } from '../../components/TimeSlotSelector';
 import { useSocket } from '../../hooks/useSocket';
@@ -73,6 +75,7 @@ export default function BookingScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<BookingRouteProp>();
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuthStore();
   const { salonId, workerId, services: preselectedServices } = route.params;
   
   // Slot update toast animation
@@ -85,6 +88,50 @@ export default function BookingScreen() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedWorker, setSelectedWorker] = useState<string | null>(workerId || null);
   const [notes, setNotes] = useState('');
+
+  // Group booking state
+  const [isGroupBooking, setIsGroupBooking] = useState(false);
+  const [guests, setGuests] = useState<GuestData[]>([]);
+  const [totalPeople, setTotalPeople] = useState(1);
+
+  // Update totalPeople when group booking or guests change
+  useEffect(() => {
+    if (isGroupBooking) {
+      setTotalPeople(1 + guests.length); // 1 for primary customer + guests
+    } else {
+      setTotalPeople(1);
+    }
+  }, [isGroupBooking, guests.length]);
+
+  // Guest management functions
+  const addGuest = () => {
+    setGuests([
+      ...guests,
+      {
+        guestName: '',
+        guestPhone: '',
+        guestAgeGroup: 'adult',
+        serviceId: selectedServices[0] || '',
+        staffId: selectedWorker || undefined,
+        specialInstructions: '',
+        isChild: false,
+      },
+    ]);
+  };
+
+  const removeGuest = (index: number) => {
+    setGuests(guests.filter((_, i) => i !== index));
+  };
+
+  const updateGuest = (index: number, field: keyof GuestData, value: any) => {
+    const updatedGuests = [...guests];
+    updatedGuests[index] = { ...updatedGuests[index], [field]: value };
+    // Update isChild based on age group
+    if (field === 'guestAgeGroup') {
+      updatedGuests[index].isChild = value === 'child';
+    }
+    setGuests(updatedGuests);
+  };
 
   // Worker preference hook
   const { lastWorkerId, saveWorkerPreference } = useWorkerPreference(salonId);
@@ -101,6 +148,13 @@ export default function BookingScreen() {
   const { data: salon, isLoading: salonLoading } = useQuery({
     queryKey: ['salon', salonId],
     queryFn: () => salonApi.getSalonById(salonId),
+  });
+
+  // Fetch no-show status
+  const { data: noShowStatus } = useQuery({
+    queryKey: ['no-show-status'],
+    queryFn: () => bookingApi.getNoShowStatus(),
+    enabled: isAuthenticated,
   });
 
   // Fetch staff
@@ -151,7 +205,17 @@ export default function BookingScreen() {
 
   // Create booking mutation
   const createBookingMutation = useMutation({
-    mutationFn: (data: { serviceId: string; date: string; startTime: string; workerId?: string; notes?: string }) => 
+    mutationFn: (data: { 
+      serviceId: string; 
+      date: string; 
+      startTime: string; 
+      workerId?: string; 
+      notes?: string;
+      isGroupBooking?: boolean;
+      totalPeople?: number;
+      guests?: GuestData[];
+      billingType?: 'combined' | 'separate';
+    }) => 
       bookingApi.createBooking({
         salonId,
         serviceId: data.serviceId,
@@ -159,6 +223,10 @@ export default function BookingScreen() {
         startTime: data.startTime,
         workerId: data.workerId,
         customerNotes: data.notes,
+        isGroupBooking: data.isGroupBooking,
+        totalPeople: data.totalPeople,
+        guests: data.guests,
+        billingType: data.billingType,
       }),
     onSuccess: (booking) => {
       // Save worker preference on successful booking
@@ -182,12 +250,34 @@ export default function BookingScreen() {
     );
   };
 
-  const totalPrice = useMemo(() => {
+  const serviceSubtotal = useMemo(() => {
     if (!salon?.services) return 0;
-    return salon.services
+    
+    // Primary customer services
+    let total = salon.services
       .filter(s => selectedServices.includes(s.id))
       .reduce((sum, s) => sum + s.price, 0);
-  }, [salon?.services, selectedServices]);
+    
+    // Add guest services for group bookings
+    if (isGroupBooking && guests.length > 0) {
+      guests.forEach(guest => {
+        const guestService = salon.services.find(s => s.id === guest.serviceId);
+        if (guestService) {
+          total += guestService.price;
+        }
+      });
+    }
+    
+    return total;
+  }, [salon?.services, selectedServices, isGroupBooking, guests]);
+
+  const platformFee = useMemo(() => {
+    return serviceSubtotal * 0.05; // 5% platform fee
+  }, [serviceSubtotal]);
+
+  const totalPrice = useMemo(() => {
+    return serviceSubtotal + platformFee;
+  }, [serviceSubtotal, platformFee]);
 
   const totalDuration = useMemo(() => {
     if (!salon?.services) return 0;
@@ -219,6 +309,15 @@ export default function BookingScreen() {
       return;
     }
 
+    // Validate group booking
+    if (isGroupBooking && guests.length > 0) {
+      const invalidGuests = guests.filter(g => !g.guestName.trim() || !g.serviceId);
+      if (invalidGuests.length > 0) {
+        Alert.alert('Incomplete Guest Info', 'Please fill in name and service for all guests');
+        return;
+      }
+    }
+
     const primaryService = selectedServices[0];
     
     createBookingMutation.mutate({
@@ -227,6 +326,10 @@ export default function BookingScreen() {
       startTime: selectedTime,
       workerId: selectedWorker || undefined,
       notes: notes || undefined,
+      isGroupBooking,
+      totalPeople,
+      guests: isGroupBooking ? guests : undefined,
+      billingType: 'combined',
     });
   };
 
@@ -235,9 +338,12 @@ export default function BookingScreen() {
     if (!availableSlots) return [];
     
     return availableSlots.map((slot: AvailableSlot) => ({
-      time: slot.time,
+      time: slot.startTime,
       available: slot.available,
-      isBreak: false, // API should provide this info
+      isBreak: false,
+      remainingSpots: slot.remainingSpots,
+      totalSpots: slot.totalSpots,
+      bookedSpots: slot.bookedSpots,
     }));
   }, [availableSlots]);
 
@@ -348,6 +454,37 @@ export default function BookingScreen() {
           </Animated.View>
         )}
 
+        {/* No-Show Warning Banner */}
+        {noShowStatus?.restricted && (
+          <View style={styles.noShowBannerRestricted}>
+            <Ionicons name="warning" size={20} color={COLORS.accentRed} />
+            <View style={styles.noShowBannerContent}>
+              <Text style={styles.noShowBannerTitle}>Booking Restricted</Text>
+              <Text style={styles.noShowBannerText}>
+                {noShowStatus.reason || 'You have multiple no-shows. Booking is temporarily restricted.'}
+              </Text>
+              {noShowStatus.restrictedUntil && (
+                <Text style={styles.noShowBannerSubtext}>
+                  Restricted until: {new Date(noShowStatus.restrictedUntil).toLocaleDateString()}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+        
+        {!noShowStatus?.restricted && noShowStatus && noShowStatus.noShowCount > 0 && (
+          <View style={styles.noShowBannerWarning}>
+            <Ionicons name="alert-circle" size={20} color={COLORS.accentGold} />
+            <View style={styles.noShowBannerContent}>
+              <Text style={styles.noShowBannerTitleWarning}>No-Show Warning</Text>
+              <Text style={styles.noShowBannerTextWarning}>
+                You have {noShowStatus.noShowCount} no-show{noShowStatus.noShowCount > 1 ? 's' : ''}. 
+                Multiple no-shows may result in booking restrictions.
+              </Text>
+            </View>
+          </View>
+        )}
+
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Services Section */}
           <View style={styles.section}>
@@ -423,6 +560,185 @@ export default function BookingScreen() {
             </View>
           )}
 
+          {/* Group Booking Selection */}
+          <View style={styles.section}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Who's coming?
+            </Text>
+            <View style={styles.groupSelectionRow}>
+              <TouchableOpacity
+                style={[styles.groupOptionCard, !isGroupBooking && styles.groupOptionCardSelected]}
+                onPress={() => setIsGroupBooking(false)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.groupOptionIcon, !isGroupBooking && styles.groupOptionIconSelected]}>
+                  <Ionicons name="person" size={24} color={!isGroupBooking ? '#fff' : COLORS.textSecondary} />
+                </View>
+                <Text variant="titleSmall" style={[styles.groupOptionTitle, !isGroupBooking && styles.groupOptionTitleSelected]}>
+                  Just Me
+                </Text>
+                <Text variant="bodySmall" style={styles.groupOptionDesc}>
+                  Solo appointment
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.groupOptionCard, isGroupBooking && styles.groupOptionCardSelected]}
+                onPress={() => setIsGroupBooking(true)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.groupOptionIcon, isGroupBooking && styles.groupOptionIconSelected]}>
+                  <Ionicons name="people" size={24} color={isGroupBooking ? '#fff' : COLORS.textSecondary} />
+                </View>
+                <Text variant="titleSmall" style={[styles.groupOptionTitle, isGroupBooking && styles.groupOptionTitleSelected]}>
+                  With Guests
+                </Text>
+                <Text variant="bodySmall" style={styles.groupOptionDesc}>
+                  Book for multiple people
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Group Booking Details */}
+            {isGroupBooking && (
+              <View style={styles.groupBookingDetails}>
+                {/* Primary Customer */}
+                <View style={styles.primaryCustomerCard}>
+                  <View style={styles.primaryCustomerHeader}>
+                    <Ionicons name="person-circle" size={24} color={COLORS.primaryGreen} />
+                    <Text variant="titleSmall" style={styles.primaryCustomerLabel}>
+                      Primary Customer (You)
+                    </Text>
+                  </View>
+                  <Text variant="bodyMedium" style={styles.primaryCustomerServices}>
+                    {selectedServices.length > 0 
+                      ? salon?.services?.filter(s => selectedServices.includes(s.id)).map(s => s.name).join(', ')
+                      : 'No services selected'}
+                  </Text>
+                </View>
+
+                {/* Guest Cards */}
+                {guests.map((guest, index) => {
+                  const guestService = salon?.services?.find(s => s.id === guest.serviceId);
+                  return (
+                    <View key={index} style={styles.guestCard}>
+                      <View style={styles.guestCardHeader}>
+                        <Text variant="titleSmall" style={styles.guestCardTitle}>
+                          Guest {index + 1}
+                        </Text>
+                        <TouchableOpacity 
+                          onPress={() => removeGuest(index)}
+                          style={styles.removeGuestButton}
+                        >
+                          <Ionicons name="close-circle" size={22} color={COLORS.accentRed} />
+                        </TouchableOpacity>
+                      </View>
+                      
+                      {/* Guest Name */}
+                      <TextInput
+                        mode="outlined"
+                        placeholder="Guest Name *"
+                        value={guest.guestName}
+                        onChangeText={(text) => updateGuest(index, 'guestName', text)}
+                        style={styles.guestInput}
+                        outlineColor={COLORS.border}
+                        activeOutlineColor={COLORS.primaryGreen}
+                      />
+                      
+                      {/* Guest Phone */}
+                      <TextInput
+                        mode="outlined"
+                        placeholder="Phone (Optional)"
+                        value={guest.guestPhone || ''}
+                        onChangeText={(text) => updateGuest(index, 'guestPhone', text)}
+                        style={styles.guestInput}
+                        outlineColor={COLORS.border}
+                        activeOutlineColor={COLORS.primaryGreen}
+                        keyboardType="phone-pad"
+                      />
+                      
+                      {/* Age Group */}
+                      <View style={styles.ageGroupRow}>
+                        {(['child', 'teen', 'adult', 'senior'] as const).map((age) => (
+                          <TouchableOpacity
+                            key={age}
+                            style={[
+                              styles.ageGroupChip,
+                              guest.guestAgeGroup === age && styles.ageGroupChipSelected,
+                            ]}
+                            onPress={() => updateGuest(index, 'guestAgeGroup', age)}
+                          >
+                            <Text style={[
+                              styles.ageGroupChipText,
+                              guest.guestAgeGroup === age && styles.ageGroupChipTextSelected,
+                            ]}>
+                              {age.charAt(0).toUpperCase() + age.slice(1)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      
+                      {/* Service Selection */}
+                      <Text variant="bodySmall" style={styles.guestInputLabel}>Service</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.guestServiceScroll}>
+                        {salon?.services?.map((service) => (
+                          <TouchableOpacity
+                            key={service.id}
+                            style={[
+                              styles.guestServiceChip,
+                              guest.serviceId === service.id && styles.guestServiceChipSelected,
+                            ]}
+                            onPress={() => updateGuest(index, 'serviceId', service.id)}
+                          >
+                            <Text style={[
+                              styles.guestServiceChipText,
+                              guest.serviceId === service.id && styles.guestServiceChipTextSelected,
+                            ]}>
+                              {service.name}
+                            </Text>
+                            <Text style={[
+                              styles.guestServiceChipPrice,
+                              guest.serviceId === service.id && styles.guestServiceChipTextSelected,
+                            ]}>
+                              GH₵{service.price.toFixed(0)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                      
+                      {/* Special Instructions */}
+                      <TextInput
+                        mode="outlined"
+                        placeholder="Special instructions (optional)"
+                        value={guest.specialInstructions || ''}
+                        onChangeText={(text) => updateGuest(index, 'specialInstructions', text)}
+                        style={styles.guestInput}
+                        outlineColor={COLORS.border}
+                        activeOutlineColor={COLORS.primaryGreen}
+                        multiline
+                        numberOfLines={2}
+                      />
+                    </View>
+                  );
+                })}
+
+                {/* Add Guest Button */}
+                <TouchableOpacity style={styles.addGuestButton} onPress={addGuest}>
+                  <Ionicons name="add-circle-outline" size={22} color={COLORS.primaryGreen} />
+                  <Text style={styles.addGuestButtonText}>Add Another Guest</Text>
+                </TouchableOpacity>
+
+                {/* Total People Counter */}
+                <View style={styles.totalPeopleRow}>
+                  <Ionicons name="people" size={20} color={COLORS.textSecondary} />
+                  <Text variant="bodyMedium" style={styles.totalPeopleText}>
+                    Total: {totalPeople} {totalPeople === 1 ? 'person' : 'people'}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+
           {/* Date Selection - AvailabilityCalendar */}
           <View style={styles.section}>
             <Text variant="titleMedium" style={styles.sectionTitle}>2. Select Date</Text>
@@ -448,6 +764,7 @@ export default function BookingScreen() {
                   onTimeSelect={handleTimeSelect}
                   closingTime={salonHours?.close}
                   lastAvailableSlot={lastAvailableSlot}
+                  totalPeople={totalPeople}
                 />
               )}
             </View>
@@ -474,10 +791,53 @@ export default function BookingScreen() {
 
         {/* Summary Footer */}
         <Surface style={styles.footer} elevation={4}>
+          {isGroupBooking && (
+            <View style={styles.groupBadge}>
+              <Ionicons name="people" size={14} color="#fff" />
+              <Text style={styles.groupBadgeText}>Group Booking • {totalPeople} people</Text>
+            </View>
+          )}
+          
+          {/* Fee Breakdown */}
+          {selectedServices.length > 0 && (
+            <View style={styles.feeBreakdownCard}>
+              <View style={styles.feeRow}>
+                <Text variant="bodySmall" style={styles.feeLabel}>Services Subtotal</Text>
+                <Text variant="bodySmall" style={styles.feeValue}>GH₵ {serviceSubtotal.toFixed(2)}</Text>
+              </View>
+              <View style={styles.feeRow}>
+                <Text variant="bodySmall" style={styles.feeLabel}>Platform Fee (5%)</Text>
+                <Text variant="bodySmall" style={styles.feeValue}>GH₵ {platformFee.toFixed(2)}</Text>
+              </View>
+              <View style={styles.feeDivider} />
+              <View style={styles.feeRowTotal}>
+                <Text variant="bodyMedium" style={styles.feeTotalLabel}>Total Amount</Text>
+                <Text variant="titleMedium" style={styles.feeTotalValue}>GH₵ {totalPrice.toFixed(2)}</Text>
+              </View>
+              <View style={styles.escrowNote}>
+                <Ionicons name="shield-checkmark" size={14} color={COLORS.primaryGreen} />
+                <Text variant="bodySmall" style={styles.escrowText}>
+                  Payment held securely until service completion
+                </Text>
+              </View>
+            </View>
+          )}
+          
+          {/* Cancellation Policy Note */}
+          <View style={styles.policyNote}>
+            <Ionicons name="information-circle" size={14} color={COLORS.textSecondary} />
+            <Text variant="bodySmall" style={styles.policyText}>
+              Free cancellation up to 48h before appointment
+            </Text>
+          </View>
+          
           <View style={styles.summaryRow}>
             <View>
               <Text variant="bodySmall" style={styles.summaryLabel}>
-                {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} • {formatDuration(totalDuration)}
+                {isGroupBooking 
+                  ? `${totalPeople} ${totalPeople === 1 ? 'person' : 'people'} • ${selectedServices.length + guests.filter(g => g.serviceId).length} services`
+                  : `${selectedServices.length} service${selectedServices.length !== 1 ? 's' : ''} • ${formatDuration(totalDuration)}`
+                }
               </Text>
               <Text variant="titleLarge" style={styles.totalPrice}>
                 GH₵ {totalPrice.toFixed(2)}
@@ -487,12 +847,12 @@ export default function BookingScreen() {
               mode="contained"
               onPress={handleConfirmBooking}
               loading={createBookingMutation.isPending}
-              disabled={selectedServices.length === 0 || !selectedTime || createBookingMutation.isPending}
+              disabled={selectedServices.length === 0 || !selectedTime || createBookingMutation.isPending || noShowStatus?.restricted}
               style={styles.confirmButton}
               contentStyle={styles.confirmButtonContent}
               buttonColor={COLORS.primaryGreen}
             >
-              Confirm Booking
+              {noShowStatus?.restricted ? 'Booking Restricted' : 'Confirm Booking'}
             </Button>
           </View>
         </Surface>
@@ -740,5 +1100,326 @@ const styles = StyleSheet.create({
   confirmButtonContent: {
     paddingHorizontal: 24,
     paddingVertical: 8,
+  },
+  // Group Booking Styles
+  groupSelectionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  groupOptionCard: {
+    flex: 1,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  groupOptionCardSelected: {
+    borderColor: COLORS.primaryGreen,
+    backgroundColor: `${COLORS.primaryGreen}08`,
+  },
+  groupOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  groupOptionIconSelected: {
+    backgroundColor: COLORS.primaryGreen,
+  },
+  groupOptionTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  groupOptionTitleSelected: {
+    color: COLORS.primaryGreen,
+  },
+  groupOptionDesc: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
+  groupBookingDetails: {
+    marginTop: 16,
+  },
+  primaryCustomerCard: {
+    backgroundColor: `${COLORS.primaryGreen}08`,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: `${COLORS.primaryGreen}20`,
+    marginBottom: 12,
+  },
+  primaryCustomerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  primaryCustomerLabel: {
+    fontWeight: '600',
+    color: COLORS.primaryGreen,
+  },
+  primaryCustomerServices: {
+    color: COLORS.textPrimary,
+  },
+  guestCard: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  guestCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  guestCardTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  removeGuestButton: {
+    padding: 4,
+  },
+  guestInput: {
+    marginBottom: 12,
+    backgroundColor: COLORS.background,
+  },
+  guestInputLabel: {
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  ageGroupRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  ageGroupChip: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  ageGroupChipSelected: {
+    backgroundColor: COLORS.primaryGreen,
+    borderColor: COLORS.primaryGreen,
+  },
+  ageGroupChipText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  ageGroupChipTextSelected: {
+    color: '#fff',
+  },
+  guestServiceScroll: {
+    marginBottom: 12,
+  },
+  guestServiceChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  guestServiceChipSelected: {
+    backgroundColor: COLORS.primaryGreen,
+    borderColor: COLORS.primaryGreen,
+  },
+  guestServiceChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+  },
+  guestServiceChipTextSelected: {
+    color: '#fff',
+  },
+  guestServiceChipPrice: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  addGuestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    borderWidth: 1,
+    borderColor: `${COLORS.primaryGreen}30`,
+    borderStyle: 'dashed',
+    gap: 8,
+    marginBottom: 12,
+  },
+  addGuestButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primaryGreen,
+  },
+  totalPeopleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+  },
+  totalPeopleText: {
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  groupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryGreen,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    gap: 6,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  groupBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  // Fee Breakdown
+  feeBreakdownCard: {
+    backgroundColor: `${COLORS.primaryGreen}08`,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: `${COLORS.primaryGreen}20`,
+  },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  feeLabel: {
+    color: COLORS.textSecondary,
+  },
+  feeValue: {
+    color: COLORS.textPrimary,
+    fontWeight: '500',
+  },
+  feeDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 8,
+  },
+  feeRowTotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  feeTotalLabel: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  feeTotalValue: {
+    color: COLORS.primaryGreen,
+    fontWeight: 'bold',
+  },
+  escrowNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: `${COLORS.primaryGreen}15`,
+  },
+  escrowText: {
+    color: COLORS.primaryGreen,
+    fontSize: 12,
+  },
+  policyNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  policyText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
+  // No-Show Banners
+  noShowBannerRestricted: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: `${COLORS.accentRed}15`,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: `${COLORS.accentRed}30`,
+  },
+  noShowBannerWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: `${COLORS.accentGold}15`,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: `${COLORS.accentGold}30`,
+  },
+  noShowBannerContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  noShowBannerTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.accentRed,
+    marginBottom: 4,
+  },
+  noShowBannerTitleWarning: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#B45309',
+    marginBottom: 4,
+  },
+  noShowBannerText: {
+    fontSize: 13,
+    color: COLORS.accentRed,
+    opacity: 0.9,
+  },
+  noShowBannerTextWarning: {
+    fontSize: 13,
+    color: '#B45309',
+    opacity: 0.9,
+  },
+  noShowBannerSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
 });

@@ -2,6 +2,8 @@ import apiClient from './client';
 
 export type SalonType = 'BARBERSHOP' | 'HAIR_SALON' | 'BEAUTY_SALON' | 'NAIL_SALON' | 'PEDICURE_SALON' | 'SPA';
 export type SalonStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+export type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type BusinessType = 'INDIVIDUAL' | 'REGISTERED_COMPANY';
 
 export interface Salon {
   id: string;
@@ -139,6 +141,53 @@ export interface PaginatedSalons {
   };
 }
 
+export interface KycSubmission {
+  id: string;
+  salonId: string;
+  ownerId: string | null;
+  status: KycStatus;
+  businessType: BusinessType;
+  ownerLegalName: string;
+  businessRegisteredName: string | null;
+  tinNumber: string | null;
+  registrationNumber: string | null;
+  governmentIdUrl: string;
+  selfieWithIdUrl: string;
+  businessCertUrl: string | null;
+  proofOfAddressUrl: string | null;
+  storefrontVideoUrl: string;
+  interiorVideoUrl: string;
+  rejectionReason: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+  salon: {
+    id: string;
+    businessName: string;
+    status: SalonStatus;
+  };
+  owner: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber: string | null;
+    email: string | null;
+  } | null;
+}
+
+export interface KycSubmissionDetail extends KycSubmission {
+  // Additional fields if needed for detailed view
+}
+
+export interface PaginatedKycSubmissions {
+  data: KycSubmission[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const salonsApi = {
   // Get all salons with pagination
   getAll: async (page: number = 1, limit: number = 20, status?: string): Promise<PaginatedSalons> => {
@@ -201,6 +250,29 @@ export const salonsApi = {
   // Reactivate suspended salon
   reactivate: async (id: string): Promise<Salon> => {
     const response = await apiClient.post(`/admin/salons/${id}/reactivate`);
+    return response.data.data;
+  },
+
+  // KYC Submission APIs
+  getKycSubmissions: async (status?: string, page: number = 1, limit: number = 20): Promise<PaginatedKycSubmissions> => {
+    const response = await apiClient.get('/kyc/admin/submissions', {
+      params: { status, page, limit },
+    });
+    return response.data;
+  },
+
+  getKycSubmissionDetail: async (id: string): Promise<KycSubmissionDetail> => {
+    const response = await apiClient.get(`/kyc/admin/submissions/${id}`);
+    return response.data.data;
+  },
+
+  approveKyc: async (id: string): Promise<KycSubmission> => {
+    const response = await apiClient.post(`/kyc/admin/submissions/${id}/approve`);
+    return response.data.data;
+  },
+
+  rejectKyc: async (id: string, reason: string): Promise<KycSubmission> => {
+    const response = await apiClient.post(`/kyc/admin/submissions/${id}/reject`, { reason });
     return response.data.data;
   },
 };

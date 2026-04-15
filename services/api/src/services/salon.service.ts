@@ -18,6 +18,7 @@ export interface CreateSalonData {
   openingTime: string;
   closingTime: string;
   workingDays: string[];
+  operatingHours?: Record<string, string>;
   hasParking?: boolean;
   hasWifi?: boolean;
   hasAC?: boolean;

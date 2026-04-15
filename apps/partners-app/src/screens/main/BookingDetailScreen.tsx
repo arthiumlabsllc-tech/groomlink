@@ -373,6 +373,145 @@ export default function BookingDetailScreen() {
           </Surface>
         )}
 
+        {/* Escrow Details */}
+        {booking.escrow && (
+          <Surface style={[styles.section, styles.escrowSection]} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="wallet" size={20} color="#006B3F" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Escrow Details
+              </Text>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.escrowRow}>
+              <Text style={styles.escrowLabel}>Status</Text>
+              <Chip
+                mode="flat"
+                style={[
+                  styles.escrowChip,
+                  {
+                    backgroundColor:
+                      booking.escrow.status === 'HELD' ? '#3B82F6' :
+                      booking.escrow.status === 'RELEASED' ? '#10B981' :
+                      booking.escrow.status === 'REFUNDED' ? '#9CA3AF' :
+                      '#6B7280'
+                  },
+                ]}
+                textStyle={styles.escrowChipText}
+              >
+                {booking.escrow.status}
+              </Chip>
+            </View>
+            <View style={styles.escrowRow}>
+              <Text style={styles.escrowLabel}>Amount Held</Text>
+              <Text style={styles.escrowValue}>GH₵{booking.escrow.amountHeld.toLocaleString()}</Text>
+            </View>
+            <View style={styles.escrowRow}>
+              <Text style={styles.escrowLabel}>Platform Fee</Text>
+              <Text style={styles.escrowDeduction}>- GH₵{booking.escrow.platformFee.toLocaleString()}</Text>
+            </View>
+            <View style={[styles.escrowRow, styles.escrowTotalRow]}>
+              <Text style={styles.escrowTotalLabel}>Your Share</Text>
+              <Text style={styles.escrowTotalValue}>GH₵{booking.escrow.providerAmount.toLocaleString()}</Text>
+            </View>
+            {booking.refundEligible !== undefined && (
+              <View style={styles.refundInfo}>
+                <Ionicons
+                  name={booking.refundEligible ? 'checkmark-circle' : 'alert-circle'}
+                  size={16}
+                  color={booking.refundEligible ? '#10B981' : '#F59E0B'}
+                />
+                <Text style={[
+                  styles.refundText,
+                  { color: booking.refundEligible ? '#10B981' : '#F59E0B' }
+                ]}>
+                  {booking.refundEligible ? 'Eligible for refund' : 'Refund window has passed'}
+                </Text>
+              </View>
+            )}
+          </Surface>
+        )}
+
+        {/* Group Members */}
+        {booking.isGroupBooking && booking.guests && booking.guests.length > 0 && (
+          <Surface style={[styles.section, styles.groupSection]} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="people" size={20} color="#7C3AED" />
+              <Text variant="titleMedium" style={[styles.sectionTitle, styles.groupTitle]}>
+                Group Members ({booking.guests.length})
+              </Text>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.guestsList}>
+              {booking.guests.map((guest, index) => (
+                <View key={guest.id} style={styles.guestCard}>
+                  <View style={styles.guestHeader}>
+                    <View style={styles.guestNameRow}>
+                      <View style={styles.guestNumber}>
+                        <Text style={styles.guestNumberText}>{index + 1}</Text>
+                      </View>
+                      <Text style={styles.guestName}>{guest.guestName}</Text>
+                      {guest.isChild && (
+                        <Chip mode="flat" style={styles.childChip} textStyle={styles.childChipText}>
+                          Child
+                        </Chip>
+                      )}
+                    </View>
+                    {guest.checkedIn ? (
+                      <View style={styles.checkInBadge}>
+                        <Ionicons name="checkmark" size={12} color="#10B981" />
+                        <Text style={styles.checkInText}>Checked In</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.pendingBadge}>
+                        <Ionicons name="time-outline" size={12} color="#6B7280" />
+                        <Text style={styles.pendingText}>Pending</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.guestDetails}>
+                    <View style={styles.guestDetailItem}>
+                      <Ionicons name="cut-outline" size={14} color="#6B7280" />
+                      <Text style={styles.guestDetailText} numberOfLines={1}>
+                        {guest.service?.name}
+                      </Text>
+                    </View>
+                    {guest.staff && (
+                      <View style={styles.guestDetailItem}>
+                        <Ionicons name="person-outline" size={14} color="#6B7280" />
+                        <Text style={styles.guestDetailText} numberOfLines={1}>
+                          {guest.staff.fullName}
+                        </Text>
+                      </View>
+                    )}
+                    {guest.guestPhone && (
+                      <View style={styles.guestDetailItem}>
+                        <Ionicons name="call-outline" size={14} color="#6B7280" />
+                        <Text style={styles.guestDetailText}>{guest.guestPhone}</Text>
+                      </View>
+                    )}
+                    {guest.guestAgeGroup && (
+                      <View style={styles.guestDetailItem}>
+                        <Text style={styles.guestDetailLabel}>Age:</Text>
+                        <Text style={styles.guestDetailText}>{guest.guestAgeGroup}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {guest.specialInstructions && (
+                    <View style={styles.specialInstructions}>
+                      <Text style={styles.specialInstructionsLabel}>Note:</Text>
+                      <Text style={styles.specialInstructionsText}>{guest.specialInstructions}</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+            {booking.groupBookingRef && (
+              <Text style={styles.groupRef}>Group Ref: {booking.groupBookingRef}</Text>
+            )}
+          </Surface>
+        )}
+
         {/* Review */}
         {booking.review && (
           <Surface style={styles.section} elevation={0}>
@@ -731,5 +870,195 @@ const styles = StyleSheet.create({
   dialogActions: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+  },
+  // Escrow styles
+  escrowSection: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  escrowRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  escrowLabel: {
+    color: '#6B7280',
+    fontSize: 14,
+  },
+  escrowValue: {
+    color: '#111827',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  escrowDeduction: {
+    color: '#6B7280',
+    fontSize: 14,
+  },
+  escrowTotalRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#BFDBFE',
+    paddingTop: 10,
+    marginTop: 6,
+  },
+  escrowTotalLabel: {
+    color: '#1E40AF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  escrowTotalValue: {
+    color: '#1E40AF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  escrowChip: {
+    height: 28,
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+  escrowChipText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  refundInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#BFDBFE',
+  },
+  refundText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Group booking styles
+  groupSection: {
+    backgroundColor: '#FAF5FF',
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+  },
+  groupTitle: {
+    color: '#7C3AED',
+  },
+  guestsList: {
+    gap: 10,
+  },
+  guestCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+  },
+  guestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  guestNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  guestNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#E9D5FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  guestNumberText: {
+    color: '#7C3AED',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  guestName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  childChip: {
+    height: 20,
+    backgroundColor: '#FEF3C7',
+  },
+  childChipText: {
+    fontSize: 10,
+    color: '#D97706',
+  },
+  checkInBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  checkInText: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '500',
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  pendingText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  guestDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  guestDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minWidth: '45%',
+  },
+  guestDetailLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  guestDetailText: {
+    fontSize: 13,
+    color: '#374151',
+    flex: 1,
+  },
+  specialInstructions: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  specialInstructionsLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  specialInstructionsText: {
+    fontSize: 13,
+    color: '#374151',
+    marginTop: 2,
+  },
+  groupRef: {
+    fontSize: 12,
+    color: '#7C3AED',
+    marginTop: 12,
   },
 });

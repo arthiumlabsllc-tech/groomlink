@@ -1,11 +1,13 @@
 import { Response } from 'express';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import prisma, { getPoolMetrics } from '../config/database';
+import redis from '../config/redis';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import { SalonStatus, PaymentStatus, UserRole, UserStatus, Prisma } from '@prisma/client';
 import { sendWelcomeEmail } from '../services/email.service';
 import { activityService } from '../services/activity.service';
+import * as noshowService from '../services/noshow.service';
 import logger from '../config/logger';
 
 const couponSchema = z.object({
@@ -1571,5 +1573,284 @@ export async function getRevenueStats(req: AuthenticatedRequest, res: Response):
     });
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// ESCROW MANAGEMENT
+// ===========================================
+
+/**
+ * Get escrow dashboard with pagination and status filter
+ */
+export async function getEscrowDashboardHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const status = req.query.status as string;
+
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const [escrows, total] = await Promise.all([
+      prisma.escrowAccount.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              reference: true,
+              date: true,
+              startTime: true,
+              status: true,
+              customer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          salon: {
+            select: {
+              id: true,
+              businessName: true,
+            },
+          },
+        },
+      }),
+      prisma.escrowAccount.count({ where }),
+    ]);
+
+    paginatedResponse(res, escrows, page, limit, total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// PLATFORM POLICIES
+// ===========================================
+
+/**
+ * Get all platform policies
+ */
+export async function getPoliciesHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const policies = await prisma.platformPolicy.findMany({
+      orderBy: { policyName: 'asc' },
+    });
+
+    successResponse(res, policies);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+const updatePolicySchema = z.object({
+  policyValue: z.string().min(1, 'Policy value is required'),
+});
+
+/**
+ * Update a platform policy
+ */
+export async function updatePolicyHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const validatedData = updatePolicySchema.parse(req.body);
+
+    // Get the current policy to find the policy name for cache invalidation
+    const currentPolicy = await prisma.platformPolicy.findUnique({
+      where: { id },
+    });
+
+    if (!currentPolicy) {
+      errorResponse(res, 'NOT_FOUND', 'Policy not found', 404);
+      return;
+    }
+
+    // Update the policy
+    const updatedPolicy = await prisma.platformPolicy.update({
+      where: { id },
+      data: { policyValue: validatedData.policyValue },
+    });
+
+    // Invalidate Redis cache for this policy
+    const cacheKey = `policy:${currentPolicy.policyName}`;
+    await redis.del(cacheKey);
+
+    logger.info(`Platform policy updated and cache invalidated`, {
+      policyId: id,
+      policyName: currentPolicy.policyName,
+      updatedBy: req.user?.id,
+    });
+
+    successResponse(res, updatedPolicy);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// CANCELLATION RECORDS
+// ===========================================
+
+/**
+ * Get cancellation records with pagination
+ */
+export async function getCancellationsHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const cancelledBy = req.query.cancelledBy as string;
+
+    const where: any = {};
+    if (cancelledBy) {
+      where.cancelledBy = cancelledBy;
+    }
+
+    const [cancellations, total] = await Promise.all([
+      prisma.cancellationRecord.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { cancellationTime: 'desc' },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              reference: true,
+              date: true,
+              startTime: true,
+              salon: {
+                select: {
+                  id: true,
+                  businessName: true,
+                },
+              },
+              customer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.cancellationRecord.count({ where }),
+    ]);
+
+    paginatedResponse(res, cancellations, page, limit, total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// NO-SHOW RECORDS
+// ===========================================
+
+/**
+ * Get no-show records with pagination
+ */
+export async function getNoShowsHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const disputed = req.query.disputed as string;
+
+    const where: any = {};
+    if (disputed === 'true') {
+      where.disputed = true;
+    } else if (disputed === 'false') {
+      where.disputed = false;
+    }
+
+    const [noShows, total] = await Promise.all([
+      prisma.noShowRecord.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { markedAt: 'desc' },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              reference: true,
+              date: true,
+              startTime: true,
+              salon: {
+                select: {
+                  id: true,
+                  businessName: true,
+                },
+              },
+              customer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.noShowRecord.count({ where }),
+    ]);
+
+    paginatedResponse(res, noShows, page, limit, total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+const resolveDisputeSchema = z.object({
+  resolution: z.string().min(1, 'Resolution is required'),
+  upheld: z.boolean(),
+});
+
+/**
+ * Resolve a no-show dispute
+ */
+export async function resolveDisputeHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const validatedData = resolveDisputeSchema.parse(req.body);
+
+    const updatedRecord = await noshowService.resolveDispute({
+      noShowRecordId: id,
+      resolution: validatedData.resolution,
+      upheld: validatedData.upheld,
+    });
+
+    logger.info(`No-show dispute resolved by admin`, {
+      noShowRecordId: id,
+      upheld: validatedData.upheld,
+      resolvedBy: req.user?.id,
+    });
+
+    successResponse(res, updatedRecord);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'RESOLVE_FAILED', (error as Error).message, 500);
   }
 }

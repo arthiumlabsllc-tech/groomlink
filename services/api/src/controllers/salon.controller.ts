@@ -34,9 +34,15 @@ const createSalonSchema = z.object({
   hasWifi: z.boolean().optional(),
   hasAC: z.boolean().optional(),
   acceptsWalkIns: z.boolean().optional(),
+  maxConcurrentClients: z.number().int().min(1).max(50).optional(),
+  totalChairs: z.number().int().min(1).max(50).optional(),
+  bufferTimeMinutes: z.number().int().min(0).max(60).optional(),
+  operatingModel: z.string().optional(),
 });
 
-const updateSalonSchema = createSalonSchema.partial();
+const updateSalonSchema = createSalonSchema.partial().extend({
+  operatingHours: z.record(z.string()).optional(),
+});
 
 export async function getSalons(req: Request, res: Response): Promise<void> {
   try {
@@ -197,6 +203,8 @@ export async function getMySalons(req: AuthenticatedRequest, res: Response): Pro
       prisma.salon.count({ where: { ownerId: req.user.id } }),
     ]);
     
+    // Note: operatingHours is automatically included in the response as it's a scalar field
+    
     paginatedResponse(res, salons, page, limit, total);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
@@ -249,6 +257,49 @@ export async function rejectSalon(req: AuthenticatedRequest, res: Response): Pro
     successResponse(res, salon);
   } catch (error) {
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 400);
+  }
+}
+
+// Get salon reviews (public endpoint)
+export async function getSalonReviews(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    // Check if salon exists
+    const salon = await prisma.salon.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { salonId: id },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+        },
+      }),
+      prisma.review.count({ where: { salonId: id } }),
+    ]);
+
+    paginatedResponse(res, reviews, page, limit, total);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }
 

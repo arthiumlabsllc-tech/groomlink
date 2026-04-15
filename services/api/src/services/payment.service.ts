@@ -4,6 +4,7 @@ import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import axios from 'axios';
 import crypto from 'crypto';
 import * as emailService from './email.service';
+import * as escrowService from './escrow.service';
 
 export interface InitializePaymentData {
   bookingId: string;
@@ -521,16 +522,54 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       },
     });
 
-    // Confirm the booking
+    // Send payment receipt emails (fire-and-forget)
+    const booking = payment.booking;
+
+    // Calculate cancellation deadline based on policy
+    let cancellationDeadline: Date | undefined;
+    try {
+      const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
+      const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
+      const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
+      cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
+    } catch (policyError) {
+      logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
+      const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
+      cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
+    }
+
+    // Confirm the booking with escrow fields
     await prisma.booking.update({
       where: { id: payment.bookingId },
-      data: { status: 'CONFIRMED' },
+      data: { 
+        status: 'CONFIRMED',
+        cancellationDeadline,
+        refundEligible: true,
+        refundPercentage: 100,
+      },
     });
 
     logger.info(`Payment completed: ${paymentId}`);
 
-    // Send payment receipt emails (fire-and-forget)
-    const booking = payment.booking;
+    // Create escrow account (non-blocking - don't let escrow failures break payment flow)
+    try {
+      await escrowService.createEscrow({
+        bookingId: booking.id,
+        customerId: booking.customer.id,
+        providerId: booking.salon.owner?.id || booking.salon.id,
+        salonId: booking.salon.id,
+        amount: Number(payment.amount),
+        paymentTransactionId: payment.providerRef || undefined,
+      });
+      logger.info(`Escrow created for booking: ${booking.id}`);
+    } catch (escrowError) {
+      logger.error('Failed to create escrow after payment success:', { 
+        paymentId, 
+        bookingId: payment.bookingId, 
+        error: escrowError 
+      });
+      // Don't throw - payment is still successful even if escrow creation fails
+    }
     const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
     const paymentMethod = payment.provider.replace(/_/g, ' ');
     const formattedDate = new Date(booking.date).toLocaleDateString('en-GB');
@@ -760,16 +799,54 @@ export async function handlePaystackWebhook(
             },
           });
 
-          // Update booking status
+          // Send payment receipt emails (fire-and-forget)
+          const booking = payment.booking;
+
+          // Calculate cancellation deadline based on policy
+          let cancellationDeadline: Date | undefined;
+          try {
+            const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
+            const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
+            const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
+            cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
+          } catch (policyError) {
+            logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
+            const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
+            cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
+          }
+
+          // Update booking status with escrow fields
           await prisma.booking.update({
             where: { id: payment.bookingId },
-            data: { status: 'CONFIRMED' },
+            data: { 
+              status: 'CONFIRMED',
+              cancellationDeadline,
+              refundEligible: true,
+              refundPercentage: 100,
+            },
           });
 
           logger.info(`Payment completed via webhook: ${payment.id}`);
 
-          // Send payment receipt emails (fire-and-forget)
-          const booking = payment.booking;
+          // Create escrow account (non-blocking - don't let escrow failures break payment flow)
+          try {
+            await escrowService.createEscrow({
+              bookingId: booking.id,
+              customerId: booking.customer.id,
+              providerId: booking.salon.owner?.id || booking.salon.id,
+              salonId: booking.salon.id,
+              amount: Number(payment.amount),
+              paymentTransactionId: payment.providerRef || undefined,
+            });
+            logger.info(`Escrow created for booking: ${booking.id}`);
+          } catch (escrowError) {
+            logger.error('Failed to create escrow after payment success:', { 
+              paymentId: payment.id, 
+              bookingId: payment.bookingId, 
+              error: escrowError 
+            });
+            // Don't throw - payment is still successful even if escrow creation fails
+          }
           const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
           const paymentMethod = payment.provider.replace(/_/g, ' ');
 
@@ -842,6 +919,72 @@ export async function handlePaystackWebhook(
   } catch (error) {
     logger.error('Paystack webhook error:', error);
     return { success: false, message: 'Webhook processing failed' };
+  }
+}
+
+/**
+ * Complete a service and release escrow funds to the provider
+ * This should be called when the service has been rendered and the booking is complete
+ */
+export async function completeServiceAndRelease(bookingId: string): Promise<{ booking: any; escrow: any }> {
+  try {
+    // Fetch the booking with related data
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        escrow: true,
+        salon: true,
+      },
+    });
+
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+
+    // Verify booking status is confirmed
+    if (booking.status !== 'CONFIRMED') {
+      throw new Error(`Cannot complete booking with status: ${booking.status}`);
+    }
+
+    // Verify service time has passed
+    const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.endTime}`);
+    const now = new Date();
+    if (bookingDateTime > now) {
+      throw new Error('Cannot complete booking before service end time');
+    }
+
+    // Get escrow by bookingId
+    const escrow = await escrowService.getEscrowByBookingId(bookingId);
+    if (!escrow) {
+      throw new Error('Escrow account not found for this booking');
+    }
+
+    // Verify escrow status is held
+    if (escrow.status !== 'held') {
+      throw new Error(`Cannot release escrow with status: ${escrow.status}`);
+    }
+
+    // Release escrow funds to salon
+    const updatedEscrow = await escrowService.releaseEscrow(escrow.id);
+
+    // Update booking status to completed
+    const updatedBooking = await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+      },
+    });
+
+    logger.info(`Service completed and escrow released for booking: ${bookingId}`, {
+      escrowId: escrow.id,
+      providerAmount: updatedEscrow.providerAmount,
+    });
+
+    return { booking: updatedBooking, escrow: updatedEscrow };
+  } catch (error) {
+    logger.error('Error completing service and releasing escrow:', { bookingId, error });
+    throw error;
   }
 }
 

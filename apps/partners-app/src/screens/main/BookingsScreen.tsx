@@ -141,13 +141,25 @@ export default function BookingsScreen() {
                 </View>
               </View>
             </View>
-            <Chip
-              mode="flat"
-              style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
-              textStyle={[styles.statusText, { color: getStatusTextColor(item.status) }]}
-            >
-              {item.status}
-            </Chip>
+            <View style={styles.headerRight}>
+              <Chip
+                mode="flat"
+                style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
+                textStyle={[styles.statusText, { color: getStatusTextColor(item.status) }]}
+              >
+                {item.status}
+              </Chip>
+              {item.isGroupBooking && (
+                <Chip
+                  mode="flat"
+                  style={styles.groupChip}
+                  textStyle={styles.groupChipText}
+                  icon="people"
+                >
+                  Group · {item.totalPeople || item.guests?.length || 0}
+                </Chip>
+              )}
+            </View>
           </View>
 
           <Divider style={styles.divider} />
@@ -432,6 +444,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     paddingHorizontal: 4,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  groupChip: {
+    height: 24,
+    justifyContent: 'center',
+    borderRadius: 6,
+    backgroundColor: '#E9D5FF',
+  },
+  groupChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#7C3AED',
   },
   divider: {
     marginBottom: 10,

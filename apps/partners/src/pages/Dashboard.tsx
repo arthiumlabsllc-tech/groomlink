@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   Calendar, DollarSign, Clock, CheckCircle, TrendingUp,
-  Plus, ArrowRight, Scissors, Users, Store, ArrowRightCircle
+  Plus, ArrowRight, Scissors, Users, Store, ArrowRightCircle, AlertTriangle, Shield, X, Wallet, AlertCircle
 } from 'lucide-react'
 import Layout from '../components/Layout'
-import { api, DashboardStats, Booking, Service, Worker } from '../lib/api'
+import { api, DashboardStats, Booking, Service, Worker, KycSubmission, EarningsSummary } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
 export default function Dashboard() {
@@ -16,6 +16,9 @@ export default function Dashboard() {
   const [services, setServices] = useState<Service[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
+  const [kycData, setKycData] = useState<KycSubmission | null>(null)
+  const [dismissedApproved, setDismissedApproved] = useState(false)
+  const [earnings, setEarnings] = useState<EarningsSummary | null>(null)
 
   // Check if user is authenticated
   useEffect(() => {
@@ -24,15 +27,31 @@ export default function Dashboard() {
     }
   }, [salonLoading, navigate])
 
+  // Fetch KYC status
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      try {
+        const response = await api.getKycStatus()
+        if (response.success && response.data) {
+          setKycData(response.data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch KYC status:', err)
+      }
+    }
+    fetchKycStatus()
+  }, [])
+
   useEffect(() => {
     const fetchData = async () => {
       if (!salonId) return
       try {
-        const [statsRes, bookingsRes, servicesRes, workersRes] = await Promise.all([
+        const [statsRes, bookingsRes, servicesRes, workersRes, earningsRes] = await Promise.all([
           api.getDashboardStats(salonId),
           api.getBookings(salonId),
           api.getServices(salonId),
-          api.getWorkers(salonId)
+          api.getWorkers(salonId),
+          api.getEarningsSummary(salonId).catch(() => ({ success: false, data: null }))
         ])
         if (statsRes.success && statsRes.data) {
           setStats(statsRes.data)
@@ -45,6 +64,9 @@ export default function Dashboard() {
         }
         if (workersRes.success && workersRes.data) {
           setWorkers(Array.isArray(workersRes.data) ? workersRes.data : [])
+        }
+        if (earningsRes.success && earningsRes.data) {
+          setEarnings(earningsRes.data)
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
@@ -112,6 +134,105 @@ export default function Dashboard() {
       case 'cancelled': return 'text-ghana-red bg-red-50'
       default: return 'text-gray-600 bg-gray-100'
     }
+  }
+
+  // KYC Banner component
+  const renderKycBanner = () => {
+    // No KYC submitted - show warning
+    if (!kycData) {
+      return (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-800">Complete Your Verification</h3>
+                <p className="text-sm text-amber-700">Complete your verification to start receiving bookings from customers.</p>
+              </div>
+            </div>
+            <Link 
+              to="/kyc" 
+              className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors flex items-center gap-2"
+            >
+              Start Verification
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )
+    }
+
+    // KYC pending - show info
+    if (kycData.status === 'PENDING') {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <Clock className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-800">Verification Under Review</h3>
+              <p className="text-sm text-blue-700">Your verification is being reviewed. We'll notify you once it's approved.</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // KYC rejected - show error
+    if (kycData.status === 'REJECTED') {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-red-800">Verification Rejected</h3>
+                <p className="text-sm text-red-700">Reason: {kycData.rejectionReason || 'Your submission did not meet our requirements.'}</p>
+              </div>
+            </div>
+            <Link 
+              to="/kyc" 
+              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+            >
+              Re-submit
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )
+    }
+
+    // KYC approved - show success (dismissible)
+    if (kycData.status === 'APPROVED' && !dismissedApproved) {
+      return (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <Shield className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-green-800">Your Salon is Verified!</h3>
+                <p className="text-sm text-green-700">You can now receive bookings from customers.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setDismissedApproved(true)}
+              className="text-green-600 hover:text-green-700 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return null
   }
 
   return (
@@ -192,6 +313,9 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500">Welcome back! Here's what's happening today.</p>
       </div>
+
+      {/* KYC Status Banner */}
+      {renderKycBanner()}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -305,6 +429,53 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Earnings Summary Section */}
+      {earnings && (earnings.escrowHeld > 0 || earnings.releasedThisMonth > 0 || earnings.pendingPenalties > 0) && (
+        <div className="mt-6 card">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet className="w-5 h-5 text-ghana-green" />
+            <h3 className="font-semibold text-gray-900">Earnings Overview</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Escrow Held */}
+            {earnings.escrowHeld > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">Held in Escrow</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-800">GH₵ {earnings.escrowHeld.toFixed(2)}</p>
+                <p className="text-xs text-blue-600 mt-1">Pending release</p>
+              </div>
+            )}
+            
+            {/* Released This Month */}
+            {earnings.releasedThisMonth > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">Released This Month</span>
+                </div>
+                <p className="text-2xl font-bold text-green-800">GH₵ {earnings.releasedThisMonth.toFixed(2)}</p>
+                <p className="text-xs text-green-600 mt-1">Available in your account</p>
+              </div>
+            )}
+            
+            {/* Pending Penalties */}
+            {earnings.pendingPenalties > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <span className="text-sm font-medium text-red-700">Pending Penalties</span>
+                </div>
+                <p className="text-2xl font-bold text-red-800">GH₵ {earnings.pendingPenalties.toFixed(2)}</p>
+                <p className="text-xs text-red-600 mt-1">From cancelled bookings</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       </>
       ) : (
         <div className="text-center py-12">

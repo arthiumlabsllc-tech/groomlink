@@ -57,7 +57,7 @@ export default function Hero() {
             {/* App Store Badges */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
               {/* Apple App Store Badge */}
-              <div className="relative inline-flex cursor-not-allowed group">
+              <div className="flex flex-col items-center cursor-not-allowed group">
                 <div className="flex items-center gap-3 bg-black rounded-xl px-5 py-3 opacity-75 hover:opacity-90 transition-opacity">
                   {/* Apple Logo */}
                   <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -68,16 +68,14 @@ export default function Hero() {
                     <span className="text-white font-semibold text-base -mt-0.5">App Store</span>
                   </div>
                 </div>
-                {/* Coming Soon Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-ghana-gold/95 text-gray-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                    Coming Soon
-                  </div>
+                {/* Coming Soon Label */}
+                <div className="mt-2 bg-ghana-gold/95 text-gray-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                  Coming Soon
                 </div>
               </div>
 
               {/* Google Play Store Badge */}
-              <div className="relative inline-flex cursor-not-allowed group">
+              <div className="flex flex-col items-center cursor-not-allowed group">
                 <div className="flex items-center gap-3 bg-black rounded-xl px-5 py-3 opacity-75 hover:opacity-90 transition-opacity">
                   {/* Google Play Logo */}
                   <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -88,11 +86,9 @@ export default function Hero() {
                     <span className="text-white font-semibold text-base -mt-0.5">Google Play</span>
                   </div>
                 </div>
-                {/* Coming Soon Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-ghana-gold/95 text-gray-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                    Coming Soon
-                  </div>
+                {/* Coming Soon Label */}
+                <div className="mt-2 bg-ghana-gold/95 text-gray-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                  Coming Soon
                 </div>
               </div>
             </div>

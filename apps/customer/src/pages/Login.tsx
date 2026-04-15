@@ -48,7 +48,7 @@ export default function Login() {
       setStep('otp');
       setCountdown(60);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to send OTP');
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to send OTP');
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +102,7 @@ export default function Login() {
         navigate('/dashboard');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Invalid OTP');
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Invalid OTP');
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +117,7 @@ export default function Login() {
       toast.success('OTP resent to your email!');
       setCountdown(60);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to resend OTP');
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to resend OTP');
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +141,7 @@ export default function Login() {
       toast.success('Registration complete!');
       navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }

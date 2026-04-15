@@ -366,6 +366,40 @@ export interface EmailOTPVerifyResponse {
 }
 
 /**
+ * Custom error class for role mismatch
+ */
+export class RoleMismatchError extends Error {
+  public readonly code: string = 'ROLE_MISMATCH';
+  public readonly existingRole: UserRole;
+  public readonly requestedRole: UserRole;
+
+  constructor(existingRole: UserRole, requestedRole: UserRole) {
+    const isAdminRole = ['ADMIN', 'SUPPORT', 'SUPER_ADMIN'].includes(existingRole);
+    
+    if (isAdminRole) {
+      super('This email is registered as an admin account. Please use the admin portal to log in.');
+    } else if (existingRole === UserRole.CUSTOMER && requestedRole === UserRole.SALON_OWNER) {
+      super('This email is registered as a customer. Please use a different email or log in at my.groomlinkgh.com');
+    } else if (existingRole === UserRole.SALON_OWNER && requestedRole === UserRole.CUSTOMER) {
+      super('This email is registered as a salon partner. Please use a different email or log in at partners.groomlinkgh.com');
+    } else {
+      super(`This email is already registered with a different role (${existingRole}). Please use a different email.`);
+    }
+    
+    this.name = 'RoleMismatchError';
+    this.existingRole = existingRole;
+    this.requestedRole = requestedRole;
+  }
+}
+
+/**
+ * Check if a role is an admin-type role (ADMIN, SUPPORT, SUPER_ADMIN)
+ */
+function isAdminRole(role: UserRole): boolean {
+  return [UserRole.ADMIN, UserRole.SUPPORT, UserRole.SUPER_ADMIN].includes(role as any);
+}
+
+/**
  * Verify email OTP and login/register user
  * @param email - User's email address
  * @param code - OTP code
@@ -411,6 +445,12 @@ export async function verifyEmailOTPAndLogin(email: string, code: string, reques
       },
       isNewUser: true,
     };
+  }
+
+  // Check for role mismatch when a specific role was requested
+  // Admin roles (ADMIN, SUPPORT, SUPER_ADMIN) are exempt from this check
+  if (requestedRole && !isAdminRole(user.role) && user.role !== requestedRole) {
+    throw new RoleMismatchError(user.role, requestedRole);
   }
 
   if (user.status === UserStatus.SUSPENDED) {
@@ -507,6 +547,11 @@ export async function completeRegistration(data: CompleteRegistrationData): Prom
   });
 
   if (existingUser) {
+    // Check for role mismatch - admin roles are exempt
+    if (!isAdminRole(existingUser.role) && existingUser.role !== role) {
+      throw new RoleMismatchError(existingUser.role, role);
+    }
+    
     // User already registered, just return their tokens
     const accessToken = generateToken({
       userId: existingUser.id,

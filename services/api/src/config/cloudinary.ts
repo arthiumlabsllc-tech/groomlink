@@ -71,6 +71,16 @@ export const documentStorage = new CloudinaryStorage({
   } as { folder: string; allowed_formats: string[]; resource_type: string },
 });
 
+// Storage for KYC documents and videos
+export const kycStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'groomlink/kyc',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'mp4', 'mov', 'avi'],
+    resource_type: 'auto',
+  } as { folder: string; allowed_formats: string[]; resource_type: string },
+});
+
 // Default storage for general uploads
 export const storage = new CloudinaryStorage({
   cloudinary: cloudinary,

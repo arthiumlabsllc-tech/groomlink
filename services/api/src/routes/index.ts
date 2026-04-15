@@ -12,6 +12,8 @@ import supportRoutes from './support.routes';
 import uploadRoutes from './upload.routes';
 import impersonationRoutes from './impersonation.routes';
 import queueRoutes from './queue.routes';
+import kycRoutes from './kyc.routes';
+import reviewRoutes from './review.routes';
 
 const router: RouterType = Router();
 
@@ -34,5 +36,7 @@ router.use('/support', supportRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/impersonation', impersonationRoutes);
 router.use('/queue', queueRoutes);
+router.use('/kyc', kycRoutes);
+router.use('/reviews', reviewRoutes);
 
 export default router;

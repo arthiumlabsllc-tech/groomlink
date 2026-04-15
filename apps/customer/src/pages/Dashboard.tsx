@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   Calendar, 
   Clock, 
@@ -152,6 +153,7 @@ function formatDate(dateStr: string, startTime: string): string {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { user } = useAuthStore()
 
   // Stats state
@@ -360,7 +362,11 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {salons.map((salon) => (
-              <div key={salon.id} className="card hover:shadow-md transition-shadow cursor-pointer">
+              <div 
+                key={salon.id} 
+                onClick={() => navigate(`/salon/${salon.id}`)}
+                className="card hover:shadow-md transition-shadow cursor-pointer"
+              >
                 <img
                   src={salon.logo || salon.images?.[0] || 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=300&h=200&fit=crop'}
                   alt={salon.businessName || 'Salon'}
