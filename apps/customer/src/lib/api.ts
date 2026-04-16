@@ -108,6 +108,7 @@ export interface BookingGuest {
   guestAgeGroup?: 'child' | 'teen' | 'adult' | 'senior';
   serviceId: string;
   staffId?: string;
+  priceAmount?: number;
   specialInstructions?: string;
   isChild?: boolean;
 }

@@ -339,6 +339,18 @@ export default function BookSalon() {
 
     try {
       setCreatingBooking(true);
+      
+      // Prepare guests with priceAmount based on their selected services
+      const guestsWithPrices = isGroupBooking && guests.length > 0
+        ? guests.map(guest => {
+            const guestService = services.find(s => s.id === guest.serviceId);
+            return {
+              ...guest,
+              priceAmount: guestService ? parseFloat(guestService.price) : 0,
+            };
+          })
+        : undefined;
+      
       const bookingData: BookingData = {
         salonId,
         serviceId: selectedService.id,
@@ -348,7 +360,7 @@ export default function BookSalon() {
         customerNotes: notes || undefined,
         isGroupBooking,
         totalPeople: isGroupBooking ? 1 + guests.length : 1,
-        guests: isGroupBooking && guests.length > 0 ? guests : undefined,
+        guests: guestsWithPrices,
         billingType: isGroupBooking ? 'combined' : undefined,
       };
 
