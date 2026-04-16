@@ -53,12 +53,24 @@ export async function verifyPayment(req: AuthenticatedRequest, res: Response): P
 
     const { paymentId, reference } = req.body;
 
-    if (!paymentId || !reference) {
-      errorResponse(res, 'MISSING_PARAMS', 'Payment ID and reference are required', 400);
+    // Reference is required, paymentId is optional (we can find payment by reference)
+    if (!reference) {
+      errorResponse(res, 'MISSING_PARAMS', 'Payment reference is required', 400);
       return;
     }
 
-    const result = await paymentService.verifyAndCompletePayment(paymentId, reference);
+    // If paymentId is not provided, find payment by reference
+    let effectivePaymentId = paymentId;
+    if (!effectivePaymentId) {
+      const payment = await paymentService.findPaymentByReference(reference);
+      if (!payment) {
+        errorResponse(res, 'NOT_FOUND', 'Payment not found for this reference', 404);
+        return;
+      }
+      effectivePaymentId = payment.id;
+    }
+
+    const result = await paymentService.verifyAndCompletePayment(effectivePaymentId, reference);
 
     if (result.success) {
       successResponse(res, result);

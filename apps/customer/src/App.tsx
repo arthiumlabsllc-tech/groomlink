@@ -112,7 +112,16 @@ function App() {
         } />
         
         {/* Payment Callback - Protected */}
+        {/* Both /payment/callback and /payment/verify routes point to PaymentCallback */}
+        {/* Paystack may redirect to /payment/verify with trxref and reference params */}
         <Route path="/payment/callback" element={
+          <ProtectedRoute>
+            <ProfileSetupGuard>
+              <PaymentCallback />
+            </ProfileSetupGuard>
+          </ProtectedRoute>
+        } />
+        <Route path="/payment/verify" element={
           <ProtectedRoute>
             <ProfileSetupGuard>
               <PaymentCallback />

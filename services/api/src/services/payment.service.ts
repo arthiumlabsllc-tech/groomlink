@@ -786,6 +786,15 @@ export async function getPaymentHistory(userId: string, page: number = 1, limit:
   return { payments, total };
 }
 
+// Find payment by provider reference (used when Paystack redirects with just the reference)
+export async function findPaymentByReference(reference: string) {
+  const payment = await prisma.payment.findFirst({
+    where: { providerRef: reference },
+  });
+  
+  return payment;
+}
+
 export async function getPaymentById(paymentId: string, userId: string) {
   const payment = await prisma.payment.findFirst({
     where: {
