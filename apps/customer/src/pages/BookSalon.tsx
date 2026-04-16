@@ -1121,21 +1121,30 @@ export default function BookSalon() {
               const hasEnoughSpots = remainingSpots >= totalPeople;
               const isDisabled = !isAvailable || remainingSpots === 0 || !hasEnoughSpots;
 
-              // Determine badge color
+              // Determine badge color and text based on remaining spots
+              // Green (4+), Amber (2-3), Red (1), Disabled (0)
               let badgeColor = '';
               let badgeText = '';
+              
               if (remainingSpots === 0) {
                 badgeColor = 'bg-red-100 text-red-600';
                 badgeText = 'Full';
               } else if (!hasEnoughSpots) {
+                // Not enough spots for the group size
                 badgeColor = 'bg-red-100 text-red-600';
-                badgeText = `${remainingSpots} left`;
-              } else if (remainingSpots <= 2) {
+                badgeText = remainingSpots === 1 ? '1 slot' : `${remainingSpots} slots`;
+              } else if (remainingSpots === 1) {
+                // Only 1 slot left - RED for urgency
+                badgeColor = 'bg-red-100 text-red-600';
+                badgeText = '1 slot left';
+              } else if (remainingSpots <= 3) {
+                // 2-3 slots left - AMBER for low availability
                 badgeColor = 'bg-amber-100 text-amber-700';
-                badgeText = 'Limited';
+                badgeText = `${remainingSpots} slots left`;
               } else {
+                // 4+ slots - GREEN for good availability
                 badgeColor = 'bg-green-100 text-green-700';
-                badgeText = `${remainingSpots} left`;
+                badgeText = `${remainingSpots} slots left`;
               }
 
               return (
@@ -1143,7 +1152,7 @@ export default function BookSalon() {
                   key={slot.startTime}
                   onClick={() => !isDisabled && setSelectedTime(slot.startTime)}
                   disabled={isDisabled}
-                  title={!hasEnoughSpots && remainingSpots > 0 ? 'Not enough spots for your group' : ''}
+                  title={!hasEnoughSpots && remainingSpots > 0 ? `Not enough slots for your group of ${totalPeople}. Only ${remainingSpots} available.` : ''}
                   className={`py-3 px-2 rounded-lg text-sm font-medium transition-all relative ${
                     isSelected
                       ? 'bg-[#006B3F] text-white'
@@ -1159,7 +1168,7 @@ export default function BookSalon() {
                       isSelected ? 'bg-white/20 text-white' : badgeColor
                     }`}
                   >
-                    {isSelected ? `${remainingSpots} left` : badgeText}
+                    {isSelected ? (remainingSpots === 1 ? '1 slot left' : `${remainingSpots} slots left`) : badgeText}
                   </span>
                 </button>
               );

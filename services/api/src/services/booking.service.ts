@@ -878,12 +878,21 @@ function timeRangesOverlap(
   return start1 < end2 && end1 > start2;
 }
 
+export interface AvailableSlot {
+  startTime: string;
+  endTime: string;
+  available: boolean;
+  remainingSpots: number;
+  totalSpots: number;
+  bookedSpots: number;
+}
+
 export async function getAvailableSlots(
   salonId: string,
   workerId: string | undefined,
   date: Date,
   serviceDuration: number = 30
-): Promise<{ startTime: string; endTime: string; available: boolean }[]> {
+): Promise<AvailableSlot[]> {
   // Validate service duration
   if (!VALID_SLOT_DURATIONS.includes(serviceDuration)) {
     throw new Error(`Invalid service duration. Must be one of: ${VALID_SLOT_DURATIONS.join(', ')} minutes`);

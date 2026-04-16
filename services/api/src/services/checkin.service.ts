@@ -245,7 +245,7 @@ interface QueueStats {
 }
 
 interface QueueForSalonResult {
-  bookings: Array<{
+  queue: Array<{
     id: string;
     reference: string;
     status: BookingStatus;
@@ -361,7 +361,7 @@ export async function getQueueForSalon(
   });
 
   return {
-    bookings: bookings.map(b => ({
+    queue: bookings.map(b => ({
       id: b.id,
       reference: b.reference,
       status: b.status,
