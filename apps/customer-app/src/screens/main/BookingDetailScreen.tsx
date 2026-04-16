@@ -93,7 +93,16 @@ export default function BookingDetailScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
-      Alert.alert('Service Confirmed', 'Thank you for confirming your service completion.');
+      Alert.alert(
+        'Service Confirmed',
+        'Thank you for confirming your service completion. Payment has been released to the salon.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
     },
     onError: (error: any) => {
       Alert.alert('Confirmation Failed', error.response?.data?.message || 'Please try again');
@@ -107,7 +116,16 @@ export default function BookingDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
       setDisputeModalVisible(false);
       setDisputeReason('');
-      Alert.alert('Dispute Raised', 'Your dispute has been submitted. Our team will review it shortly.');
+      Alert.alert(
+        'Dispute Raised',
+        'Your dispute has been submitted. Our team will review it shortly.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
     },
     onError: (error: any) => {
       Alert.alert('Dispute Failed', error.response?.data?.message || 'Please try again');
