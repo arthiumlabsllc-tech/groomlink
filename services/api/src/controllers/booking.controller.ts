@@ -548,11 +548,11 @@ export async function getQRCodeHandler(req: AuthenticatedRequest, res: Response)
     }
 
     const qrCode = await completionService.generateQRCode(id);
-    const booking = await prisma.booking.findUnique({
+    const bookingForRef = await prisma.booking.findUnique({
       where: { id },
       select: { reference: true },
     });
-    successResponse(res, { qrCode, bookingRef: booking?.reference || '' });
+    successResponse(res, { qrCode, bookingRef: bookingForRef?.reference || '' });
   } catch (error) {
     errorResponse(res, 'QRCODE_FAILED', (error as Error).message, 400);
   }
