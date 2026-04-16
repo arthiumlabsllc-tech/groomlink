@@ -381,17 +381,17 @@ export default function Bookings() {
       </div>
 
       {/* Check-in Actions */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <button
           onClick={() => setShowQrScanner(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-ghana-green text-white rounded-xl font-medium hover:bg-ghana-green/90 transition-colors shadow-sm"
+          className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-ghana-green text-white rounded-xl font-medium hover:bg-ghana-green/90 transition-colors shadow-sm min-h-[44px]"
         >
           <Scan className="w-5 h-5" />
           Scan QR
         </button>
         <button
           onClick={() => setShowCodeInput(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-ghana-green border-2 border-ghana-green rounded-xl font-medium hover:bg-ghana-green/5 transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-white text-ghana-green border-2 border-ghana-green rounded-xl font-medium hover:bg-ghana-green/5 transition-colors min-h-[44px]"
         >
           <Keyboard className="w-5 h-5" />
           Enter Code
@@ -412,13 +412,13 @@ export default function Bookings() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      {/* Tabs - Scrollable on mobile */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible scrollbar-hide">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+            className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all min-h-[44px] whitespace-nowrap flex-shrink-0 ${
               activeTab === tab.key
                 ? 'bg-ghana-green text-white shadow-md'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
@@ -687,9 +687,9 @@ export default function Bookings() {
 
       {/* Booking Detail Modal */}
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedBooking(null)}>
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-black/50" onClick={() => setSelectedBooking(null)}>
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1020,11 +1020,11 @@ export default function Bookings() {
             {/* Action Buttons */}
             {selectedBooking.status === 'PENDING' && (
               <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => handleUpdateStatus('CANCELLED')}
                     disabled={updating}
-                    className="flex-1 px-4 py-3 border border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-3 border border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
                   >
                     {updating ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -1038,7 +1038,7 @@ export default function Bookings() {
                   <button
                     onClick={() => handleUpdateStatus('CONFIRMED')}
                     disabled={updating}
-                    className="flex-1 px-4 py-3 bg-ghana-green text-white rounded-xl font-medium hover:bg-ghana-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-3 bg-ghana-green text-white rounded-xl font-medium hover:bg-ghana-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
                   >
                     {updating ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -1072,7 +1072,7 @@ export default function Bookings() {
                     <button
                       onClick={handleCompleteBooking}
                       disabled={actionLoading === 'complete'}
-                      className="w-full px-4 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full px-4 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
                     >
                       {actionLoading === 'complete' ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -1085,12 +1085,12 @@ export default function Bookings() {
                     </button>
                   )}
                   
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     {/* Mark No-Show */}
                     <button
                       onClick={handleMarkNoShow}
                       disabled={actionLoading === 'noshow'}
-                      className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
                     >
                       {actionLoading === 'noshow' ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -1106,7 +1106,7 @@ export default function Bookings() {
                     <button
                       onClick={() => setShowCancelModal(true)}
                       disabled={actionLoading === 'cancel'}
-                      className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
                     >
                       {actionLoading === 'cancel' ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -1127,12 +1127,12 @@ export default function Bookings() {
 
       {/* Cancel Booking Modal */}
       {showCancelModal && selectedBooking && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50" onClick={() => setShowCancelModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4 bg-black/50" onClick={() => setShowCancelModal(false)}>
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+            className="bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-md h-[100dvh] sm:h-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h2 className="text-xl font-bold text-gray-900">Cancel Booking</h2>
             </div>
             
@@ -1167,20 +1167,20 @@ export default function Bookings() {
             </div>
             
             <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => {
                     setShowCancelModal(false)
                     setCancelReason('')
                   }}
-                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors min-h-[44px]"
                 >
                   Go Back
                 </button>
                 <button
                   onClick={handleCancelAsProvider}
                   disabled={actionLoading === 'cancel' || !cancelReason.trim()}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   {actionLoading === 'cancel' ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -1199,22 +1199,22 @@ export default function Bookings() {
 
       {/* QR Scanner Modal */}
       {showQrScanner && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50" onClick={closeCheckinModal}>
+        <div className="fixed inset-0 z-[70] flex items-start sm:items-center justify-center p-0 sm:p-4 bg-black/50" onClick={closeCheckinModal}>
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+            className="bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-md h-[100dvh] sm:h-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h2 className="text-lg font-bold text-gray-900">Scan QR Code</h2>
               <button 
                 onClick={closeCheckinModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
-            <div className="p-4">
+
+            <div className="p-4 pb-8 sm:pb-4">
               {checkinSuccess ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1258,22 +1258,22 @@ export default function Bookings() {
 
       {/* Enter Code Modal */}
       {showCodeInput && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50" onClick={closeCheckinModal}>
+        <div className="fixed inset-0 z-[70] flex items-start sm:items-center justify-center p-0 sm:p-4 bg-black/50" onClick={closeCheckinModal}>
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+            className="bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-md h-[100dvh] sm:h-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h2 className="text-lg font-bold text-gray-900">Enter Check-in Code</h2>
               <button 
                 onClick={closeCheckinModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
-            <div className="p-4">
+      
+            <div className="p-4 pb-8 sm:pb-4">
               {checkinSuccess ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">

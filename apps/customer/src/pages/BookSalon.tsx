@@ -30,6 +30,8 @@ interface Service {
   category: string;
   duration: number;
   price: string;
+  discountPrice?: string | null;
+  promoLabel?: string | null;
   isActive: boolean;
 }
 
@@ -544,17 +546,17 @@ export default function BookSalon() {
   // Progress Steps Component
   const ProgressSteps = () => {
     const steps = [
-      { key: 'service', label: 'Service', icon: Scissors },
-      { key: 'staff', label: 'Staff', icon: User },
-      { key: 'group', label: 'Who\'s Coming', icon: Users },
-      { key: 'datetime', label: 'Date & Time', icon: Calendar },
-      { key: 'confirm', label: 'Confirm', icon: Check },
+      { key: 'service', label: 'Service', shortLabel: 'Service', icon: Scissors },
+      { key: 'staff', label: 'Staff', shortLabel: 'Staff', icon: User },
+      { key: 'group', label: 'Who\'s Coming', shortLabel: 'Group', icon: Users },
+      { key: 'datetime', label: 'Date & Time', shortLabel: 'When', icon: Calendar },
+      { key: 'confirm', label: 'Confirm', shortLabel: 'Confirm', icon: Check },
     ];
 
     const currentIndex = steps.findIndex((s) => s.key === currentStep);
 
     return (
-      <div className="bg-white border-b border-gray-200 py-4 px-4 sm:px-6">
+      <div className="bg-white border-b border-gray-200 py-3 sm:py-4 px-3 sm:px-6">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => {
@@ -566,7 +568,7 @@ export default function BookSalon() {
                 <div key={step.key} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
                         isCurrent
                           ? 'bg-[#006B3F] text-white'
                           : isActive
@@ -574,19 +576,20 @@ export default function BookSalon() {
                           : 'bg-gray-100 text-gray-400'
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <span
-                      className={`text-xs mt-1 font-medium ${
+                      className={`text-[10px] sm:text-xs mt-1 font-medium text-center ${
                         isCurrent ? 'text-[#006B3F]' : isActive ? 'text-gray-700' : 'text-gray-400'
                       }`}
                     >
-                      {step.label}
+                      <span className="hidden sm:inline">{step.label}</span>
+                      <span className="sm:hidden">{step.shortLabel}</span>
                     </span>
                   </div>
                   {index < steps.length - 1 && (
                     <div
-                      className={`w-8 sm:w-16 h-0.5 mx-1 sm:mx-2 ${
+                      className={`w-4 sm:w-16 h-0.5 mx-0.5 sm:mx-2 ${
                         index < currentIndex ? 'bg-[#006B3F]' : 'bg-gray-200'
                       }`}
                     />
@@ -682,10 +685,15 @@ export default function BookSalon() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <h3 className="font-semibold text-gray-900">{service.name}</h3>
                     {selectedService?.id === service.id && (
                       <CheckCircle2 className="w-5 h-5 text-[#006B3F]" />
+                    )}
+                    {service.promoLabel && (
+                      <span className="px-2 py-0.5 bg-ghana-gold/20 text-amber-700 text-xs font-medium rounded-full">
+                        {service.promoLabel}
+                      </span>
                     )}
                   </div>
                   {service.description && (
@@ -704,7 +712,14 @@ export default function BookSalon() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-[#006B3F]">{formatPrice(service.price)}</p>
+                  {service.discountPrice && parseFloat(service.discountPrice) > 0 ? (
+                    <div>
+                      <p className="text-sm text-gray-400 line-through">{formatPrice(service.price)}</p>
+                      <p className="text-xl font-bold text-[#006B3F]">{formatPrice(service.discountPrice)}</p>
+                    </div>
+                  ) : (
+                    <p className="text-xl font-bold text-[#006B3F]">{formatPrice(service.price)}</p>
+                  )}
                 </div>
               </div>
             </button>
@@ -716,10 +731,10 @@ export default function BookSalon() {
 
   // Step 2: Select Staff
   const renderStaffStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Select Staff</h2>
-        <p className="text-gray-600 mt-1">Choose your preferred staff member (optional)</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Select Staff</h2>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Choose your preferred staff member (optional)</p>
       </div>
 
       {loadingStaff ? (
@@ -727,7 +742,7 @@ export default function BookSalon() {
           <Loader2 className="w-8 h-8 text-[#006B3F] animate-spin" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {/* Any Available Option */}
           <button
             onClick={() => setSelectedWorker(null)}
@@ -825,14 +840,14 @@ export default function BookSalon() {
 
   // Step 3: Group Selection
   const renderGroupStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Who's getting services?</h2>
-        <p className="text-gray-600 mt-1">Are you booking for yourself or with guests?</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Who's getting services?</h2>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Are you booking for yourself or with guests?</p>
       </div>
 
       {/* Booking Type Selection */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <button
           onClick={() => {
             setIsGroupBooking(false);
@@ -1041,19 +1056,19 @@ export default function BookSalon() {
 
   // Step 4: Select Date & Time
   const renderDateTimeStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Select Date & Time</h2>
-        <p className="text-gray-600 mt-1">Choose when you'd like your appointment</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Select Date & Time</h2>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Choose when you'd like your appointment</p>
       </div>
 
       {/* Date Selection */}
       <div>
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-[#006B3F]" />
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+          <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5 text-[#006B3F]" />
           Select Date
         </h3>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
           {dates.map((date, index) => {
             const isSelected = date.toDateString() === selectedDate.toDateString();
             const isToday = date.toDateString() === new Date().toDateString();
@@ -1094,8 +1109,8 @@ export default function BookSalon() {
 
       {/* Time Selection */}
       <div>
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-[#006B3F]" />
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+          <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#006B3F]" />
           Select Time
         </h3>
         {loadingSlots ? (
@@ -1113,7 +1128,7 @@ export default function BookSalon() {
             <p className="text-sm text-gray-400 mt-1">Try selecting a different date or staff member</p>
           </div>
         ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
             {displaySlots.map((slot) => {
               const isAvailable = isSlotAvailable(slot);
               const isSelected = selectedTime === slot.startTime;

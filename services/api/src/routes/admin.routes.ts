@@ -39,20 +39,20 @@ router.get('/paystack-balance', authenticateToken, requireAdminOrHigher, adminCo
 // Recent Activities
 router.get('/activities', authenticateToken, requireAdminOrHigher, adminController.getRecentActivities);
 
-// Admin management (SUPER_ADMIN only)
-router.post('/admins', authenticateToken, requireSuperAdmin, adminController.createAdmin);
+// Admin management (ADMIN or SUPER_ADMIN can access, but SUPER_ADMIN protection is in controllers)
+router.post('/admins', authenticateToken, requireAdminOrHigher, adminController.createAdmin);
 router.get('/admins', authenticateToken, requireAdminOrHigher, adminController.getAdmins);
-router.put('/admins/:id/permissions', authenticateToken, requireSuperAdmin, adminController.updateAdminPermissions);
-router.delete('/admins/:id', authenticateToken, requireSuperAdmin, adminController.deleteAdmin);
+router.put('/admins/:id/permissions', authenticateToken, requireAdminOrHigher, adminController.updateAdminPermissions);
+router.delete('/admins/:id', authenticateToken, requireAdminOrHigher, adminController.deleteAdmin);
 
 // Site settings
 router.get('/settings', authenticateToken, requireAdminOrHigher, adminController.getSiteSettings);
-router.put('/settings', authenticateToken, requireSuperAdmin, adminController.updateSiteSettings);
-router.post('/settings/maintenance', authenticateToken, requireSuperAdmin, adminController.toggleMaintenanceMode);
+router.put('/settings', authenticateToken, requireAdminOrHigher, adminController.updateSiteSettings);
+router.post('/settings/maintenance', authenticateToken, requireAdminOrHigher, adminController.toggleMaintenanceMode);
 
 // Payment settings
 router.get('/payment-settings', authenticateToken, requireAdminOrHigher, adminController.getPaymentSettings);
-router.put('/payment-settings', authenticateToken, requireSuperAdmin, adminController.updatePaymentSettings);
+router.put('/payment-settings', authenticateToken, requireAdminOrHigher, adminController.updatePaymentSettings);
 
 // User activity & security
 router.get('/users/:id/activities', authenticateToken, requireAdminOrHigher, adminController.getUserActivities);

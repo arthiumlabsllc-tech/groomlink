@@ -255,8 +255,8 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
-        <p className="text-gray-600 mt-1">Ready to book your next appointment?</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Ready to book your next appointment?</p>
       </div>
 
       {/* Stats */}
@@ -307,7 +307,7 @@ export default function Dashboard() {
       {/* Upcoming Bookings */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Upcoming Appointments</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Upcoming Appointments</h2>
           <a href="/bookings" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
             View all
           </a>
@@ -319,26 +319,26 @@ export default function Dashboard() {
         ) : bookings.length === 0 ? (
           <EmptyState message="No upcoming bookings" icon={Calendar} />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {bookings.map((booking) => (
-              <div key={booking.id} className="card flex items-center gap-4">
+              <div key={booking.id} className="card flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
                 <img
                   src={booking.salon?.logo || 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=100&h=100&fit=crop'}
                   alt={booking.salon?.businessName || 'Salon'}
-                  className="w-16 h-16 rounded-lg object-cover"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
                 />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                     {booking.salon?.businessName || 'Unknown Salon'}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">
                     {booking.service?.name || 'Unknown Service'}
                   </p>
-                  <p className="text-sm text-primary-600 font-medium">
+                  <p className="text-xs sm:text-sm text-primary-600 font-medium">
                     {formatDate(booking.date, booking.startTime)}
                   </p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
+                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </div>
             ))}
           </div>
@@ -348,7 +348,7 @@ export default function Dashboard() {
       {/* Nearby Salons */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Nearby Salons</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Nearby Salons</h2>
           <a href="/explore" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
             Explore all
           </a>
@@ -360,19 +360,19 @@ export default function Dashboard() {
         ) : salons.length === 0 ? (
           <EmptyState message="No nearby salons found" icon={Scissors} />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {salons.map((salon) => (
               <div 
                 key={salon.id} 
                 onClick={() => navigate(`/salon/${salon.id}`)}
-                className="card hover:shadow-md transition-shadow cursor-pointer"
+                className="card hover:shadow-md transition-shadow cursor-pointer p-3 sm:p-4"
               >
                 <img
                   src={salon.logo || salon.images?.[0] || 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=300&h=200&fit=crop'}
                   alt={salon.businessName || 'Salon'}
-                  className="w-full h-32 object-cover rounded-lg mb-4"
+                  className="w-full h-28 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
                 />
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
                   {salon.businessName || 'Unnamed Salon'}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
@@ -380,13 +380,13 @@ export default function Dashboard() {
                   <span className="text-sm font-medium">
                     {salon.rating?.toFixed(1) || '0.0'}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-xs sm:text-sm text-gray-500">
                     ({salon.reviewCount || 0} reviews)
                   </span>
                 </div>
-                <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
-                  <MapPin className="w-4 h-4" />
-                  <span>{salon.city || 'Unknown location'}</span>
+                <div className="flex items-center gap-1 mt-2 text-xs sm:text-sm text-gray-500">
+                  <MapPin className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{salon.city || 'Unknown location'}</span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-3">
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">

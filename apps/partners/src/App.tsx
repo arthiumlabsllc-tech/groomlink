@@ -10,6 +10,7 @@ import Reviews from './pages/Reviews'
 import Settings from './pages/Settings'
 import Queue from './pages/Queue'
 import KYC from './pages/KYC'
+import Notifications from './pages/Notifications'
 import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
 import { SocketProvider } from './components/SocketProvider'
@@ -102,6 +103,11 @@ function App() {
               <Route path="/kyc" element={
                 <ProtectedRoute>
                   <KYC />
+                </ProtectedRoute>
+              } />
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />

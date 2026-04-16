@@ -348,7 +348,7 @@ export default function Explore() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -356,7 +356,7 @@ export default function Explore() {
             placeholder="Search salons, services, or locations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent"
+            className="w-full pl-10 pr-10 py-2.5 sm:py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent text-sm sm:text-base"
           />
           {loading && (
             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
@@ -367,7 +367,7 @@ export default function Explore() {
           <button
             onClick={handleNearMeClick}
             disabled={gettingLocation}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium transition-all text-sm sm:text-base ${
               locationMode === 'nearby'
                 ? 'bg-ghana-green text-white shadow-md'
                 : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-ghana-green'
@@ -376,12 +376,8 @@ export default function Explore() {
             {gettingLocation ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Getting location...</span>
-              </>
-            ) : locationMode === 'nearby' ? (
-              <>
-                <Navigation className="w-4 h-4" />
-                <span>Near Me</span>
+                <span className="hidden sm:inline">Getting location...</span>
+                <span className="sm:hidden">Locating...</span>
               </>
             ) : (
               <>
@@ -396,7 +392,7 @@ export default function Explore() {
             <select
               value={selectedRadius}
               onChange={(e) => handleRadiusChange(Number(e.target.value))}
-              className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent"
+              className="px-2 sm:px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent text-sm"
             >
               {radiusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -406,11 +402,11 @@ export default function Explore() {
             </select>
           )}
 
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+          <button className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-sm sm:text-base">
             <Filter className="w-4 h-4" />
-            Filters
+            <span className="hidden sm:inline">Filters</span>
           </button>
-          <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden ml-auto">
             <button 
               onClick={() => setDisplayMode('grid')} 
               className={`p-2 ${displayMode === 'grid' ? 'bg-ghana-green/10 text-ghana-green' : 'text-gray-500 hover:bg-gray-50'}`}
@@ -454,7 +450,7 @@ export default function Explore() {
       )}
 
       {/* Categories */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
         {categories.map((category) => (
           <button
             key={category.value || 'all'}
@@ -462,7 +458,7 @@ export default function Explore() {
               setSelectedCategory(category.value)
               setPage(1)
             }}
-            className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-full whitespace-nowrap transition-colors text-sm sm:text-base ${
               selectedCategory === category.value
                 ? 'bg-ghana-green text-white'
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'

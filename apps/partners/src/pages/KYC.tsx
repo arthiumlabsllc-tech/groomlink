@@ -272,7 +272,7 @@ export default function KYC() {
         <div className="space-y-6">
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Business Information</h3>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-500">Business Type</p>
                 <p className="font-medium text-gray-900">
@@ -303,7 +303,7 @@ export default function KYC() {
           {/* Documents */}
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Uploaded Documents</h3>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {existingKyc?.governmentIdUrl && (
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500 mb-2">Government ID</p>
@@ -334,7 +334,7 @@ export default function KYC() {
           {/* Videos */}
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Video Verification</h3>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {existingKyc?.storefrontVideoUrl && (
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500 mb-2">Storefront Video</p>
@@ -491,17 +491,17 @@ export default function KYC() {
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Select Business Type</h2>
               <p className="text-gray-500 mb-6">Choose the option that best describes your business</p>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <button
                   onClick={() => setFormData(prev => ({ ...prev, businessType: 'REGISTERED_COMPANY' }))}
-                  className={`p-6 rounded-lg border-2 text-left transition-all ${
+                  className={`p-4 sm:p-6 rounded-lg border-2 text-left transition-all ${
                     formData.businessType === 'REGISTERED_COMPANY'
                       ? 'border-ghana-green bg-ghana-green/5'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-lg bg-ghana-green/10 flex items-center justify-center mb-4">
-                    <Building2 className="w-6 h-6 text-ghana-green" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-ghana-green/10 flex items-center justify-center mb-3 sm:mb-4">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-ghana-green" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">Registered Company</h3>
                   <p className="text-sm text-gray-500">Your business is registered with the Registrar General's Department</p>
@@ -509,14 +509,14 @@ export default function KYC() {
 
                 <button
                   onClick={() => setFormData(prev => ({ ...prev, businessType: 'INDIVIDUAL' }))}
-                  className={`p-6 rounded-lg border-2 text-left transition-all ${
+                  className={`p-4 sm:p-6 rounded-lg border-2 text-left transition-all ${
                     formData.businessType === 'INDIVIDUAL'
                       ? 'border-ghana-green bg-ghana-green/5'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-lg bg-ghana-gold/10 flex items-center justify-center mb-4">
-                    <User className="w-6 h-6 text-ghana-gold" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-ghana-gold/10 flex items-center justify-center mb-3 sm:mb-4">
+                    <User className="w-5 h-5 sm:w-6 sm:h-6 text-ghana-gold" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">Individual</h3>
                   <p className="text-sm text-gray-500">You operate as an individual without formal business registration</p>
@@ -553,21 +553,21 @@ export default function KYC() {
                       </label>
                       <input
                         type="text"
-                        className="input-field"
+                        className="input-field w-full"
                         placeholder="Enter your registered business name"
                         value={formData.businessRegName}
                         onChange={(e) => setFormData(prev => ({ ...prev, businessRegName: e.target.value }))}
                       />
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           TIN Number
                         </label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field w-full"
                           placeholder="e.g., GC123456789"
                           value={formData.tinNumber}
                           onChange={(e) => setFormData(prev => ({ ...prev, tinNumber: e.target.value }))}
@@ -579,7 +579,7 @@ export default function KYC() {
                         </label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field w-full"
                           placeholder="e.g., BN-123456"
                           value={formData.registrationNumber}
                           onChange={(e) => setFormData(prev => ({ ...prev, registrationNumber: e.target.value }))}

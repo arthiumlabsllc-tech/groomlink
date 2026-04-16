@@ -915,8 +915,8 @@ export default function Bookings() {
 
       {/* Booking Detail Modal */}
       {selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Booking Details</h2>
@@ -1282,8 +1282,8 @@ export default function Bookings() {
 
       {/* Cancellation Modal */}
       {showCancellationModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Cancel Booking</h2>
@@ -1435,8 +1435,8 @@ export default function Bookings() {
 
       {/* Reschedule Modal */}
       {showRescheduleModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Reschedule Booking</h2>
@@ -1550,8 +1550,8 @@ export default function Bookings() {
 
       {/* QR Code Modal */}
       {showQRCodeModal && selectedBooking && qrCodeData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-sm w-full">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Check-in QR Code</h2>
@@ -1571,7 +1571,7 @@ export default function Bookings() {
                   <img 
                     src={qrCodeData} 
                     alt="QR Code for check-in" 
-                    className="w-48 h-48 mx-auto"
+                    className="w-40 h-40 sm:w-48 sm:h-48 mx-auto"
                   />
                 </div>
                 <p className="text-sm text-gray-600 mb-2">

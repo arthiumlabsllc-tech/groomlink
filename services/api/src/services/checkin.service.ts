@@ -3,6 +3,7 @@ import logger from '../config/logger';
 import { BookingStatus, QueueStatus } from '@prisma/client';
 import { joinQueue, QueueEntry } from './queue.service';
 import { emitBookingCheckin } from '../config/socket';
+import * as notificationService from './notification.service';
 
 /**
  * Calculate distance between two coordinates using Haversine formula
@@ -217,6 +218,15 @@ export async function scanAndCheckIn(
     serviceName: updatedBooking.service.name,
     queuePosition: queueEntry.position,
   });
+
+  // Notify salon owner of check-in
+  notificationService.notifySalonOwnerOfCheckin(
+    salonOwnerId,
+    booking.id,
+    `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`,
+    updatedBooking.service.name,
+    queueEntry.position
+  ).catch((err) => logger.error('Failed to send check-in notification to salon owner', { err }));
 
   return {
     booking: {

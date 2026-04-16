@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import { NotificationType } from '@prisma/client';
+import * as notificationService from '../services/notification.service';
 
 const sendNotificationSchema = z.object({
   userId: z.string().uuid(),
@@ -105,5 +106,35 @@ export async function sendNotification(req: AuthenticatedRequest, res: Response)
       return;
     }
     errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function markAllAsRead(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const count = await notificationService.markAllAsRead(req.user.id);
+
+    successResponse(res, { message: `Marked ${count} notifications as read`, count });
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function getUnreadCount(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const unreadCount = await notificationService.getUnreadCount(req.user.id);
+
+    successResponse(res, { unreadCount });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }

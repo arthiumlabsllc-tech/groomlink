@@ -316,25 +316,33 @@ export async function getSystemHealth(req: AuthenticatedRequest, res: Response):
   try {
     const startTime = process.uptime();
     const memUsage = process.memoryUsage();
-    
+
     // DB check
-    let dbStatus = 'healthy';
+    let dbStatus: 'connected' | 'disconnected' = 'connected';
     let dbLatency = 0;
     try {
       const dbStart = Date.now();
       await prisma.$queryRaw`SELECT 1`;
       dbLatency = Date.now() - dbStart;
-    } catch { dbStatus = 'unhealthy'; }
+    } catch { dbStatus = 'disconnected'; }
 
     // Redis check (if redis client available)
-    let redisStatus = 'healthy';
+    let redisStatus: 'connected' | 'disconnected' = 'connected';
     let redisLatency = 0;
+    let redisMemoryUsage = 'N/A';
     try {
       const redisStart = Date.now();
       const { default: redis } = await import('../config/redis');
       await redis.ping();
       redisLatency = Date.now() - redisStart;
-    } catch { redisStatus = 'unhealthy'; }
+
+      // Get Redis memory info
+      const info = await redis.info('memory');
+      const match = info.match(/used_memory_human:(.+)/);
+      if (match) {
+        redisMemoryUsage = match[1].trim();
+      }
+    } catch { redisStatus = 'disconnected'; }
 
     // Counts
     const [userCount, salonCount, bookingCount, activeSessionCount] = await Promise.all([
@@ -354,36 +362,88 @@ export async function getSystemHealth(req: AuthenticatedRequest, res: Response):
       }),
     ]);
 
-    // Error rate (suspicious activities in last hour as proxy)
+    // Suspicious activity - failed login attempts in last 24h
+    const recentFailedLogins = await prisma.userActivity.count({
+      where: {
+        action: { contains: 'LOGIN_FAILED', mode: 'insensitive' },
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+      }
+    });
+
+    // Also count suspicious activities
     const recentSuspicious = await prisma.userActivity.count({
-      where: { suspicious: true, createdAt: { gte: new Date(Date.now() - 60*60*1000) } }
+      where: { suspicious: true, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
     });
 
     // Get database pool metrics
     const poolMetrics = getPoolMetrics();
 
+    // Get connected socket clients count if available
+    let activeSocketConnections = 0;
+    try {
+      const { getIO } = await import('../config/socket');
+      const io = getIO();
+      activeSocketConnections = io.engine.clientsCount || 0;
+    } catch {
+      // Socket.io not initialized or error
+      activeSocketConnections = 0;
+    }
+
     successResponse(res, {
-      status: dbStatus === 'healthy' ? 'healthy' : 'degraded',
-      uptime: startTime,
+      // New format for system monitoring section
+      api: {
+        status: 'healthy',
+        uptime: startTime,
+        version: process.version,
+      },
+      database: {
+        status: dbStatus,
+        responseTimeMs: dbLatency,
+        poolSize: poolMetrics.poolSize,
+        totalQueries: poolMetrics.totalQueries,
+        slowQueries: poolMetrics.slowQueries,
+        slowQueryPercentage: poolMetrics.slowQueryPercentage.toFixed(2) + '%',
+      },
+      redis: {
+        status: redisStatus,
+        responseTimeMs: redisLatency,
+        memoryUsage: redisMemoryUsage,
+      },
       memory: {
+        heapUsed: memUsage.heapUsed,
+        heapTotal: memUsage.heapTotal,
+        rss: memUsage.rss,
+        external: memUsage.external,
+      },
+      activeSessions: {
+        count: activeSessionCount,
+        socketConnections: activeSocketConnections,
+      },
+      suspiciousActivity: {
+        recentFailedLogins: recentFailedLogins + recentSuspicious,
+      },
+      // Legacy format for backward compatibility
+      status: dbStatus === 'connected' ? 'healthy' : 'degraded',
+      uptime: startTime,
+      memoryLegacy: {
         rss: Math.round(memUsage.rss / 1024 / 1024),
         heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
         heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
       },
-      database: { 
-        status: dbStatus, 
+      databaseLegacy: {
+        status: dbStatus === 'connected' ? 'healthy' : 'unhealthy',
         latencyMs: dbLatency,
         poolSize: poolMetrics.poolSize,
         totalQueries: poolMetrics.totalQueries,
         slowQueries: poolMetrics.slowQueries,
         slowQueryPercentage: poolMetrics.slowQueryPercentage.toFixed(2) + '%',
       },
-      redis: { status: redisStatus, latencyMs: redisLatency },
-      counts: { 
-        users: userCount, 
-        salons: salonCount, 
-        bookings: bookingCount, 
-        activeSessions24h: activeSessionCount 
+      redisLegacy: { status: redisStatus === 'connected' ? 'healthy' : 'unhealthy', latencyMs: redisLatency },
+      counts: {
+        users: userCount,
+        salons: salonCount,
+        bookings: bookingCount,
+        activeSessions24h: activeSessionCount
       },
       stats: {
         totalUsers: userCount,
@@ -1606,9 +1666,17 @@ export async function getPaystackBalanceHandler(req: AuthenticatedRequest, res: 
     });
     
     const secretKey = settings?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+    const keySource = settings?.paystackSecretKey ? 'database' : 'environment';
+    
+    logger.info('Paystack balance request', {
+      keySource,
+      hasSecretKey: !!secretKey,
+      dbKeyExists: !!settings?.paystackSecretKey,
+      envKeyExists: !!process.env.PAYSTACK_SECRET_KEY,
+    });
     
     if (!secretKey) {
-      errorResponse(res, 'NOT_CONFIGURED', 'Paystack secret key not configured', 400);
+      errorResponse(res, 'NOT_CONFIGURED', 'Paystack secret key not configured. Please set up Paystack keys in Settings.', 400);
       return;
     }
 
@@ -1629,12 +1697,21 @@ export async function getPaystackBalanceHandler(req: AuthenticatedRequest, res: 
       rawBalance: item.balance,
     }));
 
+    logger.info('Paystack balance fetched successfully', {
+      currencies: formattedBalance.map((b: { currency: string }) => b.currency),
+      ghsBalance: formattedBalance.find((b: { currency: string }) => b.currency === 'GHS')?.balance,
+    });
+
     successResponse(res, {
       balances: formattedBalance,
       fetchedAt: new Date().toISOString(),
     });
   } catch (error) {
-    logger.error('Failed to fetch Paystack balance', { error: (error as Error).message });
+    logger.error('Failed to fetch Paystack balance', { 
+      error: (error as Error).message,
+      responseData: (error as any).response?.data,
+      statusCode: (error as any).response?.status,
+    });
     errorResponse(res, 'FETCH_FAILED', 'Failed to fetch Paystack balance', 500);
   }
 }
@@ -1691,6 +1768,18 @@ export async function getComprehensiveRevenueStats(req: AuthenticatedRequest, re
       },
       _sum: { amount: true },
       _count: true,
+    });
+
+    // Log raw results for debugging
+    logger.info('Comprehensive revenue stats fetched', {
+      rawTotalRevenue: totalRevenueResult._sum.amount,
+      rawPlatformFees: platformFeesResult._sum.platformFee,
+      rawPendingPayouts: pendingPayoutsResult._sum.providerAmount,
+      rawCompletedPayouts: completedPayoutsResult._sum.providerAmount,
+      totalTransactions: totalRevenueResult._count,
+      pendingEscrowCount: await prisma.escrowAccount.count({ where: { status: 'held' } }),
+      releasedEscrowCount: await prisma.escrowAccount.count({ where: { status: 'released' } }),
+      successfulPaymentCount: await prisma.payment.count({ where: { status: PaymentStatus.SUCCESS } }),
     });
 
     successResponse(res, {

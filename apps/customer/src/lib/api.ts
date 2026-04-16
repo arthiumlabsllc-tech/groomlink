@@ -129,6 +129,8 @@ export interface Service {
   category: string;
   duration: number;
   price: string;
+  discountPrice?: string | null;
+  promoLabel?: string | null;
   isActive: boolean;
 }
 
@@ -618,6 +620,56 @@ export const favoritesApi = {
       // For other errors, still return not favorited to prevent crashes
       return { isFavorited: false, favoriteId: undefined };
     }
+  },
+};
+
+// Notification types
+export interface NotificationData {
+  bookingId?: string;
+  salonId?: string;
+  paymentId?: string;
+  [key: string]: any;
+}
+
+export interface NotificationResponse {
+  id: string;
+  type: 'BOOKING_CONFIRMED' | 'BOOKING_CANCELLED' | 'BOOKING_REMINDER' | 'BOOKING_COMPLETED' | 'PAYMENT_RECEIVED' | 'REVIEW_REQUEST' | 'PROMOTION' | 'SYSTEM';
+  title: string;
+  message: string;
+  data: NotificationData | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface NotificationsListResponse {
+  notifications: NotificationResponse[];
+  unreadCount: number;
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Notification API functions
+export const notificationApi = {
+  getNotifications: async (page = 1, limit = 20): Promise<NotificationsListResponse> => {
+    const response = await apiClient.get(`/notifications?page=${page}&limit=${limit}`);
+    return response.data.data;
+  },
+
+  getUnreadCount: async (): Promise<{ count: number }> => {
+    const response = await apiClient.get('/notifications/unread-count');
+    return response.data.data;
+  },
+
+  markAsRead: async (id: string): Promise<void> => {
+    await apiClient.put(`/notifications/${id}/read`);
+  },
+
+  markAllAsRead: async (): Promise<void> => {
+    await apiClient.put('/notifications/read-all');
   },
 };
 

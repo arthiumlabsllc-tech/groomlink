@@ -87,28 +87,28 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 font-heading">Support Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-heading">Support Dashboard</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((stat) => (
           <Link
             key={stat.name}
             to={stat.href || '#'}
-            className={`bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 border-l-4 ${stat.color}`}
+            className={`bg-white rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 border-l-4 ${stat.color}`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-lg ${stat.iconBg}`}>
-                <stat.icon className="w-5 h-5" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-2.5 rounded-lg ${stat.iconBg}`}>
+                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{stat.name}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wide">{stat.name}</p>
               </div>
             </div>
           </Link>

@@ -4,6 +4,7 @@ import redis from '../config/redis';
 import { BookingStatus, PaymentStatus } from '@prisma/client';
 import * as smsService from './sms.service';
 import * as emailService from './email.service';
+import * as notificationService from './notification.service';
 import Redlock from 'redlock';
 import { bookingConfig } from '../config/booking';
 import { emitSlotUpdated, emitBookingConfirmed, emitBookingCancelled, emitNewBooking } from '../config/socket';
@@ -461,6 +462,20 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     // Emit socket event to salon for audible notification
     emitNewBooking(salonId, booking);
 
+    // Notify salon owner of new booking via in-app notification
+    if (booking.salon.owner?.id) {
+      const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      notificationService.notifySalonOwnerOfNewBooking(
+        booking.salon.owner.id,
+        booking.id,
+        `${booking.customer.firstName} ${booking.customer.lastName}`,
+        booking.service.name,
+        booking.salon.businessName,
+        dateStr,
+        startTime
+      ).catch((err) => logger.error('Failed to send new booking notification', { err }));
+    }
+
     return booking;
   } finally {
     // Always release the lock
@@ -719,6 +734,7 @@ export async function cancelBooking(id: string, userId: string, userRole: string
     include: {
       salon: true,
       customer: true,
+      service: { select: { name: true } },
     },
   });
 
@@ -787,6 +803,23 @@ export async function cancelBooking(id: string, userId: string, userRole: string
       booking.id,
       booking.salon.businessName
     );
+  }
+
+  // Notify salon owner of cancellation (if cancelled by customer)
+  if (userRole === 'CUSTOMER') {
+    const salon = await prisma.salon.findUnique({
+      where: { id: booking.salonId },
+      select: { ownerId: true },
+    });
+    if (salon?.ownerId) {
+      notificationService.notifySalonOwnerOfCancellation(
+        salon.ownerId,
+        booking.id,
+        `${booking.customer.firstName} ${booking.customer.lastName}`,
+        booking.service?.name || 'service',
+        reason
+      ).catch((err) => logger.error('Failed to send cancellation notification to salon owner', { err }));
+    }
   }
 
   return updated;
@@ -1271,6 +1304,7 @@ async function updateRatings(salonId: string, workerId: string | null) {
 
 /**
  * Check capacity for a given time slot
+ * @param excludeBookingId - Optional booking ID to exclude from capacity calculation (used for rescheduling)
  */
 export async function checkCapacity(
   salonId: string,
@@ -1278,7 +1312,8 @@ export async function checkCapacity(
   startTime: string,
   endTime: string,
   totalPeople: number,
-  staffId?: string
+  staffId?: string,
+  excludeBookingId?: string
 ): Promise<{ hasCapacity: boolean; remainingSpots: number; totalCapacity: number; staffCapacityOk: boolean }> {
   // Get salon capacity settings
   const salon = await prisma.salon.findUnique({
@@ -1296,6 +1331,7 @@ export async function checkCapacity(
       salonId,
       date,
       status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+      id: excludeBookingId ? { not: excludeBookingId } : undefined,
       OR: [
         { startTime: { lte: startTime }, endTime: { gt: startTime } },
         { startTime: { lt: endTime }, endTime: { gte: endTime } },
@@ -1333,6 +1369,7 @@ export async function checkCapacity(
           workerId: staffId,
           date,
           status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+          id: excludeBookingId ? { not: excludeBookingId } : undefined,
           OR: [
             { startTime: { lte: startTime }, endTime: { gt: startTime } },
             { startTime: { lt: endTime }, endTime: { gte: endTime } },

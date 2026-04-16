@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Bell, Search, Menu, Check, BellOff, User } from 'lucide-react';
-import { useNotificationStore, Notification } from '../store/notifications';
+import { Bell, Search, Menu, Check, BellOff, User, Calendar, X, CreditCard, Star, Tag, AlertCircle } from 'lucide-react';
+import { useNotificationStore, Notification, NotificationType } from '../store/notifications';
 import { useAuthStore } from '../store/auth';
 import { Link } from 'react-router-dom';
 
@@ -19,10 +19,34 @@ function formatRelativeTime(dateString: string): string {
   const diffDay = Math.floor(diffHour / 24);
 
   if (diffSec < 60) return 'Just now';
-  if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-  if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-  if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Get icon for notification type
+function getNotificationIcon(type: NotificationType) {
+  const iconProps = { className: 'w-5 h-5' };
+  
+  switch (type) {
+    case 'BOOKING_CONFIRMED':
+    case 'BOOKING_REMINDER':
+      return <Calendar {...iconProps} className="w-5 h-5 text-green-500" />;
+    case 'BOOKING_CANCELLED':
+      return <X {...iconProps} className="w-5 h-5 text-red-500" />;
+    case 'BOOKING_COMPLETED':
+      return <Check {...iconProps} className="w-5 h-5 text-blue-500" />;
+    case 'PAYMENT_RECEIVED':
+      return <CreditCard {...iconProps} className="w-5 h-5 text-emerald-500" />;
+    case 'REVIEW_REQUEST':
+      return <Star {...iconProps} className="w-5 h-5 text-yellow-500" />;
+    case 'PROMOTION':
+      return <Tag {...iconProps} className="w-5 h-5 text-purple-500" />;
+    case 'SYSTEM':
+    default:
+      return <AlertCircle {...iconProps} className="w-5 h-5 text-gray-500" />;
+  }
 }
 
 // Notification item component
@@ -34,33 +58,28 @@ function NotificationItem({
   onMarkRead: (id: string) => void;
 }) {
   return (
-    <div 
+    <div
       className={`p-3 cursor-pointer transition-colors hover:bg-gray-50 ${
         !notification.isRead ? 'bg-blue-50/50' : ''
       }`}
       onClick={() => !notification.isRead && onMarkRead(notification.id)}
     >
       <div className="flex items-start gap-3">
-        {!notification.isRead && (
-          <div className="w-2 h-2 mt-2 bg-primary-500 rounded-full flex-shrink-0" />
-        )}
-        <div className={`flex-1 ${notification.isRead ? 'ml-5' : ''}`}>
-          <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+        {/* Type icon */}
+        <div className="flex-shrink-0 mt-0.5">
+          {getNotificationIcon(notification.type)}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+            {!notification.isRead && (
+              <div className="w-2 h-2 mt-1.5 bg-primary-500 rounded-full flex-shrink-0" />
+            )}
+          </div>
           <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">{notification.message}</p>
           <p className="text-xs text-gray-400 mt-1">{formatRelativeTime(notification.createdAt)}</p>
         </div>
-        {!notification.isRead && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onMarkRead(notification.id);
-            }}
-            className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
-            title="Mark as read"
-          >
-            <Check className="w-4 h-4" />
-          </button>
-        )}
       </div>
     </div>
   );
@@ -74,8 +93,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     isLoading, 
     isDropdownOpen,
     markAsRead, 
+    markAllAsRead,
     toggleDropdown, 
-    closeDropdown,
+    closeDropdown, 
     startPolling 
   } = useNotificationStore();
 
@@ -112,6 +132,10 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     };
   }, [isDropdownOpen, closeDropdown]);
 
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
       <div className="flex items-center justify-between">
@@ -145,7 +169,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -160,11 +184,21 @@ export default function Header({ onMenuToggle }: HeaderProps) {
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
                 <h3 className="font-semibold text-gray-900">Notifications</h3>
-                {unreadCount > 0 && (
-                  <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
-                    {unreadCount} unread
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <>
+                      <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+                        {unreadCount} unread
+                      </span>
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-xs text-gray-500 hover:text-primary-600 transition-colors"
+                      >
+                        Mark all read
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Content */}
@@ -180,7 +214,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {notifications.map((notification) => (
+                    {notifications.slice(0, 5).map((notification) => (
                       <NotificationItem 
                         key={notification.id} 
                         notification={notification} 
@@ -190,6 +224,19 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                   </div>
                 )}
               </div>
+
+              {/* Footer - View All Link */}
+              {notifications.length > 0 && (
+                <div className="border-t border-gray-100 bg-gray-50/50">
+                  <Link
+                    to="/notifications"
+                    onClick={closeDropdown}
+                    className="block text-center py-2.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-gray-100 transition-colors"
+                  >
+                    View all notifications
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

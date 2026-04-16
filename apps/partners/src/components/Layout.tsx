@@ -153,7 +153,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a2e] transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a2e] transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo Section */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/10">
           <Link to="/" className="flex items-center gap-3">
@@ -201,8 +201,21 @@ export default function Layout({ children, activeTab }: LayoutProps) {
             </Link>
           )}
           <div className="flex items-center gap-3 mb-4">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${needsSetup ? 'bg-ghana-gold/20 border-ghana-gold/30' : 'bg-ghana-gold/20 border-ghana-gold/30'}`}>
-              <span className={`font-semibold text-sm ${needsSetup ? 'text-ghana-gold' : 'text-ghana-gold'}`}>{initials}</span>
+            {/* Salon Logo / Initials */}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border overflow-hidden ${needsSetup ? 'bg-ghana-gold/20 border-ghana-gold/30' : 'bg-ghana-gold/20 border-ghana-gold/30'}`}>
+              {salon?.logo ? (
+                <img 
+                  src={salon.logo} 
+                  alt={salon.businessName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to initials if image fails to load
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <span className={`font-semibold text-sm ${needsSetup ? 'text-ghana-gold' : 'text-ghana-gold'}`}>{initials}</span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium text-white text-sm truncate">{salonName}</div>
@@ -243,6 +256,27 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               )}
             </button>
 
+            {/* Salon Logo in Header */}
+            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-gray-200">
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
+                {salon?.logo ? (
+                  <img 
+                    src={salon.logo} 
+                    alt={salon.businessName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <span className="text-xs font-medium text-gray-600">{initials.slice(0, 1)}</span>
+                )}
+              </div>
+              <span className="text-sm font-medium text-gray-700 truncate max-w-[120px]">
+                {salonName}
+              </span>
+            </div>
+
             {/* Notification Dropdown */}
             {isDropdownOpen && (
               <div 
@@ -282,13 +316,24 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                     </div>
                   )}
                 </div>
+
+                {/* Footer */}
+                <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/50">
+                  <Link
+                    to="/notifications"
+                    onClick={closeDropdown}
+                    className="block text-center text-sm text-ghana-green hover:text-ghana-green/80 font-medium py-1"
+                  >
+                    View all notifications
+                  </Link>
+                </div>
               </div>
             )}
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6">
+        <main className="p-3 sm:p-4 lg:p-6">
           {children}
         </main>
       </div>

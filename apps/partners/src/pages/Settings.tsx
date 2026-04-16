@@ -661,20 +661,20 @@ export default function Settings() {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <div className="w-8 h-8 bg-ghana-green text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
-              <span className="text-sm font-medium text-gray-900">Create Salon</span>
+              <span className="text-sm font-medium text-gray-900 whitespace-nowrap">Create Salon</span>
             </div>
-            <div className="w-12 h-0.5 bg-gray-200"></div>
-            <div className="flex items-center gap-2">
+            <div className="w-8 sm:w-12 h-0.5 bg-gray-200 flex-shrink-0"></div>
+            <div className="flex items-center gap-2 flex-shrink-0">
               <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">2</div>
-              <span className="text-sm text-gray-500">Add Services</span>
+              <span className="text-sm text-gray-500 whitespace-nowrap">Add Services</span>
             </div>
-            <div className="w-12 h-0.5 bg-gray-200"></div>
-            <div className="flex items-center gap-2">
+            <div className="w-8 sm:w-12 h-0.5 bg-gray-200 flex-shrink-0"></div>
+            <div className="flex items-center gap-2 flex-shrink-0">
               <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">3</div>
-              <span className="text-sm text-gray-500">Add Staff</span>
+              <span className="text-sm text-gray-500 whitespace-nowrap">Add Staff</span>
             </div>
           </div>
 
@@ -828,36 +828,38 @@ export default function Settings() {
                 <label className="block text-sm font-medium text-gray-700 mb-3">Business Hours</label>
                 <div className="space-y-2">
                   {formData.businessHours.map((hour, index) => (
-                    <div key={hour.day} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="w-24">
+                    <div key={hour.day} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-full sm:w-24">
                         <span className="font-medium text-gray-700 text-sm">{hour.day}</span>
                       </div>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={hour.isOpen}
-                          onChange={(e) => updateBusinessHour(index, 'isOpen', e.target.checked)}
-                          className="w-4 h-4 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
-                        />
-                        <span className="text-sm text-gray-600">Open</span>
-                      </label>
-                      {hour.isOpen && (
-                        <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
                           <input
-                            type="time"
-                            value={hour.open}
-                            onChange={(e) => updateBusinessHour(index, 'open', e.target.value)}
-                            className="input-field py-1.5 px-2 text-sm w-28"
+                            type="checkbox"
+                            checked={hour.isOpen}
+                            onChange={(e) => updateBusinessHour(index, 'isOpen', e.target.checked)}
+                            className="w-4 h-4 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
                           />
-                          <span className="text-gray-500 text-sm">to</span>
-                          <input
-                            type="time"
-                            value={hour.close}
-                            onChange={(e) => updateBusinessHour(index, 'close', e.target.value)}
-                            className="input-field py-1.5 px-2 text-sm w-28"
-                          />
-                        </div>
-                      )}
+                          <span className="text-sm text-gray-600">Open</span>
+                        </label>
+                        {hour.isOpen && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="time"
+                              value={hour.open}
+                              onChange={(e) => updateBusinessHour(index, 'open', e.target.value)}
+                              className="input-field py-1.5 px-2 text-sm w-24 sm:w-28"
+                            />
+                            <span className="text-gray-500 text-sm">to</span>
+                            <input
+                              type="time"
+                              value={hour.close}
+                              onChange={(e) => updateBusinessHour(index, 'close', e.target.value)}
+                              className="input-field py-1.5 px-2 text-sm w-24 sm:w-28"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -892,7 +894,7 @@ export default function Settings() {
           </div>
 
           {/* Tips */}
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <div className="card p-4">
               <div className="w-10 h-10 bg-ghana-gold/10 rounded-lg flex items-center justify-center mb-3">
                 <Store className="w-5 h-5 text-ghana-gold" />
@@ -937,12 +939,12 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Salon Name</label>
               <input
                 type="text"
-                className="input-field"
+                className="input-field w-full"
                 placeholder="e.g., Kofi's Barbershop"
                 value={formData.businessName}
                 onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
@@ -952,7 +954,7 @@ export default function Settings() {
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea
-                className="input-field min-h-[100px] resize-none"
+                className="input-field min-h-[100px] resize-none w-full"
                 placeholder="Tell customers about your salon..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -965,7 +967,7 @@ export default function Settings() {
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  className="input-field pl-10"
+                  className="input-field pl-10 w-full"
                   placeholder="Street address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -980,7 +982,7 @@ export default function Settings() {
               <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
               <input
                 type="text"
-                className="input-field"
+                className="input-field w-full"
                 placeholder="e.g., Accra"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
@@ -991,7 +993,7 @@ export default function Settings() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
               <input
                 type="text"
-                className="input-field"
+                className="input-field w-full"
                 placeholder="e.g., Greater Accra"
                 value={formData.region}
                 onChange={(e) => setFormData({ ...formData, region: e.target.value })}
@@ -1167,7 +1169,7 @@ export default function Settings() {
               
               {/* Existing Gallery Images */}
               {(salon?.images && salon.images.length > 0) && (
-                <div className="grid grid-cols-5 gap-3 mb-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-3">
                   {salon.images.map((img, idx) => (
                     <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group">
                       <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
@@ -1191,7 +1193,7 @@ export default function Settings() {
 
               {/* Pending Gallery Images */}
               {galleryPreviews.length > 0 && (
-                <div className="grid grid-cols-5 gap-3 mb-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-3">
                   {galleryPreviews.map((preview, idx) => (
                     <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group border-2 border-ghana-green">
                       <img src={preview} alt={`Pending ${idx + 1}`} className="w-full h-full object-cover" />
@@ -1265,36 +1267,38 @@ export default function Settings() {
 
           <div className="space-y-3">
             {formData.businessHours.map((hour, index) => (
-              <div key={hour.day} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                <div className="w-28">
+              <div key={hour.day} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 bg-gray-50 rounded-lg">
+                <div className="w-full sm:w-28">
                   <span className="font-medium text-gray-700">{hour.day}</span>
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={hour.isOpen}
-                    onChange={(e) => updateBusinessHour(index, 'isOpen', e.target.checked)}
-                    className="w-4 h-4 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
-                  />
-                  <span className="text-sm text-gray-600">Open</span>
-                </label>
-                {hour.isOpen && (
-                  <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
-                      type="time"
-                      value={hour.open}
-                      onChange={(e) => updateBusinessHour(index, 'open', e.target.value)}
-                      className="input-field py-1.5 px-2 text-sm w-28"
+                      type="checkbox"
+                      checked={hour.isOpen}
+                      onChange={(e) => updateBusinessHour(index, 'isOpen', e.target.checked)}
+                      className="w-4 h-4 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
                     />
-                    <span className="text-gray-500">to</span>
-                    <input
-                      type="time"
-                      value={hour.close}
-                      onChange={(e) => updateBusinessHour(index, 'close', e.target.value)}
-                      className="input-field py-1.5 px-2 text-sm w-28"
-                    />
-                  </div>
-                )}
+                    <span className="text-sm text-gray-600">Open</span>
+                  </label>
+                  {hour.isOpen && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={hour.open}
+                        onChange={(e) => updateBusinessHour(index, 'open', e.target.value)}
+                        className="input-field py-1.5 px-2 text-sm w-24 sm:w-28"
+                      />
+                      <span className="text-gray-500">to</span>
+                      <input
+                        type="time"
+                        value={hour.close}
+                        onChange={(e) => updateBusinessHour(index, 'close', e.target.value)}
+                        className="input-field py-1.5 px-2 text-sm w-24 sm:w-28"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -1312,12 +1316,12 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Wifi className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <span className="font-medium text-gray-900">Free WiFi</span>
                 <p className="text-sm text-gray-500">Customers can connect to WiFi</p>
               </div>
@@ -1325,15 +1329,15 @@ export default function Settings() {
                 type="checkbox"
                 checked={formData.hasWifi}
                 onChange={(e) => setFormData({ ...formData, hasWifi: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
               />
             </label>
 
-            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Car className="w-5 h-5 text-purple-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <span className="font-medium text-gray-900">Parking Available</span>
                 <p className="text-sm text-gray-500">On-site parking for customers</p>
               </div>
@@ -1341,15 +1345,15 @@ export default function Settings() {
                 type="checkbox"
                 checked={formData.hasParking}
                 onChange={(e) => setFormData({ ...formData, hasParking: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
               />
             </label>
 
-            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-              <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Wind className="w-5 h-5 text-cyan-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <span className="font-medium text-gray-900">Air Conditioning</span>
                 <p className="text-sm text-gray-500">Climate controlled environment</p>
               </div>
@@ -1357,15 +1361,15 @@ export default function Settings() {
                 type="checkbox"
                 checked={formData.hasAC}
                 onChange={(e) => setFormData({ ...formData, hasAC: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
               />
             </label>
 
-            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Footprints className="w-5 h-5 text-orange-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <span className="font-medium text-gray-900">Walk-ins Welcome</span>
                 <p className="text-sm text-gray-500">Accept customers without booking</p>
               </div>
@@ -1373,7 +1377,7 @@ export default function Settings() {
                 type="checkbox"
                 checked={formData.acceptsWalkIns}
                 onChange={(e) => setFormData({ ...formData, acceptsWalkIns: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
+                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
               />
             </label>
           </div>
@@ -1403,7 +1407,7 @@ export default function Settings() {
                     key={num}
                     type="button"
                     onClick={() => setFormData({ ...formData, maxConcurrentClients: num })}
-                    className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg border-2 font-medium transition-all min-h-[44px] ${
                       formData.maxConcurrentClients === num
                         ? 'border-ghana-green bg-ghana-green/10 text-ghana-green'
                         : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -1489,7 +1493,7 @@ export default function Settings() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Operating Model
               </label>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <label
                   className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     formData.operatingModel === 'APPOINTMENTS_ONLY'
@@ -1580,7 +1584,7 @@ export default function Settings() {
                       ...prev, 
                       autoCompletionHours: Math.max(1, prev.autoCompletionHours - 1) 
                     }))}
-                    className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600"
+                    className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 min-h-[44px] min-w-[44px]"
                     disabled={completionSettings.autoCompletionHours <= 1}
                   >
                     -
@@ -1605,7 +1609,7 @@ export default function Settings() {
                       ...prev, 
                       autoCompletionHours: Math.min(6, prev.autoCompletionHours + 1) 
                     }))}
-                    className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600"
+                    className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 min-h-[44px] min-w-[44px]"
                     disabled={completionSettings.autoCompletionHours >= 6}
                   >
                     +
@@ -1679,7 +1683,7 @@ export default function Settings() {
             </label>
 
             {/* Save Button */}
-            <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 sm:gap-4 pt-4 border-t border-gray-100">
               {completionSettingsSaved && (
                 <span className="text-green-600 font-medium flex items-center gap-1">
                   <CheckCircle className="w-4 h-4" />
@@ -1690,7 +1694,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleSaveCompletionSettings}
                 disabled={savingCompletionSettings || loadingCompletionSettings}
-                className="btn-primary flex items-center gap-2"
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 {savingCompletionSettings ? (
                   <>
@@ -1767,7 +1771,7 @@ export default function Settings() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 How would you like to receive payments?
               </label>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <label
                   className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     payoutType === 'bank'
@@ -1916,7 +1920,7 @@ export default function Settings() {
             </div>
 
             {/* Save Button */}
-            <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 sm:gap-4 pt-4 border-t border-gray-100">
               {payoutSaved && (
                 <span className="text-green-600 font-medium flex items-center gap-1">
                   <CheckCircle className="w-4 h-4" />
@@ -1927,7 +1931,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleSavePayout}
                 disabled={savingPayout || loadingPayout}
-                className="btn-primary flex items-center gap-2"
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 {savingPayout ? (
                   <>
@@ -1957,14 +1961,14 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="tel"
-                  className="input-field pl-10"
+                  className="input-field pl-10 w-full"
                   placeholder="+233 XX XXX XXXX"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
@@ -1978,7 +1982,7 @@ export default function Settings() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="email"
-                  className="input-field pl-10"
+                  className="input-field pl-10 w-full"
                   placeholder="salon@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -1992,7 +1996,7 @@ export default function Settings() {
                 <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  className="input-field pl-10"
+                  className="input-field pl-10 w-full"
                   placeholder="@your.salon"
                   value={formData.instagram}
                   onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
@@ -2006,7 +2010,7 @@ export default function Settings() {
                 <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  className="input-field pl-10"
+                  className="input-field pl-10 w-full"
                   placeholder="facebook.com/yoursalon"
                   value={formData.facebook}
                   onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
@@ -2017,14 +2021,14 @@ export default function Settings() {
         </div>
 
         {/* Save Button */}
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 sm:gap-4">
           {saved && (
             <span className="text-green-600 font-medium">Settings saved successfully!</span>
           )}
           <button
             type="submit"
             disabled={saving}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             {saving ? (
               <>

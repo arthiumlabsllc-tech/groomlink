@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { dashboardApi } from '../api';
+import { dashboardApi, SystemMonitoringData } from '../api';
 
 const DASHBOARD_KEY = 'dashboard';
 
@@ -8,6 +8,16 @@ export function useDashboardStats() {
     queryKey: [DASHBOARD_KEY, 'stats'],
     queryFn: () => dashboardApi.getHealth(),
     staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+export function useSystemMonitoring(refetchInterval: number = 30000) {
+  return useQuery<SystemMonitoringData, Error>({
+    queryKey: [DASHBOARD_KEY, 'system-monitoring'],
+    queryFn: () => dashboardApi.getSystemMonitoring(),
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: refetchInterval, // Auto-refresh every 30 seconds by default
+    refetchIntervalInBackground: true,
   });
 }
 

@@ -5,6 +5,7 @@ import axios from 'axios';
 import crypto from 'crypto';
 import * as emailService from './email.service';
 import * as escrowService from './escrow.service';
+import * as notificationService from './notification.service';
 
 // Re-export getPolicyValue from escrow.service for use in payment calculations
 export const getPolicyValue = escrowService.getPolicyValue;
@@ -726,6 +727,25 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
         }
       ).catch((err) => logger.error('Failed to send payment received notification email to salon owner', { err }));
     }
+
+    // Send in-app notifications
+    // Notify customer
+    notificationService.notifyPaymentReceived(
+      booking.customer.id,
+      booking.id,
+      Number(payment.amount),
+      booking.service.name
+    ).catch((err) => logger.error('Failed to send payment notification to customer', { err }));
+
+    // Notify salon owner
+    if (booking.salon.owner?.id) {
+      notificationService.notifyPaymentReceived(
+        booking.salon.owner.id,
+        booking.id,
+        Number(payment.amount),
+        booking.service.name
+      ).catch((err) => logger.error('Failed to send payment notification to salon owner', { err }));
+    }
     
     return { 
       success: true, 
@@ -744,6 +764,15 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       where: { id: paymentId },
       data: { status: PaymentStatus.FAILED },
     });
+
+    // Send in-app notification for failed payment
+    const booking = payment.booking;
+    notificationService.notifyPaymentFailed(
+      booking.customer.id,
+      booking.id,
+      Number(payment.amount),
+      booking.service.name
+    ).catch((err) => logger.error('Failed to send payment failed notification to customer', { err }));
     
     return { 
       success: false, 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -8,21 +8,16 @@ export default function Header() {
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
-      {/* Left: Mobile menu button + Search */}
-      <div className="flex items-center gap-4 flex-1">
-        {/* Mobile hamburger - visible only on mobile */}
-        <button className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-          <Menu className="h-5 w-5" />
-        </button>
-        
+      {/* Left: Search - add left margin on mobile for sidebar toggle */}
+      <div className="flex items-center gap-4 flex-1 ml-12 md:ml-0">
         {/* Search */}
         <div className="flex-1 max-w-xl">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search users, salons, tickets..."
-              className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-support-600 focus:border-support-600 focus:bg-white transition-all"
+              placeholder="Search users, salons..."
+              className="w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 bg-gray-50 border border-gray-200 rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-support-600 focus:border-support-600 focus:bg-white transition-all"
             />
           </div>
         </div>
@@ -31,7 +26,7 @@ export default function Header() {
       {/* Right side */}
       <div className="flex items-center gap-3 md:gap-4 ml-4">
         {/* Notifications */}
-        <button className="relative p-2.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+        <button className="relative p-2 sm:p-2.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-ghana-red rounded-full border-2 border-white"></span>
         </button>

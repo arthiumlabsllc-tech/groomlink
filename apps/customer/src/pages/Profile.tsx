@@ -226,8 +226,8 @@ export default function Profile() {
       )}
 
       {/* Profile Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <div className="relative">
             <div className="w-24 h-24 bg-gradient-to-br from-[#006B3C] to-[#004d2a] rounded-full flex items-center justify-center overflow-hidden">
               {user?.avatar ? (
@@ -367,14 +367,14 @@ export default function Profile() {
           </div>
         </div>
         <div className="divide-y divide-gray-100">
-          <div className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium text-gray-900">Email Notifications</p>
-              <p className="text-sm text-gray-500">Receive booking confirmations and updates</p>
+          <div className="flex items-center justify-between p-3 sm:p-4 gap-3">
+            <div className="min-w-0">
+              <p className="font-medium text-gray-900 text-sm sm:text-base">Email Notifications</p>
+              <p className="text-xs sm:text-sm text-gray-500">Receive booking confirmations and updates</p>
             </div>
             <button 
               onClick={() => toggleNotification('emailNotifications')}
-              className="text-[#006B3C] hover:opacity-80 transition-opacity"
+              className="text-[#006B3C] hover:opacity-80 transition-opacity flex-shrink-0"
             >
               {notificationPrefs.emailNotifications ? (
                 <ToggleRight className="w-10 h-6" />
@@ -383,14 +383,14 @@ export default function Profile() {
               )}
             </button>
           </div>
-          <div className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium text-gray-900">SMS Notifications</p>
-              <p className="text-sm text-gray-500">Get text messages for important updates</p>
+          <div className="flex items-center justify-between p-3 sm:p-4 gap-3">
+            <div className="min-w-0">
+              <p className="font-medium text-gray-900 text-sm sm:text-base">SMS Notifications</p>
+              <p className="text-xs sm:text-sm text-gray-500">Get text messages for important updates</p>
             </div>
             <button 
               onClick={() => toggleNotification('smsNotifications')}
-              className="text-[#006B3C] hover:opacity-80 transition-opacity"
+              className="text-[#006B3C] hover:opacity-80 transition-opacity flex-shrink-0"
             >
               {notificationPrefs.smsNotifications ? (
                 <ToggleRight className="w-10 h-6" />
@@ -399,14 +399,14 @@ export default function Profile() {
               )}
             </button>
           </div>
-          <div className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium text-gray-900">Booking Reminders</p>
-              <p className="text-sm text-gray-500">Reminders before your appointments</p>
+          <div className="flex items-center justify-between p-3 sm:p-4 gap-3">
+            <div className="min-w-0">
+              <p className="font-medium text-gray-900 text-sm sm:text-base">Booking Reminders</p>
+              <p className="text-xs sm:text-sm text-gray-500">Reminders before your appointments</p>
             </div>
             <button 
               onClick={() => toggleNotification('bookingReminders')}
-              className="text-[#006B3C] hover:opacity-80 transition-opacity"
+              className="text-[#006B3C] hover:opacity-80 transition-opacity flex-shrink-0"
             >
               {notificationPrefs.bookingReminders ? (
                 <ToggleRight className="w-10 h-6" />
@@ -415,14 +415,14 @@ export default function Profile() {
               )}
             </button>
           </div>
-          <div className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium text-gray-900">Promotional Emails</p>
-              <p className="text-sm text-gray-500">Special offers and new salon announcements</p>
+          <div className="flex items-center justify-between p-3 sm:p-4 gap-3">
+            <div className="min-w-0">
+              <p className="font-medium text-gray-900 text-sm sm:text-base">Promotional Emails</p>
+              <p className="text-xs sm:text-sm text-gray-500">Special offers and new salon announcements</p>
             </div>
             <button 
               onClick={() => toggleNotification('promotionalEmails')}
-              className="text-[#006B3C] hover:opacity-80 transition-opacity"
+              className="text-[#006B3C] hover:opacity-80 transition-opacity flex-shrink-0"
             >
               {notificationPrefs.promotionalEmails ? (
                 <ToggleRight className="w-10 h-6" />

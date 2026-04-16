@@ -272,8 +272,8 @@ export async function getAvailableSlots(req: AuthenticatedRequest, res: Response
 }
 
 const rescheduleSchema = z.object({
-  date: z.string().datetime(),
-  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // Accept YYYY-MM-DD format
+  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // Frontend sends 'time', not 'startTime'
   staffId: z.string().uuid().optional(),
 });
 
@@ -288,12 +288,13 @@ export async function rescheduleBooking(req: AuthenticatedRequest, res: Response
     const validatedData = rescheduleSchema.parse(req.body);
 
     // Convert date to ISO string format for the cancellation service
+    // The date is in YYYY-MM-DD format, convert to ISO datetime
     const newDate = new Date(validatedData.date).toISOString();
     
     const booking = await cancellationService.rescheduleBooking(
       id,
       newDate,
-      validatedData.startTime,
+      validatedData.time, // Use 'time' from frontend
       validatedData.staffId
     );
     successResponse(res, booking);

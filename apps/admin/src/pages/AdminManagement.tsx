@@ -181,13 +181,16 @@ export function AdminManagement() {
           <h1 className="text-2xl font-bold text-gray-800">Admin Management</h1>
           <p className="text-sm text-gray-500 mt-1">Manage admin users and their permissions</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
-        >
-          <Plus size={18} />
-          Add Admin
-        </button>
+        {/* Only SUPER_ADMIN can create new admins */}
+        {currentUser?.role === 'SUPER_ADMIN' && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
+          >
+            <Plus size={18} />
+            Add Admin
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -259,8 +262,86 @@ export function AdminManagement() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filteredAdmins.map((admin) => (
+                <div key={admin.id} className="p-4 hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                        {admin.firstName[0]}{admin.lastName[0]}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {admin.firstName} {admin.lastName}
+                        </p>
+                        <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+                          <Mail size={12} className="text-gray-400" />
+                          {admin.email}
+                        </p>
+                      </div>
+                    </div>
+                    {admin.role === 'SUPER_ADMIN' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                        <Crown size={12} />
+                        Super
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        <Shield size={12} />
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm bg-gray-50 rounded-lg p-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Permissions:</span>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {admin.pages?.slice(0, 3).map((page: string) => (
+                          <span
+                            key={page}
+                            className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full capitalize"
+                          >
+                            {page}
+                          </span>
+                        ))}
+                        {(admin.pages?.length || 0) > 3 && (
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            +{admin.pages.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-gray-200 mt-2">
+                      <span className="text-gray-500">Created:</span>
+                      <span className="text-gray-700">{formatDate(admin.createdAt)}</span>
+                    </div>
+                  </div>
+                  {admin.role !== 'SUPER_ADMIN' && currentUser?.role === 'SUPER_ADMIN' && (
+                    <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => handleEditPermissions(admin)}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[#006B3F] border-2 border-[#006B3F] hover:bg-[#006B3F]/10 rounded-xl transition-colors font-medium text-sm"
+                      >
+                        <Edit2 size={16} />
+                        Edit Permissions
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(admin)}
+                        className="flex items-center justify-center gap-2 py-2.5 px-4 text-[#CE1126] border-2 border-[#CE1126] hover:bg-[#CE1126]/10 rounded-xl transition-colors font-medium text-sm"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
               <thead className="bg-gray-50/50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -340,7 +421,10 @@ export function AdminManagement() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        {admin.role !== 'SUPER_ADMIN' && (
+                        {/* Only show edit/delete buttons if:
+                            1. The target is not a SUPER_ADMIN, AND
+                            2. The current user is SUPER_ADMIN (only SUPER_ADMIN can modify other admins) */}
+                        {admin.role !== 'SUPER_ADMIN' && currentUser?.role === 'SUPER_ADMIN' && (
                           <>
                             <button
                               onClick={() => handleEditPermissions(admin)}
@@ -365,6 +449,7 @@ export function AdminManagement() {
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
 

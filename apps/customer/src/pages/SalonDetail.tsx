@@ -35,6 +35,8 @@ interface ServiceLocal {
   category: string
   duration: number
   price: string
+  discountPrice?: string | null
+  promoLabel?: string | null
   isActive: boolean
 }
 
@@ -417,7 +419,7 @@ export default function SalonDetail() {
       </button>
 
       {/* Hero Image */}
-      <div className="relative h-64 sm:h-80 w-full overflow-hidden rounded-xl mb-6">
+      <div className="relative h-48 sm:h-64 lg:h-80 w-full overflow-hidden rounded-xl mb-4 sm:mb-6">
         <img
           src={getSalonCoverImage(salon)}
           alt={salon.businessName || 'Salon'}
@@ -428,11 +430,11 @@ export default function SalonDetail() {
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4 text-white">
-          <span className="inline-block px-3 py-1 bg-ghana-gold text-ghana-green text-sm font-medium rounded-full mb-2">
+        <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 text-white">
+          <span className="inline-block px-2 sm:px-3 py-1 bg-ghana-gold text-ghana-green text-xs sm:text-sm font-medium rounded-full mb-1 sm:mb-2">
             {formatCategoryLabel(salon.type)}
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold">{salon.businessName || 'Unnamed Salon'}</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{salon.businessName || 'Unnamed Salon'}</h1>
         </div>
       </div>
 
@@ -686,8 +688,8 @@ export default function SalonDetail() {
 
         {/* Join Queue Modal */}
         {showJoinModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">Join Walk-in Queue</h3>
                 <button
@@ -816,7 +818,14 @@ export default function SalonDetail() {
                         className="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{service.name}</h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-medium text-gray-900">{service.name}</h3>
+                            {service.promoLabel && (
+                              <span className="px-2 py-0.5 bg-ghana-gold/20 text-amber-700 text-xs font-medium rounded-full">
+                                {service.promoLabel}
+                              </span>
+                            )}
+                          </div>
                           {service.description && (
                             <p className="text-sm text-gray-500 mt-1">{service.description}</p>
                           )}
@@ -833,7 +842,14 @@ export default function SalonDetail() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-ghana-green">{formatPrice(service.price)}</p>
+                          {service.discountPrice && parseFloat(service.discountPrice) > 0 ? (
+                            <div>
+                              <p className="text-sm text-gray-400 line-through">{formatPrice(service.price)}</p>
+                              <p className="font-semibold text-ghana-green">{formatPrice(service.discountPrice)}</p>
+                            </div>
+                          ) : (
+                            <p className="font-semibold text-ghana-green">{formatPrice(service.price)}</p>
+                          )}
                         </div>
                       </div>
                     ))}

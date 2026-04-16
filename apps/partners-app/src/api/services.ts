@@ -9,6 +9,7 @@ export interface Service {
   category: string;
   isActive: boolean;
   discountPrice?: number | null;
+  promoLabel?: string | null;
   image?: string | null;
   workerServices?: Array<{
     worker: {
@@ -26,7 +27,8 @@ export interface CreateServiceData {
   price: number;
   duration: number;
   category: string;
-  discountPrice?: number;
+  discountPrice?: number | null;
+  promoLabel?: string | null;
   image?: string;
 }
 

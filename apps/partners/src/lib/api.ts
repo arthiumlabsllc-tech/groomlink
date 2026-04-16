@@ -39,6 +39,8 @@ export interface Service {
   category: string;
   duration: number;
   price: string;
+  discountPrice?: string | null;
+  promoLabel?: string | null;
   isActive: boolean;
 }
 
@@ -48,7 +50,8 @@ export interface CreateServicePayload {
   category: string;
   duration: number;
   price: number;
-  discountPrice?: number;
+  discountPrice?: number | null;
+  promoLabel?: string | null;
   image?: string;
 }
 
@@ -58,8 +61,10 @@ export interface UpdateServicePayload {
   category?: string;
   duration?: number;
   price?: number;
-  discountPrice?: number;
+  discountPrice?: number | null;
+  promoLabel?: string | null;
   image?: string;
+  isActive?: boolean;
 }
 
 export interface Worker {
@@ -193,7 +198,17 @@ export interface QueueStatus {
   currentlyServing?: QueueEntry;
 }
 
-export type NotificationType = 'BOOKING_CONFIRMED' | 'BOOKING_CANCELLED' | 'BOOKING_REMINDER' | 'BOOKING_COMPLETED' | 'PAYMENT_RECEIVED' | 'REVIEW_REQUEST' | 'PROMOTION' | 'SYSTEM';
+export type NotificationType = 
+  | 'BOOKING_CONFIRMED' 
+  | 'BOOKING_CANCELLED' 
+  | 'BOOKING_REMINDER' 
+  | 'BOOKING_COMPLETED' 
+  | 'PAYMENT_RECEIVED' 
+  | 'PAYMENT_FAILED'
+  | 'CHECKIN'
+  | 'REVIEW'
+  | 'PROMOTION' 
+  | 'SYSTEM';
 
 export interface Notification {
   id: string;
@@ -602,6 +617,12 @@ class ApiClient {
 
   async markNotificationAsRead(id: string) {
     return this.request<{ success: boolean }>(`/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsAsRead() {
+    return this.request<{ success: boolean; data: { message: string; count: number } }>('/notifications/read-all', {
       method: 'PUT',
     });
   }

@@ -160,24 +160,24 @@ export default function Salons() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 font-heading">Salons</h1>
-        <p className="text-gray-500 mt-1">View and manage registered salons.</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-heading">Salons</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1">View and manage registered salons.</p>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+        <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by salon or owner name..."
-              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all"
+              placeholder="Search by salon or owner..."
+              className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all text-sm"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -186,7 +186,7 @@ export default function Salons() {
                 key={status.value}
                 onClick={() => setSelectedStatus(status.value)}
                 className={cn(
-                  "px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                  "px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 min-h-[44px] sm:min-h-0",
                   selectedStatus === status.value
                     ? "bg-ghana-green text-white shadow-md shadow-ghana-green/20"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"

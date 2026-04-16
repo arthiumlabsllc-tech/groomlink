@@ -66,7 +66,11 @@ enum NotificationType {
   BOOKING_CONFIRMED
   BOOKING_CANCELLED
   BOOKING_REMINDER
+  BOOKING_COMPLETED
   PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  CHECKIN
+  REVIEW
   PROMOTION
   SYSTEM
 }
@@ -288,6 +292,7 @@ model Service {
   duration      Int // in minutes
   price         Decimal  @db.Decimal(10, 2)
   discountPrice Decimal? @map("discount_price") @db.Decimal(10, 2)
+  promoLabel    String?  @map("promo_label") // e.g., "20% OFF", "Summer Special"
   image         String?
   isActive      Boolean  @default(true) @map("is_active")
 

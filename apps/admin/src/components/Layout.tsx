@@ -72,25 +72,13 @@ export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
 
-  // Check if user has permission to access a page
-  const hasPagePermission = (pageId: string): boolean => {
-    // SUPER_ADMIN has access to everything
-    if (user?.role === 'SUPER_ADMIN') return true;
-    
-    // ADMIN users check their pages array
-    if (user?.role === 'ADMIN') {
-      // Settings is always accessible to logged-in admins
-      if (pageId === 'settings') return true;
-      // Check if page is in user's allowed pages
-      return user.pages?.includes(pageId) ?? false;
-    }
-    
-    return false;
-  };
-
-  // Filter nav items based on permissions
-  const filteredNavItems = navItems.filter(item => hasPagePermission(item.pageId));
-  const showAdminNav = user?.role === 'SUPER_ADMIN';
+  // All admin users (ADMIN and SUPER_ADMIN) have access to all pages
+  // No page-level permission filtering needed
+  const filteredNavItems = navItems;
+  
+  // Show admin management to all admin users
+  // The backend will protect SUPER_ADMIN accounts from modification
+  const showAdminNav = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
   // Close mobile menu on route change
   useEffect(() => {

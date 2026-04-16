@@ -533,7 +533,7 @@ export async function rescheduleBooking(
   endDate.setHours(newHour, newMinute + booking.service.duration);
   const newEndTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
 
-  // Check capacity for new time slot
+  // Check capacity for new time slot (exclude current booking from capacity check)
   const { checkCapacity } = await import('./booking.service');
   const capacityCheck = await checkCapacity(
     booking.salonId,
@@ -541,7 +541,8 @@ export async function rescheduleBooking(
     newTime,
     newEndTime,
     booking.totalPeople || 1,
-    newStaffId || booking.workerId || undefined
+    newStaffId || booking.workerId || undefined,
+    bookingId // Exclude the current booking being rescheduled
   );
 
   if (!capacityCheck.hasCapacity) {

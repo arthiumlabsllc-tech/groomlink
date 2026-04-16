@@ -142,9 +142,9 @@ export default function Dashboard() {
     if (!kycData) {
       return (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
               <div>
@@ -154,7 +154,7 @@ export default function Dashboard() {
             </div>
             <Link 
               to="/kyc" 
-              className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors flex items-center gap-2"
+              className="bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
             >
               Start Verification
               <ArrowRight className="w-4 h-4" />
@@ -169,7 +169,7 @@ export default function Dashboard() {
       return (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Clock className="w-5 h-5 text-blue-600" />
             </div>
             <div>
@@ -185,9 +185,9 @@ export default function Dashboard() {
     if (kycData.status === 'REJECTED') {
       return (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
               <div>
@@ -197,7 +197,7 @@ export default function Dashboard() {
             </div>
             <Link 
               to="/kyc" 
-              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+              className="bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
             >
               Re-submit
               <ArrowRight className="w-4 h-4" />
@@ -211,9 +211,9 @@ export default function Dashboard() {
     if (kycData.status === 'APPROVED' && !dismissedApproved) {
       return (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Shield className="w-5 h-5 text-green-600" />
               </div>
               <div>
@@ -223,7 +223,7 @@ export default function Dashboard() {
             </div>
             <button 
               onClick={() => setDismissedApproved(true)}
-              className="text-green-600 hover:text-green-700 p-1"
+              className="text-green-600 hover:text-green-700 p-2 hover:bg-green-100 rounded-lg transition-colors self-end sm:self-center min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <X className="w-5 h-5" />
             </button>
@@ -266,7 +266,7 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Tips */}
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <div className="card p-4">
               <div className="w-10 h-10 bg-ghana-gold/10 rounded-lg flex items-center justify-center mb-3">
                 <Store className="w-5 h-5 text-ghana-gold" />
@@ -318,7 +318,7 @@ export default function Dashboard() {
       {renderKycBanner()}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {statCards.map((stat) => (
           <div key={stat.label} className={`stat-card border-l-4 ${stat.borderColor}`}>
             <div className="flex items-center justify-between mb-3">
@@ -336,15 +336,15 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Today's Bookings */}
         <div className="lg:col-span-2 card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
             <div>
               <h3 className="font-semibold text-gray-900">Today's Upcoming Bookings</h3>
               <p className="text-sm text-gray-500">You have {todayBookings.length} appointments today</p>
             </div>
-            <Link to="/bookings" className="text-ghana-green text-sm font-medium hover:underline flex items-center gap-1">
+            <Link to="/bookings" className="text-ghana-green text-sm font-medium hover:underline flex items-center gap-1 min-h-[44px]">
               View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -381,12 +381,12 @@ export default function Dashboard() {
           )}
 
           {/* Quick Actions */}
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/services" className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <Link to="/services" className="btn-primary flex items-center justify-center gap-2 text-sm py-3 px-4 min-h-[44px] w-full sm:w-auto">
               <Plus className="w-4 h-4" />
               Add Service
             </Link>
-            <Link to="/bookings" className="btn-secondary flex items-center gap-2 text-sm py-2 px-4">
+            <Link to="/bookings" className="btn-secondary flex items-center justify-center gap-2 text-sm py-3 px-4 min-h-[44px] w-full sm:w-auto">
               View Bookings
             </Link>
           </div>
@@ -432,12 +432,12 @@ export default function Dashboard() {
 
       {/* Earnings Summary Section */}
       {earnings && (earnings.escrowHeld > 0 || earnings.releasedThisMonth > 0 || earnings.pendingPenalties > 0) && (
-        <div className="mt-6 card">
+        <div className="mt-4 sm:mt-6 card">
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-5 h-5 text-ghana-green" />
             <h3 className="font-semibold text-gray-900">Earnings Overview</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Escrow Held */}
             {earnings.escrowHeld > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">

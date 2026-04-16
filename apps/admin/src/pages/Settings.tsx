@@ -228,24 +228,24 @@ export function Settings() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Site Settings</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage platform configuration and system health</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Site Settings</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">Manage platform configuration and system health</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Left Column - Settings */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* General Info Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                <Globe size={18} className="text-[#006B3F]" />
+            <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <Globe size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 General Information
               </h2>
             </div>
 
-            <form onSubmit={handleGeneralSave} className="p-6 space-y-4">
+            <form onSubmit={handleGeneralSave} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {generalError && (
                 <div className="p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
                   <AlertCircle size={16} />
@@ -261,18 +261,18 @@ export function Settings() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Site Name</label>
                 <input
                   type="text"
                   value={formData.siteName}
                   onChange={(e) => setFormData({ ...formData, siteName: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
                   placeholder="GroomLink"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <Mail size={14} className="text-gray-400" />
                   Contact Email
                 </label>
@@ -280,13 +280,13 @@ export function Settings() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
                   placeholder="support@groomlinkgh.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <Phone size={14} className="text-gray-400" />
                   Phone Number
                 </label>
@@ -294,13 +294,13 @@ export function Settings() {
                   type="tel"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
                   placeholder="+233 XX XXX XXXX"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <MapPin size={14} className="text-gray-400" />
                   Address
                 </label>
@@ -308,13 +308,13 @@ export function Settings() {
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
                   placeholder="Accra, Ghana"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <ImageIcon size={14} className="text-gray-400" />
                   Logo URL
                 </label>
@@ -322,7 +322,7 @@ export function Settings() {
                   type="url"
                   value={formData.logoUrl}
                   onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
                   placeholder="https://example.com/logo.png"
                 />
                 {formData.logoUrl && (
@@ -343,7 +343,7 @@ export function Settings() {
               <button
                 type="submit"
                 disabled={updateSettings.isPending}
-                className="w-full px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base min-h-[48px]"
               >
                 {updateSettings.isPending ? (
                   <>
@@ -362,14 +362,14 @@ export function Settings() {
 
           {/* Maintenance Mode Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                <Power size={18} className="text-[#006B3F]" />
+            <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <Power size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 Maintenance Mode
               </h2>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {maintenanceSuccess && (
                 <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
                   <CheckCircle size={16} />
@@ -428,14 +428,14 @@ export function Settings() {
 
           {/* Payment Gateway Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                <CreditCard size={18} className="text-[#006B3F]" />
+            <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <CreditCard size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 Payment Gateway
               </h2>
             </div>
 
-            <form onSubmit={handlePaymentSave} className="p-6 space-y-4">
+            <form onSubmit={handlePaymentSave} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {paymentError && (
                 <div className="p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
                   <AlertCircle size={16} />
@@ -673,20 +673,20 @@ export function Settings() {
         </div>
 
         {/* Right Column - System Health */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                <Activity size={18} className="text-[#006B3F]" />
+            <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <Activity size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 System Health
               </h2>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500">
                 <RefreshCw size={12} className="animate-spin" />
                 Auto-refresh: 30s
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Status Cards */}
               <div className="grid grid-cols-2 gap-4">
                 {/* API Status */}
@@ -878,38 +878,38 @@ export function Settings() {
 
       {/* Live Mode Confirmation Dialog */}
       {showLiveConfirmDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowLiveConfirmDialog(false)} />
-          <div className="relative bg-white rounded-xl shadow-lg max-w-md w-full mx-4 p-6">
+          <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[#CE1126]/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[#CE1126]/10 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="text-[#CE1126]" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800">Switch to Live Mode?</h3>
-                <p className="text-sm text-gray-500">This action will enable real payments</p>
+                <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Switch to Live Mode?</h3>
+                <p className="text-xs sm:text-sm text-gray-500">This action will enable real payments</p>
               </div>
             </div>
             <div className="p-3 bg-[#FCD116]/20 rounded-lg mb-4">
-              <p className="text-sm text-yellow-800">
+              <p className="text-xs sm:text-sm text-yellow-800">
                 <strong>Warning:</strong> Switching to live mode means all transactions will process real payments. Make sure you have:
               </p>
-              <ul className="text-sm text-yellow-700 mt-2 space-y-1 list-disc list-inside">
+              <ul className="text-xs sm:text-sm text-yellow-700 mt-2 space-y-1 list-disc list-inside">
                 <li>Tested thoroughly in test mode</li>
                 <li>Added correct live API keys</li>
                 <li>Verified your Paystack account is live</li>
               </ul>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowLiveConfirmDialog(false)}
-                className="flex-1 px-4 py-2 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-3 sm:py-2 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors text-sm min-h-[48px] sm:min-h-0"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmSwitchToLive}
-                className="flex-1 px-4 py-2 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1e] font-medium transition-colors"
+                className="flex-1 px-4 py-3 sm:py-2 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1e] font-medium transition-colors text-sm min-h-[48px] sm:min-h-0"
               >
                 Yes, Switch to Live
               </button>

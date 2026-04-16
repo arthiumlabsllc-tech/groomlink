@@ -24,7 +24,8 @@ const addServiceSchema = z.object({
   category: z.string(),
   duration: z.number().min(5),
   price: z.number().min(0),
-  discountPrice: z.number().min(0).optional(),
+  discountPrice: z.number().min(0).optional().nullable(),
+  promoLabel: z.string().max(50).optional().nullable(),
   image: z.string().url().optional(),
 });
 

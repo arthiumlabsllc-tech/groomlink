@@ -14,6 +14,54 @@ export interface SystemHealth {
   stats: DashboardStats;
 }
 
+// New system monitoring interfaces
+export interface ApiStatus {
+  status: 'healthy';
+  uptime: number;
+  version: string;
+}
+
+export interface DatabaseStatus {
+  status: 'connected' | 'disconnected';
+  responseTimeMs: number;
+  poolSize?: number;
+  totalQueries?: number;
+  slowQueries?: number;
+  slowQueryPercentage?: string;
+}
+
+export interface RedisStatus {
+  status: 'connected' | 'disconnected';
+  responseTimeMs: number;
+  memoryUsage: string;
+}
+
+export interface MemoryStatus {
+  heapUsed: number;
+  heapTotal: number;
+  rss: number;
+  external: number;
+}
+
+export interface ActiveSessions {
+  count: number;
+  socketConnections: number;
+}
+
+export interface SuspiciousActivity {
+  recentFailedLogins: number;
+}
+
+export interface SystemMonitoringData {
+  api: ApiStatus;
+  database: DatabaseStatus;
+  redis: RedisStatus;
+  memory: MemoryStatus;
+  activeSessions: ActiveSessions;
+  suspiciousActivity: SuspiciousActivity;
+  timestamp: string;
+}
+
 export interface ComprehensiveRevenueStats {
   totalRevenue: number;
   totalTransactions: number;
@@ -55,6 +103,12 @@ export interface UserGrowthData {
 export const dashboardApi = {
   // Get system health and basic stats
   getHealth: async (): Promise<SystemHealth> => {
+    const response = await apiClient.get('/admin/health');
+    return response.data.data;
+  },
+
+  // Get detailed system monitoring data
+  getSystemMonitoring: async (): Promise<SystemMonitoringData> => {
     const response = await apiClient.get('/admin/health');
     return response.data.data;
   },

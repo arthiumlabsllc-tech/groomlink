@@ -31,7 +31,7 @@ export default function Sidebar() {
       {/* Mobile menu button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-ghana-green rounded-lg text-white shadow-lg hover:bg-support-700 transition-colors"
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 bg-ghana-green rounded-xl text-white shadow-lg hover:bg-support-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
@@ -39,14 +39,14 @@ export default function Sidebar() {
       {/* Overlay for mobile */}
       {isOpen && (
         <div 
-          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 h-full w-64 bg-ghana-dark z-40 transform transition-transform duration-300 flex flex-col",
+        "fixed top-0 left-0 h-full w-64 bg-ghana-dark z-40 transform transition-transform duration-300 ease-in-out flex flex-col",
         "md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
@@ -73,13 +73,13 @@ export default function Sidebar() {
                 to={item.href}
                 onClick={() => setIsOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 min-h-[48px]",
                   isActive 
                     ? "bg-ghana-green text-white shadow-lg shadow-ghana-green/25" 
                     : "text-gray-400 hover:text-ghana-yellow hover:bg-gray-800/50"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", isActive ? "text-white" : "text-gray-400 group-hover:text-ghana-yellow")} />
+                <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-white" : "text-gray-400")} />
                 {item.name}
               </Link>
             );
@@ -103,9 +103,9 @@ export default function Sidebar() {
           </div>
           <button
             onClick={logout}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-400 hover:text-ghana-red hover:bg-ghana-red/10 rounded-xl transition-all duration-200"
+            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-400 hover:text-ghana-red hover:bg-ghana-red/10 rounded-xl transition-all duration-200 min-h-[48px]"
           >
-            <LogOut className="h-5 w-5" />
+            <LogOut className="h-5 w-5 flex-shrink-0" />
             Sign out
           </button>
         </div>

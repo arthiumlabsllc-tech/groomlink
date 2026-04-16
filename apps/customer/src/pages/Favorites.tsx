@@ -111,14 +111,14 @@ export default function Favorites() {
       </div>
 
       {favoritesList.length === 0 ? (
-        <div className="text-center py-16">
-          <Heart className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No favorites yet</h3>
-          <p className="text-gray-500 mb-6 max-w-sm mx-auto">Explore salons and save your favorites to book them quickly later!</p>
-          <a href="/explore" className="inline-block btn-primary px-6 py-3">Explore Salons</a>
+        <div className="text-center py-12 sm:py-16 px-4">
+          <Heart className="w-12 h-12 sm:w-16 sm:h-16 text-gray-200 mx-auto mb-4" />
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No favorites yet</h3>
+          <p className="text-gray-500 mb-6 max-w-sm mx-auto text-sm sm:text-base">Explore salons and save your favorites to book them quickly later!</p>
+          <a href="/explore" className="inline-block btn-primary px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base">Explore Salons</a>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {favoritesList.map((salon) => (
             <div key={salon.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
               <div className="relative">
@@ -126,54 +126,54 @@ export default function Favorites() {
                   <img 
                     src={getSalonImage(salon)} 
                     alt={getSalonName(salon)} 
-                    className="w-full h-48 object-cover hover:opacity-95 transition-opacity" 
+                    className="w-full h-40 sm:h-48 object-cover hover:opacity-95 transition-opacity" 
                   />
                 </a>
                 <button 
                   onClick={() => removeFavorite(salon.id)} 
                   disabled={removingId === salon.id}
-                  className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                  className="absolute top-2 sm:top-3 right-2 sm:right-3 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   {removingId === salon.id ? (
-                    <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 animate-spin" />
                   ) : (
-                    <Heart className="w-5 h-5 text-red-500 fill-current" />
+                    <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 fill-current" />
                   )}
                 </button>
                 {salon.isOpen !== undefined && (
-                  <span className={'absolute bottom-3 left-3 px-2 py-1 text-xs font-medium rounded ' + (salon.isOpen ? 'bg-green-500 text-white' : 'bg-gray-500 text-white')}>
+                  <span className={'absolute bottom-2 sm:bottom-3 left-2 sm:left-3 px-2 py-1 text-xs font-medium rounded ' + (salon.isOpen ? 'bg-green-500 text-white' : 'bg-gray-500 text-white')}>
                     {salon.isOpen ? 'Open Now' : 'Closed'}
                   </span>
                 )}
               </div>
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 <a href={`/salon/${salon.id}`} className="block">
-                  <h3 className="font-semibold text-gray-900 hover:text-primary-600 transition-colors">{getSalonName(salon)}</h3>
+                  <h3 className="font-semibold text-gray-900 hover:text-primary-600 transition-colors text-sm sm:text-base">{getSalonName(salon)}</h3>
                 </a>
                 <div className="flex items-center gap-2 mt-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
                   <span className="text-sm font-medium">{getSalonRating(salon).toFixed(1)}</span>
-                  <span className="text-sm text-gray-500">({getReviewCount(salon)} reviews)</span>
+                  <span className="text-xs sm:text-sm text-gray-500">({getReviewCount(salon)} reviews)</span>
                 </div>
-                <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
+                <div className="flex items-center gap-1 mt-2 text-xs sm:text-sm text-gray-500">
                   <MapPin className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{getAddress(salon)}</span>
                   {salon.distance && <span className="mx-1 flex-shrink-0">•</span>}
                   {salon.distance && <span className="flex-shrink-0">{salon.distance}</span>}
                 </div>
-                <div className="flex flex-wrap gap-1 mt-3">
+                <div className="flex flex-wrap gap-1 mt-2 sm:mt-3">
                   <span className="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded">{getCategory(salon)}</span>
                 </div>
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
                   <a 
                     href={`/salon/${salon.id}`} 
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
                     View Details
                   </a>
                   <a 
                     href={`/salon/${salon.id}/book`} 
-                    className="btn-primary text-sm py-1.5 px-4"
+                    className="btn-primary text-xs sm:text-sm py-1.5 px-3 sm:px-4"
                   >
                     Book Now
                   </a>

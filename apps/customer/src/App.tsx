@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import SalonDetail from './pages/SalonDetail';
 import BookSalon from './pages/BookSalon';
 import PaymentCallback from './pages/PaymentCallback';
+import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './store/auth';
 
@@ -90,6 +91,7 @@ function App() {
           <Route path="explore" element={<Explore />} />
           <Route path="bookings" element={<Bookings />} />
           <Route path="favorites" element={<Favorites />} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="profile" element={<Profile />} />
         </Route>
         

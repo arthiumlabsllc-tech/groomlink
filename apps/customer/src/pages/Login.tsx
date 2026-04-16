@@ -201,7 +201,7 @@ export default function Login() {
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Enter OTP Code
                     </label>
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex gap-2 sm:gap-3 justify-center">
                       {otp.map((digit, index) => (
                         <input
                           key={index}
@@ -212,7 +212,7 @@ export default function Login() {
                           value={digit}
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                          className="w-12 h-14 text-center text-xl font-semibold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#006B3F] focus:border-transparent outline-none transition-all"
+                          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-semibold border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-[#006B3F] focus:border-transparent outline-none transition-all min-w-[40px] min-h-[48px]"
                           disabled={isLoading}
                         />
                       ))}

@@ -171,37 +171,37 @@ export default function Queue() {
           )}
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="stat-card border-l-4 border-l-amber-500">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-100">
-                  <Users className="w-5 h-5 text-amber-600" />
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <div className="stat-card border-l-4 border-l-amber-500 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-amber-100">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{queueData?.totalWaiting || 0}</div>
-              <div className="text-sm text-gray-500">Total Waiting</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{queueData?.totalWaiting || 0}</div>
+              <div className="text-xs sm:text-sm text-gray-500">Total Waiting</div>
             </div>
 
-            <div className="stat-card border-l-4 border-l-blue-500">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100">
-                  <Clock className="w-5 h-5 text-blue-600" />
+            <div className="stat-card border-l-4 border-l-blue-500 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-blue-100">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">
                 {queueData?.averageWait ? `${Math.round(queueData.averageWait)} min` : '0 min'}
               </div>
-              <div className="text-sm text-gray-500">Average Wait</div>
+              <div className="text-xs sm:text-sm text-gray-500">Average Wait</div>
             </div>
 
-            <div className="stat-card border-l-4 border-l-green-500">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-100">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+            <div className="stat-card border-l-4 border-l-green-500 p-4 sm:p-6 col-span-2 lg:col-span-1">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-green-100">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{inServiceEntries.length}</div>
-              <div className="text-sm text-gray-500">Currently Serving</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{inServiceEntries.length}</div>
+              <div className="text-xs sm:text-sm text-gray-500">Currently Serving</div>
             </div>
           </div>
 
@@ -210,7 +210,7 @@ export default function Queue() {
             <button
               onClick={fetchQueue}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 min-h-[44px]"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -329,18 +329,18 @@ function QueueCard({
   const isLoading = (action: string) => actionLoading === `${action}-${entry.id}`
 
   return (
-    <div className="card hover:shadow-lg transition-shadow">
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        {/* Position & Customer Info */}
-        <div className="flex items-center gap-4 flex-1">
-          <div className="w-12 h-12 bg-ghana-green/10 rounded-full flex items-center justify-center text-lg font-bold text-ghana-green">
+    <div className="card hover:shadow-lg transition-shadow p-4 sm:p-6">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        {/* Top row: Position & Customer Info */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-ghana-green/10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-ghana-green flex-shrink-0">
             #{entry.position}
           </div>
-          <div>
-            <div className="font-semibold text-gray-900">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-gray-900 truncate">
               {entry.customer.firstName} {entry.customer.lastName}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 truncate">
               {entry.service?.name || 'General Service'}
             </div>
             <div className="text-xs text-gray-400 mt-1">
@@ -349,80 +349,81 @@ function QueueCard({
           </div>
         </div>
 
-        {/* Status & Wait Time */}
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
+        {/* Second row: Status & Action Buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+          {/* Status & Wait Time */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
               {getStatusLabel(entry.status)}
             </span>
             {entry.status === 'WAITING' && (
-              <div className="text-xs text-gray-500 mt-1">
+              <span className="text-xs text-gray-500">
                 Est. wait: {formatEstimatedWait(entry.estimatedWait)}
-              </div>
+              </span>
             )}
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          {entry.status === 'WAITING' && (
-            <button
-              onClick={() => onAction('call', entry.id)}
-              disabled={!!actionLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading('call') ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Volume2 className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">Call Next</span>
-            </button>
-          )}
-
-          {entry.status === 'CALLED' && (
-            <>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {entry.status === 'WAITING' && (
               <button
-                onClick={() => onAction('start', entry.id)}
+                onClick={() => onAction('call', entry.id)}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
               >
-                {isLoading('start') ? (
+                {isLoading('call') ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Play className="w-4 h-4" />
+                  <Volume2 className="w-4 h-4" />
                 )}
-                <span className="hidden sm:inline">Start</span>
+                <span>Call Next</span>
               </button>
-              <button
-                onClick={() => onAction('skip', entry.id)}
-                disabled={!!actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isLoading('skip') ? (
-                  <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <SkipForward className="w-4 h-4" />
-                )}
-                <span className="hidden sm:inline">Skip</span>
-              </button>
-            </>
-          )}
+            )}
 
-          {entry.status === 'IN_SERVICE' && (
-            <button
-              onClick={() => onAction('complete', entry.id)}
-              disabled={!!actionLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-ghana-green text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading('complete') ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <CheckCircle className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">Complete</span>
-            </button>
-          )}
+            {entry.status === 'CALLED' && (
+              <>
+                <button
+                  onClick={() => onAction('start', entry.id)}
+                  disabled={!!actionLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                >
+                  {isLoading('start') ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  <span>Start</span>
+                </button>
+                <button
+                  onClick={() => onAction('skip', entry.id)}
+                  disabled={!!actionLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                >
+                  {isLoading('skip') ? (
+                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <SkipForward className="w-4 h-4" />
+                  )}
+                  <span>Skip</span>
+                </button>
+              </>
+            )}
+
+            {entry.status === 'IN_SERVICE' && (
+              <button
+                onClick={() => onAction('complete', entry.id)}
+                disabled={!!actionLoading}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-ghana-green text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+              >
+                {isLoading('complete') ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                <span>Complete</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

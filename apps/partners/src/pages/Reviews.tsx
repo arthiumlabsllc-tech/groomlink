@@ -108,29 +108,29 @@ export default function Reviews() {
       </div>
 
       {/* Average Rating Card */}
-      <div className="card mb-6 bg-gradient-to-r from-ghana-green/5 to-ghana-gold/5 border-ghana-green/10">
-        <div className="flex flex-col sm:flex-row items-center gap-6">
+      <div className="card mb-6 bg-gradient-to-r from-ghana-green/5 to-ghana-gold/5 border-ghana-green/10 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="text-center sm:text-left">
-            <div className="text-5xl font-bold text-gray-900">{averageRating}</div>
+            <div className="text-4xl sm:text-5xl font-bold text-gray-900">{averageRating}</div>
             <div className="flex items-center justify-center sm:justify-start gap-1 mt-2">
               {renderStars(parseFloat(averageRating))}
             </div>
             <p className="text-sm text-gray-500 mt-1">Based on {reviews.length} reviews</p>
           </div>
-          <div className="flex-1 w-full sm:w-auto">
+          <div className="flex-1 w-full">
             {[5, 4, 3, 2, 1].map((star) => {
               const count = (reviews || []).filter(r => r.rating === star).length
               const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0
               return (
-                <div key={star} className="flex items-center gap-3 mb-1">
-                  <span className="text-sm text-gray-600 w-8">{star} ★</span>
+                <div key={star} className="flex items-center gap-2 sm:gap-3 mb-1">
+                  <span className="text-sm text-gray-600 w-6 sm:w-8 flex-shrink-0">{star} ★</span>
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-ghana-gold rounded-full transition-all"
                       style={{ width: `${percentage}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-500 w-8 text-right">{count}</span>
+                  <span className="text-sm text-gray-500 w-6 sm:w-8 text-right flex-shrink-0">{count}</span>
                 </div>
               )
             })}
@@ -139,12 +139,12 @@ export default function Reviews() {
       </div>
 
       {/* Sort Options */}
-      <div className="flex items-center justify-between mb-6">
-        <span className="text-gray-600">{reviews.length} reviews</span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+        <span className="text-gray-600 text-sm sm:text-base">{reviews.length} reviews</span>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
-          className="input-field py-2 px-3 w-auto text-sm"
+          className="input-field py-2 px-3 w-full sm:w-auto text-sm"
         >
           <option value="recent">Sort by: Recent</option>
           <option value="highest">Sort by: Highest</option>
@@ -158,27 +158,27 @@ export default function Reviews() {
           <p className="text-gray-500 mt-4">Loading reviews...</p>
         </div>
       ) : sortedReviews.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2">
           {sortedReviews.map((review) => (
             <div 
               key={review.id} 
-              className="card hover:shadow-md transition-shadow border-l-4 border-l-ghana-gold"
+              className="card hover:shadow-md transition-shadow border-l-4 border-l-ghana-gold p-4 sm:p-6"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-ghana-green/10 rounded-full flex items-center justify-center">
+              <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 bg-ghana-green/10 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-ghana-green font-semibold text-sm">
                       {review.customer?.firstName?.[0]}{review.customer?.lastName?.[0] || ''}
                     </span>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">
+                  <div className="min-w-0">
+                    <h4 className="font-medium text-gray-900 truncate">
                       {review.customer?.firstName} {review.customer?.lastName || ''}
                     </h4>
                     <p className="text-xs text-gray-500">{formatDate(review.createdAt)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 bg-ghana-gold/10 px-2 py-1 rounded-lg">
+                <div className="flex items-center gap-1 bg-ghana-gold/10 px-2 py-1 rounded-lg flex-shrink-0">
                   <span className="font-semibold text-amber-700">{review.rating}</span>
                   <Star className="w-3 h-3 text-ghana-gold fill-ghana-gold" />
                 </div>

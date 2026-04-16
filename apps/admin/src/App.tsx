@@ -46,18 +46,13 @@ function PermissionGuard({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check for SUPER_ADMIN requirement
+  // Check for SUPER_ADMIN requirement (only for specific actions like modifying SUPER_ADMIN accounts)
   if (requireSuperAdmin && user.role !== 'SUPER_ADMIN') {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Check page permissions for ADMIN users
-  if (user.role === 'ADMIN' && pageId && pageId !== 'settings') {
-    const hasPermission = user.pages?.includes(pageId);
-    if (!hasPermission) {
-      return <Navigate to="/dashboard" replace />;
-    }
-  }
+  // ADMIN and SUPER_ADMIN both have access to all pages
+  // No page-level permission restrictions for regular ADMIN users
 
   return <>{children}</>;
 }
@@ -127,7 +122,7 @@ function AppRoutes() {
         <Route 
           path="admins" 
           element={
-            <PermissionGuard requireSuperAdmin>
+            <PermissionGuard pageId="admins">
               <AdminManagement />
             </PermissionGuard>
           } 

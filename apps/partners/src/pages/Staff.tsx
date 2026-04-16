@@ -62,12 +62,12 @@ export default function Staff() {
         <>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Staff Members</h1>
-          <p className="text-gray-500">Manage your team members</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Staff Members</h1>
+          <p className="text-gray-500 text-sm sm:text-base">Manage your team members</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center justify-center gap-2"
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
         >
           <Plus className="w-5 h-5" />
           Add Staff
@@ -80,25 +80,25 @@ export default function Staff() {
           <p className="text-gray-500 mt-4">Loading staff...</p>
         </div>
       ) : staff.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {staff.map((member) => (
-            <div key={member.id} className="card hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-ghana-green/10 rounded-full flex items-center justify-center border-2 border-ghana-green/20">
-                    <span className="text-ghana-green font-bold text-lg">
+            <div key={member.id} className="card hover:shadow-md transition-shadow p-4 sm:p-6">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-ghana-green/10 rounded-full flex items-center justify-center border-2 border-ghana-green/20 flex-shrink-0">
+                    <span className="text-ghana-green font-bold text-base sm:text-lg">
                       {getInitials(member.fullName)}
                     </span>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{member.fullName}</h3>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate">{member.fullName}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></span>
                       <span className="text-sm text-gray-500">{member.isActive ? 'Active' : 'Inactive'}</span>
                     </div>
                   </div>
                 </div>
-                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
                   <MoreVertical className="w-5 h-5" />
                 </button>
               </div>
