@@ -42,3 +42,19 @@ export function useRecentActivities(limit: number = 5) {
     staleTime: 60 * 1000,
   });
 }
+
+export function useComprehensiveRevenueStats() {
+  return useQuery({
+    queryKey: [DASHBOARD_KEY, 'revenue', 'comprehensive'],
+    queryFn: () => dashboardApi.getComprehensiveRevenueStats(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function usePaystackBalance() {
+  return useQuery({
+    queryKey: [DASHBOARD_KEY, 'paystack', 'balance'],
+    queryFn: () => dashboardApi.getPaystackBalance(),
+    staleTime: 60 * 1000, // 1 minute
+  });
+}

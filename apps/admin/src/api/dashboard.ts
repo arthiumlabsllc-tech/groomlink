@@ -14,6 +14,24 @@ export interface SystemHealth {
   stats: DashboardStats;
 }
 
+export interface ComprehensiveRevenueStats {
+  totalRevenue: number;
+  totalTransactions: number;
+  platformFeesEarned: number;
+  pendingPayouts: number;
+  completedPayouts: number;
+  refundedAmount: number;
+  refundedCount: number;
+  recentRevenue30d: number;
+  recentTransactions30d: number;
+}
+
+export interface PaystackBalance {
+  currency: string;
+  balance: number;
+  rawBalance: number;
+}
+
 export interface ChartDataPoint {
   date: string;
   value: number;
@@ -68,6 +86,18 @@ export const dashboardApi = {
   // Get recent activities
   getRecentActivities: async (limit: number = 5) => {
     const response = await apiClient.get('/admin/activities', { params: { limit } });
+    return response.data.data;
+  },
+
+  // Get comprehensive revenue stats
+  getComprehensiveRevenueStats: async (): Promise<ComprehensiveRevenueStats> => {
+    const response = await apiClient.get('/admin/revenue/comprehensive');
+    return response.data.data;
+  },
+
+  // Get Paystack balance
+  getPaystackBalance: async (): Promise<{ balances: PaystackBalance[]; fetchedAt: string }> => {
+    const response = await apiClient.get('/admin/paystack-balance');
     return response.data.data;
   },
 };

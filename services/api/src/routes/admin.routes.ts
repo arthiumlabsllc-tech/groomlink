@@ -31,6 +31,10 @@ router.get('/health', authenticateToken, requireAdminOrHigher, adminController.g
 router.get('/metrics', authenticateToken, requireAdminOrHigher, adminController.getSystemMetrics);
 router.get('/bookings/stats', authenticateToken, requireAdminOrHigher, adminController.getBookingStats);
 router.get('/revenue/stats', authenticateToken, requireAdminOrHigher, adminController.getRevenueStats);
+router.get('/revenue/comprehensive', authenticateToken, requireAdminOrHigher, adminController.getComprehensiveRevenueStats);
+
+// Paystack Balance
+router.get('/paystack-balance', authenticateToken, requireAdminOrHigher, adminController.getPaystackBalanceHandler);
 
 // Recent Activities
 router.get('/activities', authenticateToken, requireAdminOrHigher, adminController.getRecentActivities);

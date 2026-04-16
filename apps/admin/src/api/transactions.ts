@@ -4,8 +4,8 @@ export interface Transaction {
   id: string;
   amount: number;
   currency: string;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
-  provider: 'MTN_MOMO' | 'VODAFONE_CASH' | 'AIRTEL_TIGO';
+  status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+  provider: 'MTN_MOMO' | 'VODAFONE_CASH' | 'AIRTEL_TIGO' | 'AIRTELTIGO_MONEY' | 'CASH';
   providerTransactionId: string | null;
   createdAt: string;
   updatedAt: string;

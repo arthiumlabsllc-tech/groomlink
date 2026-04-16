@@ -28,8 +28,11 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
+  Wallet,
+  DollarSign,
+  PiggyBank,
 } from 'lucide-react';
-import { useDashboardStats, useDashboardMetrics, useRecentActivities } from '../hooks';
+import { useDashboardStats, useDashboardMetrics, useRecentActivities, useComprehensiveRevenueStats, usePaystackBalance } from '../hooks';
 import { formatCurrency } from '../lib/utils';
 
 const GHANA_COLORS = {
@@ -149,8 +152,10 @@ export function Dashboard() {
   const [period, setPeriod] = useState(30);
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics(period);
+  const { data: revenueStats, isLoading: revenueStatsLoading } = useComprehensiveRevenueStats();
+  const { data: paystackBalance, isLoading: paystackBalanceLoading } = usePaystackBalance();
 
-  const isLoading = statsLoading || metricsLoading;
+  const isLoading = statsLoading || metricsLoading || revenueStatsLoading;
 
   // Transform API data for charts
   // API returns dailyBookings, dailyRevenue, userGrowth (backend field names)
@@ -202,6 +207,16 @@ export function Dashboard() {
     0
   ) || metrics?.totalRevenue || 0;
 
+  // Use comprehensive revenue stats for accurate totals
+  const comprehensiveTotalRevenue = revenueStats?.totalRevenue || 0;
+  const platformFeesEarned = revenueStats?.platformFeesEarned || 0;
+  const pendingPayouts = revenueStats?.pendingPayouts || 0;
+  const completedPayouts = revenueStats?.completedPayouts || 0;
+
+  // Get Paystack balance (GHS)
+  const ghsBalance = paystackBalance?.balances?.find(b => b.currency === 'GHS');
+  const paystackBalanceAmount = ghsBalance?.balance || 0;
+
   const salonStatusData = [
     { name: 'Approved', value: (stats?.stats as { approvedSalons?: number })?.approvedSalons || 0, color: GHANA_COLORS.green },
     { name: 'Pending', value: (stats?.stats as { pendingSalons?: number })?.pendingSalons || 0, color: GHANA_COLORS.gold },
@@ -211,7 +226,7 @@ export function Dashboard() {
   const statsCards = [
     {
       title: 'Total Revenue',
-      value: formatCurrency(totalRevenue),
+      value: formatCurrency(comprehensiveTotalRevenue),
       change: calculateRevenueChange(),
       trend: 'up',
       icon: CreditCard,
@@ -252,6 +267,46 @@ export function Dashboard() {
       iconBg: 'bg-[#CE1126]/10',
       iconColor: 'text-[#CE1126]',
       subtitle: 'awaiting approval',
+    },
+  ];
+
+  // Financial stats cards
+  const financialStatsCards = [
+    {
+      title: 'Paystack Balance',
+      value: formatCurrency(paystackBalanceAmount),
+      subtitle: paystackBalanceLoading ? 'Loading...' : 'real-time',
+      icon: Wallet,
+      borderColor: 'border-l-purple-500',
+      iconBg: 'bg-purple-50',
+      iconColor: 'text-purple-500',
+    },
+    {
+      title: 'Platform Fees Earned',
+      value: formatCurrency(platformFeesEarned),
+      subtitle: 'total fees collected',
+      icon: DollarSign,
+      borderColor: 'border-l-emerald-500',
+      iconBg: 'bg-emerald-50',
+      iconColor: 'text-emerald-500',
+    },
+    {
+      title: 'Pending Payouts',
+      value: formatCurrency(pendingPayouts),
+      subtitle: 'held in escrow',
+      icon: PiggyBank,
+      borderColor: 'border-l-orange-500',
+      iconBg: 'bg-orange-50',
+      iconColor: 'text-orange-500',
+    },
+    {
+      title: 'Completed Payouts',
+      value: formatCurrency(completedPayouts),
+      subtitle: 'released to providers',
+      icon: CheckCircle,
+      borderColor: 'border-l-cyan-500',
+      iconBg: 'bg-cyan-50',
+      iconColor: 'text-cyan-500',
     },
   ];
 
@@ -330,6 +385,36 @@ export function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Financial Stats Section */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <Wallet className="w-5 h-5 text-purple-500" />
+          Financial Overview
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {financialStatsCards.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div 
+                key={stat.title} 
+                className={`bg-white rounded-xl shadow-sm p-5 border-l-4 ${stat.borderColor} hover:shadow-md transition-shadow duration-200`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500 font-medium">{stat.title}</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-2 truncate">{stat.value}</p>
+                    <span className="text-xs text-gray-400">{stat.subtitle}</span>
+                  </div>
+                  <div className={`${stat.iconBg} p-3 rounded-xl`}>
+                    <Icon className={`${stat.iconColor} w-5 h-5`} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Charts Row 1 */}

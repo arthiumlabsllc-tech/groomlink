@@ -51,8 +51,10 @@ export function Transactions() {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; dot: string }> = {
+      SUCCESS: { bg: 'bg-[#006B3F]/10', text: 'text-[#006B3F]', dot: 'bg-[#006B3F]' },
       COMPLETED: { bg: 'bg-[#006B3F]/10', text: 'text-[#006B3F]', dot: 'bg-[#006B3F]' },
       PENDING: { bg: 'bg-[#FCD116]/20', text: 'text-[#B8960F]', dot: 'bg-[#FCD116]' },
+      PROCESSING: { bg: 'bg-blue-100', text: 'text-blue-600', dot: 'bg-blue-500' },
       FAILED: { bg: 'bg-[#CE1126]/10', text: 'text-[#CE1126]', dot: 'bg-[#CE1126]' },
       REFUNDED: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
     };
@@ -120,8 +122,9 @@ export function Transactions() {
         <div className="flex gap-2">
           {[
             { value: '', label: 'All' },
-            { value: 'COMPLETED', label: 'Completed' },
+            { value: 'SUCCESS', label: 'Success' },
             { value: 'PENDING', label: 'Pending' },
+            { value: 'PROCESSING', label: 'Processing' },
             { value: 'FAILED', label: 'Failed' },
             { value: 'REFUNDED', label: 'Refunded' },
           ].map((option) => (
@@ -182,7 +185,7 @@ export function Transactions() {
                 <Eye size={16} />
                 View
               </button>
-              {txn.status === 'COMPLETED' && (
+              {(txn.status === 'SUCCESS' || txn.status === 'COMPLETED') && (
                 <button 
                   onClick={() => handleRefund(txn.id)}
                   disabled={refundTransaction.isPending}
@@ -239,7 +242,7 @@ export function Transactions() {
                       >
                         <Eye size={18} />
                       </button>
-                      {txn.status === 'COMPLETED' && (
+                      {(txn.status === 'SUCCESS' || txn.status === 'COMPLETED') && (
                         <button 
                           onClick={() => handleRefund(txn.id)}
                           disabled={refundTransaction.isPending}
@@ -417,7 +420,7 @@ export function Transactions() {
                   >
                     Close
                   </button>
-                  {transactionDetails.status === 'COMPLETED' && (
+                  {(transactionDetails.status === 'SUCCESS' || transactionDetails.status === 'COMPLETED') && (
                     <button 
                       onClick={() => {
                         setShowDetailModal(false);

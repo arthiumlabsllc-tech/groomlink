@@ -10,6 +10,7 @@ import { activityService } from '../services/activity.service';
 import * as noshowService from '../services/noshow.service';
 import * as completionService from '../services/completion.service';
 import logger from '../config/logger';
+import axios from 'axios';
 
 const couponSchema = z.object({
   code: z.string().min(3),
@@ -1584,6 +1585,128 @@ export async function getRevenueStats(req: AuthenticatedRequest, res: Response):
     });
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// PAYSTACK BALANCE
+// ===========================================
+
+const PAYSTACK_BASE_URL = 'https://api.paystack.co';
+
+/**
+ * Get Paystack account balance
+ * GET /admin/paystack-balance
+ */
+export async function getPaystackBalanceHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    // Get Paystack keys from SiteSettings or environment
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+    
+    const secretKey = settings?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+    
+    if (!secretKey) {
+      errorResponse(res, 'NOT_CONFIGURED', 'Paystack secret key not configured', 400);
+      return;
+    }
+
+    // Call Paystack API to get balance
+    const response = await axios.get(`${PAYSTACK_BASE_URL}/balance`, {
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Paystack returns balance in pesewas (smallest currency unit)
+    // Convert to GHS (divide by 100)
+    const balanceData = response.data.data;
+    const formattedBalance = balanceData.map((item: { currency: string; balance: number }) => ({
+      currency: item.currency,
+      balance: item.balance / 100, // Convert from pesewas to GHS
+      rawBalance: item.balance,
+    }));
+
+    successResponse(res, {
+      balances: formattedBalance,
+      fetchedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Failed to fetch Paystack balance', { error: (error as Error).message });
+    errorResponse(res, 'FETCH_FAILED', 'Failed to fetch Paystack balance', 500);
+  }
+}
+
+// ===========================================
+// COMPREHENSIVE REVENUE STATS
+// ===========================================
+
+/**
+ * Get comprehensive revenue statistics including escrow data
+ * GET /admin/revenue/comprehensive
+ */
+export async function getComprehensiveRevenueStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    // Get total revenue from successful payments
+    const totalRevenueResult = await prisma.payment.aggregate({
+      where: { status: PaymentStatus.SUCCESS },
+      _sum: { amount: true },
+      _count: true,
+    });
+
+    // Get platform fees earned (sum of platformFee from EscrowAccount)
+    const platformFeesResult = await prisma.escrowAccount.aggregate({
+      _sum: { platformFee: true },
+    });
+
+    // Get pending payouts (sum of providerAmount where status = 'held')
+    const pendingPayoutsResult = await prisma.escrowAccount.aggregate({
+      where: { status: 'held' },
+      _sum: { providerAmount: true },
+    });
+
+    // Get completed payouts (sum of providerAmount where status = 'released')
+    const completedPayoutsResult = await prisma.escrowAccount.aggregate({
+      where: { status: 'released' },
+      _sum: { providerAmount: true },
+    });
+
+    // Get refunded amount
+    const refundedResult = await prisma.payment.aggregate({
+      where: { status: PaymentStatus.REFUNDED },
+      _sum: { amount: true },
+      _count: true,
+    });
+
+    // Get recent revenue (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentRevenueResult = await prisma.payment.aggregate({
+      where: {
+        status: PaymentStatus.SUCCESS,
+        createdAt: { gte: thirtyDaysAgo },
+      },
+      _sum: { amount: true },
+      _count: true,
+    });
+
+    successResponse(res, {
+      totalRevenue: Number(totalRevenueResult._sum.amount || 0),
+      totalTransactions: totalRevenueResult._count,
+      platformFeesEarned: Number(platformFeesResult._sum.platformFee || 0),
+      pendingPayouts: Number(pendingPayoutsResult._sum.providerAmount || 0),
+      completedPayouts: Number(completedPayoutsResult._sum.providerAmount || 0),
+      refundedAmount: Number(refundedResult._sum.amount || 0),
+      refundedCount: refundedResult._count,
+      recentRevenue30d: Number(recentRevenueResult._sum.amount || 0),
+      recentTransactions30d: recentRevenueResult._count,
+    });
+  } catch (error) {
+    logger.error('Failed to fetch comprehensive revenue stats', { error: (error as Error).message });
+    errorResponse(res, 'FETCH_FAILED', 'Failed to fetch revenue statistics', 500);
   }
 }
 
