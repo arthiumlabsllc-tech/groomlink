@@ -32,8 +32,8 @@ export function Escrow() {
     const matchesStatus = !statusFilter || escrow.status === statusFilter;
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
-      escrow.booking.salon.businessName.toLowerCase().includes(searchLower) ||
-      `${escrow.booking.customer.firstName || ''} ${escrow.booking.customer.lastName || ''}`.toLowerCase().includes(searchLower) ||
+      escrow.booking?.salon?.businessName?.toLowerCase().includes(searchLower) ||
+      `${escrow.booking?.customer?.firstName || ''} ${escrow.booking?.customer?.lastName || ''}`.toLowerCase().includes(searchLower) ||
       escrow.id.toLowerCase().includes(searchLower);
     return matchesStatus && matchesSearch;
   });
@@ -190,14 +190,14 @@ export function Escrow() {
               {filteredEscrow.map((escrow) => (
                 <tr key={escrow.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">
-                    <span className="font-mono text-sm font-medium text-gray-800">{escrow.booking.id.slice(0, 8)}...</span>
+                    <span className="font-mono text-sm font-medium text-gray-800">{escrow.booking?.id?.slice(0, 8) || 'Unknown'}...</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-800">{escrow.booking.salon.businessName}</span>
+                    <span className="text-sm text-gray-800">{escrow.booking?.salon?.businessName || 'Unknown Salon'}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-600">
-                      {escrow.booking.customer.firstName || 'Unknown'} {escrow.booking.customer.lastName || ''}
+                      {escrow.booking?.customer?.firstName || 'Unknown'} {escrow.booking?.customer?.lastName || ''}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -261,8 +261,8 @@ function EscrowCard({ escrow, getStatusBadge }: { escrow: EscrowAccount; getStat
             <Wallet size={20} className="text-[#006B3F]" />
           </div>
           <div>
-            <p className="font-semibold text-gray-800">{escrow.booking.salon.businessName}</p>
-            <p className="text-xs text-gray-500">Booking: {escrow.booking.id.slice(0, 8)}...</p>
+            <p className="font-semibold text-gray-800">{escrow.booking?.salon?.businessName || 'Unknown Salon'}</p>
+            <p className="text-xs text-gray-500">Booking: {escrow.booking?.id?.slice(0, 8) || 'Unknown'}...</p>
           </div>
         </div>
         {getStatusBadge(escrow.status)}
@@ -270,7 +270,7 @@ function EscrowCard({ escrow, getStatusBadge }: { escrow: EscrowAccount; getStat
       <div className="space-y-2 text-sm bg-gray-50 rounded-lg p-3">
         <div className="flex justify-between">
           <span className="text-gray-500">Customer:</span>
-          <span className="font-medium text-gray-800">{escrow.booking.customer.firstName || 'Unknown'} {escrow.booking.customer.lastName || ''}</span>
+          <span className="font-medium text-gray-800">{escrow.booking?.customer?.firstName || 'Unknown'} {escrow.booking?.customer?.lastName || ''}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Amount:</span>

@@ -1,6 +1,6 @@
 // API Configuration for Partners Dashboard
 // Use relative URL in development (Vite proxy handles it), production URL in production
-export const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://groomlinkgh.com/api');
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://my.groomlinkgh.com/api');
 
 // Types
 export interface Salon {

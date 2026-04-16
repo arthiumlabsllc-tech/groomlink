@@ -1842,6 +1842,12 @@ export async function getEscrowDashboardHandler(req: AuthenticatedRequest, res: 
                   email: true,
                 },
               },
+              salon: {
+                select: {
+                  id: true,
+                  businessName: true,
+                },
+              },
             },
           },
           salon: {

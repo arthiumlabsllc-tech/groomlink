@@ -35,16 +35,16 @@ export interface EscrowAccount {
   refundedAt: string | null;
   booking: {
     id: string;
-    customer: {
+    customer?: {
       id: string;
       firstName: string | null;
       lastName: string | null;
     };
-    salon: {
+    salon?: {
       id: string;
       businessName: string;
     };
-    service: {
+    service?: {
       id: string;
       name: string;
     };
