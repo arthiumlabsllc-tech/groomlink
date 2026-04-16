@@ -4,6 +4,7 @@ import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types/navigation';

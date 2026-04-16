@@ -48,6 +48,7 @@ interface Salon {
   createdAt: string
   updatedAt: string
   distance?: number // Optional distance field for nearby search
+  isSponsored?: boolean // Sponsored salon flag
 }
 
 interface PaginatedResponse {
@@ -575,7 +576,13 @@ export default function Explore() {
                       target.src = 'https://images.unsplash.com/photo-1522337360788-8b13ee0af107?w=400&h=300&fit=crop'
                     }}
                   />
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                    {salon.isSponsored && (
+                      <span className="px-2 py-1 text-xs font-medium rounded bg-amber-100 text-amber-700 border border-amber-300 flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-current" />
+                        Sponsored
+                      </span>
+                    )}
                     <span className="px-2 py-1 text-xs font-medium rounded bg-ghana-gold text-ghana-green">
                       {formatCategoryLabel(salon.type)}
                     </span>

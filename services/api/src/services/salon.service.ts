@@ -181,6 +181,8 @@ export async function getSalons(filters: SalonFilters, page: number = 1, limit: 
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [
+        { isSponsored: 'desc' },
+        { sponsorshipPriority: 'desc' },
         { rating: 'desc' },
         { createdAt: 'desc' },
       ],
@@ -360,6 +362,8 @@ export async function getNearbySalons(lat: number, lng: number, radius: number, 
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [
+        { isSponsored: 'desc' },
+        { sponsorshipPriority: 'desc' },
         { rating: 'desc' },
         { createdAt: 'desc' },
       ],
@@ -392,7 +396,12 @@ export async function getNearbySalons(lat: number, lng: number, radius: number, 
     const distance = calculateDistance(lat, lng, salon.latitude, salon.longitude);
     return { ...salon, distance };
   }).filter((salon: any) => salon.distance <= radius)
-    .sort((a: any, b: any) => a.distance - b.distance);
+    .sort((a: any, b: any) => {
+      // Sort by sponsored first, then priority, then distance
+      if (a.isSponsored !== b.isSponsored) return b.isSponsored ? 1 : -1;
+      if (a.sponsorshipPriority !== b.sponsorshipPriority) return b.sponsorshipPriority - a.sponsorshipPriority;
+      return a.distance - b.distance;
+    });
 
   return { salons: salonsWithDistance, total };
 }

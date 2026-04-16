@@ -75,4 +75,16 @@ export const transactionsApi = {
     });
     return response.data.data;
   },
+
+  // Sync a single payment status with Paystack
+  syncPayment: async (paymentId: string) => {
+    const response = await apiClient.post(`/admin/payments/${paymentId}/sync`);
+    return response.data.data;
+  },
+
+  // Bulk sync all PROCESSING payments with Paystack
+  syncAllProcessingPayments: async () => {
+    const response = await apiClient.post('/admin/payments/sync-all');
+    return response.data.data;
+  },
 };

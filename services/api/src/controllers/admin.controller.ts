@@ -11,6 +11,9 @@ import * as noshowService from '../services/noshow.service';
 import * as completionService from '../services/completion.service';
 import logger from '../config/logger';
 import axios from 'axios';
+import { verifyPaymentWithPaystack } from '../services/payment.service';
+import * as escrowService from '../services/escrow.service';
+import * as notificationService from '../services/notification.service';
 
 const couponSchema = z.object({
   code: z.string().min(3),
@@ -2119,5 +2122,471 @@ export async function resolveCompletionDisputeHandler(req: AuthenticatedRequest,
       return;
     }
     errorResponse(res, 'RESOLVE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// PAYMENT SYNC WITH PAYSTACK
+// ===========================================
+
+/**
+ * Sync a single payment status with Paystack
+ * POST /admin/payments/:paymentId/sync
+ */
+export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { paymentId } = req.params;
+
+    // Get the payment with booking info
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        booking: {
+          include: {
+            salon: {
+              select: {
+                id: true,
+                businessName: true,
+                address: true,
+                phoneNumber: true,
+                owner: {
+                  select: {
+                    id: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            service: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            worker: {
+              select: {
+                fullName: true,
+              },
+            },
+            customer: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      errorResponse(res, 'NOT_FOUND', 'Payment not found', 404);
+      return;
+    }
+
+    // Only sync payments that are in PROCESSING or PENDING status
+    if (payment.status !== PaymentStatus.PROCESSING && payment.status !== PaymentStatus.PENDING) {
+      successResponse(res, {
+        message: 'Payment status does not require sync',
+        paymentId: payment.id,
+        currentStatus: payment.status,
+        synced: false,
+      });
+      return;
+    }
+
+    if (!payment.providerRef) {
+      errorResponse(res, 'INVALID_STATE', 'Payment has no provider reference', 400);
+      return;
+    }
+
+    // Call Paystack to verify the payment
+    const verification = await verifyPaymentWithPaystack(payment.providerRef);
+
+    if (verification.error) {
+      errorResponse(res, 'SYNC_FAILED', verification.error, 500);
+      return;
+    }
+
+    let updated = false;
+    let newStatus = payment.status;
+
+    // If Paystack says it's successful, update the payment and booking
+    if (verification.success && verification.status === 'success') {
+      const completedAt = new Date();
+
+      // Update payment to SUCCESS
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: PaymentStatus.SUCCESS,
+          completedAt,
+          providerData: verification.data,
+        },
+      });
+
+      // Calculate cancellation deadline based on policy
+      let cancellationDeadline: Date | undefined;
+      try {
+        const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
+        const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
+        const bookingDateTime = new Date(`${payment.booking.date.toISOString().split('T')[0]}T${payment.booking.startTime}`);
+        cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
+      } catch (policyError) {
+        logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
+        const bookingDateTime = new Date(`${payment.booking.date.toISOString().split('T')[0]}T${payment.booking.startTime}`);
+        cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
+      }
+
+      // Update booking to CONFIRMED
+      await prisma.booking.update({
+        where: { id: payment.bookingId },
+        data: {
+          status: 'CONFIRMED',
+          cancellationDeadline,
+          refundEligible: true,
+          refundPercentage: 100,
+        },
+      });
+
+      // Create escrow account
+      try {
+        await escrowService.createEscrow({
+          bookingId: payment.booking.id,
+          customerId: payment.booking.customer.id,
+          providerId: payment.booking.salon.owner?.id || payment.booking.salon.id,
+          salonId: payment.booking.salon.id,
+          amount: Number(payment.amount),
+          paymentTransactionId: payment.providerRef || undefined,
+        });
+        logger.info(`Escrow created for booking: ${payment.booking.id} via admin sync`);
+      } catch (escrowError) {
+        logger.error('Failed to create escrow after admin sync payment success:', {
+          paymentId,
+          bookingId: payment.bookingId,
+          error: escrowError,
+        });
+      }
+
+      // Send notification to customer
+      notificationService.notifyPaymentReceived(
+        payment.booking.customer.id,
+        payment.booking.id,
+        Number(payment.amount),
+        payment.booking.service.name
+      ).catch((err) => logger.error('Failed to send payment notification to customer', { err }));
+
+      // Notify salon owner
+      if (payment.booking.salon.owner?.id) {
+        notificationService.notifyPaymentReceived(
+          payment.booking.salon.owner.id,
+          payment.booking.id,
+          Number(payment.amount),
+          payment.booking.service.name
+        ).catch((err) => logger.error('Failed to send payment notification to salon owner', { err }));
+      }
+
+      updated = true;
+      newStatus = PaymentStatus.SUCCESS;
+
+      logger.info(`Payment synced to SUCCESS via admin: ${paymentId}`, {
+        paystackRef: payment.providerRef,
+        adminUserId: req.user?.id,
+      });
+    } else if (verification.status === 'failed' || verification.status === 'abandoned') {
+      // If Paystack says it failed, update to FAILED
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: PaymentStatus.FAILED,
+          providerData: verification.data,
+        },
+      });
+
+      updated = true;
+      newStatus = PaymentStatus.FAILED;
+
+      logger.info(`Payment synced to FAILED via admin: ${paymentId}`, {
+        paystackRef: payment.providerRef,
+        paystackStatus: verification.status,
+        adminUserId: req.user?.id,
+      });
+    } else {
+      // Still pending or processing on Paystack side
+      logger.info(`Payment still pending on Paystack: ${paymentId}`, {
+        paystackRef: payment.providerRef,
+        paystackStatus: verification.status,
+      });
+    }
+
+    successResponse(res, {
+      message: updated ? `Payment synced successfully` : 'Payment status unchanged',
+      paymentId: payment.id,
+      previousStatus: payment.status,
+      newStatus,
+      paystackStatus: verification.status,
+      paystackAmount: verification.amount,
+      paystackCurrency: verification.currency,
+      synced: updated,
+    });
+  } catch (error) {
+    logger.error('Payment sync error:', { paymentId: req.params.paymentId, error });
+    errorResponse(res, 'SYNC_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Bulk sync all PROCESSING payments with Paystack
+ * POST /admin/payments/sync-all
+ */
+export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    // Get all payments in PROCESSING status
+    const processingPayments = await prisma.payment.findMany({
+      where: {
+        status: PaymentStatus.PROCESSING,
+        providerRef: { not: null }, // Only get payments with a provider reference
+      },
+      include: {
+        booking: {
+          include: {
+            salon: {
+              select: {
+                id: true,
+                businessName: true,
+                address: true,
+                phoneNumber: true,
+                owner: {
+                  select: {
+                    id: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            service: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            worker: {
+              select: {
+                fullName: true,
+              },
+            },
+            customer: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    logger.info(`Starting bulk sync of ${processingPayments.length} processing payments`, {
+      adminUserId: req.user?.id,
+    });
+
+    const results = {
+      total: processingPayments.length,
+      updatedToSuccess: 0,
+      updatedToFailed: 0,
+      unchanged: 0,
+      errors: 0,
+      details: [] as Array<{
+        paymentId: string;
+        reference: string;
+        previousStatus: string;
+        newStatus: string;
+        paystackStatus: string;
+        error?: string;
+      }>,
+    };
+
+    // Process each payment
+    for (const payment of processingPayments) {
+      try {
+        if (!payment.providerRef) {
+          results.errors++;
+          results.details.push({
+            paymentId: payment.id,
+            reference: '',
+            previousStatus: payment.status,
+            newStatus: payment.status,
+            paystackStatus: 'error',
+            error: 'No provider reference',
+          });
+          continue;
+        }
+
+        // Call Paystack to verify
+        const verification = await verifyPaymentWithPaystack(payment.providerRef);
+
+        if (verification.error) {
+          results.errors++;
+          results.details.push({
+            paymentId: payment.id,
+            reference: payment.providerRef,
+            previousStatus: payment.status,
+            newStatus: payment.status,
+            paystackStatus: 'error',
+            error: verification.error,
+          });
+          continue;
+        }
+
+        // If Paystack says it's successful, update the payment and booking
+        if (verification.success && verification.status === 'success') {
+          const completedAt = new Date();
+
+          // Update payment to SUCCESS
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.SUCCESS,
+              completedAt,
+              providerData: verification.data,
+            },
+          });
+
+          // Calculate cancellation deadline based on policy
+          let cancellationDeadline: Date | undefined;
+          try {
+            const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
+            const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
+            const bookingDateTime = new Date(`${payment.booking.date.toISOString().split('T')[0]}T${payment.booking.startTime}`);
+            cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
+          } catch (policyError) {
+            logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
+            const bookingDateTime = new Date(`${payment.booking.date.toISOString().split('T')[0]}T${payment.booking.startTime}`);
+            cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
+          }
+
+          // Update booking to CONFIRMED
+          await prisma.booking.update({
+            where: { id: payment.bookingId },
+            data: {
+              status: 'CONFIRMED',
+              cancellationDeadline,
+              refundEligible: true,
+              refundPercentage: 100,
+            },
+          });
+
+          // Create escrow account
+          try {
+            await escrowService.createEscrow({
+              bookingId: payment.booking.id,
+              customerId: payment.booking.customer.id,
+              providerId: payment.booking.salon.owner?.id || payment.booking.salon.id,
+              salonId: payment.booking.salon.id,
+              amount: Number(payment.amount),
+              paymentTransactionId: payment.providerRef || undefined,
+            });
+            logger.info(`Escrow created for booking: ${payment.booking.id} via bulk sync`);
+          } catch (escrowError) {
+            logger.error('Failed to create escrow after bulk sync payment success:', {
+              paymentId: payment.id,
+              bookingId: payment.bookingId,
+              error: escrowError,
+            });
+          }
+
+          // Send notifications
+          notificationService.notifyPaymentReceived(
+            payment.booking.customer.id,
+            payment.booking.id,
+            Number(payment.amount),
+            payment.booking.service.name
+          ).catch((err) => logger.error('Failed to send payment notification to customer', { err }));
+
+          if (payment.booking.salon.owner?.id) {
+            notificationService.notifyPaymentReceived(
+              payment.booking.salon.owner.id,
+              payment.booking.id,
+              Number(payment.amount),
+              payment.booking.service.name
+            ).catch((err) => logger.error('Failed to send payment notification to salon owner', { err }));
+          }
+
+          results.updatedToSuccess++;
+          results.details.push({
+            paymentId: payment.id,
+            reference: payment.providerRef,
+            previousStatus: payment.status,
+            newStatus: PaymentStatus.SUCCESS,
+            paystackStatus: verification.status,
+          });
+        } else if (verification.status === 'failed' || verification.status === 'abandoned') {
+          // If Paystack says it failed, update to FAILED
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.FAILED,
+              providerData: verification.data,
+            },
+          });
+
+          results.updatedToFailed++;
+          results.details.push({
+            paymentId: payment.id,
+            reference: payment.providerRef,
+            previousStatus: payment.status,
+            newStatus: PaymentStatus.FAILED,
+            paystackStatus: verification.status,
+          });
+        } else {
+          // Still pending or processing on Paystack side
+          results.unchanged++;
+          results.details.push({
+            paymentId: payment.id,
+            reference: payment.providerRef,
+            previousStatus: payment.status,
+            newStatus: payment.status,
+            paystackStatus: verification.status,
+          });
+        }
+      } catch (paymentError) {
+        logger.error('Error syncing individual payment in bulk sync:', {
+          paymentId: payment.id,
+          error: paymentError,
+        });
+        results.errors++;
+        results.details.push({
+          paymentId: payment.id,
+          reference: payment.providerRef || '',
+          previousStatus: payment.status,
+          newStatus: payment.status,
+          paystackStatus: 'error',
+          error: (paymentError as Error).message,
+        });
+      }
+    }
+
+    logger.info(`Bulk sync completed`, {
+      total: results.total,
+      updatedToSuccess: results.updatedToSuccess,
+      updatedToFailed: results.updatedToFailed,
+      unchanged: results.unchanged,
+      errors: results.errors,
+      adminUserId: req.user?.id,
+    });
+
+    successResponse(res, {
+      message: `Bulk sync completed. ${results.updatedToSuccess} updated to SUCCESS, ${results.updatedToFailed} updated to FAILED, ${results.unchanged} unchanged, ${results.errors} errors.`,
+      ...results,
+    });
+  } catch (error) {
+    logger.error('Bulk payment sync error:', { error });
+    errorResponse(res, 'SYNC_FAILED', (error as Error).message, 500);
   }
 }

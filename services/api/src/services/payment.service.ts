@@ -6,6 +6,9 @@ import crypto from 'crypto';
 import * as emailService from './email.service';
 import * as escrowService from './escrow.service';
 import * as notificationService from './notification.service';
+import * as smsService from './sms.service';
+import { generateCheckinCode } from './checkin.service';
+import { emitNewBooking } from '../config/socket';
 
 // Re-export getPolicyValue from escrow.service for use in payment calculations
 export const getPolicyValue = escrowService.getPolicyValue;
@@ -72,6 +75,240 @@ async function getPaystackKeys(): Promise<PaystackKeys | null> {
   // Neither SiteSettings nor env vars have keys configured
   logger.warn('Paystack keys not configured in SiteSettings or environment variables');
   return null;
+}
+
+/**
+ * Send all booking notifications after payment success
+ * This is called from both verifyAndCompletePayment() and handlePaystackWebhook()
+ * to ensure consistent notification behavior regardless of payment path.
+ */
+async function sendBookingNotificationsOnPaymentSuccess(params: {
+  bookingId: string;
+  salonId: string;
+  salonName: string;
+  salonAddress: string;
+  salonPhone?: string | null;
+  serviceName: string;
+  workerName?: string | null;
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string | null;
+    phoneNumber?: string | null;
+  };
+  salonOwnerId?: string | null;
+  salonOwnerEmail?: string | null;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  totalAmount: number;
+  finalAmount: number;
+  customerNotes?: string | null;
+  isGroupBooking?: boolean;
+  totalPeople?: number;
+}): Promise<void> {
+  const {
+    bookingId,
+    salonId,
+    salonName,
+    salonAddress,
+    salonPhone,
+    serviceName,
+    workerName,
+    customer,
+    salonOwnerId,
+    salonOwnerEmail,
+    date,
+    startTime,
+    endTime,
+    totalAmount,
+    finalAmount,
+    customerNotes,
+    isGroupBooking,
+    totalPeople,
+  } = params;
+
+  // 1. Generate check-in code for the booking
+  await generateCheckinCode(bookingId).catch((err) => {
+    logger.error('Failed to generate check-in code after payment success', { bookingId, err });
+  });
+
+  // Fetch guests for group booking if applicable
+  let guests: Array<{
+    guestName: string;
+    guestPhone: string | null;
+    service: string;
+    staff?: string;
+    isChild: boolean;
+  }> = [];
+  
+  if (isGroupBooking) {
+    const bookingWithGuests = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        guests: {
+          include: {
+            service: { select: { name: true } },
+            staff: { select: { fullName: true } },
+          },
+        },
+      },
+    });
+    
+    if (bookingWithGuests?.guests) {
+      guests = bookingWithGuests.guests.map((g) => ({
+        guestName: g.guestName,
+        guestPhone: g.guestPhone,
+        service: g.service?.name || 'Unknown Service',
+        staff: g.staff?.fullName || undefined,
+        isChild: g.isChild,
+      }));
+    }
+  }
+
+  // Prepare group booking data for emails
+  const groupEmailData = isGroupBooking && guests.length > 0
+    ? {
+        isGroupBooking: true,
+        totalPeople: totalPeople || guests.length,
+        guests,
+      }
+    : undefined;
+
+  const customerFullName = `${customer.firstName} ${customer.lastName}`.trim();
+
+  // 2. Send booking confirmation email to customer
+  if (customer.email) {
+    emailService
+      .sendBookingConfirmationEmail(
+        customer.email,
+        {
+          customerName: customerFullName,
+          bookingReference: bookingId,
+          salonName,
+          salonAddress,
+          salonPhone: salonPhone || undefined,
+          serviceName,
+          workerName: workerName || undefined,
+          date: date.toISOString(),
+          startTime,
+          endTime,
+          totalAmount,
+          finalAmount,
+          customerNotes: customerNotes || undefined,
+          ...(groupEmailData || {}),
+        }
+      )
+      .catch((err) =>
+        logger.error('Failed to send booking confirmation email to customer', { err })
+      );
+  }
+
+  // 3. Send new booking notification email to salon owner
+  if (salonOwnerEmail) {
+    emailService
+      .sendNewBookingNotificationEmail(
+        salonOwnerEmail,
+        {
+          customerName: customerFullName,
+          bookingReference: bookingId,
+          serviceName,
+          workerName: workerName || undefined,
+          date: date.toISOString(),
+          startTime,
+          endTime,
+          finalAmount,
+          customerPhone: customer.phoneNumber || undefined,
+          customerNotes: customerNotes || undefined,
+          ...(groupEmailData || {}),
+        }
+      )
+      .catch((err) =>
+        logger.error('Failed to send new booking notification email to salon owner', { err })
+      );
+  }
+
+  // 4. Send SMS confirmation to customer
+  if (customer.phoneNumber) {
+    if (isGroupBooking && guests.length > 0) {
+      // Send group booking SMS to primary customer and guests
+      const guestPhones = guests
+        .map((g) => g.guestPhone)
+        .filter((phone): phone is string => !!phone);
+
+      smsService
+        .sendGroupBookingConfirmation(
+          customer.phoneNumber,
+          guestPhones,
+          bookingId,
+          salonName,
+          date,
+          startTime,
+          totalPeople || guests.length
+        )
+        .catch((err) =>
+          logger.error('Failed to send group booking confirmation SMS', { err })
+        );
+    } else {
+      // Regular single booking SMS
+      smsService
+        .sendBookingConfirmation(
+          customer.phoneNumber,
+          bookingId,
+          salonName,
+          date,
+          startTime
+        )
+        .catch((err) =>
+          logger.error('Failed to send booking confirmation SMS', { err })
+        );
+    }
+
+    // Schedule 2-hour reminder
+    smsService
+      .scheduleBookingReminder(
+        customer.phoneNumber,
+        salonName,
+        date,
+        startTime
+      )
+      .catch((err) =>
+        logger.error('Failed to schedule booking reminder SMS', { err })
+      );
+  }
+
+  // 5. Emit socket event to salon for audible/real-time notification
+  // Fetch minimal booking data for socket emission
+  const bookingForSocket = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      salon: { select: { id: true, businessName: true } },
+      service: { select: { name: true } },
+      worker: { select: { fullName: true } },
+      customer: { select: { firstName: true, lastName: true } },
+    },
+  });
+  
+  if (bookingForSocket) {
+    emitNewBooking(salonId, bookingForSocket);
+  }
+
+  // 6. Notify salon owner of new booking via in-app notification
+  if (salonOwnerId) {
+    const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    notificationService.notifySalonOwnerOfNewBooking(
+      salonOwnerId,
+      bookingId,
+      customerFullName,
+      serviceName,
+      salonName,
+      dateStr,
+      startTime
+    ).catch((err) => logger.error('Failed to send new booking notification', { err }));
+  }
+
+  logger.info(`Booking notifications sent for booking: ${bookingId}`);
 }
 
 // Mock payment provider implementations (fallback when Paystack is not configured)
@@ -552,6 +789,8 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
             select: {
               id: true,
               businessName: true,
+              address: true,
+              phoneNumber: true,
               owner: {
                 select: {
                   id: true,
@@ -566,12 +805,18 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
               name: true,
             },
           },
+          worker: {
+            select: {
+              fullName: true,
+            },
+          },
           customer: {
             select: {
               id: true,
               firstName: true,
               lastName: true,
               email: true,
+              phoneNumber: true,
             },
           },
         },
@@ -685,6 +930,38 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       });
       // Don't throw - payment is still successful even if escrow creation fails
     }
+
+    // Send ALL booking notifications (email, SMS, check-in code, socket events)
+    // This is the ONLY place these notifications should be sent - after payment success
+    sendBookingNotificationsOnPaymentSuccess({
+      bookingId: booking.id,
+      salonId: booking.salon.id,
+      salonName: booking.salon.businessName,
+      salonAddress: booking.salon.address,
+      salonPhone: booking.salon.phoneNumber,
+      serviceName: booking.service.name,
+      workerName: booking.worker?.fullName,
+      customer: {
+        id: booking.customer.id,
+        firstName: booking.customer.firstName,
+        lastName: booking.customer.lastName,
+        email: booking.customer.email,
+        phoneNumber: booking.customer.phoneNumber,
+      },
+      salonOwnerId: booking.salon.owner?.id,
+      salonOwnerEmail: booking.salon.owner?.email,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      totalAmount: Number(booking.totalAmount),
+      finalAmount: Number(booking.finalAmount),
+      customerNotes: booking.customerNotes,
+      isGroupBooking: booking.isGroupBooking,
+      totalPeople: booking.totalPeople,
+    }).catch((err) => {
+      logger.error('Failed to send booking notifications after payment success', { bookingId: booking.id, err });
+    });
+
     const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
     const paymentMethod = payment.provider.replace(/_/g, ' ');
     const formattedDate = new Date(booking.date).toLocaleDateString('en-GB');
@@ -926,6 +1203,8 @@ export async function handlePaystackWebhook(
                   select: {
                     id: true,
                     businessName: true,
+                    address: true,
+                    phoneNumber: true,
                     owner: {
                       select: {
                         id: true,
@@ -940,12 +1219,18 @@ export async function handlePaystackWebhook(
                     name: true,
                   },
                 },
+                worker: {
+                  select: {
+                    fullName: true,
+                  },
+                },
                 customer: {
                   select: {
                     id: true,
                     firstName: true,
                     lastName: true,
                     email: true,
+                    phoneNumber: true,
                   },
                 },
               },
@@ -1014,6 +1299,38 @@ export async function handlePaystackWebhook(
             });
             // Don't throw - payment is still successful even if escrow creation fails
           }
+
+          // Send ALL booking notifications (email, SMS, check-in code, socket events)
+          // This is the ONLY place these notifications should be sent - after payment success
+          sendBookingNotificationsOnPaymentSuccess({
+            bookingId: booking.id,
+            salonId: booking.salon.id,
+            salonName: booking.salon.businessName,
+            salonAddress: booking.salon.address,
+            salonPhone: booking.salon.phoneNumber,
+            serviceName: booking.service.name,
+            workerName: booking.worker?.fullName,
+            customer: {
+              id: booking.customer.id,
+              firstName: booking.customer.firstName,
+              lastName: booking.customer.lastName,
+              email: booking.customer.email,
+              phoneNumber: booking.customer.phoneNumber,
+            },
+            salonOwnerId: booking.salon.owner?.id,
+            salonOwnerEmail: booking.salon.owner?.email,
+            date: booking.date,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            totalAmount: Number(booking.totalAmount),
+            finalAmount: Number(booking.finalAmount),
+            customerNotes: booking.customerNotes,
+            isGroupBooking: booking.isGroupBooking,
+            totalPeople: booking.totalPeople,
+          }).catch((err) => {
+            logger.error('Failed to send booking notifications after payment success', { bookingId: booking.id, err });
+          });
+
           const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
           const paymentMethod = payment.provider.replace(/_/g, ' ');
 
@@ -1062,6 +1379,18 @@ export async function handlePaystackWebhook(
       case 'charge.failed': {
         const payment = await prisma.payment.findFirst({
           where: { providerRef: data.reference },
+          include: {
+            booking: {
+              include: {
+                customer: {
+                  select: {
+                    id: true,
+                    phoneNumber: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (payment) {
@@ -1073,7 +1402,26 @@ export async function handlePaystackWebhook(
             },
           });
 
+          // Update booking with failure reason and increment retry count
+          await prisma.booking.update({
+            where: { id: payment.bookingId },
+            data: {
+              paymentFailedReason: data.gateway_response || 'Payment failed',
+              paymentRetryCount: { increment: 1 },
+            },
+          });
+
           logger.info(`Payment failed via webhook: ${payment.id}`);
+
+          // Send failure SMS to customer if phone number is available
+          const booking = payment.booking;
+          if (booking?.customer?.phoneNumber) {
+            const failureMessage = `GroomLink: Payment failed for your booking. Please try again. Ref: ${booking.reference}`;
+            smsService.sendSMS({
+              to: booking.customer.phoneNumber,
+              message: failureMessage,
+            }).catch((err) => logger.error('Failed to send payment failure SMS to customer', { err }));
+          }
         }
         break;
       }
@@ -1157,3 +1505,239 @@ export async function completeServiceAndRelease(bookingId: string): Promise<{ bo
 
 // Export PaystackPaymentProvider for direct use (e.g., refunds)
 export { PaystackPaymentProvider, getPaystackKeys };
+
+/**
+ * Verify a payment with Paystack by reference
+ * This is a reusable function that can be used by both the existing verify flow AND admin sync
+ * @param reference - The Paystack transaction reference
+ * @returns The Paystack verification response data (status, amount, etc.)
+ */
+export async function verifyPaymentWithPaystack(reference: string): Promise<{
+  success: boolean;
+  status: string;
+  amount?: number;
+  currency?: string;
+  gatewayResponse?: string;
+  paidAt?: string;
+  channel?: string;
+  data?: any;
+  error?: string;
+}> {
+  try {
+    const paystackKeys = await getPaystackKeys();
+    
+    if (!paystackKeys) {
+      logger.warn('Paystack keys not configured, cannot verify payment');
+      return {
+        success: false,
+        status: 'error',
+        error: 'Paystack not configured',
+      };
+    }
+
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${paystackKeys.secretKey}`,
+        },
+      }
+    );
+
+    const { data } = response.data;
+    const status = data.status;
+    
+    logger.info(`Paystack payment verified via API: ${reference}`, { 
+      status,
+      amount: data.amount,
+      currency: data.currency,
+    });
+    
+    return {
+      success: status === 'success',
+      status,
+      amount: data.amount ? data.amount / 100 : undefined, // Convert from pesewas
+      currency: data.currency,
+      gatewayResponse: data.gateway_response,
+      paidAt: data.paid_at,
+      channel: data.channel,
+      data,
+    };
+  } catch (error: any) {
+    logger.error('Paystack verify payment API error:', {
+      reference,
+      message: error.message,
+      response: error.response?.data,
+    });
+    
+    return {
+      success: false,
+      status: 'error',
+      error: error.response?.data?.message || error.message || 'Failed to verify payment with Paystack',
+    };
+  }
+}
+
+/**
+ * Cleanup orphaned payments that have been stuck in PENDING or PROCESSING status
+ * for more than 30 minutes without being completed.
+ * 
+ * This function is called by a cron job every 15 minutes.
+ * 
+ * @returns Summary of cleanup actions performed
+ */
+export async function cleanupOrphanedPayments(): Promise<{
+  checked: number;
+  verified: number;
+  expired: number;
+  failed: number;
+}> {
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+  
+  logger.info('Starting orphaned payment cleanup job', { cutoffTime: thirtyMinutesAgo.toISOString() });
+  
+  // Find all payments stuck in PENDING or PROCESSING status for more than 30 minutes
+  const orphanedPayments = await prisma.payment.findMany({
+    where: {
+      status: {
+        in: [PaymentStatus.PENDING, PaymentStatus.PROCESSING],
+      },
+      createdAt: {
+        lt: thirtyMinutesAgo,
+      },
+    },
+    include: {
+      booking: {
+        include: {
+          customer: {
+            select: {
+              id: true,
+              phoneNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  
+  let verified = 0;
+  let expired = 0;
+  let failed = 0;
+  
+  for (const payment of orphanedPayments) {
+    try {
+      if (payment.status === PaymentStatus.PROCESSING && payment.providerRef) {
+        // For PROCESSING payments: try to verify with Paystack first
+        const verification = await verifyPaymentWithPaystack(payment.providerRef);
+        
+        if (verification.success && verification.status === 'success') {
+          // Payment was actually successful on Paystack - complete it normally
+          logger.info(`Orphaned payment ${payment.id} verified as successful via Paystack`, {
+            reference: payment.providerRef,
+          });
+          
+          // Update payment status to SUCCESS
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.SUCCESS,
+              completedAt: new Date(),
+              providerData: verification.data,
+            },
+          });
+          
+          // Confirm the booking
+          await prisma.booking.update({
+            where: { id: payment.bookingId },
+            data: { status: 'CONFIRMED' },
+          });
+          
+          verified++;
+          
+          // Send notification to customer
+          notificationService.notifyPaymentReceived(
+            payment.booking.customer.id,
+            payment.bookingId,
+            Number(payment.amount),
+            'Booking'
+          ).catch((err) => logger.error('Failed to send payment notification after cleanup verification', { err }));
+          
+          continue;
+        } else {
+          // Paystack says failed or not found - mark as FAILED
+          logger.info(`Orphaned PROCESSING payment ${payment.id} marked as failed after Paystack verification`, {
+            reference: payment.providerRef,
+            paystackStatus: verification.status,
+          });
+          
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.FAILED,
+              providerData: verification.data || { cleanupReason: 'Orphaned - Paystack verification failed' },
+            },
+          });
+          
+          failed++;
+        }
+      } else {
+        // For PENDING payments older than 30 minutes: mark as expired
+        logger.info(`Orphaned PENDING payment ${payment.id} marked as expired`, {
+          createdAt: payment.createdAt,
+        });
+        
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.FAILED,
+            providerData: { cleanupReason: 'Payment expired - not initiated within time limit' },
+          },
+        });
+        
+        expired++;
+      }
+      
+      // Update the associated booking status back to PENDING so customer can retry
+      const booking = payment.booking;
+      
+      await prisma.booking.update({
+        where: { id: payment.bookingId },
+        data: {
+          status: 'PENDING',
+        },
+      });
+      
+      logger.info(`Booking ${payment.bookingId} status reset to PENDING for retry after orphaned payment cleanup`);
+      
+      // Notify customer of payment failure
+      notificationService.notifyPaymentFailed(
+        booking.customer.id,
+        payment.bookingId,
+        Number(payment.amount),
+        'Booking'
+      ).catch((err: Error) => logger.error('Failed to send payment failed notification', { err }));
+      
+      // Send failure SMS if phone number available
+      if (booking.customer.phoneNumber) {
+        const failureMessage = `GroomLink: Payment expired for your booking. Please retry payment. Ref: ${payment.bookingId}`;
+        smsService.sendSMS({
+          to: booking.customer.phoneNumber,
+          message: failureMessage,
+        }).catch((err: Error) => logger.error('Failed to send payment expiry SMS to customer', { err }));
+      }
+    } catch (error) {
+      logger.error(`Failed to cleanup orphaned payment ${payment.id}:`, error);
+    }
+  }
+  
+  const summary = {
+    checked: orphanedPayments.length,
+    verified,
+    expired,
+    failed,
+  };
+  
+  logger.info('Orphaned payment cleanup completed', summary);
+  
+  return summary;
+}

@@ -18,6 +18,7 @@ import {
   Wallet,
   XCircle,
   UserX,
+  Star,
 } from 'lucide-react';
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks';
@@ -44,6 +45,7 @@ const navItems = [
   { path: '/users', label: 'Users', icon: Users, pageId: 'users' },
   { path: '/transactions', label: 'Transactions', icon: CreditCard, pageId: 'transactions' },
   { path: '/promotions', label: 'Promotions', icon: Gift, pageId: 'promotions' },
+  { path: '/sponsored-salons', label: 'Sponsored Salons', icon: Star, pageId: 'sponsored-salons' },
   { path: '/support', label: 'Support', icon: Headphones, pageId: 'support' },
   { path: '/support-staff', label: 'Support Staff', icon: UserPlus, pageId: 'support-staff' },
 ];

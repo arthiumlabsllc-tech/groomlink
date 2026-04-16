@@ -38,3 +38,25 @@ export function useTransactionStats(period: string = '30d') {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function useSyncPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (paymentId: string) => transactionsApi.syncPayment(paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TRANSACTIONS_KEY] });
+    },
+  });
+}
+
+export function useSyncAllProcessingPayments() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => transactionsApi.syncAllProcessingPayments(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TRANSACTIONS_KEY] });
+    },
+  });
+}

@@ -217,6 +217,7 @@ export interface NearbySalon {
   createdAt: string;
   updatedAt: string;
   distance: number; // Distance in km from the search location
+  isSponsored?: boolean; // Sponsored salon flag
 }
 
 export interface NearbySalonsResponse {
@@ -247,6 +248,7 @@ export interface MapSalon {
   phoneNumber: string;
   isOpen?: boolean;
   distance?: number;
+  isSponsored?: boolean;
 }
 
 // Review types
@@ -541,6 +543,7 @@ export interface Favorite {
     reviewCount: number;
     type: string;
     isOpen?: boolean;
+    isSponsored?: boolean;
   };
   createdAt: string;
 }

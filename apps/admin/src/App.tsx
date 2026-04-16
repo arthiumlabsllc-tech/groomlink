@@ -14,6 +14,7 @@ import { Policies } from './pages/Policies';
 import { Escrow } from './pages/Escrow';
 import { Cancellations } from './pages/Cancellations';
 import { NoShows } from './pages/NoShows';
+import { SponsoredSalons } from './pages/SponsoredSalons';
 import { Login } from './pages/Login';
 import NotFound from './pages/NotFound';
 import { useAuth } from './hooks';
@@ -164,6 +165,14 @@ function AppRoutes() {
           element={
             <PermissionGuard pageId="no-shows">
               <NoShows />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="sponsored-salons" 
+          element={
+            <PermissionGuard pageId="sponsored-salons">
+              <SponsoredSalons />
             </PermissionGuard>
           } 
         />

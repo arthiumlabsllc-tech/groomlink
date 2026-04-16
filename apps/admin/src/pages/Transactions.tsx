@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Search, RefreshCcw, Eye, Loader2, CreditCard, TrendingUp, X, User, MapPin, Calendar, Clock, Phone } from 'lucide-react';
-import { useTransactions, useRefundTransaction, useTransactionStats, useTransaction } from '../hooks';
+import { Search, RefreshCcw, Eye, Loader2, CreditCard, TrendingUp, X, User, MapPin, Calendar, Clock, Phone, RefreshCw, CheckCircle } from 'lucide-react';
+import { useTransactions, useRefundTransaction, useTransactionStats, useTransaction, useSyncPayment, useSyncAllProcessingPayments } from '../hooks';
 import { formatCurrency, formatDate } from '../lib/utils';
 
 export function Transactions() {
@@ -13,6 +13,8 @@ export function Transactions() {
   const { data: transactionsData, isLoading } = useTransactions(page, 20, statusFilter || undefined);
   const { data: stats } = useTransactionStats('30d');
   const refundTransaction = useRefundTransaction();
+  const syncPayment = useSyncPayment();
+  const syncAllProcessing = useSyncAllProcessingPayments();
   const { data: transactionDetails, isLoading: detailsLoading } = useTransaction(selectedTransactionId || '');
 
   const transactions = transactionsData?.data || [];
@@ -32,6 +34,31 @@ export function Transactions() {
   const handleRefund = async (id: string) => {
     if (confirm('Are you sure you want to refund this transaction?')) {
       await refundTransaction.mutateAsync({ id, reason: 'Customer request' });
+    }
+  };
+
+  const handleSyncPayment = async (id: string) => {
+    try {
+      const result = await syncPayment.mutateAsync(id);
+      if (result.synced) {
+        alert(`Payment synced successfully! Status updated from ${result.previousStatus} to ${result.newStatus}.`);
+      } else {
+        alert(`Payment status unchanged. Current status: ${result.currentStatus || result.newStatus}. Paystack status: ${result.paystackStatus}.`);
+      }
+    } catch (error: any) {
+      alert(`Sync failed: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
+  const handleSyncAll = async () => {
+    if (!confirm('This will sync all PROCESSING payments with Paystack. Continue?')) {
+      return;
+    }
+    try {
+      const result = await syncAllProcessing.mutateAsync();
+      alert(`Bulk sync completed!\n\nTotal: ${result.total}\nUpdated to SUCCESS: ${result.updatedToSuccess}\nUpdated to FAILED: ${result.updatedToFailed}\nUnchanged: ${result.unchanged}\nErrors: ${result.errors}`);
+    } catch (error: any) {
+      alert(`Bulk sync failed: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -89,6 +116,18 @@ export function Transactions() {
           <h1 className="text-2xl font-bold text-gray-800">Transaction Monitoring</h1>
           <p className="text-sm text-gray-500 mt-1">Track and manage payment transactions</p>
         </div>
+        <button
+          onClick={handleSyncAll}
+          disabled={syncAllProcessing.isPending}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+        >
+          {syncAllProcessing.isPending ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <RefreshCw size={18} />
+          )}
+          Sync All with Paystack
+        </button>
       </div>
 
       {/* Revenue Highlight Card */}
@@ -185,6 +224,20 @@ export function Transactions() {
                 <Eye size={16} />
                 View
               </button>
+              {txn.status === 'PROCESSING' && (
+                <button 
+                  onClick={() => handleSyncPayment(txn.id)}
+                  disabled={syncPayment.isPending && syncPayment.variables === txn.id}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 disabled:opacity-50 transition-colors font-medium text-sm"
+                >
+                  {syncPayment.isPending && syncPayment.variables === txn.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )}
+                  Sync
+                </button>
+              )}
               {(txn.status === 'SUCCESS' || txn.status === 'COMPLETED') && (
                 <button 
                   onClick={() => handleRefund(txn.id)}
@@ -242,6 +295,20 @@ export function Transactions() {
                       >
                         <Eye size={18} />
                       </button>
+                      {txn.status === 'PROCESSING' && (
+                        <button 
+                          onClick={() => handleSyncPayment(txn.id)}
+                          disabled={syncPayment.isPending && syncPayment.variables === txn.id}
+                          className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors"
+                          title="Sync with Paystack"
+                        >
+                          {syncPayment.isPending && syncPayment.variables === txn.id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <RefreshCw size={18} />
+                          )}
+                        </button>
+                      )}
                       {(txn.status === 'SUCCESS' || txn.status === 'COMPLETED') && (
                         <button 
                           onClick={() => handleRefund(txn.id)}
@@ -420,6 +487,22 @@ export function Transactions() {
                   >
                     Close
                   </button>
+                  {transactionDetails.status === 'PROCESSING' && (
+                    <button 
+                      onClick={() => {
+                        handleSyncPayment(transactionDetails.id);
+                      }}
+                      disabled={syncPayment.isPending}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors font-medium"
+                    >
+                      {syncPayment.isPending ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <RefreshCw size={18} />
+                      )}
+                      Sync with Paystack
+                    </button>
+                  )}
                   {(transactionDetails.status === 'SUCCESS' || transactionDetails.status === 'COMPLETED') && (
                     <button 
                       onClick={() => {

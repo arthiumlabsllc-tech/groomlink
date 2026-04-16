@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as adminController from '../controllers/admin.controller';
 import * as supportTicketController from '../controllers/support-ticket.controller';
+import * as sponsorshipController from '../controllers/sponsorship.controller';
 import { authenticateToken, requireAdminOrHigher, requireSuperAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -25,6 +26,10 @@ router.delete('/coupons/:id', authenticateToken, requireAdminOrHigher, adminCont
 router.get('/transactions', authenticateToken, requireAdminOrHigher, adminController.getTransactions);
 router.get('/transactions/:id', authenticateToken, requireAdminOrHigher, adminController.getTransactionDetails);
 router.post('/transactions/:id/refund', authenticateToken, requireAdminOrHigher, adminController.refundTransaction);
+
+// Payment Sync with Paystack
+router.post('/payments/:paymentId/sync', authenticateToken, requireAdminOrHigher, adminController.syncPaymentStatus);
+router.post('/payments/sync-all', authenticateToken, requireAdminOrHigher, adminController.syncAllProcessingPayments);
 
 // System Health & Metrics
 router.get('/health', authenticateToken, requireAdminOrHigher, adminController.getSystemHealth);
@@ -93,5 +98,11 @@ router.put('/no-shows/:id/resolve', authenticateToken, requireAdminOrHigher, adm
 
 // Completion Dispute Resolution
 router.put('/disputes/:id/resolve', authenticateToken, requireAdminOrHigher, adminController.resolveCompletionDisputeHandler);
+
+// Sponsored Salons Management
+router.post('/sponsored-salons', authenticateToken, requireAdminOrHigher, sponsorshipController.addSponsoredSalon);
+router.delete('/sponsored-salons/:id', authenticateToken, requireAdminOrHigher, sponsorshipController.removeSponsoredSalon);
+router.get('/sponsored-salons', authenticateToken, requireAdminOrHigher, sponsorshipController.getSponsoredSalons);
+router.get('/sponsorship-packages', authenticateToken, requireAdminOrHigher, sponsorshipController.getPackages);
 
 export default router;

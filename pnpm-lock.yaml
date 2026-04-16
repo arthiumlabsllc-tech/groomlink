@@ -592,7 +592,7 @@ importers:
   services/api:
     dependencies:
       '@prisma/client':
-        specifier: ^5.7.0
+        specifier: 5.22.0
         version: 5.22.0(prisma@5.22.0)
       africastalking:
         specifier: ^0.7.9
@@ -719,7 +719,7 @@ importers:
         specifier: ^30.3.0
         version: 30.3.0(@types/node@20.19.39)
       prisma:
-        specifier: ^5.7.0
+        specifier: 5.22.0
         version: 5.22.0
       supertest:
         specifier: ^7.2.2

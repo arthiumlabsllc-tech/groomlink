@@ -126,6 +126,7 @@ model User {
   noShowRecords           NoShowRecord[]        @relation("NoShowRecords")
   policiesUpdated         PlatformPolicy[]      @relation("PolicyUpdatedBy")
   completionReminders     CompletionReminder[]
+  sponsoredSalons         SponsoredSalon[]
 
   // No-show tracking
   noShowCount       Int       @default(0) @map("no_show_count")
@@ -213,6 +214,12 @@ model Salon {
   kycSubmission  KycSubmission?
   salonQueues    SalonQueue[]
   escrowAccounts EscrowAccount[]
+
+  // Sponsorship
+  isSponsored          Boolean   @default(false)
+  sponsorshipPriority  Int       @default(0)
+  sponsorshipExpiresAt DateTime?
+  sponsorships         SponsoredSalon[]
 
   // Service Completion Settings
   autoCompletionHours            Int     @default(2) @map("auto_completion_hours")
@@ -395,6 +402,10 @@ model Booking {
   checkinCode         String?   @unique
   queuePosition       Int?
   queueEntryId        String?
+
+  // Payment failure tracking
+  paymentFailedReason String?   @map("payment_failed_reason")
+  paymentRetryCount   Int       @default(0) @map("payment_retry_count")
 
   @@index([customerId])
   @@index([salonId])
@@ -975,4 +986,40 @@ model CompletionReminder {
   @@index([sentToId])
   @@index([sentAt])
   @@map("completion_reminders")
+}
+
+model SponsoredSalon {
+  id               String   @id @default(uuid())
+  salonId          String
+  salon            Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  sponsorType      String   @default("paid") // 'paid', 'featured', 'promoted'
+  durationHours    Int
+  startTime        DateTime
+  endTime          DateTime
+  amountPaid       Decimal? @db.Decimal(10, 2)
+  paymentStatus    String   @default("pending")
+  paymentReference String?
+  isActive         Boolean  @default(true)
+  priority         Int      @default(1)
+  createdById      String?
+  createdBy        User?    @relation(fields: [createdById], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([isActive, endTime])
+  @@map("sponsored_salons")
+}
+
+model SponsorshipPackage {
+  id            String   @id @default(uuid())
+  packageName   String
+  durationType  String   // 'hours', 'days', 'months', 'years'
+  durationValue Int
+  priceGhs      Decimal  @db.Decimal(10, 2)
+  priorityLevel Int      @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("sponsorship_packages")
 }

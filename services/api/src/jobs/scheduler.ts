@@ -7,6 +7,8 @@ import { bookingConfig } from '../config/booking';
 import { getIO } from '../config/socket';
 import { sendReminderSMS } from '../services/sms.service';
 import { startAutoCompletionJob } from './autoComplete';
+import { checkExpiredSponsorships } from '../services/sponsorship.service';
+import { cleanupOrphanedPayments } from '../services/payment.service';
 
 /**
  * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
@@ -48,7 +50,22 @@ export function initScheduler(): void {
   // Job 5: Auto-completion with reminders - every 30 minutes
   startAutoCompletionJob();
 
-  logger.info('Background job scheduler initialized with 5 jobs');
+  // Job 6: Check expired sponsorships - every hour
+  cron.schedule('0 * * * *', async () => {
+    await checkExpiredSponsorships();
+  });
+
+  // Job 7: Cleanup orphaned payments - every 15 minutes
+  cron.schedule('*/15 * * * *', async () => {
+    try {
+      const result = await cleanupOrphanedPayments();
+      logger.info('Orphaned payment cleanup job completed', result);
+    } catch (error) {
+      logger.error('Error in orphaned payment cleanup job:', error);
+    }
+  });
+
+  logger.info('Background job scheduler initialized with 7 jobs');
 }
 
 /**

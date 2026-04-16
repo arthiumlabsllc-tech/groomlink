@@ -39,6 +39,7 @@ interface Salon {
   city: string
   logo: string | null
   images: string[]
+  isSponsored?: boolean
 }
 
 interface BookingsResponse {
@@ -367,11 +368,19 @@ export default function Dashboard() {
                 onClick={() => navigate(`/salon/${salon.id}`)}
                 className="card hover:shadow-md transition-shadow cursor-pointer p-3 sm:p-4"
               >
-                <img
-                  src={salon.logo || salon.images?.[0] || 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=300&h=200&fit=crop'}
-                  alt={salon.businessName || 'Salon'}
-                  className="w-full h-28 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
-                />
+                <div className="relative">
+                  <img
+                    src={salon.logo || salon.images?.[0] || 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=300&h=200&fit=crop'}
+                    alt={salon.businessName || 'Salon'}
+                    className="w-full h-28 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
+                  />
+                  {salon.isSponsored && (
+                    <span className="absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded bg-amber-100 text-amber-700 border border-amber-300 flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-current" />
+                      Sponsored
+                    </span>
+                  )}
+                </div>
                 <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
                   {salon.businessName || 'Unnamed Salon'}
                 </h3>
