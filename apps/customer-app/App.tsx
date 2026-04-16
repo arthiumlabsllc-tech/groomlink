@@ -46,6 +46,17 @@ function AppContent() {
         return;
       }
 
+      // Check if this is a new user in the registration flow
+      // New users have a temporary token that will fail profile validation
+      const isNewUser = await SecureStore.getItemAsync('isNewUser');
+      if (isNewUser === 'true') {
+        // New user - skip profile validation, stay in auth flow
+        // ProfileSetupScreen will handle completing registration
+        console.log('New user detected, skipping profile validation');
+        setLoading(false);
+        return;
+      }
+
       // Verify token is still valid by fetching profile
       try {
         const profile = await authApi.getProfile();

@@ -146,8 +146,13 @@ const apiClient = axios.create({
 // Request interceptor - add auth token
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('customer_token');
+  const tempToken = localStorage.getItem('customer_temp_token');
+  
+  // Use real token if available, otherwise use temp token for registration flow
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (tempToken) {
+    config.headers.Authorization = `Bearer ${tempToken}`;
   }
   return config;
 });
@@ -157,9 +162,16 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('customer_token');
-      localStorage.removeItem('customer_user');
-      window.location.href = '/login';
+      const requestUrl = error.config?.url || '';
+      const isAuthEndpoint = requestUrl.includes('/auth/');
+      const hasTempToken = localStorage.getItem('customer_temp_token');
+      
+      // Don't clear tokens during registration flow (has temp token) or for auth endpoints
+      if (!isAuthEndpoint && !hasTempToken) {
+        localStorage.removeItem('customer_token');
+        localStorage.removeItem('customer_user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

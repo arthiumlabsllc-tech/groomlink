@@ -3,6 +3,7 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextIn
 import { Text, Button, HelperText } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types/navigation';
@@ -82,7 +83,8 @@ export default function OTPScreen() {
         const { user, isNewUser } = response.data;
         
         if (isNewUser) {
-          // New user - navigate to ProfileSetup to complete registration
+          // New user - store flag and navigate to ProfileSetup to complete registration
+          await SecureStore.setItemAsync('isNewUser', 'true');
           navigation.navigate('ProfileSetup', { email });
         } else {
           // Existing user - tokens are already stored in SecureStore by authApi

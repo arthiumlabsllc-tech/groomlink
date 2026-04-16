@@ -147,6 +147,8 @@ export default function ProfileSetupScreen() {
       });
 
       if (response.success && response.data?.user) {
+        // Clear the isNewUser flag since registration is complete
+        await SecureStore.deleteItemAsync('isNewUser');
         setUser(response.data.user);
         // AppNavigator will automatically redirect to MainNavigator
       }
