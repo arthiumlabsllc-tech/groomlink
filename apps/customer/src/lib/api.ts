@@ -395,7 +395,7 @@ export const bookingApi = {
     return response.data.data;
   },
 
-  getQRCode: async (bookingId: string): Promise<{ qrCodeDataUrl: string }> => {
+  getQRCode: async (bookingId: string): Promise<{ qrCodeDataUrl: string; checkinCode?: string }> => {
     const response = await apiClient.get(`/bookings/${bookingId}/qr-code`);
     return response.data.data;
   },
@@ -440,6 +440,7 @@ export const bookingApi = {
 export interface PaymentInitializeResponse {
   authorization_url: string;
   reference: string;
+  access_code?: string;
 }
 
 export interface PaymentVerifyResponse {
@@ -466,12 +467,16 @@ export const paymentApi = {
     const response = await apiClient.post('/payments/initialize', data);
     return response.data.data;
   },
-  verify: async (data: { paymentId: string; reference: string }): Promise<PaymentVerifyResponse> => {
+  verify: async (data: { paymentId?: string; reference: string }): Promise<PaymentVerifyResponse> => {
     const response = await apiClient.post('/payments/verify', data);
     return response.data.data;
   },
   getPayment: async (id: string): Promise<Payment> => {
     const response = await apiClient.get(`/payments/${id}`);
+    return response.data.data;
+  },
+  getConfig: async (): Promise<{ platformFeePercentage: number }> => {
+    const response = await apiClient.get('/payments/config');
     return response.data.data;
   },
 };

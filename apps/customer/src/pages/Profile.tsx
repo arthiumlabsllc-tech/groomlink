@@ -14,6 +14,7 @@ export default function Profile() {
   const { user, logout, fetchProfile } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -92,6 +93,47 @@ export default function Profile() {
       })
     }
     setError(null)
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB')
+      return
+    }
+
+    try {
+      setUploadingAvatar(true)
+      setError(null)
+      setSuccessMessage(null)
+
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      await apiClient.post('/uploads/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      await fetchProfile()
+      setSuccessMessage('Profile picture updated successfully!')
+      setTimeout(() => setSuccessMessage(null), 3000)
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to upload image. Please try again.')
+      console.error('Error uploading avatar:', err)
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const toggleNotification = (key: keyof NotificationPrefs) => {
@@ -188,15 +230,27 @@ export default function Profile() {
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
           <div className="relative">
             <div className="w-24 h-24 bg-gradient-to-br from-[#006B3C] to-[#004d2a] rounded-full flex items-center justify-center overflow-hidden">
-              {user?.profileImage ? (
-                <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-12 h-12 text-white" />
               )}
             </div>
-            <button className="absolute bottom-0 right-0 p-2 bg-[#FFD700] text-gray-900 rounded-full hover:bg-[#e6c200] transition-colors shadow-md">
+            <label className="absolute bottom-0 right-0 p-2 bg-[#FFD700] text-gray-900 rounded-full hover:bg-[#e6c200] transition-colors shadow-md cursor-pointer">
               <Camera className="w-4 h-4" />
-            </button>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+              />
+            </label>
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              </div>
+            )}
           </div>
           <div className="flex-1 w-full">
             {!isEditing ? (

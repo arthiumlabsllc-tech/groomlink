@@ -181,6 +181,12 @@ model Salon {
   operatingModel       String @default("appointment_only") @map("operating_model") // 'appointment_only' or 'walkins_allowed'
 
   // Payouts
+  payoutType            String? @map("payout_type") // 'bank' or 'mobile_money'
+  bankCode              String? @map("bank_code") // Paystack bank code
+  bankAccountNumber     String? @map("bank_account_number") // Account number
+  bankAccountName       String? @map("bank_account_name") // Account holder name
+  momoProvider          String? @map("momo_provider") // 'mtn', 'vod', 'tgo'
+  momoNumber            String? @map("momo_number") // Phone number
   paystackRecipientCode String? @map("paystack_recipient_code")
 
   // Ratings

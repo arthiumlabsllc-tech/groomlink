@@ -225,6 +225,28 @@ export interface KycSubmission {
   updatedAt: string;
 }
 
+export interface PayoutAccount {
+  id: string;
+  payoutType: string | null;
+  bankCode: string | null;
+  bankAccountNumber: string | null;
+  bankAccountName: string | null;
+  momoProvider: string | null;
+  momoNumber: string | null;
+  paystackRecipientCode: string | null;
+  isVerified: boolean;
+}
+
+export interface SetupPayoutAccountPayload {
+  payoutType: 'bank' | 'mobile_money';
+  bankCode?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+  momoProvider?: 'mtn' | 'vodafone' | 'airteltigo';
+  momoNumber?: string;
+}
+
 // API Client
 class ApiClient {
   private baseUrl: string;
@@ -650,6 +672,26 @@ class ApiClient {
       body: formData,
     });
     return response.json();
+  }
+
+  // Payout Account
+  async getPayoutAccount(salonId: string): Promise<{ success: boolean; data: PayoutAccount }> {
+    return this.request<{ success: boolean; data: PayoutAccount }>(`/salons/${salonId}/payout-account`);
+  }
+
+  async setupPayoutAccount(salonId: string, data: SetupPayoutAccountPayload): Promise<{ success: boolean; data: { message: string; payoutAccount: PayoutAccount } }> {
+    return this.request<{ success: boolean; data: { message: string; payoutAccount: PayoutAccount } }>(`/salons/${salonId}/payout-account`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSupportedBanks(): Promise<{ success: boolean; data: { banks: { code: string; name: string }[] } }> {
+    return this.request<{ success: boolean; data: { banks: { code: string; name: string }[] } }>('/salons/payouts/banks');
+  }
+
+  async getSupportedMomoProviders(): Promise<{ success: boolean; data: { providers: { code: string; name: string }[] } }> {
+    return this.request<{ success: boolean; data: { providers: { code: string; name: string }[] } }>('/salons/payouts/momo-providers');
   }
 
   logout() {

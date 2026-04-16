@@ -151,48 +151,60 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
     const providerAmount = parseFloat(escrow.providerAmount.toString());
     const amountHeld = parseFloat(escrow.amountHeld.toString());
     
-    // Try to initiate Paystack transfer if salon has recipient code
-    if (escrow.salon.paystackRecipientCode) {
-      const secretKey = await getPaystackSecretKey();
-      
-      if (secretKey) {
-        try {
-          const reference = `ESCROW-RELEASE-${escrowId}-${Date.now()}`;
-          
-          await axios.post(
-            `${PAYSTACK_BASE_URL}/transfer`,
-            {
-              source: 'balance',
-              amount: Math.round(providerAmount * 100), // Convert to pesewas
-              recipient: escrow.salon.paystackRecipientCode,
-              reason: `Booking payment - ${escrow.booking.reference || escrow.bookingId}`,
-              reference,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${secretKey}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
-          logger.info(`Paystack transfer initiated for escrow ${escrowId}`, {
+    // Check if salon has payout account configured
+    if (!escrow.salon.paystackRecipientCode) {
+      logger.error('Cannot release escrow: Salon has no payout account configured', { 
+        escrowId,
+        salonId: escrow.salonId 
+      });
+      throw new Error(
+        'Cannot release payment: Salon owner has not set up a payout account. ' +
+        'Please ask the salon owner to configure their payout settings in the dashboard.'
+      );
+    }
+
+    // Try to initiate Paystack transfer
+    const secretKey = await getPaystackSecretKey();
+    
+    if (secretKey) {
+      try {
+        const reference = `ESCROW-RELEASE-${escrowId}-${Date.now()}`;
+        
+        await axios.post(
+          `${PAYSTACK_BASE_URL}/transfer`,
+          {
+            source: 'balance',
+            amount: Math.round(providerAmount * 100), // Convert to pesewas
             recipient: escrow.salon.paystackRecipientCode,
-            amount: providerAmount
-          });
-        } catch (transferError: any) {
-          logger.warn('Paystack transfer failed, proceeding with ledger update only:', {
-            escrowId,
-            error: transferError.message,
-            response: transferError.response?.data
-          });
-          // Continue with ledger update even if transfer fails
-        }
-      } else {
-        logger.warn('Paystack not configured, skipping transfer for escrow:', { escrowId });
+            reason: `Booking payment - ${escrow.booking.reference || escrow.bookingId}`,
+            reference,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${secretKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        
+        logger.info(`Paystack transfer initiated for escrow ${escrowId}`, {
+          recipient: escrow.salon.paystackRecipientCode,
+          amount: providerAmount
+        });
+      } catch (transferError: any) {
+        logger.error('Paystack transfer failed:', {
+          escrowId,
+          error: transferError.message,
+          response: transferError.response?.data
+        });
+        
+        // Throw error so the caller knows the transfer failed
+        const errorMessage = transferError.response?.data?.message || transferError.message;
+        throw new Error(`Failed to transfer funds: ${errorMessage}. Please try again or contact support.`);
       }
     } else {
-      logger.warn('Salon has no paystackRecipientCode, skipping transfer for escrow:', { escrowId });
+      logger.error('Paystack not configured, cannot process transfer for escrow:', { escrowId });
+      throw new Error('Payment gateway is not configured. Please contact support.');
     }
     
     // Update escrow status and create transaction

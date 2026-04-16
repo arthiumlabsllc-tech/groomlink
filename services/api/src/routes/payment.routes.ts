@@ -4,6 +4,9 @@ import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
+// Public routes (no auth required)
+router.get('/config', paymentController.getPaymentConfig);
+
 // Protected routes
 router.post('/initialize', authenticateToken, paymentController.initializePayment);
 router.post('/verify', authenticateToken, paymentController.verifyPayment);

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as salonController from '../controllers/salon.controller';
+import * as payoutController from '../controllers/payout.controller';
 import { authenticateToken, requireRole, UserRole } from '../middleware/auth';
 import { salonValidations } from '../middleware/validation';
 
@@ -28,5 +29,13 @@ router.post('/:id/reject', authenticateToken, requireRole(UserRole.ADMIN), salon
 // Completion settings (salon owner only)
 router.get('/:id/completion-settings', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonController.getCompletionSettings);
 router.put('/:id/completion-settings', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonController.updateCompletionSettings);
+
+// Payout account settings (salon owner only)
+router.get('/:id/payout-account', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.getPayoutAccount);
+router.post('/:id/payout-account', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.setupPayoutAccount);
+
+// Payout reference data (public)
+router.get('/payouts/banks', payoutController.getSupportedBanks);
+router.get('/payouts/momo-providers', payoutController.getSupportedMomoProviders);
 
 export default router;

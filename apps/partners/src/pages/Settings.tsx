@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare } from 'lucide-react'
+import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare, Wallet, Building2, Smartphone, CreditCard } from 'lucide-react'
 import Layout from '../components/Layout'
-import { api, Salon, CompletionSettings } from '../lib/api'
+import { api, Salon, CompletionSettings, PayoutAccount, SetupPayoutAccountPayload } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -119,6 +119,43 @@ export default function Settings() {
   const [savingCompletionSettings, setSavingCompletionSettings] = useState(false)
   const [completionSettingsSaved, setCompletionSettingsSaved] = useState(false)
 
+  // Payout settings state
+  const [payoutAccount, setPayoutAccount] = useState<PayoutAccount | null>(null)
+  const [payoutType, setPayoutType] = useState<'bank' | 'mobile_money'>('bank')
+  const [bankCode, setBankCode] = useState('')
+  const [bankAccountNumber, setBankAccountNumber] = useState('')
+  const [bankAccountName, setBankAccountName] = useState('')
+  const [momoProvider, setMomoProvider] = useState<'mtn' | 'vodafone' | 'airteltigo'>('mtn')
+  const [momoNumber, setMomoNumber] = useState('')
+  const [loadingPayout, setLoadingPayout] = useState(false)
+  const [savingPayout, setSavingPayout] = useState(false)
+  const [payoutSaved, setPayoutSaved] = useState(false)
+  const [payoutError, setPayoutError] = useState<string | null>(null)
+
+  // Supported banks and momo providers
+  const supportedBanks = [
+    { code: 'GCB', name: 'Ghana Commercial Bank' },
+    { code: 'ECO', name: 'Ecobank' },
+    { code: 'STB', name: 'Stanbic Bank' },
+    { code: 'FID', name: 'Fidelity Bank' },
+    { code: 'CAL', name: 'CalBank' },
+    { code: 'ACC', name: 'Access Bank' },
+    { code: 'ABS', name: 'Absa Bank' },
+    { code: 'UBA', name: 'UBA Ghana' },
+    { code: 'ZEN', name: 'Zenith Bank' },
+    { code: 'FBL', name: 'First Atlantic Bank' },
+    { code: 'ADB', name: 'Agricultural Development Bank' },
+    { code: 'CBG', name: 'Consolidated Bank Ghana' },
+    { code: 'GTB', name: 'Guaranty Trust Bank' },
+    { code: 'FBN', name: 'First Bank of Nigeria' },
+  ]
+
+  const supportedMomoProviders = [
+    { code: 'mtn', name: 'MTN Mobile Money' },
+    { code: 'vodafone', name: 'Vodafone Cash' },
+    { code: 'airteltigo', name: 'AirtelTigo Money' },
+  ]
+
   const logoInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -215,6 +252,41 @@ export default function Settings() {
     }
     
     fetchCompletionSettings()
+  }, [salon?.id, isNewPartner])
+
+  // Load payout account when salon is loaded
+  useEffect(() => {
+    const fetchPayoutAccount = async () => {
+      if (!salon?.id || isNewPartner) return
+      
+      setLoadingPayout(true)
+      try {
+        const response = await api.getPayoutAccount(salon.id)
+        if (response.success && response.data) {
+          const account = response.data
+          setPayoutAccount(account)
+          
+          // Pre-fill form if account exists
+          if (account.payoutType) {
+            setPayoutType(account.payoutType as 'bank' | 'mobile_money')
+            if (account.payoutType === 'bank') {
+              setBankCode(account.bankCode || '')
+              setBankAccountName(account.bankAccountName || '')
+              // Don't pre-fill account number for security (it's masked)
+            } else if (account.payoutType === 'mobile_money') {
+              setMomoProvider((account.momoProvider as 'mtn' | 'vodafone' | 'airteltigo') || 'mtn')
+              // Don't pre-fill phone number for security (it's masked)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch payout account:', error)
+      } finally {
+        setLoadingPayout(false)
+      }
+    }
+    
+    fetchPayoutAccount()
   }, [salon?.id, isNewPartner])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -503,6 +575,61 @@ export default function Settings() {
       setError(err?.message || 'Failed to save completion settings')
     } finally {
       setSavingCompletionSettings(false)
+    }
+  }
+
+  // Handle payout settings save
+  const handleSavePayout = async () => {
+    if (!salon?.id) return
+    
+    setSavingPayout(true)
+    setPayoutSaved(false)
+    setPayoutError(null)
+    
+    // Validate inputs
+    if (payoutType === 'bank') {
+      if (!bankCode || !bankAccountNumber || !bankAccountName) {
+        setPayoutError('Please fill in all bank account details')
+        setSavingPayout(false)
+        return
+      }
+    } else {
+      if (!momoNumber) {
+        setPayoutError('Please enter your mobile money number')
+        setSavingPayout(false)
+        return
+      }
+    }
+    
+    try {
+      const payload: SetupPayoutAccountPayload = {
+        payoutType,
+        ...(payoutType === 'bank' ? {
+          bankCode,
+          bankAccountNumber,
+          bankAccountName,
+        } : {
+          momoProvider,
+          momoNumber,
+        }),
+      }
+      
+      const response = await api.setupPayoutAccount(salon.id, payload)
+      if (response.success) {
+        setPayoutAccount(response.data.payoutAccount)
+        setPayoutSaved(true)
+        setTimeout(() => setPayoutSaved(false), 3000)
+        // Clear sensitive fields after successful save
+        setBankAccountNumber('')
+        setMomoNumber('')
+      } else {
+        setPayoutError('Failed to save payout settings')
+      }
+    } catch (err: any) {
+      console.error('Failed to save payout settings:', err)
+      setPayoutError(err?.message || 'Failed to save payout settings')
+    } finally {
+      setSavingPayout(false)
     }
   }
 
@@ -1574,6 +1701,243 @@ export default function Settings() {
                   <>
                     <Save className="w-4 h-4" />
                     Save Completion Settings
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Payout Settings Section */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold text-gray-900">Payout Settings</h2>
+              <p className="text-sm text-gray-500">Configure how you receive your earnings</p>
+            </div>
+            {loadingPayout && (
+              <div className="ml-auto">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+              </div>
+            )}
+            {payoutAccount?.isVerified && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                <CheckCircle className="w-4 h-4" />
+                Verified
+              </div>
+            )}
+          </div>
+
+          {payoutError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{payoutError}</p>
+            </div>
+          )}
+
+          {/* Current Payout Account Info */}
+          {payoutAccount?.isVerified && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard className="w-4 h-4 text-green-600" />
+                <span className="font-medium text-green-800">Current Payout Account</span>
+              </div>
+              <p className="text-sm text-green-700">
+                {payoutAccount.payoutType === 'bank' ? (
+                  <>
+                    Bank Account: {payoutAccount.bankAccountName}<br />
+                    Bank: {supportedBanks.find(b => b.code === payoutAccount.bankCode)?.name || payoutAccount.bankCode}<br />
+                    Account: {payoutAccount.bankAccountNumber}
+                  </>
+                ) : (
+                  <>
+                    Mobile Money: {supportedMomoProviders.find(p => p.code === payoutAccount.momoProvider)?.name || payoutAccount.momoProvider}<br />
+                    Number: {payoutAccount.momoNumber}
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-6">
+            {/* Payout Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                How would you like to receive payments?
+              </label>
+              <div className="grid md:grid-cols-2 gap-4">
+                <label
+                  className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    payoutType === 'bank'
+                      ? 'border-ghana-green bg-ghana-green/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-900">Bank Account</span>
+                    <p className="text-sm text-gray-500">Receive payouts to your bank</p>
+                  </div>
+                  <input
+                    type="radio"
+                    name="payoutType"
+                    value="bank"
+                    checked={payoutType === 'bank'}
+                    onChange={(e) => setPayoutType(e.target.value as 'bank')}
+                    className="w-5 h-5 text-ghana-green"
+                  />
+                </label>
+
+                <label
+                  className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    payoutType === 'mobile_money'
+                      ? 'border-ghana-green bg-ghana-green/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <Smartphone className="w-5 h-5 text-yellow-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-900">Mobile Money</span>
+                    <p className="text-sm text-gray-500">Receive payouts via MoMo</p>
+                  </div>
+                  <input
+                    type="radio"
+                    name="payoutType"
+                    value="mobile_money"
+                    checked={payoutType === 'mobile_money'}
+                    onChange={(e) => setPayoutType(e.target.value as 'mobile_money')}
+                    className="w-5 h-5 text-ghana-green"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Bank Account Form */}
+            {payoutType === 'bank' && (
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bank Name
+                  </label>
+                  <select
+                    value={bankCode}
+                    onChange={(e) => setBankCode(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">Select your bank</option>
+                    {supportedBanks.map((bank) => (
+                      <option key={bank.code} value={bank.code}>
+                        {bank.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={bankAccountNumber}
+                    onChange={(e) => setBankAccountNumber(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter your account number"
+                    className="input-field"
+                    maxLength={20}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    placeholder="Name as it appears on the account"
+                    className="input-field"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Money Form */}
+            {payoutType === 'mobile_money' && (
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mobile Money Provider
+                  </label>
+                  <select
+                    value={momoProvider}
+                    onChange={(e) => setMomoProvider(e.target.value as 'mtn' | 'vodafone' | 'airteltigo')}
+                    className="input-field"
+                  >
+                    {supportedMomoProviders.map((provider) => (
+                      <option key={provider.code} value={provider.code}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mobile Money Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={momoNumber}
+                    onChange={(e) => setMomoNumber(e.target.value.replace(/\D/g, ''))}
+                    placeholder="e.g., 024XXXXXXX"
+                    className="input-field"
+                    maxLength={10}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the number without country code (e.g., 024XXXXXXX)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Info Note */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <span className="font-medium">Note:</span> Your payout account will be verified with our payment provider. 
+                Once verified, you'll receive your earnings automatically when services are completed.
+              </p>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+              {payoutSaved && (
+                <span className="text-green-600 font-medium flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Payout account saved!
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleSavePayout}
+                disabled={savingPayout || loadingPayout}
+                className="btn-primary flex items-center gap-2"
+              >
+                {savingPayout ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Verifying & Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    {payoutAccount?.isVerified ? 'Update Payout Account' : 'Save Payout Account'}
                   </>
                 )}
               </button>

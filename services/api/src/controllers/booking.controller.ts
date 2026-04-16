@@ -558,12 +558,12 @@ export async function getQRCodeHandler(req: AuthenticatedRequest, res: Response)
       return;
     }
 
-    const qrCode = await completionService.generateQRCode(id);
+    const qrCodeDataUrl = await completionService.generateQRCode(id);
     const bookingForRef = await prisma.booking.findUnique({
       where: { id },
-      select: { reference: true },
+      select: { reference: true, checkinCode: true },
     });
-    successResponse(res, { qrCode, bookingRef: bookingForRef?.reference || '' });
+    successResponse(res, { qrCodeDataUrl, bookingRef: bookingForRef?.reference || '', checkinCode: bookingForRef?.checkinCode });
   } catch (error) {
     errorResponse(res, 'QRCODE_FAILED', (error as Error).message, 400);
   }

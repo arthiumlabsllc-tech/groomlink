@@ -1,10 +1,65 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, MapPin, ChevronRight, X, AlertCircle, Plus, Loader2, Phone, RefreshCw, ShieldAlert, Info, Users, Shield, CheckCircle, Ban, QrCode, AlertTriangle, MessageSquare, Copy, Navigation } from 'lucide-react'
+import { Calendar, Clock, MapPin, ChevronRight, X, AlertCircle, Plus, Loader2, Phone, RefreshCw, ShieldAlert, Info, Users, Shield, CheckCircle, Ban, QrCode, AlertTriangle, MessageSquare, Copy, Navigation, Timer } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { bookingApi, Booking, RefundPreview, QueuePositionResponse } from '../lib/api'
 
 // Constants
+const PENDING_BOOKING_TIMEOUT_MINUTES = 30
+
+/**
+ * Countdown timer component for pending bookings
+ * Shows time remaining before auto-cancellation
+ */
+function PendingBookingCountdown({ createdAt }: { createdAt: string }) {
+  const [timeRemaining, setTimeRemaining] = useState<string>('')
+  const [isExpired, setIsExpired] = useState(false)
+
+  useEffect(() => {
+    const calculateTimeRemaining = () => {
+      const created = new Date(createdAt).getTime()
+      const expiryTime = created + PENDING_BOOKING_TIMEOUT_MINUTES * 60 * 1000
+      const now = Date.now()
+      const diff = expiryTime - now
+
+      if (diff <= 0) {
+        setIsExpired(true)
+        setTimeRemaining('Expiring...')
+        return
+      }
+
+      const minutes = Math.floor(diff / 60000)
+      const seconds = Math.floor((diff % 60000) / 1000)
+      setTimeRemaining(`${minutes}m ${seconds.toString().padStart(2, '0')}s`)
+    }
+
+    calculateTimeRemaining()
+    const interval = setInterval(calculateTimeRemaining, 1000)
+
+    return () => clearInterval(interval)
+  }, [createdAt])
+
+  if (isExpired) {
+    return (
+      <div className="flex items-center gap-2 mt-2">
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+          <Timer className="w-3 h-3" />
+          Expiring soon...
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
+        <Timer className="w-3 h-3" />
+        Complete payment in: {timeRemaining}
+      </span>
+    </div>
+  )
+}
+
 const GEOFENCE_RADIUS_METERS = 100
 const CHECKIN_PROMPTED_KEY = 'groomlink_auto_checkin_prompted'
 
@@ -75,12 +130,22 @@ const statusMap: Record<Tab, string> = {
 
 // Status badge colors - Ghana flag inspired
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
+  PENDING: 'bg-amber-100 text-amber-800',
   CONFIRMED: 'bg-green-100 text-green-800',
   IN_PROGRESS: 'bg-blue-100 text-blue-800',
   COMPLETED: 'bg-gray-100 text-gray-800',
   CANCELLED: 'bg-red-100 text-red-800',
   NO_SHOW: 'bg-orange-100 text-orange-800'
+}
+
+// Status display labels
+const statusLabels: Record<string, string> = {
+  PENDING: 'Awaiting Payment',
+  CONFIRMED: 'Confirmed',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+  NO_SHOW: 'No Show'
 }
 
 export default function Bookings() {
@@ -524,6 +589,10 @@ export default function Bookings() {
     try {
       const data = await bookingApi.getQRCode(selectedBooking.id)
       setQRCodeData(data.qrCodeDataUrl)
+      // If checkinCode is not already on the booking object, use the one from QR response
+      if (data.checkinCode && !selectedBooking.checkinCode) {
+        setSelectedBooking({ ...selectedBooking, checkinCode: data.checkinCode })
+      }
       setShowQRCodeModal(true)
     } catch (err: any) {
       toast.error('Failed to load QR code')
@@ -775,42 +844,51 @@ export default function Bookings() {
                           {booking.service?.name || 'Unknown Service'}
                         </p>
                       </div>
-                      <span className={'px-2 py-1 text-xs font-medium rounded capitalize ' +
+                      <span className={'px-2 py-1 text-xs font-medium rounded ' +
                         (statusColors[booking.status] || 'bg-gray-100 text-gray-600')}>
-                        {(booking.status || 'unknown').toLowerCase()}
+                        {statusLabels[booking.status] || booking.status}
                       </span>
                     </div>
-                    {/* Queue position and check-in status for CONFIRMED bookings */}
-                    {booking.status === 'CONFIRMED' && queuePositionData[booking.id] && (
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {queuePositionData[booking.id].queuePosition !== null && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                            <Users className="w-3 h-3" />
-                            Queue #{queuePositionData[booking.id].queuePosition}
-                          </span>
-                        )}
-                        {queuePositionData[booking.id].checkedIn ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
-                            <CheckCircle className="w-3 h-3" />
-                            Checked In
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                            Not Checked In
-                          </span>
-                        )}
-                        {queuePositionData[booking.id].checkedIn && queuePositionData[booking.id].estimatedWaitMinutes && (
-                          <span className="text-xs text-gray-500">
-                            Est. wait: ~{queuePositionData[booking.id].estimatedWaitMinutes} min
-                          </span>
-                        )}
-                        {queuePositionData[booking.id].peopleAhead !== undefined && queuePositionData[booking.id].peopleAhead > 0 && !queuePositionData[booking.id].checkedIn && (
-                          <span className="text-xs text-gray-500">
-                            {queuePositionData[booking.id].peopleAhead} ahead
-                          </span>
-                        )}
-                      </div>
+                    {/* Countdown timer for PENDING bookings */}
+                    {booking.status === 'PENDING' && (
+                      <PendingBookingCountdown createdAt={booking.createdAt} />
                     )}
+
+                    {/* Queue position and check-in status for CONFIRMED bookings */}
+                    {booking.status === 'CONFIRMED' && queuePositionData[booking.id] && (() => {
+                      const queueInfo = queuePositionData[booking.id];
+                      if (!queueInfo) return null;
+                      return (
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {queueInfo.queuePosition !== null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+                              <Users className="w-3 h-3" />
+                              Queue #{queueInfo.queuePosition}
+                            </span>
+                          )}
+                          {queueInfo.checkedIn ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                              <CheckCircle className="w-3 h-3" />
+                              Checked In
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                              Not Checked In
+                            </span>
+                          )}
+                          {queueInfo.checkedIn && queueInfo.estimatedWaitMinutes && (
+                            <span className="text-xs text-gray-500">
+                              Est. wait: ~{queueInfo.estimatedWaitMinutes} min
+                            </span>
+                          )}
+                          {queueInfo.peopleAhead !== undefined && queueInfo.peopleAhead > 0 && !queueInfo.checkedIn && (
+                            <span className="text-xs text-gray-500">
+                              {queueInfo.peopleAhead} ahead
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -1107,6 +1185,30 @@ export default function Bookings() {
                           {formatDate(selectedBooking.serviceCompletedAt)} at {formatTime(selectedBooking.serviceCompletedAt.split('T')[1]?.slice(0, 5) || '')}
                         </span>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Check-in Code Display - Show for CONFIRMED and PENDING bookings */}
+                {activeTab === 'upcoming' && (selectedBooking.status === 'CONFIRMED' || selectedBooking.status === 'PENDING') && selectedBooking.checkinCode && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-green-800 mb-1">Your Check-in Code</p>
+                        <p className="text-xs text-green-600">Show this code to the salon if QR scanner is unavailable</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold font-mono text-green-700 bg-white px-4 py-2 rounded-lg border border-green-200">
+                          {selectedBooking.checkinCode}
+                        </span>
+                        <button 
+                          onClick={() => copyToClipboard(selectedBooking.checkinCode || '')}
+                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                          title="Copy code"
+                        >
+                          <Copy className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

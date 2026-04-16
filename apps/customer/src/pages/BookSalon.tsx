@@ -171,6 +171,7 @@ export default function BookSalon() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentProvider>('CASH');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [initializingPayment, setInitializingPayment] = useState(false);
+  const [paymentRedirecting, setPaymentRedirecting] = useState(false);
 
   // Queue state
   const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
@@ -183,6 +184,23 @@ export default function BookSalon() {
   const [isGroupBooking, setIsGroupBooking] = useState(false);
   const [guests, setGuests] = useState<BookingGuest[]>([]);
   const [totalPeople, setTotalPeople] = useState(1);
+
+  // Platform fee state
+  const [platformFeePercentage, setPlatformFeePercentage] = useState(5); // Default 5%
+
+  // Fetch platform fee percentage
+  useEffect(() => {
+    const fetchPlatformFee = async () => {
+      try {
+        const config = await paymentApi.getConfig();
+        setPlatformFeePercentage(config.platformFeePercentage);
+      } catch (err) {
+        console.error('Failed to fetch platform fee percentage, using default 5%:', err);
+      }
+    };
+
+    fetchPlatformFee();
+  }, []);
 
   // Fetch salon data
   useEffect(() => {
@@ -365,6 +383,9 @@ export default function BookSalon() {
           reference: paymentResponse.reference,
         },
       });
+      
+      // Show redirecting overlay before navigating to Paystack
+      setPaymentRedirecting(true);
       
       // Redirect to Paystack checkout
       window.location.href = paymentResponse.authorization_url;
@@ -1338,9 +1359,9 @@ export default function BookSalon() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 flex items-center gap-1">
                 Platform fee
-                <span className="text-xs text-gray-400">(5%)</span>
+                <span className="text-xs text-gray-400">({platformFeePercentage}%)</span>
               </span>
-              <span className="text-gray-900">{formatPrice(totalPrice * 0.05)}</span>
+              <span className="text-gray-900">{formatPrice(totalPrice * (platformFeePercentage / 100))}</span>
             </div>
           </div>
           
@@ -1352,7 +1373,7 @@ export default function BookSalon() {
                 <p className="text-xs text-gray-500">Combined billing for all services</p>
               )}
             </div>
-            <span className="text-2xl font-bold text-[#006B3F]">{formatPrice(totalPrice * 1.05)}</span>
+            <span className="text-2xl font-bold text-[#006B3F]">{formatPrice(totalPrice * (1 + platformFeePercentage / 100))}</span>
           </div>
           
           {/* Security info */}
@@ -1587,6 +1608,27 @@ export default function BookSalon() {
           </div>
         )}
       </div>
+
+      {/* Payment Redirect Overlay */}
+      {paymentRedirecting && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
+            <div className="w-20 h-20 bg-[#006B3F]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Loader2 className="w-10 h-10 text-[#006B3F] animate-spin" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Redirecting to Payment...
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Please authorize the payment prompt on your phone
+            </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+              <div className="w-2 h-2 bg-[#006B3F] rounded-full animate-pulse" />
+              <span>Connecting to Paystack...</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

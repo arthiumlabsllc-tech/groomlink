@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Bell, Search, Menu, Check, BellOff } from 'lucide-react';
+import { Bell, Search, Menu, Check, BellOff, User } from 'lucide-react';
 import { useNotificationStore, Notification } from '../store/notifications';
 import { useAuthStore } from '../store/auth';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -66,7 +67,7 @@ function NotificationItem({
 }
 
 export default function Header({ onMenuToggle }: HeaderProps) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { 
     notifications, 
     unreadCount, 
@@ -193,14 +194,22 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           )}
 
           {/* User Avatar */}
-          <button className="flex items-center gap-2 md:gap-3">
-            <div className="w-8 h-8 md:w-9 md:h-9 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-primary-600">U</span>
+          <Link to="/profile" className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 md:w-9 md:h-9 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+              {user?.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-5 h-5 text-primary-600" />
+              )}
             </div>
             <span className="text-sm text-gray-600 font-medium hidden sm:inline">
-              User
+              {user?.firstName ? `${user.firstName}${user.lastName ? ' ' + user.lastName.charAt(0) + '.' : ''}` : 'User'}
             </span>
-          </button>
+          </Link>
         </div>
       </div>
     </header>

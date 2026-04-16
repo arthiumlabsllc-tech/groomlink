@@ -573,6 +573,8 @@ export async function getBookings(filters: BookingFilters, page: number = 1, lim
             id: true,
             businessName: true,
             logo: true,
+            latitude: true,
+            longitude: true,
           },
         },
         service: {

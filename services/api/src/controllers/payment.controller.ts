@@ -4,6 +4,7 @@ import * as paymentService from '../services/payment.service';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import logger from '../config/logger';
+import * as escrowService from '../services/escrow.service';
 
 // Define PaymentProvider enum locally since Prisma client may not export it correctly
 enum PaymentProvider {
@@ -142,5 +143,28 @@ export async function handlePaystackWebhook(req: Request, res: Response): Promis
     // Log error but still return 200 to prevent Paystack retries
     logger.error('Paystack webhook error:', error);
     res.status(200).json({ received: true, processed: false });
+  }
+}
+
+// Get payment configuration (public endpoint for booking flow)
+export async function getPaymentConfig(req: Request, res: Response): Promise<void> {
+  try {
+    let platformFeePercentage = 5; // Default fallback
+    
+    try {
+      const feePercentStr = await escrowService.getPolicyValue('platform_fee_percentage');
+      const parsedFee = parseFloat(feePercentStr);
+      if (!isNaN(parsedFee)) {
+        platformFeePercentage = parsedFee;
+      }
+    } catch (policyError) {
+      logger.warn('Failed to fetch platform_fee_percentage, using default 5%', { policyError });
+    }
+
+    successResponse(res, {
+      platformFeePercentage,
+    });
+  } catch (error) {
+    errorResponse(res, 'CONFIG_ERROR', (error as Error).message, 500);
   }
 }

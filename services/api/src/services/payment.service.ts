@@ -6,6 +6,9 @@ import crypto from 'crypto';
 import * as emailService from './email.service';
 import * as escrowService from './escrow.service';
 
+// Re-export getPolicyValue from escrow.service for use in payment calculations
+export const getPolicyValue = escrowService.getPolicyValue;
+
 export interface InitializePaymentData {
   bookingId: string;
   provider: PaymentProvider;
@@ -17,8 +20,8 @@ export interface PaymentResult {
   paymentId?: string;
   reference?: string;
   message: string;
-  authorizationUrl?: string;
-  accessCode?: string;
+  authorization_url?: string;
+  access_code?: string;
 }
 
 export interface PaystackKeys {
@@ -244,8 +247,8 @@ class PaystackPaymentProvider {
       return {
         success: true,
         reference: data.reference,
-        authorizationUrl: data.authorization_url,
-        accessCode: data.access_code,
+        authorization_url: data.authorization_url,
+        access_code: data.access_code,
         message: 'Payment initialized. Please complete payment.',
       };
     } catch (error: any) {
@@ -397,6 +400,29 @@ export async function initializePayment(
   // Generate reference
   const reference = `GL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  // Calculate platform fee and total charge amount
+  let feePercent = 5; // Default fallback
+  try {
+    const feePercentStr = await escrowService.getPolicyValue('platform_fee_percentage');
+    const parsedFee = parseFloat(feePercentStr);
+    if (!isNaN(parsedFee)) {
+      feePercent = parsedFee;
+    }
+  } catch (policyError) {
+    logger.warn('Failed to fetch platform_fee_percentage, using default 5%', { policyError });
+  }
+  
+  const serviceAmount = Number(booking.finalAmount);
+  const platformFee = serviceAmount * (feePercent / 100);
+  const totalChargeAmount = serviceAmount + platformFee;
+
+  logger.info(`Payment amount calculation for booking ${bookingId}`, {
+    serviceAmount,
+    platformFee,
+    feePercent,
+    totalChargeAmount
+  });
+
   // Create or update payment record
   const payment = await prisma.payment.upsert({
     where: { bookingId },
@@ -404,21 +430,32 @@ export async function initializePayment(
       bookingId,
       userId,
       provider,
-      amount: booking.finalAmount,
+      amount: totalChargeAmount,
       currency: 'GHS',
       status: PaymentStatus.PENDING,
       providerRef: reference,
+      providerData: {
+        serviceAmount,
+        platformFee,
+        feePercent,
+      },
     },
     update: {
       provider,
       providerRef: reference,
       status: PaymentStatus.PENDING,
+      providerData: {
+        serviceAmount,
+        platformFee,
+        feePercent,
+      },
     },
   });
 
   // Check if Paystack is configured
   const paystackKeys = await getPaystackKeys();
-  const amount = Number(booking.finalAmount);
+  // Use totalChargeAmount which includes platform fee
+  const amount = totalChargeAmount;
 
   // Cash payment doesn't need payment gateway
   if (provider === PaymentProvider.CASH) {
@@ -494,7 +531,17 @@ export async function initializePayment(
   return { ...result, paymentId: payment.id };
 }
 
-export async function verifyAndCompletePayment(paymentId: string, reference: string): Promise<PaymentResult> {
+export interface VerifyPaymentResult extends PaymentResult {
+  bookingConfirmed?: boolean;
+  bookingReference?: string;
+  amountPaid?: number;
+  serviceName?: string;
+  bookingDate?: string;
+  bookingTime?: string;
+  salonName?: string;
+}
+
+export async function verifyAndCompletePayment(paymentId: string, reference: string): Promise<VerifyPaymentResult> {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
     include: {
@@ -532,11 +579,22 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
   });
 
   if (!payment) {
-    return { success: false, message: 'Payment not found' };
+    return { success: false, message: 'Payment not found', bookingConfirmed: false };
   }
 
   if (payment.status === PaymentStatus.SUCCESS) {
-    return { success: true, message: 'Payment already completed' };
+    const booking = payment.booking;
+    return { 
+      success: true, 
+      message: 'Payment already completed',
+      bookingConfirmed: true,
+      bookingReference: booking.id,
+      amountPaid: Number(payment.amount),
+      serviceName: booking.service.name,
+      bookingDate: booking.date.toISOString(),
+      bookingTime: booking.startTime,
+      salonName: booking.salon.businessName,
+    };
   }
 
   // Check if Paystack is configured
@@ -669,14 +727,29 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       ).catch((err) => logger.error('Failed to send payment received notification email to salon owner', { err }));
     }
     
-    return { success: true, reference, message: 'Payment verified successfully.' };
+    return { 
+      success: true, 
+      reference, 
+      message: 'Payment verified successfully.',
+      bookingConfirmed: true,
+      bookingReference: booking.id,
+      amountPaid: Number(payment.amount),
+      serviceName: booking.service.name,
+      bookingDate: booking.date.toISOString(),
+      bookingTime: booking.startTime,
+      salonName: booking.salon.businessName,
+    };
   } else {
     await prisma.payment.update({
       where: { id: paymentId },
       data: { status: PaymentStatus.FAILED },
     });
     
-    return { success: false, message: 'Payment verification failed.' };
+    return { 
+      success: false, 
+      message: 'Payment verification failed.',
+      bookingConfirmed: false,
+    };
   }
 }
 
