@@ -13,6 +13,7 @@ import BookingDetailScreen from '../screens/main/BookingDetailScreen';
 import EditSalonScreen from '../screens/main/EditSalonScreen';
 import AddServiceScreen from '../screens/main/AddServiceScreen';
 import AddStaffScreen from '../screens/main/AddStaffScreen';
+import QRScannerScreen from '../screens/main/QRScannerScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -36,6 +37,14 @@ function DashboardStack() {
       <Stack.Screen name="DashboardMain" component={DashboardScreen} options={{ headerShown: false }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
       <Stack.Screen name="EditSalon" component={EditSalonScreen} options={{ title: 'Edit Salon' }} />
+      <Stack.Screen 
+        name="QRScanner" 
+        component={QRScannerScreen} 
+        options={{ 
+          headerShown: false,
+          presentation: 'fullScreenModal'
+        }} 
+      />
     </Stack.Navigator>
   );
 }
@@ -77,6 +86,14 @@ function BookingsStack() {
     >
       <Stack.Screen name="BookingsMain" component={BookingsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
+      <Stack.Screen 
+        name="QRScanner" 
+        component={QRScannerScreen} 
+        options={{ 
+          headerShown: false,
+          presentation: 'fullScreenModal'
+        }} 
+      />
     </Stack.Navigator>
   );
 }

@@ -105,6 +105,11 @@ export interface Booking {
   disputeRaised?: boolean;
   disputeReason?: string;
   autoCompletionDeadline?: string;
+  // Check-in and queue fields
+  checkedIn?: boolean;
+  checkedInAt?: string;
+  checkinCode?: string;
+  queuePosition?: number;
 }
 
 export interface Review {
@@ -141,4 +146,12 @@ export interface NoShowStatus {
   reason?: string;
   restrictedUntil?: string;
   noShowCount: number;
+}
+
+export interface QueuePositionResponse {
+  queuePosition: number | null;
+  checkedIn: boolean;
+  checkedInAt?: string;
+  estimatedWaitMinutes?: number;
+  peopleAhead?: number;
 }

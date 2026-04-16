@@ -50,6 +50,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      TZ: Africa/Accra
       DATABASE_URL: postgresql://${DB_USER:-groomlink}:${DB_PASSWORD:-groomlink123}@postgres:5432/${DB_NAME:-groomlink}
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379
       JWT_SECRET: ${JWT_SECRET}
@@ -72,6 +73,8 @@ services:
       EMAIL_FROM: ${EMAIL_FROM}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       # Paystack Payment
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
+      PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
       PAYSTACK_CALLBACK_URL: ${PAYSTACK_CALLBACK_URL}
     ports:
       - "3000:3000"

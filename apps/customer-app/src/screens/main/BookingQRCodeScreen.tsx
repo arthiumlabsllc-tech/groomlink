@@ -4,6 +4,9 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  TouchableOpacity,
+  Alert,
+  Platform,
 } from 'react-native';
 import {
   Text,
@@ -43,8 +46,24 @@ export default function BookingQRCodeScreen() {
     queryFn: () => bookingApi.getQRCode(bookingId),
   });
 
+  // Fetch booking details to get checkinCode
+  const { data: bookingData } = useQuery({
+    queryKey: ['booking', bookingId],
+    queryFn: () => bookingApi.getBookingById(bookingId),
+  });
+
   const generateReference = () => {
     return `GLK-${bookingId.substring(0, 8).toUpperCase()}`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    // For React Native, we'll show an alert with the code that user can manually copy
+    // expo-clipboard would need to be installed for actual clipboard functionality
+    Alert.alert(
+      'Check-in Code',
+      `Your code is: ${text}\n\nShow this code to salon staff.`,
+      [{ text: 'OK' }]
+    );
   };
 
   if (isLoading) {
@@ -139,6 +158,28 @@ export default function BookingQRCodeScreen() {
                 Present this QR code to the salon staff when you arrive for your appointment
               </Text>
             </View>
+
+            {/* Manual Check-in Code */}
+            {bookingData?.checkinCode && (
+              <View style={styles.manualCodeContainer}>
+                <Text variant="bodySmall" style={styles.manualCodeLabel}>
+                  Can't scan? Share this code:
+                </Text>
+                <TouchableOpacity 
+                  style={styles.codeRow}
+                  onPress={() => copyToClipboard(bookingData.checkinCode || '')}
+                  activeOpacity={0.7}
+                >
+                  <Text variant="headlineMedium" style={styles.manualCode}>
+                    {bookingData.checkinCode}
+                  </Text>
+                  <Ionicons name="copy-outline" size={24} color={COLORS.primaryGreen} />
+                </TouchableOpacity>
+                <Text variant="bodySmall" style={styles.tapToCopy}>
+                  Tap to show code
+                </Text>
+              </View>
+            )}
           </Card.Content>
         </Card>
 
@@ -301,6 +342,37 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.textSecondary,
     lineHeight: 20,
+  },
+  // Manual Code Section
+  manualCodeContainer: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    alignItems: 'center',
+  },
+  manualCodeLabel: {
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+  },
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  manualCode: {
+    fontWeight: 'bold',
+    color: COLORS.primaryGreen,
+    letterSpacing: 3,
+  },
+  tapToCopy: {
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   instructionsCard: {
     borderRadius: 16,

@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react'
-import { Search, Calendar, Clock, User, Users, Filter, Store, ArrowRightCircle, X, Check, Phone, Mail, FileText, Scissors, Loader2, AlertTriangle, CheckCircle, Ban, Wallet, AlertCircle, QrCode } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Search, Calendar, Clock, User, Users, Filter, Store, ArrowRightCircle, X, Check, Phone, Mail, FileText, Scissors, Loader2, AlertTriangle, CheckCircle, Ban, Wallet, AlertCircle, QrCode, Scan, Keyboard, Hash, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, Booking } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
+import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
 
-type TabFilter = 'all' | 'upcoming' | 'completed' | 'cancelled'
+type TabFilter = 'all' | 'upcoming' | 'completed' | 'cancelled' | 'queue'
+
+interface QueueStats {
+  totalQueued: number;
+  checkedInCount: number;
+  notCheckedInCount: number;
+  rescheduledCount: number;
+}
 
 const getStatusStyles = (status: string) => {
   const styles: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -58,12 +66,24 @@ export default function Bookings() {
   const [activeTab, setActiveTab] = useState<TabFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [queueData, setQueueData] = useState<Booking[]>([])
+  const [queueStats, setQueueStats] = useState<QueueStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [queueLoading, setQueueLoading] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [updating, setUpdating] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null) // 'complete' | 'noshow' | 'cancel'
+  
+  // Check-in modal states
+  const [showQrScanner, setShowQrScanner] = useState(false)
+  const [showCodeInput, setShowCodeInput] = useState(false)
+  const [checkinCode, setCheckinCode] = useState('')
+  const [checkinLoading, setCheckinLoading] = useState(false)
+  const [checkinSuccess, setCheckinSuccess] = useState<{ customerName: string; queuePosition?: number } | null>(null)
+  const [scannerError, setScannerError] = useState<string | null>(null)
+  const qrScannerRef = useRef<Html5QrcodeScanner | null>(null)
 
   const fetchBookings = async () => {
     if (!salonId) return
@@ -81,9 +101,142 @@ export default function Bookings() {
     }
   }
 
+  const fetchQueue = async () => {
+    if (!salonId) return
+    setQueueLoading(true)
+    try {
+      const response = await api.getSalonQueue(salonId)
+      if (response.success && response.data) {
+        setQueueData(response.data.queue || [])
+        setQueueStats(response.data.stats || null)
+      } else {
+        setQueueData([])
+        setQueueStats(null)
+      }
+    } catch (error) {
+      console.error('Failed to fetch queue:', error)
+      setQueueData([])
+      setQueueStats(null)
+    } finally {
+      setQueueLoading(false)
+    }
+  }
+
+  // QR Scanner effect
+  useEffect(() => {
+    if (showQrScanner && !qrScannerRef.current) {
+      const scanner = new Html5QrcodeScanner(
+        'qr-reader',
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+        },
+        false
+      )
+      
+      scanner.render(
+        (decodedText) => {
+          // On success
+          handleQrScanSuccess(decodedText)
+        },
+        (error) => {
+          // Ignore frequent scan errors (no QR found)
+        }
+      )
+      qrScannerRef.current = scanner
+    }
+    
+    return () => {
+      if (qrScannerRef.current) {
+        qrScannerRef.current.clear().catch(console.error)
+        qrScannerRef.current = null
+      }
+    }
+  }, [showQrScanner])
+
+  const handleQrScanSuccess = async (decodedText: string) => {
+    setCheckinLoading(true)
+    setScannerError(null)
+    try {
+      const response = await api.checkinByQr({ qrData: decodedText })
+      if (response.success && response.data) {
+        const booking = response.data.booking
+        setCheckinSuccess({
+          customerName: `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
+          queuePosition: booking.queuePosition
+        })
+        // Refresh queue data
+        fetchQueue()
+        fetchBookings()
+        // Close scanner after success
+        setTimeout(() => {
+          setShowQrScanner(false)
+          if (qrScannerRef.current) {
+            qrScannerRef.current.clear().catch(console.error)
+            qrScannerRef.current = null
+          }
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('QR check-in failed:', error)
+      setScannerError(error instanceof Error ? error.message : 'Check-in failed. Please try again.')
+    } finally {
+      setCheckinLoading(false)
+    }
+  }
+
+  const handleCodeCheckin = async () => {
+    if (!checkinCode.trim()) return
+    
+    setCheckinLoading(true)
+    setScannerError(null)
+    try {
+      const response = await api.checkinByQr({ checkinCode: checkinCode.trim().toUpperCase() })
+      if (response.success && response.data) {
+        const booking = response.data.booking
+        setCheckinSuccess({
+          customerName: `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
+          queuePosition: booking.queuePosition
+        })
+        // Refresh queue data
+        fetchQueue()
+        fetchBookings()
+        // Reset and close after success
+        setTimeout(() => {
+          setShowCodeInput(false)
+          setCheckinCode('')
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('Code check-in failed:', error)
+      setScannerError(error instanceof Error ? error.message : 'Check-in failed. Please try again.')
+    } finally {
+      setCheckinLoading(false)
+    }
+  }
+
+  const closeCheckinModal = () => {
+    setShowQrScanner(false)
+    setShowCodeInput(false)
+    setCheckinCode('')
+    setCheckinSuccess(null)
+    setScannerError(null)
+    if (qrScannerRef.current) {
+      qrScannerRef.current.clear().catch(console.error)
+      qrScannerRef.current = null
+    }
+  }
+
   useEffect(() => {
     fetchBookings()
   }, [salonId])
+
+  useEffect(() => {
+    if (activeTab === 'queue' && salonId) {
+      fetchQueue()
+    }
+  }, [activeTab, salonId])
 
   const handleUpdateStatus = async (status: 'CONFIRMED' | 'CANCELLED') => {
     if (!salonId || !selectedBooking) return
@@ -177,6 +330,7 @@ export default function Bookings() {
   const tabs: { key: TabFilter; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'upcoming', label: 'Upcoming' },
+    { key: 'queue', label: 'Queue' },
     { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
   ]
@@ -226,6 +380,24 @@ export default function Bookings() {
         <p className="text-gray-500">Manage your salon appointments</p>
       </div>
 
+      {/* Check-in Actions */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <button
+          onClick={() => setShowQrScanner(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-ghana-green text-white rounded-xl font-medium hover:bg-ghana-green/90 transition-colors shadow-sm"
+        >
+          <Scan className="w-5 h-5" />
+          Scan QR
+        </button>
+        <button
+          onClick={() => setShowCodeInput(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-ghana-green border-2 border-ghana-green rounded-xl font-medium hover:bg-ghana-green/5 transition-colors"
+        >
+          <Keyboard className="w-5 h-5" />
+          Enter Code
+        </button>
+      </div>
+
       {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
@@ -257,13 +429,124 @@ export default function Bookings() {
         ))}
       </div>
 
-      {/* Bookings Grid */}
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading bookings...</p>
-        </div>
-      ) : filteredBookings.length > 0 ? (
+      {/* Queue Tab Content */}
+      {activeTab === 'queue' && (
+        <>
+          {/* Queue Stats Bar */}
+          {queueStats && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="card bg-ghana-green/5 border-ghana-green/20">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-ghana-green">{queueStats.totalQueued}</p>
+                  <p className="text-sm text-gray-600">Total Queued</p>
+                </div>
+              </div>
+              <div className="card bg-green-50 border-green-200">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-700">{queueStats.checkedInCount}</p>
+                  <p className="text-sm text-gray-600">Checked In</p>
+                </div>
+              </div>
+              <div className="card bg-amber-50 border-amber-200">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-amber-700">{queueStats.notCheckedInCount}</p>
+                  <p className="text-sm text-gray-600">Not Yet</p>
+                </div>
+              </div>
+              <div className="card bg-purple-50 border-purple-200">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-purple-700">{queueStats.rescheduledCount}</p>
+                  <p className="text-sm text-gray-600">Rescheduled</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Queue List */}
+          {queueLoading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-gray-500 mt-4">Loading queue...</p>
+            </div>
+          ) : queueData.length > 0 ? (
+            <div className="space-y-3">
+              {queueData
+                .sort((a, b) => (a.queuePosition || 0) - (b.queuePosition || 0))
+                .map((booking, index) => (
+                  <div 
+                    key={booking.id} 
+                    className="card hover:shadow-md transition-shadow cursor-pointer flex items-center gap-4"
+                    onClick={() => setSelectedBooking(booking)}
+                  >
+                    {/* Position Number */}
+                    <div className="flex-shrink-0 w-12 h-12 bg-ghana-green rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">
+                        {booking.queuePosition || index + 1}
+                      </span>
+                    </div>
+
+                    {/* Customer Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 truncate">
+                          {booking.customer?.firstName} {booking.customer?.lastName}
+                        </h3>
+                        {booking.checkedIn ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                            <Check className="w-3 h-3" />
+                            Checked In
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">
+                            <Clock className="w-3 h-3" />
+                            Waiting
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">{booking.customer?.phoneNumber}</p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                        <span className="flex items-center gap-1">
+                          <Scissors className="w-3.5 h-3.5" />
+                          {booking.service?.name}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {booking.service?.duration || '-'} min
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {formatTime(booking.startTime)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Chevron */}
+                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="card text-center py-16">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No customers in queue</h3>
+              <p className="text-gray-500 max-w-md mx-auto">
+                There are no confirmed bookings for today. Customers will appear here when they book appointments.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Bookings Grid - Show for non-queue tabs */}
+      {activeTab !== 'queue' && (
+        loading ? (
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-gray-500 mt-4">Loading bookings...</p>
+          </div>
+        ) : filteredBookings.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredBookings.map((booking) => {
             const statusStyles = getStatusStyles(booking.status)
@@ -296,6 +579,20 @@ export default function Bookings() {
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
                         <Users className="w-3 h-3" />
                         Group · {booking.totalPeople || booking.guests?.length || 0} guests
+                      </span>
+                    )}
+                    {/* Check-in Status Badge */}
+                    {booking.checkedIn && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                        <Check className="w-3 h-3" />
+                        Checked In
+                      </span>
+                    )}
+                    {/* Queue Position Badge */}
+                    {booking.queuePosition && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-ghana-green/10 text-ghana-green border border-ghana-green/20">
+                        <Hash className="w-3 h-3" />
+                        #{booking.queuePosition}
                       </span>
                     )}
                   </div>
@@ -383,6 +680,7 @@ export default function Bookings() {
               : 'You don\'t have any bookings yet. Bookings will appear here when customers make appointments.'}
           </p>
         </div>
+      )
       )}
         </>
       )}
@@ -480,6 +778,31 @@ export default function Bookings() {
                   </div>
                 </div>
               </div>
+
+              {/* Check-in Status */}
+              {(selectedBooking.checkedIn || selectedBooking.queuePosition) && (
+                <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                  <h3 className="text-sm font-medium text-green-700 mb-3">Check-in Status</h3>
+                  <div className="space-y-2">
+                    {selectedBooking.checkedIn && (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span className="text-sm text-green-700">
+                          Checked in{selectedBooking.checkedInAt && ` at ${new Date(selectedBooking.checkedInAt).toLocaleTimeString()}`}
+                        </span>
+                      </div>
+                    )}
+                    {selectedBooking.queuePosition && (
+                      <div className="flex items-center gap-2">
+                        <Hash className="w-5 h-5 text-ghana-green" />
+                        <span className="text-sm text-gray-700">
+                          Queue Position: <span className="font-semibold text-ghana-green">#{selectedBooking.queuePosition}</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Staff */}
               {selectedBooking.worker && (
@@ -869,6 +1192,149 @@ export default function Bookings() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {showQrScanner && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50" onClick={closeCheckinModal}>
+          <div 
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Scan QR Code</h2>
+              <button 
+                onClick={closeCheckinModal}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              {checkinSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Check-in Successful!</h3>
+                  <p className="text-gray-600">
+                    <span className="font-medium">{checkinSuccess.customerName}</span> has been checked in
+                  </p>
+                  {checkinSuccess.queuePosition && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Queue Position: <span className="font-semibold text-ghana-green">#{checkinSuccess.queuePosition}</span>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div id="qr-reader" className="w-full overflow-hidden rounded-lg"></div>
+                  
+                  {checkinLoading && (
+                    <div className="flex items-center justify-center gap-2 mt-4 text-ghana-green">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Processing check-in...</span>
+                    </div>
+                  )}
+                  
+                  {scannerError && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm text-red-700">{scannerError}</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enter Code Modal */}
+      {showCodeInput && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50" onClick={closeCheckinModal}>
+          <div 
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Enter Check-in Code</h2>
+              <button 
+                onClick={closeCheckinModal}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              {checkinSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Check-in Successful!</h3>
+                  <p className="text-gray-600">
+                    <span className="font-medium">{checkinSuccess.customerName}</span> has been checked in
+                  </p>
+                  {checkinSuccess.queuePosition && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Queue Position: <span className="font-semibold text-ghana-green">#{checkinSuccess.queuePosition}</span>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Enter the customer's check-in code (format: GL-XXXX)
+                  </p>
+                  
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="GL-1234"
+                      value={checkinCode}
+                      onChange={(e) => setCheckinCode(e.target.value.toUpperCase())}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-lg font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent"
+                      maxLength={7}
+                    />
+                  </div>
+                  
+                  {scannerError && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm text-red-700">{scannerError}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={handleCodeCheckin}
+                    disabled={checkinLoading || !checkinCode.trim()}
+                    className="w-full mt-4 px-4 py-3 bg-ghana-green text-white rounded-xl font-medium hover:bg-ghana-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {checkinLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-5 h-5" />
+                        Check In Customer
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

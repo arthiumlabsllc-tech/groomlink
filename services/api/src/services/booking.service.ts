@@ -6,7 +6,8 @@ import * as smsService from './sms.service';
 import * as emailService from './email.service';
 import Redlock from 'redlock';
 import { bookingConfig } from '../config/booking';
-import { emitSlotUpdated, emitBookingConfirmed, emitBookingCancelled } from '../config/socket';
+import { emitSlotUpdated, emitBookingConfirmed, emitBookingCancelled, emitNewBooking } from '../config/socket';
+import { generateCheckinCode } from './checkin.service';
 
 // Redlock instance for distributed locking
 let redlock: Redlock;
@@ -252,7 +253,7 @@ export async function createBooking(customerId: string, data: CreateBookingData)
 
       // Create BookingGuest records if guests are provided
       if (guests && guests.length > 0) {
-        await Promise.all(guests.map(guest => 
+        await Promise.all(guests.map(guest =>
           tx.bookingGuest.create({
             data: {
               bookingId: newBooking.id,
@@ -269,10 +270,31 @@ export async function createBooking(customerId: string, data: CreateBookingData)
         ));
       }
 
+      // After guests are created, recalculate total for group bookings
+      if (isGroupBooking && guests?.length) {
+        const guestTotal = guests.reduce((sum, g) => sum + (g.priceAmount || 0), 0);
+        const realTotal = parseFloat(service.price.toString()) + guestTotal;
+        const realFinal = (service.discountPrice ? parseFloat(service.discountPrice.toString()) : parseFloat(service.price.toString())) + guestTotal;
+
+        await tx.booking.update({
+          where: { id: newBooking.id },
+          data: { totalAmount: realTotal, finalAmount: realFinal }
+        });
+
+        // Update the returned booking object with new amounts (cast to any to avoid Decimal type issues)
+        (newBooking as any).totalAmount = realTotal;
+        (newBooking as any).finalAmount = realFinal;
+      }
+
       return newBooking;
     });
 
     logger.info(`Booking created: ${booking.id} by customer: ${customerId}`);
+
+    // Generate check-in code for the booking
+    await generateCheckinCode(booking.id).catch((err) => {
+      logger.error('Failed to generate check-in code for new booking', { bookingId: booking.id, err });
+    });
 
     // Invalidate availability cache
     await invalidateAvailabilityCache(salonId, workerId || undefined, date);
@@ -284,68 +306,160 @@ export async function createBooking(customerId: string, data: CreateBookingData)
       action: 'booked',
     });
 
+    // Fetch full booking with guests for group booking notifications
+    const bookingWithGuests = isGroupBooking
+      ? await prisma.booking.findUnique({
+          where: { id: booking.id },
+          include: {
+            guests: {
+              include: {
+                service: { select: { name: true } },
+                staff: { select: { fullName: true } },
+              },
+            },
+            salon: {
+              select: {
+                businessName: true,
+                address: true,
+                phoneNumber: true,
+                owner: { select: { email: true } },
+              },
+            },
+            service: { select: { name: true } },
+            worker: { select: { fullName: true } },
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+          },
+        })
+      : null;
+
+    // Prepare group booking data for emails if applicable
+    const groupEmailData = bookingWithGuests?.guests
+      ? {
+          isGroupBooking: true,
+          totalPeople: bookingWithGuests.totalPeople || bookingWithGuests.guests.length,
+          guests: bookingWithGuests.guests.map((g) => ({
+            guestName: g.guestName,
+            service: g.service?.name || 'Unknown Service',
+            staff: g.staff?.fullName,
+            isChild: g.isChild,
+          })),
+        }
+      : null;
+
     // Send confirmation SMS to customer
     if (booking.customer.phoneNumber) {
-      smsService.sendBookingConfirmation(
-        booking.customer.phoneNumber,
-        booking.id,
-        booking.salon.businessName,
-        date,
-        startTime
-      ).catch((err) => logger.error('Failed to send booking confirmation SMS', { err }));
+      if (isGroupBooking && bookingWithGuests) {
+        // Send group booking SMS to primary customer and guests
+        const guestPhones = bookingWithGuests.guests
+          .map((g) => g.guestPhone)
+          .filter((phone): phone is string => !!phone);
+
+        smsService
+          .sendGroupBookingConfirmation(
+            booking.customer.phoneNumber,
+            guestPhones,
+            booking.id,
+            booking.salon.businessName,
+            date,
+            startTime,
+            bookingWithGuests.totalPeople || bookingWithGuests.guests.length
+          )
+          .catch((err) =>
+            logger.error('Failed to send group booking confirmation SMS', { err })
+          );
+      } else {
+        // Regular single booking SMS
+        smsService
+          .sendBookingConfirmation(
+            booking.customer.phoneNumber,
+            booking.id,
+            booking.salon.businessName,
+            date,
+            startTime
+          )
+          .catch((err) =>
+            logger.error('Failed to send booking confirmation SMS', { err })
+          );
+      }
 
       // Schedule 2-hour reminder
-      smsService.scheduleBookingReminder(
-        booking.customer.phoneNumber,
-        booking.salon.businessName,
-        date,
-        startTime
-      ).catch((err) => logger.error('Failed to schedule booking reminder SMS', { err }));
+      smsService
+        .scheduleBookingReminder(
+          booking.customer.phoneNumber,
+          booking.salon.businessName,
+          date,
+          startTime
+        )
+        .catch((err) =>
+          logger.error('Failed to schedule booking reminder SMS', { err })
+        );
     }
 
     // Send booking confirmation emails (fire-and-forget)
     const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
-    
+
     // Send to customer
     if (booking.customer.email) {
-      emailService.sendBookingConfirmationEmail(
-        booking.customer.email,
-        {
-          customerName: customerFullName,
-          bookingReference: booking.id,
-          salonName: booking.salon.businessName,
-          salonAddress: booking.salon.address,
-          salonPhone: booking.salon.phoneNumber || undefined,
-          serviceName: booking.service.name,
-          workerName: booking.worker?.fullName || undefined,
-          date: date.toISOString(),
-          startTime: booking.startTime,
-          endTime: booking.endTime,
-          totalAmount: Number(booking.totalAmount),
-          finalAmount: Number(booking.finalAmount),
-          customerNotes: customerNotes || undefined,
-        }
-      ).catch((err) => logger.error('Failed to send booking confirmation email to customer', { err }));
+      emailService
+        .sendBookingConfirmationEmail(
+          booking.customer.email,
+          {
+            customerName: customerFullName,
+            bookingReference: booking.id,
+            salonName: booking.salon.businessName,
+            salonAddress: booking.salon.address,
+            salonPhone: booking.salon.phoneNumber || undefined,
+            serviceName: booking.service.name,
+            workerName: booking.worker?.fullName || undefined,
+            date: date.toISOString(),
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            totalAmount: Number(booking.totalAmount),
+            finalAmount: Number(booking.finalAmount),
+            customerNotes: customerNotes || undefined,
+            // Add group booking data if applicable
+            ...(groupEmailData || {}),
+          }
+        )
+        .catch((err) =>
+          logger.error('Failed to send booking confirmation email to customer', { err })
+        );
     }
 
     // Send to salon owner
     if (booking.salon.owner?.email) {
-      emailService.sendNewBookingNotificationEmail(
-        booking.salon.owner.email,
-        {
-          customerName: customerFullName,
-          bookingReference: booking.id,
-          serviceName: booking.service.name,
-          workerName: booking.worker?.fullName || undefined,
-          date: date.toISOString(),
-          startTime: booking.startTime,
-          endTime: booking.endTime,
-          finalAmount: Number(booking.finalAmount),
-          customerPhone: booking.customer.phoneNumber || undefined,
-          customerNotes: customerNotes || undefined,
-        }
-      ).catch((err) => logger.error('Failed to send new booking notification email to salon owner', { err }));
+      emailService
+        .sendNewBookingNotificationEmail(
+          booking.salon.owner.email,
+          {
+            customerName: customerFullName,
+            bookingReference: booking.id,
+            serviceName: booking.service.name,
+            workerName: booking.worker?.fullName || undefined,
+            date: date.toISOString(),
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            finalAmount: Number(booking.finalAmount),
+            customerPhone: booking.customer.phoneNumber || undefined,
+            customerNotes: customerNotes || undefined,
+            // Add group booking data if applicable
+            ...(groupEmailData || {}),
+          }
+        )
+        .catch((err) =>
+          logger.error('Failed to send new booking notification email to salon owner', { err })
+        );
     }
+
+    // Emit socket event to salon for audible notification
+    emitNewBooking(salonId, booking);
 
     return booking;
   } finally {
@@ -412,6 +526,12 @@ export async function getBookingById(id: string, userId: string, userRole: strin
       noShowRecords: true,
     },
   });
+
+  // Security: Hide checkinCode from salon owners to prevent fraud
+  // Only CUSTOMER (who owns the booking) and ADMIN should see the checkinCode
+  if (booking && userRole === 'SALON_OWNER' && 'checkinCode' in booking) {
+    delete (booking as any).checkinCode;
+  }
 
   return booking;
 }
@@ -513,10 +633,27 @@ export async function confirmBooking(id: string, salonOwnerId: string) {
       salon: { ownerId: salonOwnerId },
       status: BookingStatus.PENDING,
     },
+    select: {
+      id: true,
+      customerId: true,
+      payment: {
+        select: {
+          id: true,
+          status: true,
+        },
+      },
+    },
   });
 
   if (!booking) {
     throw new Error('Booking not found or cannot be confirmed');
+  }
+
+  // Payment verification: Check if booking has an associated Payment record
+  // If a Payment exists and is NOT SUCCESS, prevent confirmation
+  // If NO Payment exists (free service / admin override), allow confirmation
+  if (booking.payment && booking.payment.status !== PaymentStatus.SUCCESS) {
+    throw new Error('Cannot confirm booking: payment has not been completed');
   }
 
   const updated = await prisma.booking.update({
@@ -525,6 +662,11 @@ export async function confirmBooking(id: string, salonOwnerId: string) {
       status: BookingStatus.CONFIRMED,
       confirmedAt: new Date(),
     },
+  });
+
+  // Generate check-in code for confirmed booking
+  await generateCheckinCode(id).catch((err) => {
+    logger.error('Failed to generate check-in code on confirmation', { bookingId: id, err });
   });
 
   // Emit booking:confirmed event to customer

@@ -27,22 +27,47 @@ export interface PaystackKeys {
   isTestMode: boolean;
 }
 
-// Helper function to get Paystack keys from SiteSettings
+// Helper function to get Paystack keys from SiteSettings with env var fallback
 async function getPaystackKeys(): Promise<PaystackKeys | null> {
   const settings = await prisma.siteSettings.findUnique({
     where: { id: 'default' }
   });
   
-  if (!settings || !settings.paystackSecretKey || !settings.paystackPublicKey) {
-    logger.warn('Paystack keys not configured in SiteSettings');
-    return null;
+  // Check if SiteSettings has keys configured
+  const dbSecretKey = settings?.paystackSecretKey;
+  const dbPublicKey = settings?.paystackPublicKey;
+  
+  if (dbSecretKey && dbPublicKey) {
+    logger.info('Paystack keys loaded from SiteSettings', {
+      source: 'database',
+      isTestMode: settings.isPaymentTestMode
+    });
+    return {
+      publicKey: dbPublicKey,
+      secretKey: dbSecretKey,
+      isTestMode: settings.isPaymentTestMode,
+    };
   }
   
-  return {
-    publicKey: settings.paystackPublicKey,
-    secretKey: settings.paystackSecretKey,
-    isTestMode: settings.isPaymentTestMode,
-  };
+  // Fall back to environment variables
+  const envSecretKey = process.env.PAYSTACK_SECRET_KEY;
+  const envPublicKey = process.env.PAYSTACK_PUBLIC_KEY;
+  
+  if (envSecretKey && envPublicKey) {
+    logger.info('Paystack keys loaded from environment variables', {
+      source: 'env_vars',
+      isTestMode: envSecretKey.startsWith('sk_test_')
+    });
+    return {
+      publicKey: envPublicKey,
+      secretKey: envSecretKey,
+      isTestMode: envSecretKey.startsWith('sk_test_'),
+    };
+  }
+  
+  // Neither SiteSettings nor env vars have keys configured
+  logger.warn('Paystack keys not configured in SiteSettings or environment variables');
+  return null;
 }
 
 // Mock payment provider implementations (fallback when Paystack is not configured)
@@ -130,6 +155,18 @@ class PaystackPaymentProvider {
   private static BASE_URL = 'https://api.paystack.co';
 
   /**
+   * Map internal payment provider to Paystack mobile money provider code
+   */
+  private static getMobileMoneyProvider(provider: PaymentProvider): string {
+    const providerMap: Record<string, string> = {
+      [PaymentProvider.MTN_MOMO]: 'mtn',
+      [PaymentProvider.VODAFONE_CASH]: 'vod',
+      [PaymentProvider.AIRTELTIGO_MONEY]: 'tgo',
+    };
+    return providerMap[provider] || 'mtn';
+  }
+
+  /**
    * Initialize a payment transaction with Paystack
    */
   static async initializePayment(
@@ -138,7 +175,8 @@ class PaystackPaymentProvider {
     reference: string,
     bookingId: string,
     provider: PaymentProvider,
-    secretKey: string
+    secretKey: string,
+    phoneNumber?: string
   ): Promise<PaymentResult> {
     try {
       // Convert amount to pesewas (smallest currency unit for GHS)
@@ -154,26 +192,43 @@ class PaystackPaymentProvider {
       
       const channels = channelMap[provider] || ['mobile_money'];
       
+      // Build the request body
+      const requestBody: any = {
+        amount: amountInPesewas,
+        email,
+        reference,
+        channels,
+        callback_url: process.env.PAYSTACK_CALLBACK_URL || 'https://my.groomlinkgh.com/payment/callback',
+        metadata: {
+          bookingId,
+          provider,
+          custom_fields: [
+            {
+              display_name: 'Booking',
+              variable_name: 'booking_id',
+              value: bookingId,
+            },
+          ],
+        },
+      };
+      
+      // Add mobile_money object for Ghana mobile money payments
+      // This is critical for the MoMo prompt to appear on the customer's phone
+      if (channels.includes('mobile_money') && phoneNumber) {
+        const momoProvider = this.getMobileMoneyProvider(provider);
+        requestBody.mobile_money = {
+          phone: phoneNumber,
+          provider: momoProvider,
+        };
+        logger.info(`Mobile money payment configured for ${provider}`, { 
+          phone: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Mask phone for logging
+          momoProvider 
+        });
+      }
+
       const response = await axios.post(
         `${this.BASE_URL}/transaction/initialize`,
-        {
-          amount: amountInPesewas,
-          email,
-          reference,
-          channels,
-          callback_url: process.env.PAYSTACK_CALLBACK_URL || 'https://my.groomlinkgh.com/payment/callback',
-          metadata: {
-            bookingId,
-            provider,
-            custom_fields: [
-              {
-                display_name: 'Booking',
-                variable_name: 'booking_id',
-                value: bookingId,
-              },
-            ],
-          },
-        },
+        requestBody,
         {
           headers: {
             Authorization: `Bearer ${secretKey}`,
@@ -198,7 +253,7 @@ class PaystackPaymentProvider {
         message: error.message,
         response: error.response?.data,
       });
-      
+
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to initialize payment with Paystack',
@@ -395,7 +450,8 @@ export async function initializePayment(
       reference,
       bookingId,
       provider,
-      paystackKeys.secretKey
+      paystackKeys.secretKey,
+      phoneNumber  // Pass phone number for mobile money prompt
     );
     
     logger.info(`Paystack payment initiated for booking: ${bookingId}`, { 

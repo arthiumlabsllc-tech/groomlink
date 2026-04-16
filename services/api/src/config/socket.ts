@@ -281,3 +281,24 @@ export function emitReminder(userId: string, booking: any) {
     });
   }
 }
+
+// Emit to salon when a customer checks in
+export function emitBookingCheckin(salonId: string, data: { bookingId: string; customerName: string; serviceName: string; queuePosition: number }) {
+  if (io) {
+    io.to(`salon:${salonId}`).emit('booking:checkin', data);
+  }
+}
+
+// Emit to salon when a service is completed
+export function emitBookingCompleted(salonId: string, data: { bookingId: string; customerName: string; serviceName: string; totalAmount: string }) {
+  if (io) {
+    io.to(`salon:${salonId}`).emit('booking:completed', data);
+  }
+}
+
+// Emit to salon when a new booking is created
+export function emitNewBooking(salonId: string, booking: any) {
+  if (io) {
+    io.to(`salon:${salonId}`).emit('booking:new', { booking });
+  }
+}

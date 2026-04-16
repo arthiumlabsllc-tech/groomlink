@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ProfileSetupGuard } from './components/ProfileSetupGuard';
 import Login from './pages/Login';
+import ProfileSetup from './pages/ProfileSetup';
 import Dashboard from './pages/Dashboard';
 import Explore from './pages/Explore';
 import Bookings from './pages/Bookings';
@@ -68,10 +70,19 @@ function App() {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         
-        {/* Protected routes */}
+        {/* Profile Setup - Protected but outside Layout, NOT wrapped by ProfileSetupGuard */}
+        <Route path="/profile/setup" element={
+          <ProtectedRoute>
+            <ProfileSetup />
+          </ProtectedRoute>
+        } />
+        
+        {/* Protected routes with ProfileSetupGuard */}
         <Route path="/" element={
           <ProtectedRoute>
-            <Layout />
+            <ProfileSetupGuard>
+              <Layout />
+            </ProfileSetupGuard>
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
@@ -85,21 +96,27 @@ function App() {
         {/* Salon Detail - Protected but outside Layout for full-width experience */}
         <Route path="/salon/:id" element={
           <ProtectedRoute>
-            <SalonDetail />
+            <ProfileSetupGuard>
+              <SalonDetail />
+            </ProfileSetupGuard>
           </ProtectedRoute>
         } />
         
         {/* Booking Page - Protected */}
         <Route path="/salon/:id/book" element={
           <ProtectedRoute>
-            <BookSalon />
+            <ProfileSetupGuard>
+              <BookSalon />
+            </ProfileSetupGuard>
           </ProtectedRoute>
         } />
         
         {/* Payment Callback - Protected */}
         <Route path="/payment/callback" element={
           <ProtectedRoute>
-            <PaymentCallback />
+            <ProfileSetupGuard>
+              <PaymentCallback />
+            </ProfileSetupGuard>
           </ProtectedRoute>
         } />
         

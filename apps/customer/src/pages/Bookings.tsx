@@ -1,8 +1,68 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, MapPin, ChevronRight, X, AlertCircle, Plus, Loader2, Phone, RefreshCw, ShieldAlert, Info, Users, Shield, CheckCircle, Ban, QrCode, AlertTriangle, MessageSquare } from 'lucide-react'
+import { Calendar, Clock, MapPin, ChevronRight, X, AlertCircle, Plus, Loader2, Phone, RefreshCw, ShieldAlert, Info, Users, Shield, CheckCircle, Ban, QrCode, AlertTriangle, MessageSquare, Copy, Navigation } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { bookingApi, Booking, RefundPreview } from '../lib/api'
+import { bookingApi, Booking, RefundPreview, QueuePositionResponse } from '../lib/api'
+
+// Constants
+const GEOFENCE_RADIUS_METERS = 100
+const CHECKIN_PROMPTED_KEY = 'groomlink_auto_checkin_prompted'
+
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ * Returns distance in meters
+ */
+function getDistanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000 // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+/**
+ * Check if a booking is for today
+ */
+function isBookingToday(booking: Booking): boolean {
+  const bookingDate = new Date(booking.date)
+  const today = new Date()
+  return (
+    bookingDate.getFullYear() === today.getFullYear() &&
+    bookingDate.getMonth() === today.getMonth() &&
+    bookingDate.getDate() === today.getDate()
+  )
+}
+
+/**
+ * Get prompted bookings from localStorage
+ */
+function getPromptedBookings(): Set<string> {
+  try {
+    const data = localStorage.getItem(CHECKIN_PROMPTED_KEY)
+    if (data) {
+      return new Set(JSON.parse(data))
+    }
+  } catch {
+    // Ignore errors
+  }
+  return new Set()
+}
+
+/**
+ * Mark a booking as prompted
+ */
+function markBookingAsPrompted(bookingId: string): void {
+  try {
+    const prompted = getPromptedBookings()
+    prompted.add(bookingId)
+    const entries = Array.from(prompted).slice(-50)
+    localStorage.setItem(CHECKIN_PROMPTED_KEY, JSON.stringify(entries))
+  } catch {
+    // Ignore errors
+  }
+}
 
 type Tab = 'upcoming' | 'past' | 'cancelled'
 
@@ -60,6 +120,10 @@ export default function Bookings() {
   const [qrCodeData, setQRCodeData] = useState<string | null>(null)
   const [loadingQRCode, setLoadingQRCode] = useState(false)
 
+  // Queue position data for bookings
+  const [queuePositionData, setQueuePositionData] = useState<Record<string, QueuePositionResponse>>({})
+  const [loadingQueuePositions, setLoadingQueuePositions] = useState(false)
+
   // Service completion modal states
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [confirmingCompletion, setConfirmingCompletion] = useState(false)
@@ -68,6 +132,120 @@ export default function Bookings() {
   const [showDisputeModal, setShowDisputeModal] = useState(false)
   const [disputeReason, setDisputeReason] = useState('')
   const [submittingDispute, setSubmittingDispute] = useState(false)
+
+  // Auto check-in states
+  const [autoCheckinBooking, setAutoCheckinBooking] = useState<Booking | null>(null)
+  const [autoCheckinLoading, setAutoCheckinLoading] = useState(false)
+  const [showAutoCheckinBanner, setShowAutoCheckinBanner] = useState(false)
+  const [autoCheckinDistance, setAutoCheckinDistance] = useState(0)
+
+  // Auto check-in: Check proximity when bookings are loaded
+  useEffect(() => {
+    if (loading || bookings.upcoming.length === 0) return
+
+    const checkProximity = async () => {
+      // Filter for today's confirmed bookings not yet checked in
+      const eligibleBookings = bookings.upcoming.filter(
+        (b) => b.status === 'CONFIRMED' && !b.checkedIn && isBookingToday(b)
+      )
+
+      if (eligibleBookings.length === 0) return
+
+      // Get already prompted bookings
+      const promptedBookings = getPromptedBookings()
+
+      // Check if geolocation is available
+      if (!navigator.geolocation) return
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords
+
+          // Find nearby bookings
+          for (const booking of eligibleBookings) {
+            // Skip if salon has no coordinates
+            if (!booking.salon?.latitude || !booking.salon?.longitude) continue
+
+            // Skip if already prompted
+            if (promptedBookings.has(booking.id)) continue
+
+            const distance = getDistanceInMeters(
+              latitude,
+              longitude,
+              booking.salon.latitude,
+              booking.salon.longitude
+            )
+
+            if (distance <= GEOFENCE_RADIUS_METERS) {
+              // Found a nearby booking - show banner
+              setAutoCheckinBooking(booking)
+              setAutoCheckinDistance(Math.round(distance))
+              setShowAutoCheckinBanner(true)
+              markBookingAsPrompted(booking.id)
+              break // Only prompt for one booking at a time
+            }
+          }
+        },
+        (error) => {
+          // Silently handle geolocation errors - user may have denied permission
+          console.log('Geolocation error:', error.message)
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 60000, // Cache location for 1 minute
+        }
+      )
+    }
+
+    // Delay to allow UI to settle
+    const timeout = setTimeout(checkProximity, 1500)
+    return () => clearTimeout(timeout)
+  }, [loading, bookings.upcoming])
+
+  // Handle auto check-in
+  const handleAutoCheckIn = async () => {
+    if (!autoCheckinBooking) return
+
+    setAutoCheckinLoading(true)
+    try {
+      // Get current position
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords
+
+          try {
+            const result = await bookingApi.autoCheckIn(
+              autoCheckinBooking.id,
+              latitude,
+              longitude
+            )
+
+            toast.success(result.message)
+
+            // Refresh bookings
+            fetchBookings()
+            fetchCounts()
+
+            // Hide banner
+            setShowAutoCheckinBanner(false)
+            setAutoCheckinBooking(null)
+          } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to check in. Please try again.')
+          } finally {
+            setAutoCheckinLoading(false)
+          }
+        },
+        (error) => {
+          toast.error('Unable to get your location. Please enable location permissions.')
+          setAutoCheckinLoading(false)
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      )
+    } catch (error) {
+      setAutoCheckinLoading(false)
+    }
+  }
 
   // Fetch all booking counts on mount
   const fetchCounts = useCallback(async () => {
@@ -122,6 +300,44 @@ export default function Bookings() {
     fetchBookings()
     fetchCounts()
   }, [activeTab, fetchBookings, fetchCounts])
+
+  // Fetch queue positions for confirmed bookings in upcoming tab
+  useEffect(() => {
+    if (activeTab === 'upcoming' && bookings.upcoming.length > 0) {
+      const confirmedBookings = bookings.upcoming.filter(b => b.status === 'CONFIRMED')
+      if (confirmedBookings.length > 0) {
+        fetchQueuePositions(confirmedBookings.map(b => b.id))
+      }
+    }
+  }, [activeTab, bookings.upcoming])
+
+  // Fetch queue positions for confirmed bookings
+  const fetchQueuePositions = async (bookingIds: string[]) => {
+    setLoadingQueuePositions(true)
+    try {
+      const results = await Promise.all(
+        bookingIds.map(async (id) => {
+          try {
+            const data = await bookingApi.getQueuePosition(id)
+            return { id, data }
+          } catch {
+            return { id, data: null }
+          }
+        })
+      )
+      const newData: Record<string, QueuePositionResponse> = {}
+      results.forEach(({ id, data }) => {
+        if (data) {
+          newData[id] = data
+        }
+      })
+      setQueuePositionData(newData)
+    } catch (err) {
+      console.error('Failed to fetch queue positions:', err)
+    } finally {
+      setLoadingQueuePositions(false)
+    }
+  }
 
   // Handle cancel booking with refund preview
   const openCancellationModal = async () => {
@@ -295,6 +511,12 @@ export default function Bookings() {
     }
   }
 
+  // Copy to clipboard helper
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Code copied to clipboard')
+  }
+
   // Handle QR code display
   const handleShowQRCode = async () => {
     if (!selectedBooking) return
@@ -317,23 +539,26 @@ export default function Bookings() {
     setConfirmingCompletion(true)
     try {
       await bookingApi.confirmCompletion(selectedBooking.id)
-      toast.success('Service completion confirmed. Payment has been released to the salon.')
-      
-      // Update local state
+      toast.success('Service confirmed! Thank you.')
+
+      // Close the completion modal first
+      setShowCompletionModal(false)
+
+      // Update local state - move booking from upcoming to past
       setBookings(prev => ({
         ...prev,
         upcoming: prev.upcoming.filter(b => b.id !== selectedBooking.id),
-        past: [...prev.past, { ...selectedBooking, serviceCompleted: true, customerConfirmed: true, completionMethod: 'CUSTOMER_CONFIRMED' }]
+        past: [{ ...selectedBooking, serviceCompleted: true, customerConfirmed: true, completionMethod: 'CUSTOMER_CONFIRMED' as const }, ...prev.past]
       }))
-      
+
       // Update counts
       setCounts(prev => ({
         upcoming: Math.max(0, prev.upcoming - 1),
         past: prev.past + 1,
         cancelled: prev.cancelled
       }))
-      
-      setShowCompletionModal(false)
+
+      // Close the booking detail modal to return to the bookings list
       setSelectedBooking(null)
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to confirm completion')
@@ -382,6 +607,63 @@ export default function Bookings() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Auto Check-in Banner */}
+      {showAutoCheckinBanner && autoCheckinBooking && (
+        <div className="bg-green-600 text-white rounded-xl p-4 shadow-lg">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="bg-white/20 rounded-full p-2">
+                <Navigation className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">You've Arrived!</h3>
+                <p className="text-white/90 text-sm mt-1">
+                  You're {autoCheckinDistance}m from {autoCheckinBooking.salon?.businessName}. 
+                  Check in now to join the queue?
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setShowAutoCheckinBanner(false)
+                setAutoCheckinBooking(null)
+              }}
+              className="text-white/80 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex gap-3 mt-3">
+            <button
+              onClick={handleAutoCheckIn}
+              disabled={autoCheckinLoading}
+              className="flex-1 bg-white text-green-700 font-semibold py-2 px-4 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              {autoCheckinLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Checking in...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Check In Now
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setShowAutoCheckinBanner(false)
+                setAutoCheckinBooking(null)
+              }}
+              className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+            >
+              Not Now
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
@@ -493,11 +775,42 @@ export default function Bookings() {
                           {booking.service?.name || 'Unknown Service'}
                         </p>
                       </div>
-                      <span className={'px-2 py-1 text-xs font-medium rounded capitalize ' + 
+                      <span className={'px-2 py-1 text-xs font-medium rounded capitalize ' +
                         (statusColors[booking.status] || 'bg-gray-100 text-gray-600')}>
                         {(booking.status || 'unknown').toLowerCase()}
                       </span>
                     </div>
+                    {/* Queue position and check-in status for CONFIRMED bookings */}
+                    {booking.status === 'CONFIRMED' && queuePositionData[booking.id] && (
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {queuePositionData[booking.id].queuePosition !== null && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+                            <Users className="w-3 h-3" />
+                            Queue #{queuePositionData[booking.id].queuePosition}
+                          </span>
+                        )}
+                        {queuePositionData[booking.id].checkedIn ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                            <CheckCircle className="w-3 h-3" />
+                            Checked In
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                            Not Checked In
+                          </span>
+                        )}
+                        {queuePositionData[booking.id].checkedIn && queuePositionData[booking.id].estimatedWaitMinutes && (
+                          <span className="text-xs text-gray-500">
+                            Est. wait: ~{queuePositionData[booking.id].estimatedWaitMinutes} min
+                          </span>
+                        )}
+                        {queuePositionData[booking.id].peopleAhead !== undefined && queuePositionData[booking.id].peopleAhead > 0 && !queuePositionData[booking.id].checkedIn && (
+                          <span className="text-xs text-gray-500">
+                            {queuePositionData[booking.id].peopleAhead} ahead
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -1165,9 +1478,30 @@ export default function Bookings() {
                 <p className="text-xs text-gray-500 mb-4">
                   Booking Reference
                 </p>
-                <p className="text-lg font-bold text-green-700 font-mono">
+                <p className="text-lg font-bold text-green-700 font-mono mb-4">
                   {selectedBooking.reference || selectedBooking.id.slice(0, 8)}
                 </p>
+
+                {/* Manual Check-in Code */}
+                {selectedBooking.checkinCode && (
+                  <div className="border-t border-gray-200 pt-4 mt-2">
+                    <p className="text-sm text-gray-500 mb-2">
+                      Can't scan? Use code:
+                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-xl font-bold font-mono bg-gray-100 px-4 py-2 rounded-lg text-green-700">
+                        {selectedBooking.checkinCode}
+                      </span>
+                      <button 
+                        onClick={() => copyToClipboard(selectedBooking.checkinCode || '')}
+                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        title="Copy code"
+                      >
+                        <Copy className="w-5 h-5 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button 

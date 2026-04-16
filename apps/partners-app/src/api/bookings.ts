@@ -1,6 +1,16 @@
 import apiClient from './client';
 import { Booking, BookingStatus } from '../types';
 
+export interface CheckinParams {
+  qrData?: string;
+  checkinCode?: string;
+  bookingId?: string;
+}
+
+export interface CheckinResponse extends Booking {
+  queuePosition?: number;
+}
+
 export interface SalonBookingsParams {
   salonId: string;
   status?: BookingStatus;
@@ -72,6 +82,12 @@ export const bookingsApi = {
   // Cancel a booking
   cancelBooking: async (id: string, reason?: string): Promise<Booking> => {
     const response = await apiClient.put(`/bookings/${id}/cancel`, { reason });
+    return response.data.data;
+  },
+
+  // Check-in by QR code or check-in code
+  checkinByQR: async (params: CheckinParams): Promise<CheckinResponse> => {
+    const response = await apiClient.post('/bookings/checkin-by-qr', params);
     return response.data.data;
   },
 };

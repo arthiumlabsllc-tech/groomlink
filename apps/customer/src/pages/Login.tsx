@@ -1,20 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, ArrowRight, User, CheckCircle } from 'lucide-react';
+import { Mail, ArrowRight, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/auth';
 
-type Step = 'email' | 'otp' | 'register';
+type Step = 'email' | 'otp';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { requestOTP, verifyOTP, completeRegistration, isAuthenticated } = useAuthStore();
+  const { requestOTP, verifyOTP, isAuthenticated } = useAuthStore();
   
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -95,8 +93,10 @@ export default function Login() {
     try {
       const result = await verifyOTP(email, code);
       if (result.isNewUser) {
-        toast.success('Please complete your registration');
-        setStep('register');
+        toast.success('Please complete your profile');
+        // Store email for profile setup and redirect
+        localStorage.setItem('customer_setup_email', email);
+        navigate('/profile/setup', { state: { email } });
       } else {
         toast.success('Login successful!');
         navigate('/dashboard');
@@ -123,30 +123,6 @@ export default function Login() {
     }
   };
 
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await completeRegistration({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        role: 'CUSTOMER',
-      });
-      toast.success('Registration complete!');
-      navigate('/dashboard');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Registration failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#006B3F]/5 via-white to-[#FCD116]/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -165,7 +141,7 @@ export default function Login() {
           <div className="h-1 bg-gray-100">
             <div 
               className="h-full bg-gradient-to-r from-[#006B3F] to-[#006B3F]/80 transition-all duration-500"
-              style={{ width: step === 'email' ? '33%' : step === 'otp' ? '66%' : '100%' }}
+              style={{ width: step === 'email' ? '50%' : '100%' }}
             />
           </div>
 
@@ -268,65 +244,6 @@ export default function Login() {
                       {countdown > 0 ? `Resend OTP in ${countdown}s` : 'Resend OTP'}
                     </button>
                   </div>
-                </div>
-              </form>
-            )}
-
-            {/* Step 3: Registration */}
-            {step === 'register' && (
-              <form onSubmit={handleRegisterSubmit}>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Complete Your Profile</h2>
-                <p className="text-gray-600 mb-6">Welcome! Let's finish setting up your account</p>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="Enter your first name"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#006B3F] focus:border-transparent outline-none transition-all"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Enter your last name"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#006B3F] focus:border-transparent outline-none transition-all"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-3 px-4 bg-[#006B3F] hover:bg-[#005530] text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        Complete Registration
-                        <CheckCircle className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
                 </div>
               </form>
             )}

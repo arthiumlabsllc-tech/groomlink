@@ -12,6 +12,7 @@ import Queue from './pages/Queue'
 import KYC from './pages/KYC'
 import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
+import { SocketProvider } from './components/SocketProvider'
 import { api } from './lib/api'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { SalonSetupWrapper } from './components/SalonSetupWrapper'
@@ -44,68 +45,70 @@ function TokenHandler({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <SalonProvider>
-      <BrowserRouter>
-        <TokenHandler>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <SalonSetupWrapper>
-                  <Dashboard />
-                </SalonSetupWrapper>
-              </ProtectedRoute>
-            } />
-            <Route path="/queue" element={
-              <ProtectedRoute>
-                <SalonSetupWrapper>
-                  <Queue />
-                </SalonSetupWrapper>
-              </ProtectedRoute>
-            } />
-            <Route path="/bookings" element={
-              <ProtectedRoute>
-                <SalonSetupWrapper>
-                  <Bookings />
-                </SalonSetupWrapper>
-              </ProtectedRoute>
-            } />
-            <Route path="/staff" element={
-              <ProtectedRoute>
-                <SalonSetupWrapper>
-                  <Staff />
-                </SalonSetupWrapper>
-              </ProtectedRoute>
-            } />
-            <Route path="/services" element={
-              <ProtectedRoute>
-                <SalonSetupWrapper>
-                  <Services />
-                </SalonSetupWrapper>
-              </ProtectedRoute>
-            } />
-            <Route path="/reviews" element={
-              <ProtectedRoute>
-                <SalonSetupWrapper>
-                  <Reviews />
-                </SalonSetupWrapper>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <SalonSetupWrapper>
-                  <Settings />
-                </SalonSetupWrapper>
-              </ProtectedRoute>
-            } />
-            <Route path="/kyc" element={
-              <ProtectedRoute>
-                <KYC />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TokenHandler>
-      </BrowserRouter>
+      <SocketProvider>
+        <BrowserRouter>
+          <TokenHandler>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Dashboard />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/queue" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Queue />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/bookings" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Bookings />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/staff" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Staff />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/services" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Services />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/reviews" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Reviews />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Settings />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/kyc" element={
+                <ProtectedRoute>
+                  <KYC />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </TokenHandler>
+        </BrowserRouter>
+      </SocketProvider>
     </SalonProvider>
   )
 }

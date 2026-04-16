@@ -22,6 +22,8 @@ export interface Booking {
     address: string;
     logo: string | null;
     phoneNumber?: string;
+    latitude?: number | null;
+    longitude?: number | null;
   };
   service: {
     id: string;
@@ -80,6 +82,11 @@ export interface Booking {
   disputeRaised?: boolean;
   disputeReason?: string;
   autoCompleteDeadline?: string;
+  // Check-in and queue fields
+  checkedIn?: boolean;
+  checkedInAt?: string;
+  checkinCode?: string;
+  queuePosition?: number;
 }
 
 export interface CreateBookingData {
@@ -392,6 +399,41 @@ export const bookingApi = {
     const response = await apiClient.get(`/bookings/${bookingId}/qr-code`);
     return response.data.data;
   },
+
+  getQueuePosition: async (bookingId: string): Promise<QueuePositionResponse> => {
+    const response = await apiClient.get(`/bookings/${bookingId}/queue-position`);
+    return response.data.data;
+  },
+
+  autoCheckIn: async (bookingId: string, latitude: number, longitude: number): Promise<{
+    booking: {
+      id: string;
+      reference: string;
+      status: string;
+      checkedIn: boolean;
+      checkedInAt: string | null;
+      queuePosition: number | null;
+      salon: {
+        id: string;
+        businessName: string;
+        address: string;
+      };
+      service: {
+        id: string;
+        name: string;
+        duration: number;
+      };
+    };
+    queuePosition: number;
+    message: string;
+  }> => {
+    const response = await apiClient.post('/bookings/auto-checkin', {
+      bookingId,
+      latitude,
+      longitude,
+    });
+    return response.data.data;
+  },
 };
 
 // Payment types
@@ -511,6 +553,15 @@ export interface NoShowStatus {
   reason?: string;
   restrictedUntil?: string;
   noShowCount: number;
+}
+
+// Queue position response type
+export interface QueuePositionResponse {
+  queuePosition: number | null;
+  checkedIn: boolean;
+  checkedInAt?: string;
+  estimatedWaitMinutes?: number;
+  peopleAhead?: number;
 }
 
 // Queue API functions

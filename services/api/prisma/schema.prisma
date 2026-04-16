@@ -377,6 +377,14 @@ model Booking {
   disputeReason           String?   @map("dispute_reason")
   completionReminders     CompletionReminder[]
 
+  // Check-in fields
+  checkedIn           Boolean   @default(false)
+  checkedInAt         DateTime?
+  checkedInBy         String?
+  checkinCode         String?   @unique
+  queuePosition       Int?
+  queueEntryId        String?
+
   @@index([customerId])
   @@index([salonId])
   @@index([workerId])

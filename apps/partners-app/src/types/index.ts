@@ -145,6 +145,12 @@ export interface Booking {
   completionMethod?: 'MANUAL' | 'AUTO' | 'QR' | 'CUSTOMER';
   customerConfirmed?: boolean;
   disputeRaised?: boolean;
+  // Check-in fields
+  checkedIn?: boolean;
+  checkedInAt?: string;
+  checkedInBy?: string;
+  checkinCode?: string;
+  queuePosition?: number;
 }
 
 export interface DashboardStats {
@@ -175,4 +181,4 @@ export interface AuthResponse {
 }
 
 // Re-export navigation types
-export type { MainStackParamList, AuthStackParamList, TabParamList } from './navigation';
+export type { MainStackParamList, AuthStackParamList, TabParamList, MainNavigationProp } from './navigation';

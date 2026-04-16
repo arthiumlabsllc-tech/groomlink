@@ -361,6 +361,9 @@ importers:
 
   apps/partners:
     dependencies:
+      html5-qrcode:
+        specifier: ^2.3.8
+        version: 2.3.8
       lucide-react:
         specifier: ^0.263.1
         version: 0.263.1(react@18.2.0)
@@ -373,6 +376,9 @@ importers:
       react-router-dom:
         specifier: ^6.20.0
         version: 6.30.3(react-dom@18.3.1(react@18.2.0))(react@18.2.0)
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3
       zustand:
         specifier: ^5.0.12
         version: 5.0.12(@types/react@18.2.79)(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))
@@ -428,6 +434,9 @@ importers:
       expo:
         specifier: ~49.0.15
         version: 49.0.23(@babel/core@7.29.0)
+      expo-av:
+        specifier: ^16.0.8
+        version: 16.0.8(expo@49.0.23(@babel/core@7.29.0))(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0)
       expo-constants:
         specifier: ~14.4.2
         version: 14.4.2(expo@49.0.23(@babel/core@7.29.0))
@@ -482,6 +491,9 @@ importers:
       react-native-vector-icons:
         specifier: ^9.2.0
         version: 9.2.0
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3
       zustand:
         specifier: ^4.4.7
         version: 4.5.7(@types/react@18.2.79)(react@18.2.0)
@@ -4165,6 +4177,17 @@ packages:
   expo-asset@8.10.1:
     resolution: {integrity: sha512-5VMTESxgY9GBsspO/esY25SKEa7RyascVkLe/OcL1WgblNFm7xCCEEUIW8VWS1nHJQGYxpMZPr3bEfjMpdWdyA==}
 
+  expo-av@16.0.8:
+    resolution: {integrity: sha512-cmVPftGR/ca7XBgs7R6ky36lF3OC0/MM/lpgX/yXqfv0jASTsh7AYX9JxHCwFmF+Z6JEB1vne9FDx4GiLcGreQ==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native-web:
+        optional: true
+
   expo-constants@14.4.2:
     resolution: {integrity: sha512-nOB122DOAjk+KrJT69lFQAoYVQGQjFHSigCPVBzVdko9S1xGsfiOH9+X5dygTsZTIlVLpQJDdmZ7ONiv3i+26w==}
     peerDependencies:
@@ -4610,6 +4633,9 @@ packages:
 
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
+
+  html5-qrcode@2.3.8:
+    resolution: {integrity: sha512-jsr4vafJhwoLVEDW3n1KvPnCCXWaQfRng0/EEYk1vNcQGcG/htAdhJX0be8YyqMoSz7+hZvOZSTAepsabiuhiQ==}
 
   http-errors@2.0.0:
     resolution: {integrity: sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==}
@@ -11806,6 +11832,12 @@ snapshots:
       - expo
       - supports-color
 
+  expo-av@16.0.8(expo@49.0.23(@babel/core@7.29.0))(react-native@0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0))(react@18.2.0):
+    dependencies:
+      expo: 49.0.23(@babel/core@7.29.0)
+      react: 18.2.0
+      react-native: 0.72.10(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(react@18.2.0)
+
   expo-constants@14.4.2(expo@49.0.23(@babel/core@7.29.0)):
     dependencies:
       '@expo/config': 8.1.2
@@ -12368,6 +12400,8 @@ snapshots:
       lru-cache: 6.0.0
 
   html-escaper@2.0.2: {}
+
+  html5-qrcode@2.3.8: {}
 
   http-errors@2.0.0:
     dependencies:

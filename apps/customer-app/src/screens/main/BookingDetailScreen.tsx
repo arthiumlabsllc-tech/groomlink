@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -22,7 +22,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { bookingApi } from '../../api/booking';
 import { MainStackParamList } from '../../types/navigation';
-import { RefundPreview } from '../../types';
+import { RefundPreview, QueuePositionResponse } from '../../types';
+import { autoCheckinService } from '../../services/AutoCheckinService';
 
 // Design System Colors
 const COLORS = {
@@ -50,10 +51,18 @@ export default function BookingDetailScreen() {
   const [groupMembersExpanded, setGroupMembersExpanded] = useState(true);
   const [disputeModalVisible, setDisputeModalVisible] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
+  const [autoCheckinLoading, setAutoCheckinLoading] = useState(false);
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
     queryFn: () => bookingApi.getBookingById(bookingId),
+  });
+
+  // Fetch queue position for confirmed bookings
+  const { data: queuePositionData } = useQuery({
+    queryKey: ['queue-position', bookingId],
+    queryFn: () => bookingApi.getQueuePosition(bookingId),
+    enabled: booking?.status === 'CONFIRMED',
   });
 
   const { data: refundPreview, isLoading: refundLoading } = useQuery({
@@ -250,6 +259,37 @@ export default function BookingDetailScreen() {
     navigation.navigate('BookingQRCode', { bookingId });
   };
 
+  const handleAutoCheckIn = async () => {
+    if (!booking) return;
+    
+    setAutoCheckinLoading(true);
+    try {
+      const result = await autoCheckinService.performAutoCheckIn(booking);
+      if (result.success) {
+        Alert.alert(
+          'Checked In!',
+          result.message,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+                queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                queryClient.invalidateQueries({ queryKey: ['queue-position', bookingId] });
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Check-In Failed', result.message);
+      }
+    } catch (error: any) {
+      Alert.alert('Check-In Failed', error.message || 'Please try again or check in with salon staff.');
+    } finally {
+      setAutoCheckinLoading(false);
+    }
+  };
+
   const getCompletionMethodLabel = (method?: string) => {
     switch (method) {
       case 'QR_CHECKIN': return 'QR Code Check-in';
@@ -315,6 +355,84 @@ export default function BookingDetailScreen() {
             {STATUS_LABELS[booking.status] || booking.status}
           </Text>
         </View>
+
+        {/* Queue Position Card - for confirmed bookings */}
+        {booking.status === 'CONFIRMED' && queuePositionData && (
+          <Card style={styles.queueCard}>
+            <Card.Content style={styles.queueCardContent}>
+              {queuePositionData.queuePosition !== null && (
+                <View style={styles.queuePositionSection}>
+                  <Text variant="labelSmall" style={styles.queuePositionLabel}>Your Position</Text>
+                  <View style={styles.queuePositionBadge}>
+                    <Text style={styles.queuePositionNumber}>#{queuePositionData.queuePosition}</Text>
+                  </View>
+                </View>
+              )}
+              <View style={styles.queueInfoSection}>
+                <View style={styles.queueInfoRow}>
+                  <Ionicons 
+                    name={queuePositionData.checkedIn ? "checkmark-circle" : "ellipse-outline"} 
+                    size={18} 
+                    color={queuePositionData.checkedIn ? COLORS.primaryGreen : COLORS.textSecondary} 
+                  />
+                  <Text variant="bodyMedium" style={[
+                    styles.queueInfoText,
+                    queuePositionData.checkedIn && { color: COLORS.primaryGreen, fontWeight: '600' }
+                  ]}>
+                    {queuePositionData.checkedIn ? 'Checked In' : 'Not Checked In'}
+                  </Text>
+                </View>
+                {queuePositionData.checkedIn && queuePositionData.estimatedWaitMinutes && (
+                  <View style={styles.queueInfoRow}>
+                    <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
+                    <Text variant="bodyMedium" style={styles.queueInfoText}>
+                      Est. wait: ~{queuePositionData.estimatedWaitMinutes} min
+                    </Text>
+                  </View>
+                )}
+                {!queuePositionData.checkedIn && queuePositionData.peopleAhead !== undefined && queuePositionData.peopleAhead > 0 && (
+                  <View style={styles.queueInfoRow}>
+                    <Ionicons name="people-outline" size={18} color={COLORS.textSecondary} />
+                    <Text variant="bodyMedium" style={styles.queueInfoText}>
+                      {queuePositionData.peopleAhead} people ahead
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Auto Check-In Button - for confirmed bookings not yet checked in */}
+        {booking.status === 'CONFIRMED' && queuePositionData && !queuePositionData.checkedIn && (
+          <Card style={styles.autoCheckinCard}>
+            <Card.Content>
+              <TouchableOpacity
+                style={styles.autoCheckinButton}
+                onPress={handleAutoCheckIn}
+                disabled={autoCheckinLoading}
+              >
+                {autoCheckinLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <View style={styles.autoCheckinIconContainer}>
+                      <Ionicons name="location" size={24} color="#fff" />
+                    </View>
+                    <View style={styles.autoCheckinTextContainer}>
+                      <Text variant="titleSmall" style={styles.autoCheckinTitle}>
+                        Auto Check-In
+                      </Text>
+                      <Text variant="bodySmall" style={styles.autoCheckinSubtitle}>
+                        Tap to check in automatically when you're at the salon
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </TouchableOpacity>
+            </Card.Content>
+          </Card>
+        )}
 
         {/* Reference Card */}
         <Card style={styles.referenceCard}>
@@ -1049,6 +1167,55 @@ const styles = StyleSheet.create({
   statusText: {
     fontWeight: '600',
   },
+  // Queue Position Card
+  queueCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  queueCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+  },
+  queuePositionSection: {
+    alignItems: 'center',
+    marginRight: 20,
+    paddingLeft: 8,
+  },
+  queuePositionLabel: {
+    color: COLORS.textSecondary,
+    marginBottom: 6,
+  },
+  queuePositionBadge: {
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  queuePositionNumber: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 24,
+  },
+  queueInfoSection: {
+    flex: 1,
+    gap: 8,
+  },
+  queueInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  queueInfoText: {
+    color: COLORS.textSecondary,
+  },
   // Reference Card
   referenceCard: {
     marginBottom: 16,
@@ -1699,6 +1866,42 @@ const styles = StyleSheet.create({
   },
   qrButtonSubtitle: {
     color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  // Auto Check-In Button Card
+  autoCheckinCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.primaryGreen,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  autoCheckinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  autoCheckinIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  autoCheckinTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  autoCheckinTitle: {
+    fontWeight: '600',
+    color: '#fff',
+  },
+  autoCheckinSubtitle: {
+    color: 'rgba(255, 255, 255, 0.8)',
     marginTop: 2,
   },
   // Dispute Modal

@@ -17,6 +17,7 @@ export type MainStackParamList = {
   AddService: { serviceId?: string; service?: Service } | undefined;
   StaffMain: undefined;
   AddStaff: { staffId?: string; staff?: StaffMember } | undefined;
+  QRScanner: { bookingId?: string } | undefined;
 };
 
 export interface Service {

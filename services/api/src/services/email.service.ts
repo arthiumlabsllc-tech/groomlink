@@ -292,16 +292,71 @@ export async function sendBookingConfirmationEmail(
     totalAmount: number;
     finalAmount: number;
     customerNotes?: string;
+    // Group booking support
+    isGroupBooking?: boolean;
+    totalPeople?: number;
+    guests?: Array<{
+      guestName: string;
+      service: string;
+      staff?: string;
+      isChild?: boolean;
+    }>;
   }
 ): Promise<boolean> {
   const subject = `Booking Confirmed - ${data.bookingReference}`;
-  
+
   const formattedDate = new Date(data.date).toLocaleDateString('en-GB', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+
+  // Build group booking details section if applicable
+  const groupBookingSection = data.isGroupBooking && data.guests && data.guests.length > 0
+    ? `
+          <!-- Group Booking Details -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e1; border-radius: 8px; border-left: 4px solid ${BRAND_GOLD};">
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Group Booking (${data.totalPeople || data.guests.length} people)</h3>
+
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+                      <thead>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Name</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Service</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Staff</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Age Group</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${data.guests.map(guest => `
+                        <tr style="border-bottom: 1px solid #eee;">
+                          <td style="padding: 10px 8px; color: #333; font-size: 14px;">${guest.guestName}</td>
+                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.service}</td>
+                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.staff || 'Any available'}</td>
+                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.isChild ? 'Child' : 'Adult'}</td>
+                        </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 15px; border-top: 2px solid ${BRAND_GOLD};">
+                      <tr>
+                        <td style="padding: 15px 8px 0 8px; color: #333; font-size: 14px; font-weight: 600;">Total Group Amount:</td>
+                        <td style="padding: 15px 8px 0 8px; color: ${BRAND_GREEN}; font-size: 16px; font-weight: 700; text-align: right;">GHS ${data.finalAmount.toFixed(2)}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+    `
+    : '';
 
   const html = `
 <!DOCTYPE html>
@@ -322,17 +377,17 @@ export async function sendBookingConfirmationEmail(
               <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
             </td>
           </tr>
-          
+
           <!-- Content -->
           <tr>
             <td style="padding: 40px 40px 20px 40px;">
               <h2 style="margin: 0 0 10px 0; color: #333; font-size: 22px; font-weight: 500;">Booking Confirmed!</h2>
               <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
-                Hi ${data.customerName}, your appointment has been booked successfully.
+                Hi ${data.customerName}, your ${data.isGroupBooking ? 'group booking' : 'appointment'} has been booked successfully.
               </p>
             </td>
           </tr>
-          
+
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 30px 40px;">
@@ -340,12 +395,18 @@ export async function sendBookingConfirmationEmail(
                 <tr>
                   <td style="padding: 25px 30px;">
                     <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Booking Details</h3>
-                    
+
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px; width: 40%;"><strong>Reference:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.bookingReference}</td>
                       </tr>
+                      ${data.isGroupBooking ? `
+                      <tr>
+                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Booking Type:</strong></td>
+                        <td style="padding: 8px 0; color: #333; font-size: 14px;">Group Booking (${data.totalPeople || data.guests?.length || 1} people)</td>
+                      </tr>
+                      ` : ''}
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Salon:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.salonName}</td>
@@ -360,6 +421,7 @@ export async function sendBookingConfirmationEmail(
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.salonPhone}</td>
                       </tr>
                       ` : ''}
+                      ${!data.isGroupBooking ? `
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Service:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.serviceName}</td>
@@ -370,6 +432,7 @@ export async function sendBookingConfirmationEmail(
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.workerName}</td>
                       </tr>
                       ` : ''}
+                      ` : ''}
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Date:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${formattedDate}</td>
@@ -378,16 +441,20 @@ export async function sendBookingConfirmationEmail(
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Time:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.startTime} - ${data.endTime}</td>
                       </tr>
+                      ${!data.isGroupBooking ? `
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Total:</strong></td>
                         <td style="padding: 8px 0; color: ${BRAND_GREEN}; font-size: 14px; font-weight: 600;">GHS ${data.finalAmount.toFixed(2)}</td>
                       </tr>
+                      ` : ''}
                     </table>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
+
+          ${groupBookingSection}
 
           ${data.customerNotes ? `
           <!-- Customer Notes -->
@@ -405,7 +472,7 @@ export async function sendBookingConfirmationEmail(
             </td>
           </tr>
           ` : ''}
-          
+
           <!-- Important Note -->
           <tr>
             <td style="padding: 0 40px 40px 40px;">
@@ -420,7 +487,7 @@ export async function sendBookingConfirmationEmail(
               </table>
             </td>
           </tr>
-          
+
           <!-- Footer -->
           <tr>
             <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
@@ -459,16 +526,64 @@ export async function sendNewBookingNotificationEmail(
     finalAmount: number;
     customerPhone?: string;
     customerNotes?: string;
+    // Group booking support
+    isGroupBooking?: boolean;
+    totalPeople?: number;
+    guests?: Array<{
+      guestName: string;
+      service: string;
+      staff?: string;
+      isChild?: boolean;
+    }>;
   }
 ): Promise<boolean> {
   const subject = `New Booking Received - ${data.bookingReference}`;
-  
+
   const formattedDate = new Date(data.date).toLocaleDateString('en-GB', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+
+  // Build group booking details section if applicable
+  const groupBookingSection = data.isGroupBooking && data.guests && data.guests.length > 0
+    ? `
+          <!-- Group Booking Details -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e8f5e9; border-radius: 8px; border-left: 4px solid ${BRAND_GREEN};">
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Group Members (${data.totalPeople || data.guests.length} people)</h3>
+
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+                      <thead>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Name</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Service</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Assigned Staff</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Age</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${data.guests.map(guest => `
+                        <tr style="border-bottom: 1px solid #eee;">
+                          <td style="padding: 10px 8px; color: #333; font-size: 14px;">${guest.guestName}</td>
+                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.service}</td>
+                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.staff || 'Unassigned'}</td>
+                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.isChild ? 'Child' : 'Adult'}</td>
+                        </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+    `
+    : '';
 
   const html = `
 <!DOCTYPE html>
@@ -489,17 +604,17 @@ export async function sendNewBookingNotificationEmail(
               <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
             </td>
           </tr>
-          
+
           <!-- Content -->
           <tr>
             <td style="padding: 40px 40px 20px 40px;">
               <h2 style="margin: 0 0 10px 0; color: #333; font-size: 22px; font-weight: 500;">New Booking Received!</h2>
               <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
-                A new booking has been made at your salon.
+                A new ${data.isGroupBooking ? 'group booking' : 'booking'} has been made at your salon.
               </p>
             </td>
           </tr>
-          
+
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 30px 40px;">
@@ -507,12 +622,18 @@ export async function sendNewBookingNotificationEmail(
                 <tr>
                   <td style="padding: 25px 30px;">
                     <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Booking Details</h3>
-                    
+
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px; width: 40%;"><strong>Reference:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.bookingReference}</td>
                       </tr>
+                      ${data.isGroupBooking ? `
+                      <tr>
+                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Booking Type:</strong></td>
+                        <td style="padding: 8px 0; color: #333; font-size: 14px;">Group Booking (${data.totalPeople || data.guests?.length || 1} people)</td>
+                      </tr>
+                      ` : ''}
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Customer:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.customerName}</td>
@@ -523,6 +644,7 @@ export async function sendNewBookingNotificationEmail(
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.customerPhone}</td>
                       </tr>
                       ` : ''}
+                      ${!data.isGroupBooking ? `
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Service:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.serviceName}</td>
@@ -532,6 +654,7 @@ export async function sendNewBookingNotificationEmail(
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Staff:</strong></td>
                         <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.workerName}</td>
                       </tr>
+                      ` : ''}
                       ` : ''}
                       <tr>
                         <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Date:</strong></td>
@@ -552,6 +675,8 @@ export async function sendNewBookingNotificationEmail(
             </td>
           </tr>
 
+          ${groupBookingSection}
+
           ${data.customerNotes ? `
           <!-- Customer Notes -->
           <tr>
@@ -568,7 +693,7 @@ export async function sendNewBookingNotificationEmail(
             </td>
           </tr>
           ` : ''}
-          
+
           <!-- Footer -->
           <tr>
             <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">

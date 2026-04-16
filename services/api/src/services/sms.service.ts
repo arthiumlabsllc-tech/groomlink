@@ -125,6 +125,40 @@ export async function sendBookingConfirmation(
 }
 
 /**
+ * Send group booking confirmation SMS to primary customer and all guests
+ */
+export async function sendGroupBookingConfirmation(
+  primaryPhone: string,
+  guestPhones: string[],
+  bookingRef: string,
+  salonName: string,
+  date: Date,
+  time: string,
+  totalPeople: number
+): Promise<void> {
+  const formattedDate = date.toLocaleDateString('en-GH', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  // Send to primary customer
+  const primaryMessage = `Your group appointment (${totalPeople} people) at ${salonName} is confirmed!\nRef: ${bookingRef}\nDate: ${formattedDate}\nTime: ${time}\n\nThank you for using GroomLink!`;
+
+  await sendSMS({ to: primaryPhone, message: primaryMessage });
+
+  // Send to each guest with a phone number
+  const guestMessage = `You've been added to a group appointment at ${salonName}!\nRef: ${bookingRef}\nDate: ${formattedDate}\nTime: ${time}\n\nContact your group organizer for details.`;
+
+  const guestSendPromises = guestPhones
+    .filter(phone => phone && phone.trim() !== '')
+    .map(phone => sendSMS({ to: phone, message: guestMessage }));
+
+  await Promise.all(guestSendPromises);
+}
+
+/**
  * Send 2-hour reminder SMS
  */
 export async function sendReminderSMS(

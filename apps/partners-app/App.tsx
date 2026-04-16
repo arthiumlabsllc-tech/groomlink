@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { PaperProvider } from 'react-native-paper';
@@ -8,6 +8,9 @@ import * as SecureStore from 'expo-secure-store';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
+import { salonApi } from './src/api/salon';
+import { useSocket } from './src/hooks/useSocket';
+import { Alert } from 'react-native';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,11 +22,19 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { setUser, clearAuth } = useAuthStore();
+  const { setUser, clearAuth, isAuthenticated } = useAuthStore();
+  const [salonId, setSalonId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Fetch salon when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSalon();
+    }
+  }, [isAuthenticated]);
 
   const checkAuth = async () => {
     try {
@@ -57,6 +68,52 @@ function AppContent() {
       clearAuth();
     }
   };
+
+  const fetchSalon = async () => {
+    try {
+      const salon = await salonApi.getMySalon();
+      if (salon) {
+        setSalonId(salon.id);
+      }
+    } catch (error) {
+      console.error('Failed to fetch salon:', error);
+    }
+  };
+
+  // Use socket hook for real-time notifications
+  useSocket({
+    salonId,
+    enabled: isAuthenticated && !!salonId,
+    onBookingNew: (data) => {
+      const customerName = `${data.booking.customer.firstName} ${data.booking.customer.lastName}`;
+      Alert.alert(
+        'New Booking!',
+        `${customerName} booked ${data.booking.service.name}`,
+        [{ text: 'OK' }],
+        { cancelable: true }
+      );
+    },
+    onBookingCheckin: (data) => {
+      Alert.alert(
+        'Customer Checked In',
+        `${data.customerName} checked in for ${data.serviceName}. Queue position: ${data.queuePosition}`,
+        [{ text: 'OK' }],
+        { cancelable: true }
+      );
+    },
+    onBookingCompleted: (data) => {
+      Alert.alert(
+        'Service Completed',
+        `${data.customerName} - ${data.serviceName} completed. Amount: GHS ${data.totalAmount}`,
+        [{ text: 'OK' }],
+        { cancelable: true }
+      );
+    },
+    onQueueUpdated: () => {
+      // Invalidate query cache for queue data
+      queryClient.invalidateQueries({ queryKey: ['queue'] });
+    },
+  });
 
   return <AppNavigator />;
 }

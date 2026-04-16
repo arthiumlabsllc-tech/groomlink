@@ -9,6 +9,17 @@ import { sendReminderSMS } from '../services/sms.service';
 import { startAutoCompletionJob } from './autoComplete';
 
 /**
+ * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
+ * 
+ * The API container runs with TZ=Africa/Accra set in docker-compose.prod.yml.
+ * This means `new Date()` returns Ghana time, which aligns with UTC since
+ * Ghana is in the GMT timezone (no daylight saving time).
+ * 
+ * All scheduled jobs and date comparisons assume Ghana timezone.
+ * This ensures consistent behavior even if the server's default timezone changes.
+ */
+
+/**
  * Initialize all background job schedulers
  */
 export function initScheduler(): void {
@@ -69,17 +80,49 @@ async function sendAppointmentReminders(): Promise<void> {
             businessName: true,
           },
         },
+        guests: {
+          select: {
+            guestPhone: true,
+          },
+        },
       },
     });
 
     for (const booking of bookings) {
       try {
+        const reminderPromises: Promise<boolean>[] = [];
+
+        // Send to primary customer
         if (booking.customer.phoneNumber) {
-          await sendReminderSMS(
-            booking.customer.phoneNumber,
-            booking.salon.businessName,
-            booking.startTime
+          reminderPromises.push(
+            sendReminderSMS(
+              booking.customer.phoneNumber,
+              booking.salon.businessName,
+              booking.startTime
+            )
           );
+        }
+
+        // Send to group guests with phone numbers
+        if (booking.guests && booking.guests.length > 0) {
+          const guestPhones = booking.guests
+            .map((g) => g.guestPhone)
+            .filter((phone): phone is string => !!phone);
+
+          for (const guestPhone of guestPhones) {
+            reminderPromises.push(
+              sendReminderSMS(
+                guestPhone,
+                booking.salon.businessName,
+                booking.startTime
+              )
+            );
+          }
+        }
+
+        // Wait for all reminders to be sent
+        if (reminderPromises.length > 0) {
+          await Promise.all(reminderPromises);
 
           // Mark reminder as sent
           await prisma.booking.update({
@@ -87,7 +130,9 @@ async function sendAppointmentReminders(): Promise<void> {
             data: { reminderSent: true },
           });
 
-          logger.info(`Reminder sent for booking ${booking.id}`);
+          logger.info(
+            `Reminder sent for booking ${booking.id} (${reminderPromises.length} recipient(s))`
+          );
         }
       } catch (error) {
         logger.error(`Failed to send reminder for booking ${booking.id}:`, error);

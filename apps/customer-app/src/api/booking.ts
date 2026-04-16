@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { Booking, RefundPreview, NoShowStatus } from '../types';
+import { Booking, RefundPreview, NoShowStatus, QueuePositionResponse } from '../types';
 
 export interface GuestData {
   guestName: string;
@@ -112,6 +112,43 @@ export const bookingApi = {
   // Get QR code for booking check-in
   getQRCode: async (id: string): Promise<{ qrCode: string; bookingRef: string }> => {
     const response = await apiClient.get(`/bookings/${id}/qr-code`);
+    return response.data.data;
+  },
+
+  // Get queue position for booking
+  getQueuePosition: async (id: string): Promise<QueuePositionResponse> => {
+    const response = await apiClient.get(`/bookings/${id}/queue-position`);
+    return response.data.data;
+  },
+
+  // Auto check-in via geofence
+  autoCheckIn: async (bookingId: string, latitude: number, longitude: number): Promise<{
+    booking: {
+      id: string;
+      reference: string;
+      status: string;
+      checkedIn: boolean;
+      checkedInAt: string | null;
+      queuePosition: number | null;
+      salon: {
+        id: string;
+        businessName: string;
+        address: string;
+      };
+      service: {
+        id: string;
+        name: string;
+        duration: number;
+      };
+    };
+    queuePosition: number;
+    message: string;
+  }> => {
+    const response = await apiClient.post('/bookings/auto-checkin', {
+      bookingId,
+      latitude,
+      longitude,
+    });
     return response.data.data;
   },
 };

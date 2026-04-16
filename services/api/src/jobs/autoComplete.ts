@@ -6,6 +6,17 @@ import { sendSMS } from '../services/sms.service';
 import { releaseEscrow } from '../services/escrow.service';
 
 /**
+ * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
+ * 
+ * The API container runs with TZ=Africa/Accra set in docker-compose.prod.yml.
+ * This means `new Date()` returns Ghana time, which aligns with UTC since
+ * Ghana is in the GMT timezone (no daylight saving time).
+ * 
+ * All auto-completion timing and date comparisons assume Ghana timezone.
+ * The hoursSinceAppointment calculation uses local time which matches Ghana time.
+ */
+
+/**
  * Start the auto-completion cron job
  * Runs every 30 minutes to check for bookings that need completion reminders or auto-completion
  */

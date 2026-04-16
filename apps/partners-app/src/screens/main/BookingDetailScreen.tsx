@@ -21,13 +21,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { bookingsApi, BookingDetail } from '../../api/bookings';
-import { MainStackParamList } from '../../types';
+import { MainStackParamList, MainNavigationProp } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type BookingDetailRouteProp = RouteProp<MainStackParamList, 'BookingDetail'>;
 
 export default function BookingDetailScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<MainNavigationProp>();
   const route = useRoute<BookingDetailRouteProp>();
   const { bookingId } = route.params;
   const queryClient = useQueryClient();
@@ -135,6 +135,10 @@ export default function BookingDetailScreen() {
     );
   };
 
+  const handleCheckIn = () => {
+    navigation.navigate('QRScanner', { bookingId });
+  };
+
   const isAppointmentTimePassed = () => {
     if (!booking) return false;
     const appointmentDateTime = new Date(`${booking.date}T${booking.endTime}`);
@@ -208,6 +212,41 @@ export default function BookingDetailScreen() {
         const canComplete = isAppointmentTimePassed();
         return (
           <View style={styles.actionButtons}>
+            {/* Check In Button - Show if not checked in */}
+            {!booking.checkedIn && (
+              <Button
+                mode="contained"
+                onPress={handleCheckIn}
+                style={styles.checkInButton}
+                buttonColor="#3B82F6"
+                contentStyle={styles.buttonContent}
+                theme={{ roundness: 12 }}
+                icon="qrcode-scan"
+              >
+                Check In Customer
+              </Button>
+            )}
+            
+            {/* Checked In Status - Show if checked in */}
+            {booking.checkedIn && (
+              <View style={styles.checkedInNotice}>
+                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                <View style={styles.checkedInInfo}>
+                  <Text style={styles.checkedInText}>Customer Checked In</Text>
+                  {booking.queuePosition && (
+                    <Text style={styles.queuePositionText}>
+                      Queue Position: #{booking.queuePosition}
+                    </Text>
+                  )}
+                  {booking.checkedInAt && (
+                    <Text style={styles.checkedInTimeText}>
+                      at {format(parseISO(booking.checkedInAt), 'h:mm a')}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+            
             {canComplete ? (
               <Button
                 mode="contained"
@@ -1221,5 +1260,38 @@ const styles = StyleSheet.create({
   waitingText: {
     color: '#6B7280',
     fontWeight: '500',
+  },
+  // Check-in styles
+  checkInButton: {
+    borderRadius: 12,
+  },
+  checkedInNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F0FDF4',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+  },
+  checkedInInfo: {
+    flex: 1,
+  },
+  checkedInText: {
+    color: '#059669',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  queuePositionText: {
+    color: '#10B981',
+    fontWeight: '500',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  checkedInTimeText: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 2,
   },
 });

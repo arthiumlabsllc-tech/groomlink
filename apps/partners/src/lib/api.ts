@@ -124,6 +124,12 @@ export interface Booking {
   completionMethod?: 'MANUAL' | 'QR' | 'AUTO' | 'CUSTOMER';
   customerConfirmed?: boolean;
   disputeRaised?: boolean;
+  // Check-in fields
+  checkedIn?: boolean;
+  checkedInAt?: string;
+  checkedInBy?: string;
+  checkinCode?: string;
+  queuePosition?: number;
 }
 
 export interface CompletionSettings {
@@ -457,6 +463,19 @@ class ApiClient {
     return this.request<{ success: boolean; data: Booking[] }>(`/bookings/salon/${salonId}${query}`);
   }
 
+  // Queue for today's bookings
+  async getSalonQueue(salonId: string) {
+    return this.request<{ success: boolean; data: { queue: Booking[]; stats: { totalQueued: number; checkedInCount: number; notCheckedInCount: number; rescheduledCount: number } } }>(`/bookings/salon/${salonId}/queue`);
+  }
+
+  // Check-in by QR code or checkin code
+  async checkinByQr(data: { bookingId?: string; checkinCode?: string; qrData?: string }) {
+    return this.request<{ success: boolean; data: { booking: Booking; message: string } }>('/bookings/checkin-by-qr', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async updateBookingStatus(salonId: string, bookingId: string, status: string) {
     return this.request<{ success: boolean; data: Booking }>(`/salon-owner/${salonId}/bookings/${bookingId}/status`, {
       method: 'PUT',
@@ -505,7 +524,7 @@ class ApiClient {
 
   // Earnings summary for provider
   async getEarningsSummary(salonId: string) {
-    return this.request<{ success: boolean; data: EarningsSummary }>(`/salon-owner/${salonId}/earnings-summary`);
+    return this.request<{ success: boolean; data: EarningsSummary }>(`/salon-owner/${salonId}/earnings`);
   }
 
   // Dashboard

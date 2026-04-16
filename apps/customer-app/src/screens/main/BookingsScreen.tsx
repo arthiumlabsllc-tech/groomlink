@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -22,6 +22,7 @@ import axios from 'axios';
 import { bookingApi } from '../../api/booking';
 import { Booking } from '../../types';
 import { useAuthStore } from '../../store/authStore';
+import { autoCheckinService } from '../../services/AutoCheckinService';
 
 // Design System Colors
 const COLORS = {
@@ -101,6 +102,35 @@ export default function BookingsScreen() {
     const statusList = activeTab === 'upcoming' ? UPCOMING_STATUSES : PAST_STATUSES;
     return bookings.filter(booking => statusList.includes(booking.status));
   }, [bookings, activeTab]);
+
+  // Auto check-in: Start app state listener for foreground events
+  useEffect(() => {
+    autoCheckinService.startAppStateListener(
+      () => bookings || [],
+      (bookingId: string, queuePosition: number) => {
+        // Refresh bookings when check-in is successful
+        refetch();
+      }
+    );
+
+    return () => {
+      autoCheckinService.stopAppStateListener();
+    };
+  }, [bookings, refetch]);
+
+  // Auto check-in: Check proximity when bookings are first loaded
+  useEffect(() => {
+    if (bookings && bookings.length > 0 && !isLoading) {
+      // Delay to allow UI to settle
+      const timeout = setTimeout(() => {
+        autoCheckinService.checkAndPromptForCheckIn(bookings, (bookingId, queuePosition) => {
+          refetch();
+        });
+      }, 1500);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [bookings, isLoading]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

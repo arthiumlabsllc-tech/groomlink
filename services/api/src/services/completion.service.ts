@@ -3,6 +3,7 @@ import redis from '../config/redis';
 import logger from '../config/logger';
 import { releaseEscrow, refundEscrow, getEscrowByBookingId } from './escrow.service';
 import * as smsService from './sms.service';
+import { emitBookingCompleted } from '../config/socket';
 import QRCode from 'qrcode';
 
 /**
@@ -24,6 +25,7 @@ export async function manualComplete(bookingId: string, completedById: string) {
           },
         },
         customer: true,
+        service: true,
       },
     });
 
@@ -99,6 +101,14 @@ export async function manualComplete(bookingId: string, completedById: string) {
       escrowId: booking.escrow.id,
     });
 
+    // Emit socket event to salon for audible notification
+    emitBookingCompleted(booking.salonId, {
+      bookingId: updatedBooking.id,
+      customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+      serviceName: booking.service?.name || 'Service',
+      totalAmount: booking.escrow.amountHeld.toString(),
+    });
+
     return updatedBooking;
   } catch (error) {
     logger.error('Error in manualComplete:', { bookingId, completedById, error });
@@ -124,6 +134,7 @@ export async function customerConfirmComplete(bookingId: string, userId: string)
           },
         },
         customer: true,
+        service: true,
       },
     });
 
@@ -184,6 +195,14 @@ export async function customerConfirmComplete(bookingId: string, userId: string)
       escrowId: booking.escrow.id,
     });
 
+    // Emit socket event to salon for audible notification
+    emitBookingCompleted(booking.salonId, {
+      bookingId: updatedBooking.id,
+      customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+      serviceName: booking.service?.name || 'Service',
+      totalAmount: booking.escrow.amountHeld.toString(),
+    });
+
     return updatedBooking;
   } catch (error) {
     logger.error('Error in customerConfirmComplete:', { bookingId, userId, error });
@@ -218,6 +237,7 @@ export async function qrComplete(bookingId: string, salonOwnerId: string) {
           },
         },
         customer: true,
+        service: true,
       },
     });
 
@@ -280,6 +300,14 @@ export async function qrComplete(bookingId: string, salonOwnerId: string) {
       escrowId: booking.escrow.id,
     });
 
+    // Emit socket event to salon for audible notification
+    emitBookingCompleted(booking.salonId, {
+      bookingId: updatedBooking.id,
+      customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+      serviceName: booking.service?.name || 'Service',
+      totalAmount: booking.escrow.amountHeld.toString(),
+    });
+
     return updatedBooking;
   } catch (error) {
     logger.error('Error in qrComplete:', { bookingId, salonOwnerId, error });
@@ -305,6 +333,7 @@ export async function autoCompleteBooking(bookingId: string) {
           },
         },
         customer: true,
+        service: true,
       },
     });
 
@@ -368,6 +397,14 @@ export async function autoCompleteBooking(bookingId: string) {
 
     logger.info(`Booking auto-completed: ${bookingId}`, {
       escrowId: booking.escrow.id,
+    });
+
+    // Emit socket event to salon for audible notification
+    emitBookingCompleted(booking.salonId, {
+      bookingId: updatedBooking.id,
+      customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+      serviceName: booking.service?.name || 'Service',
+      totalAmount: booking.escrow.amountHeld.toString(),
     });
 
     return updatedBooking;

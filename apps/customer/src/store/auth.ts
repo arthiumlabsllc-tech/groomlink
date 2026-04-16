@@ -19,11 +19,12 @@ interface AuthState {
   
   requestOTP: (email: string) => Promise<{ isNewUser: boolean }>;
   verifyOTP: (email: string, code: string) => Promise<{ isNewUser: boolean; token?: string }>;
-  completeRegistration: (data: { firstName: string; lastName: string; email: string; role: string }) => Promise<void>;
+  completeRegistration: (data: { firstName: string; lastName: string; email: string; role: string; phoneNumber?: string }) => Promise<void>;
   fetchProfile: () => Promise<void>;
   logout: () => void;
   initialize: () => void;
   setToken: (token: string) => void;
+  isProfileComplete: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -66,6 +67,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Handle both old format (data.token) and new format (data.tokens.accessToken)
     const accessToken = data.token || data.tokens?.accessToken;
     
+    // Check the backend's isNewUser flag to determine if this is a new user
+    // IMPORTANT: Backend returns both token and user for new users too,
+    // so we must check data.isNewUser instead of just presence of token/user
+    if (data.isNewUser) {
+      // New user - store temp token for registration
+      const tempToken = data.tempToken || data.tokens?.accessToken;
+      if (tempToken) {
+        localStorage.setItem('customer_temp_token', tempToken);
+      }
+      // Set authenticated state with temp token so ProtectedRoute allows access
+      // ProfileSetupGuard will redirect to /profile/setup due to incomplete profile
+      set({ 
+        token: tempToken || null, 
+        user: data.user, 
+        isAuthenticated: true 
+      });
+      return { isNewUser: true };
+    }
+    
+    // Existing user - full authentication
     if (accessToken && data.user) {
       localStorage.setItem('customer_token', accessToken);
       localStorage.setItem('customer_user', JSON.stringify(data.user));
@@ -73,12 +94,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { isNewUser: false, token: accessToken };
     }
     
-    // New user - store temp token for registration
-    const tempToken = data.tempToken || data.tokens?.accessToken;
-    if (tempToken) {
-      localStorage.setItem('customer_temp_token', tempToken);
-    }
-    return { isNewUser: true };
+    // Fallback - shouldn't happen but handle gracefully
+    return { isNewUser: false };
   },
 
   completeRegistration: async (data) => {
@@ -112,7 +129,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem('customer_token');
     localStorage.removeItem('customer_user');
     localStorage.removeItem('customer_temp_token');
+    localStorage.removeItem('customer_setup_email');
     set({ token: null, user: null, isAuthenticated: false });
     window.location.href = 'https://my.groomlinkgh.com/login';
+  },
+
+  isProfileComplete: () => {
+    const { user } = get();
+    return !!(user?.firstName && user?.phoneNumber);
   },
 }));

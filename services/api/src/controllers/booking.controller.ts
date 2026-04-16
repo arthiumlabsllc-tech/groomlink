@@ -4,6 +4,7 @@ import * as bookingService from '../services/booking.service';
 import * as cancellationService from '../services/cancellation.service';
 import * as noshowService from '../services/noshow.service';
 import * as completionService from '../services/completion.service';
+import * as checkinService from '../services/checkin.service';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 import prisma from '../config/database';
@@ -152,7 +153,17 @@ export async function getSalonBookings(req: AuthenticatedRequest, res: Response)
     };
 
     const { bookings, total } = await bookingService.getBookings(filters, page, limit);
-    paginatedResponse(res, bookings, page, limit, total);
+    
+    // Security: Strip checkinCode from bookings for salon owners
+    // Salon owners should not see checkin codes to prevent fraud
+    const sanitizedBookings = bookings.map(booking => {
+      if ('checkinCode' in booking) {
+        delete (booking as any).checkinCode;
+      }
+      return booking;
+    });
+    
+    paginatedResponse(res, sanitizedBookings, page, limit, total);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
@@ -583,5 +594,139 @@ export async function raiseDisputeHandler(req: AuthenticatedRequest, res: Respon
       return;
     }
     errorResponse(res, 'DISPUTE_FAILED', (error as Error).message, 400);
+  }
+}
+
+// ===========================================
+// CHECK-IN & QUEUE HANDLERS
+// ===========================================
+
+const checkinByQrSchema = z.object({
+  bookingId: z.string().uuid().optional(),
+  checkinCode: z.string().optional(),
+  qrData: z.string().optional(),
+}).refine((data) => data.bookingId || data.checkinCode || data.qrData, {
+  message: 'At least one of bookingId, checkinCode, or qrData is required',
+});
+
+/**
+ * Check in a customer by QR code, check-in code, or booking ID
+ * Salon owner only
+ */
+export async function checkinByQrHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const validatedData = checkinByQrSchema.parse(req.body);
+
+    const result = await checkinService.scanAndCheckIn(validatedData, req.user.id);
+    successResponse(res, result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'CHECKIN_FAILED', (error as Error).message, 400);
+  }
+}
+
+/**
+ * Get queue for a salon
+ * Salon owner or admin only
+ */
+export async function getSalonQueueHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { salonId } = req.params;
+    const dateStr = req.query.date as string | undefined;
+    const date = dateStr ? new Date(dateStr) : undefined;
+
+    const result = await checkinService.getQueueForSalon(salonId, date);
+    successResponse(res, result);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Get customer's queue position for a booking
+ * Customer only
+ */
+export async function getQueuePositionHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+
+    // Verify the booking belongs to the customer
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { customerId: true },
+    });
+
+    if (!booking) {
+      errorResponse(res, 'NOT_FOUND', 'Booking not found', 404);
+      return;
+    }
+
+    if (booking.customerId !== req.user.id) {
+      errorResponse(res, 'FORBIDDEN', 'You can only view queue position for your own bookings', 403);
+      return;
+    }
+
+    const result = await checkinService.getCustomerQueuePosition(id);
+    successResponse(res, result);
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// ===========================================
+// CUSTOMER AUTO CHECK-IN (GEOFENCE)
+// ===========================================
+
+const autoCheckInSchema = z.object({
+  bookingId: z.string().uuid('Booking ID must be a valid UUID'),
+  latitude: z.number().min(-90).max(90, 'Latitude must be between -90 and 90'),
+  longitude: z.number().min(-180).max(180, 'Longitude must be between -180 and 180'),
+});
+
+/**
+ * Customer self check-in via geofence
+ * Customer only - verifies location proximity to salon
+ */
+export async function customerAutoCheckInHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const validatedData = autoCheckInSchema.parse(req.body);
+
+    const result = await checkinService.customerAutoCheckIn(
+      validatedData.bookingId,
+      req.user.id,
+      validatedData.latitude,
+      validatedData.longitude
+    );
+
+    successResponse(res, result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'CHECKIN_FAILED', (error as Error).message, 400);
   }
 }

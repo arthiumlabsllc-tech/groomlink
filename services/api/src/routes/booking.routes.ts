@@ -14,6 +14,15 @@ router.post('/check-capacity', authenticateToken, bookingController.checkCapacit
 // QR completion (salon owner only) - must be before /:id catch-all
 router.post('/complete-by-qr', authenticateToken, requireRole(UserRole.SALON_OWNER), bookingController.qrCompleteHandler);
 
+// Check-in by QR/code (salon owner only)
+router.post('/checkin-by-qr', authenticateToken, requireRole(UserRole.SALON_OWNER), bookingController.checkinByQrHandler);
+
+// Customer auto check-in via geofence (customer only)
+router.post('/auto-checkin', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.customerAutoCheckInHandler);
+
+// Get salon queue (salon owner or admin)
+router.get('/salon/:salonId/queue', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), bookingController.getSalonQueueHandler);
+
 // Specific named routes MUST come BEFORE /:id catch-all route
 router.get('/my', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.getMyBookings);
 router.get('/slots/:salonId', bookingController.getAvailableSlots);
@@ -26,6 +35,9 @@ router.put('/guest/:guestId/checkin', authenticateToken, requireRole(UserRole.SA
 
 // Routes with :id parameter (catch-all) - must be after all specific named routes
 router.get('/:id', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.getBookingById);
+
+// Get queue position for a booking (customer only)
+router.get('/:id/queue-position', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.getQueuePositionHandler);
 
 // QR code generation (customer only)
 router.get('/:id/qr-code', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.getQRCodeHandler);
