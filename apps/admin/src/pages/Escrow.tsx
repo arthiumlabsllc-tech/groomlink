@@ -16,20 +16,27 @@ export function Escrow() {
   // Calculate summary stats
   const summaryStats = useMemo(() => {
     if (!escrowAccounts || escrowAccounts.length === 0) {
-      return { totalHeld: 0, totalReleased: 0, totalRefunded: 0 };
+      return { totalHeld: 0, totalReleased: 0, totalRefunded: 0, totalPlatformFees: 0, totalProviderAmount: 0 };
     }
     
     return escrowAccounts.reduce((acc, escrow) => {
-      if (escrow.status === 'HELD') acc.totalHeld += escrow.amount;
-      else if (escrow.status === 'RELEASED') acc.totalReleased += escrow.amount;
-      else if (escrow.status === 'REFUNDED') acc.totalRefunded += escrow.amount;
+      const amount = typeof escrow.amountHeld === 'string' ? parseFloat(escrow.amountHeld) : (escrow.amountHeld || 0);
+      const platformFee = typeof escrow.platformFee === 'string' ? parseFloat(escrow.platformFee) : (escrow.platformFee || 0);
+      const providerAmount = typeof escrow.providerAmount === 'string' ? parseFloat(escrow.providerAmount) : (escrow.providerAmount || 0);
+      const status = escrow.status?.toUpperCase();
+      
+      if (status === 'HELD') acc.totalHeld += amount;
+      else if (status === 'RELEASED') acc.totalReleased += amount;
+      else if (status === 'REFUNDED') acc.totalRefunded += amount;
+      acc.totalPlatformFees += platformFee;
+      acc.totalProviderAmount += providerAmount;
       return acc;
-    }, { totalHeld: 0, totalReleased: 0, totalRefunded: 0 });
+    }, { totalHeld: 0, totalReleased: 0, totalRefunded: 0, totalPlatformFees: 0, totalProviderAmount: 0 });
   }, [escrowAccounts]);
 
   // Filter escrow accounts
   const filteredEscrow = escrowAccounts.filter((escrow) => {
-    const matchesStatus = !statusFilter || escrow.status === statusFilter;
+    const matchesStatus = !statusFilter || escrow.status?.toUpperCase() === statusFilter;
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
       escrow.booking?.salon?.businessName?.toLowerCase().includes(searchLower) ||
@@ -39,17 +46,18 @@ export function Escrow() {
   });
 
   const getStatusBadge = (status: string) => {
+    const upperStatus = status?.toUpperCase() || 'HELD';
     const styles: Record<string, { bg: string; text: string; dot: string }> = {
       HELD: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
       RELEASED: { bg: 'bg-[#006B3F]/10', text: 'text-[#006B3F]', dot: 'bg-[#006B3F]' },
       REFUNDED: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
     };
-    const style = styles[status] || styles.HELD;
+    const style = styles[upperStatus] || styles.HELD;
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${style.bg} ${style.text}`}>
         <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`}></span>
-        {status.charAt(0) + status.slice(1).toLowerCase()}
+        {upperStatus.charAt(0) + upperStatus.slice(1).toLowerCase()}
       </span>
     );
   };
@@ -201,7 +209,7 @@ export function Escrow() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-bold text-[#006B3F]">{formatCurrency(escrow.amount)}</span>
+                    <span className="text-sm font-bold text-[#006B3F]">{formatCurrency(escrow.amountHeld)}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-600">{formatCurrency(escrow.platformFee)}</span>
@@ -274,7 +282,7 @@ function EscrowCard({ escrow, getStatusBadge }: { escrow: EscrowAccount; getStat
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Amount:</span>
-          <span className="font-bold text-[#006B3F]">{formatCurrency(escrow.amount)}</span>
+          <span className="font-bold text-[#006B3F]">{formatCurrency(escrow.amountHeld)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Platform Fee:</span>

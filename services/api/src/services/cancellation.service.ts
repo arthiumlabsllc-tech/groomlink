@@ -570,16 +570,24 @@ export async function rescheduleBooking(
     },
   });
 
-  // Invalidate cache for old AND new date
+  // Invalidate cache for old AND new date/staff
+  // Use date string comparison to avoid timezone issues with getTime()
+  const oldDateStr = booking.date.toISOString().split('T')[0];
+  const newDateStr = parsedNewDate.toISOString().split('T')[0];
+  
+  // Always invalidate old slot
   await invalidateAvailabilityCache(booking.salonId, booking.workerId || undefined, booking.date);
-  if (booking.date.getTime() !== parsedNewDate.getTime()) {
+  
+  // Invalidate new slot if date, time, or staff changed
+  // Note: time change doesn't need separate invalidation since cache is per-date, not per-time
+  // But we need to invalidate if:
+  // 1. Date changed (new date's cache)
+  // 2. Staff changed (new staff's cache for the date)
+  if (oldDateStr !== newDateStr || booking.workerId !== newStaffId) {
     await invalidateAvailabilityCache(booking.salonId, newStaffId || booking.workerId || undefined, parsedNewDate);
   }
 
   // Emit slot:updated events
-  const oldDateStr = booking.date.toISOString().split('T')[0];
-  const newDateStr = parsedNewDate.toISOString().split('T')[0];
-
   emitSlotUpdated(booking.salonId, {
     workerId: booking.workerId || undefined,
     date: oldDateStr,

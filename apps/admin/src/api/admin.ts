@@ -26,10 +26,10 @@ export const policiesApi = {
 
 export interface EscrowAccount {
   id: string;
-  amount: number;
-  platformFee: number;
-  providerAmount: number;
-  status: 'HELD' | 'RELEASED' | 'REFUNDED';
+  amountHeld: number | string; // Decimal from Prisma, can be string or number
+  platformFee: number | string;
+  providerAmount: number | string;
+  status: string; // 'held', 'released', 'refunded', 'disputed'
   createdAt: string;
   releasedAt: string | null;
   refundedAt: string | null;

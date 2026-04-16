@@ -773,10 +773,14 @@ export interface VerifyPaymentResult extends PaymentResult {
   bookingConfirmed?: boolean;
   bookingReference?: string;
   amountPaid?: number;
+  serviceAmount?: number;
+  platformFee?: number;
   serviceName?: string;
   bookingDate?: string;
   bookingTime?: string;
   salonName?: string;
+  isGroupBooking?: boolean;
+  totalPeople?: number;
 }
 
 export async function verifyAndCompletePayment(paymentId: string, reference: string): Promise<VerifyPaymentResult> {
@@ -830,16 +834,25 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
 
   if (payment.status === PaymentStatus.SUCCESS) {
     const booking = payment.booking;
+    // Extract service amount and platform fee from providerData if available
+    const providerData = payment.providerData as { serviceAmount?: number; platformFee?: number; feePercent?: number } | null;
+    const serviceAmount = providerData?.serviceAmount ?? Number(booking.finalAmount);
+    const platformFee = providerData?.platformFee ?? (Number(payment.amount) - serviceAmount);
+    
     return { 
       success: true, 
       message: 'Payment already completed',
       bookingConfirmed: true,
       bookingReference: booking.id,
       amountPaid: Number(payment.amount),
+      serviceAmount: serviceAmount,
+      platformFee: platformFee,
       serviceName: booking.service.name,
       bookingDate: booking.date.toISOString(),
       bookingTime: booking.startTime,
       salonName: booking.salon.businessName,
+      isGroupBooking: booking.isGroupBooking,
+      totalPeople: booking.totalPeople,
     };
   }
 
@@ -1024,6 +1037,11 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       ).catch((err) => logger.error('Failed to send payment notification to salon owner', { err }));
     }
     
+    // Extract service amount and platform fee from providerData if available
+    const providerData = payment.providerData as { serviceAmount?: number; platformFee?: number; feePercent?: number } | null;
+    const serviceAmount = providerData?.serviceAmount ?? Number(booking.finalAmount);
+    const platformFee = providerData?.platformFee ?? (Number(payment.amount) - serviceAmount);
+    
     return { 
       success: true, 
       reference, 
@@ -1031,10 +1049,14 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       bookingConfirmed: true,
       bookingReference: booking.id,
       amountPaid: Number(payment.amount),
+      serviceAmount: serviceAmount,
+      platformFee: platformFee,
       serviceName: booking.service.name,
       bookingDate: booking.date.toISOString(),
       bookingTime: booking.startTime,
       salonName: booking.salon.businessName,
+      isGroupBooking: booking.isGroupBooking,
+      totalPeople: booking.totalPeople,
     };
   } else {
     await prisma.payment.update({

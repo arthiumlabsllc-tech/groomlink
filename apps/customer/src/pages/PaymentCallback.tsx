@@ -8,9 +8,13 @@ type PaymentStatus = 'verifying' | 'success' | 'failed';
 interface PaymentDetails {
   reference: string;
   amount: number;
+  serviceAmount: number;
+  platformFee: number;
   bookingReference: string;
   salonName: string;
   serviceName: string;
+  isGroupBooking: boolean;
+  totalPeople?: number;
 }
 
 export default function PaymentCallback() {
@@ -38,43 +42,76 @@ export default function PaymentCallback() {
           setStatus('success');
           setMessage(result.message || 'Your payment has been processed successfully!');
           
-          // Try to fetch booking details using the reference
-          try {
-            // The reference from Paystack might be linked to a booking
-            // Fetch recent bookings to find the one with this payment reference
-            const bookings = await bookingApi.getMyBookings('CONFIRMED');
-            const matchingBooking = bookings.find(b => 
-              b.payment?.status === 'COMPLETED' || 
-              new Date(b.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Within last 24 hours
-            );
-            
-            if (matchingBooking) {
-              setPaymentDetails({
-                reference: reference,
-                amount: matchingBooking.finalAmount || matchingBooking.totalAmount,
-                bookingReference: matchingBooking.reference,
-                salonName: matchingBooking.salon?.businessName || 'Unknown Salon',
-                serviceName: matchingBooking.service?.name || 'Unknown Service',
-              });
-            } else {
-              // Set basic details if booking not found
+          // Use the verify response data directly - it now includes all payment details
+          if (result.data) {
+            const data = result.data;
+            setPaymentDetails({
+              reference: reference,
+              amount: data.amountPaid || 0,
+              serviceAmount: data.serviceAmount || data.amountPaid || 0,
+              platformFee: data.platformFee || 0,
+              bookingReference: data.bookingReference || 'N/A',
+              salonName: data.salonName || 'Unknown Salon',
+              serviceName: data.serviceName || 'Unknown Service',
+              isGroupBooking: data.isGroupBooking || false,
+              totalPeople: data.totalPeople,
+            });
+          } else {
+            // Fallback: Try to fetch booking details using the reference
+            try {
+              const bookings = await bookingApi.getMyBookings('CONFIRMED');
+              const matchingBooking = bookings.find(b => 
+                b.payment?.status === 'COMPLETED' || 
+                new Date(b.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Within last 24 hours
+              );
+              
+              if (matchingBooking) {
+                // Calculate platform fee from the difference
+                const finalAmount = matchingBooking.finalAmount || matchingBooking.totalAmount;
+                const totalPaid = matchingBooking.escrow?.amountHeld 
+                  ? Number(matchingBooking.escrow.amountHeld) + Number(matchingBooking.escrow.platformFee)
+                  : finalAmount;
+                const platformFee = matchingBooking.escrow?.platformFee 
+                  ? Number(matchingBooking.escrow.platformFee)
+                  : totalPaid - finalAmount;
+                
+                setPaymentDetails({
+                  reference: reference,
+                  amount: totalPaid,
+                  serviceAmount: finalAmount,
+                  platformFee: platformFee,
+                  bookingReference: matchingBooking.reference,
+                  salonName: matchingBooking.salon?.businessName || 'Unknown Salon',
+                  serviceName: matchingBooking.service?.name || 'Unknown Service',
+                  isGroupBooking: matchingBooking.isGroupBooking || false,
+                  totalPeople: matchingBooking.totalPeople,
+                });
+              } else {
+                // Set basic details if booking not found
+                setPaymentDetails({
+                  reference: reference,
+                  amount: 0,
+                  serviceAmount: 0,
+                  platformFee: 0,
+                  bookingReference: 'N/A',
+                  salonName: 'Unknown Salon',
+                  serviceName: 'Unknown Service',
+                  isGroupBooking: false,
+                });
+              }
+            } catch (err) {
+              // If we can't fetch booking details, still show success with basic info
               setPaymentDetails({
                 reference: reference,
                 amount: 0,
+                serviceAmount: 0,
+                platformFee: 0,
                 bookingReference: 'N/A',
                 salonName: 'Unknown Salon',
                 serviceName: 'Unknown Service',
+                isGroupBooking: false,
               });
             }
-          } catch (err) {
-            // If we can't fetch booking details, still show success with basic info
-            setPaymentDetails({
-              reference: reference,
-              amount: 0,
-              bookingReference: 'N/A',
-              salonName: 'Unknown Salon',
-              serviceName: 'Unknown Service',
-            });
           }
         } else {
           setStatus('failed');
@@ -134,8 +171,48 @@ export default function PaymentCallback() {
               {paymentDetails && (
                 <>
                   <div className="bg-gray-50 rounded-xl p-4 text-center">
-                    <p className="text-sm text-gray-500 mb-1">Amount Paid</p>
+                    <p className="text-sm text-gray-500 mb-1">Total Amount Paid</p>
                     <p className="text-3xl font-bold text-[#006B3F]">{formatPrice(paymentDetails.amount)}</p>
+                  </div>
+
+                  {/* Payment Breakdown */}
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Payment Breakdown</h3>
+                    
+                    {/* Service Price */}
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-gray-600">Service: {paymentDetails.serviceName}</span>
+                      <span className="font-medium text-gray-900">
+                        {paymentDetails.isGroupBooking && paymentDetails.totalPeople && paymentDetails.totalPeople > 1 
+                          ? `${formatPrice(paymentDetails.serviceAmount / paymentDetails.totalPeople)} each`
+                          : formatPrice(paymentDetails.serviceAmount)}
+                      </span>
+                    </div>
+                    
+                    {/* Group Booking Line */}
+                    {paymentDetails.isGroupBooking && paymentDetails.totalPeople && paymentDetails.totalPeople > 1 && (
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-gray-600">Group ({paymentDetails.totalPeople} members)</span>
+                        <span className="font-medium text-gray-900">
+                          {formatPrice(paymentDetails.serviceAmount)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Platform Fee */}
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-gray-600">Platform Fee</span>
+                      <span className="font-medium text-gray-900">{formatPrice(paymentDetails.platformFee)}</span>
+                    </div>
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-300 my-2"></div>
+                    
+                    {/* Total */}
+                    <div className="flex items-center justify-between py-1">
+                      <span className="font-semibold text-gray-800">Total Paid</span>
+                      <span className="font-bold text-[#006B3F]">{formatPrice(paymentDetails.amount)}</span>
+                    </div>
                   </div>
 
                   <div className="space-y-3">

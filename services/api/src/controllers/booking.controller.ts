@@ -287,6 +287,30 @@ export async function rescheduleBooking(req: AuthenticatedRequest, res: Response
     const { id } = req.params;
     const validatedData = rescheduleSchema.parse(req.body);
 
+    // Verify the user owns this booking (for customers) or owns the salon (for salon owners)
+    const existingBooking = await prisma.booking.findUnique({
+      where: { id },
+      select: { 
+        customerId: true, 
+        salonId: true,
+        salon: { select: { ownerId: true } }
+      },
+    });
+
+    if (!existingBooking) {
+      errorResponse(res, 'NOT_FOUND', 'Booking not found', 404);
+      return;
+    }
+
+    // Check authorization: customer must own the booking, or salon owner must own the salon
+    const isCustomer = req.user.role === 'CUSTOMER' && existingBooking.customerId === req.user.id;
+    const isSalonOwner = req.user.role === 'SALON_OWNER' && existingBooking.salon.ownerId === req.user.id;
+    
+    if (!isCustomer && !isSalonOwner) {
+      errorResponse(res, 'FORBIDDEN', 'You are not authorized to reschedule this booking', 403);
+      return;
+    }
+
     // Convert date to ISO string format for the cancellation service
     // The date is in YYYY-MM-DD format, convert to ISO datetime
     const newDate = new Date(validatedData.date).toISOString();
