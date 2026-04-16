@@ -8,7 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useNotificationSound } from './useNotificationSound';
 import { useAuthStore } from '../store/authStore';
 
-const API_BASE_URL = 'https://my.groomlinkgh.com';
+const API_BASE_URL = 'https://groomlinkgh.com';
 
 // Socket event types
 export interface BookingNewEvent {
