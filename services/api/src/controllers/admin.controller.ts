@@ -2212,7 +2212,7 @@ export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response
     }
 
     let updated = false;
-    let newStatus = payment.status;
+    let newStatus: PaymentStatus = payment.status;
 
     // If Paystack says it's successful, update the payment and booking
     if (verification.success && verification.status === 'success') {
