@@ -148,16 +148,17 @@ export default function QueueScreen() {
   const calledEntries = queueData?.entries.filter((e) => e.status === 'CALLED') || [];
   const inServiceEntries = queueData?.entries.filter((e) => e.status === 'IN_SERVICE') || [];
 
-  const isActionLoading = (action: string, queueId: string) => {
+  const isActionLoading = (action: string, actionId: string) => {
     switch (action) {
       case 'call':
-        return callNextMutation.isPending && callNextMutation.variables === queueId;
+        // For 'call' action, we now pass salonId instead of entry.id
+        return callNextMutation.isPending && callNextMutation.variables === actionId;
       case 'start':
-        return startServiceMutation.isPending && startServiceMutation.variables === queueId;
+        return startServiceMutation.isPending && startServiceMutation.variables === actionId;
       case 'complete':
-        return completeServiceMutation.isPending && completeServiceMutation.variables === queueId;
+        return completeServiceMutation.isPending && completeServiceMutation.variables === actionId;
       case 'skip':
-        return skipCustomerMutation.isPending && skipCustomerMutation.variables === queueId;
+        return skipCustomerMutation.isPending && skipCustomerMutation.variables === actionId;
       default:
         return false;
     }
@@ -214,8 +215,8 @@ export default function QueueScreen() {
           {entry.status === 'WAITING' && (
             <Button
               mode="contained"
-              onPress={() => callNextMutation.mutate(entry.id)}
-              loading={isActionLoading('call', entry.id)}
+              onPress={() => callNextMutation.mutate(salon?.id!)}
+              loading={isActionLoading('call', salon?.id!)}
               disabled={callNextMutation.isPending}
               style={[styles.actionButton, { backgroundColor: '#3B82F6' }]}
               icon="volume-high"

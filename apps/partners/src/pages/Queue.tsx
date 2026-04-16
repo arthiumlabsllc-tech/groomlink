@@ -46,12 +46,14 @@ export default function Queue() {
   }, [fetchQueue])
 
   const handleAction = async (action: string, queueId: string) => {
-    setActionLoading(`${action}-${queueId}`)
+    // For 'call' action, use salonId since callNext expects it; others use queueId
+    const actionId = action === 'call' ? (salonId || '') : queueId
+    setActionLoading(`${action}-${actionId}`)
     try {
       let response
       switch (action) {
         case 'call':
-          response = await api.callNext(queueId)
+          response = await api.callNext(salonId!)
           break
         case 'start':
           response = await api.startService(queueId)
@@ -327,6 +329,8 @@ function QueueCard({
   formatEstimatedWait
 }: QueueCardProps) {
   const isLoading = (action: string) => actionLoading === `${action}-${entry.id}`
+  // For 'call' action, check if actionLoading starts with 'call-' since it uses salonId
+  const isLoadingCall = actionLoading?.startsWith('call-') ?? false
 
   return (
     <div className="card hover:shadow-lg transition-shadow p-4 sm:p-6">
@@ -371,7 +375,7 @@ function QueueCard({
                 disabled={!!actionLoading}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
               >
-                {isLoading('call') ? (
+                {isLoadingCall ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <Volume2 className="w-4 h-4" />
