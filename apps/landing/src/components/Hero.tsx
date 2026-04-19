@@ -7,19 +7,26 @@ export default function Hero() {
     <section className="relative min-h-[90vh] md:min-h-[700px] flex items-center overflow-hidden pt-20">
       {/* Background */}
       <div className="absolute inset-0">
-        {/* Video Background - Desktop Only */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="hidden md:block absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="https://videos.pexels.com/video-files/3993446/3993446-uhd_2560_1440_25fps.mp4" type="video/mp4" />
-        </video>
+        {/* YouTube Video Background - Desktop Only (lg+) */}
+        <div className="hidden lg:block absolute inset-0 w-full h-full overflow-hidden">
+          <iframe
+            src="https://www.youtube.com/embed/d6d6L6vc_t0?autoplay=1&mute=1&loop=1&playlist=d6d6L6vc_t0&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=https://groomlinkgh.com"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            style={{
+              width: '177.78vh', /* 16:9 ratio scaled for full coverage */
+              height: '100vh',
+              minWidth: '100%',
+              minHeight: '100%',
+              border: 'none',
+            }}
+            allow="autoplay; encrypted-media"
+            allowFullScreen={false}
+            title="GroomLink Hero"
+          />
+        </div>
 
-        {/* Mobile gradient background (no video) */}
-        <div className="md:hidden absolute inset-0 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f172a]">
+        {/* Mobile/Tablet gradient background (no video) */}
+        <div className="lg:hidden absolute inset-0 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f172a]">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-brand-primary/30 to-transparent"></div>
             <div className="absolute top-1/3 left-0 w-full h-1/3 bg-gradient-to-b from-brand-gold/20 to-transparent"></div>
@@ -28,7 +35,7 @@ export default function Hero() {
         </div>
 
         {/* Dark Overlay on top of video for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/70 md:from-black/60 md:to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/70 lg:from-black/60 lg:to-black/70" />
 
         {/* Decorative elements */}
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-brand-primary/10 rounded-full blur-3xl"></div>
