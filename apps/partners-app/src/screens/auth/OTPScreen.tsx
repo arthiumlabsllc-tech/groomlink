@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput, Image } from 'react-native';
 import { Text, Button, HelperText, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -142,11 +142,13 @@ export default function OTPScreen() {
       style={styles.container}
     >
       <View style={styles.content}>
-        {/* Icon Header */}
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="mail-unread" size={32} color="#006B3F" />
-          </View>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../../assets/logo-black.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
         <Text variant="headlineMedium" style={styles.title}>
@@ -248,17 +250,13 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
   },
-  iconContainer: {
+  logoContainer: {
     alignItems: 'center',
     marginBottom: 24,
   },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoImage: {
+    width: 48,
+    height: 48,
   },
   title: {
     textAlign: 'center',

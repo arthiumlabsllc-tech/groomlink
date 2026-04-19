@@ -184,13 +184,20 @@ export default function HomeScreen() {
         {/* Header with greeting */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
-              <Text variant="bodyMedium" style={styles.greetingLabel}>
-                {getGreeting()},
-              </Text>
-              <Text variant="headlineSmall" style={styles.greetingName}>
-                {getUserName()}
-              </Text>
+            <View style={styles.headerLeft}>
+              <Image
+                source={require('../../assets/logo-black.png')}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+              <View>
+                <Text variant="bodyMedium" style={styles.greetingLabel}>
+                  {getGreeting()},
+                </Text>
+                <Text variant="headlineSmall" style={styles.greetingName}>
+                  {getUserName()}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity style={styles.avatarButton}>
               <Avatar.Text
@@ -277,6 +284,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerLogo: {
+    width: 36,
+    height: 36,
   },
   greetingLabel: {
     color: COLORS.textSecondary,

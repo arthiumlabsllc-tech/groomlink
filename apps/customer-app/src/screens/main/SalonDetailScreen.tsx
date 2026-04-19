@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,6 +8,8 @@ import {
   Image,
   Modal,
   TextInput,
+  Dimensions,
+  FlatList,
 } from 'react-native';
 import {
   Text,
@@ -44,6 +46,8 @@ const COLORS = {
 const DEFAULT_LOGO_ICON = 'https://groomlinkgh.com/api/uploads/assets/logo-icon.png';
 const DEFAULT_LOGO_WHITE = 'https://groomlinkgh.com/api/uploads/assets/email-logo.png';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 type SalonDetailRouteProp = RouteProp<MainStackParamList, 'SalonDetail'>;
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -63,6 +67,12 @@ export default function SalonDetailScreen() {
   const [queueNotes, setQueueNotes] = useState('');
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [leavingQueue, setLeavingQueue] = useState(false);
+
+  // Gallery carousel state
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
+  const galleryScrollRef = useRef<ScrollView>(null);
 
   const { data: salon, isLoading: salonLoading, error: salonError, refetch: refetchSalon } = useQuery({
     queryKey: ['salon', salonId],
@@ -154,6 +164,50 @@ export default function SalonDetailScreen() {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+  };
+
+  // Get hero images array for carousel (coverImage first, then gallery images)
+  const getHeroImages = (salonData: Salon): string[] => {
+    const images: string[] = [];
+    if (salonData.coverImage) {
+      images.push(salonData.coverImage);
+    }
+    if (salonData.images && salonData.images.length > 0) {
+      // Add gallery images except the cover if it's already included
+      salonData.images.forEach((img) => {
+        if (img !== salonData.coverImage) {
+          images.push(img);
+        }
+      });
+    }
+    return images;
+  };
+
+  // Get salon logo with fallback
+  const getSalonLogo = (salonData: Salon): string => {
+    if (salonData.logo) {
+      return salonData.logo;
+    }
+    return DEFAULT_LOGO_ICON;
+  };
+
+  // Handle gallery scroll
+  const handleGalleryScroll = (event: any) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / SCREEN_WIDTH);
+    setActiveImageIndex(index);
+  };
+
+  // Scroll to specific image
+  const scrollToImage = (index: number) => {
+    galleryScrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+    setActiveImageIndex(index);
+  };
+
+  // Open image viewer
+  const openImageViewer = (index: number) => {
+    setViewerInitialIndex(index);
+    setShowImageViewer(true);
   };
 
   const getDayName = (day: string) => {
@@ -291,15 +345,74 @@ export default function SalonDetailScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Image Section */}
+        {/* Hero Image Section with Gallery Carousel */}
         <View style={styles.heroSection}>
-          {salon.images?.[0] || salon.coverImage ? (
-            <Image source={{ uri: salon.images?.[0] || salon.coverImage }} style={styles.heroImage} />
-          ) : (
-            <View style={[styles.heroPlaceholder, { backgroundColor: COLORS.primaryGreen }]}>
-              <Image source={{ uri: DEFAULT_LOGO_WHITE }} style={styles.heroLogo} resizeMode="contain" />
-            </View>
-          )}
+          {(() => {
+            const heroImages = getHeroImages(salon);
+            const hasImages = heroImages.length > 0;
+            const salonLogo = getSalonLogo(salon);
+
+            if (hasImages) {
+              return (
+                <>
+                  <ScrollView
+                    ref={galleryScrollRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onScroll={handleGalleryScroll}
+                    scrollEventThrottle={16}
+                    style={styles.galleryScroll}
+                  >
+                    {heroImages.map((image, index) => (
+                      <View key={index} style={styles.gallerySlide}>
+                        <Image source={{ uri: image }} style={styles.heroImage} />
+                      </View>
+                    ))}
+                  </ScrollView>
+                  {/* Image Dots Indicator */}
+                  {heroImages.length > 1 && (
+                    <View style={styles.dotsContainer}>
+                      {heroImages.map((_, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          onPress={() => scrollToImage(index)}
+                          style={[
+                            styles.dot,
+                            index === activeImageIndex && styles.dotActive,
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </>
+              );
+            }
+
+            // Fallback: Show logo on green gradient if no images
+            return (
+              <View style={styles.heroPlaceholder}>
+                <View style={styles.heroGradient}>
+                  {salon.logo ? (
+                    <Image source={{ uri: salon.logo }} style={styles.heroLogo} resizeMode="contain" />
+                  ) : (
+                    <Image source={{ uri: DEFAULT_LOGO_WHITE }} style={styles.heroLogo} resizeMode="contain" />
+                  )}
+                </View>
+              </View>
+            );
+          })()}
+
+          {/* Salon Logo Avatar - overlapping bottom of hero */}
+          <View style={styles.logoAvatarContainer}>
+            <Image
+              source={{ uri: getSalonLogo(salon) }}
+              style={styles.logoAvatar}
+              resizeMode="cover"
+            />
+          </View>
+
+          {/* Salon Name Overlay */}
           <View style={styles.heroOverlay}>
             <Text variant="headlineMedium" style={styles.heroTitle}>{salon.businessName}</Text>
           </View>
@@ -337,6 +450,37 @@ export default function SalonDetailScreen() {
             <Text variant="bodyMedium" style={styles.description}>{salon.description}</Text>
           )}
         </View>
+
+        {/* Gallery Grid Section */}
+        {salon.images && salon.images.length > 0 && (
+          <View style={styles.section}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>Gallery</Text>
+            <View style={styles.galleryGrid}>
+              {salon.images.slice(0, 6).map((image, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.galleryThumbnail}
+                  onPress={() => {
+                    const heroImages = getHeroImages(salon);
+                    const heroIndex = heroImages.indexOf(image);
+                    if (heroIndex >= 0) {
+                      scrollToImage(heroIndex);
+                    } else {
+                      openImageViewer(index);
+                    }
+                  }}
+                >
+                  <Image source={{ uri: image }} style={styles.thumbnailImage} />
+                  {index === 5 && salon.images.length > 6 && (
+                    <View style={styles.moreOverlay}>
+                      <Text style={styles.moreText}>+{salon.images.length - 6}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Queue Section */}
         {salon.acceptsWalkIns && (
@@ -571,6 +715,41 @@ export default function SalonDetailScreen() {
           </View>
         </Modal>
 
+        {/* Image Viewer Modal */}
+        <Modal
+          visible={showImageViewer}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowImageViewer(false)}
+        >
+          <View style={styles.imageViewerOverlay}>
+            <TouchableOpacity
+              style={styles.imageViewerClose}
+              onPress={() => setShowImageViewer(false)}
+            >
+              <Ionicons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              contentOffset={{ x: viewerInitialIndex * SCREEN_WIDTH, y: 0 }}
+            >
+              {salon.images.map((image, index) => (
+                <View key={index} style={styles.imageViewerSlide}>
+                  <Image source={{ uri: image }} style={styles.imageViewerImage} resizeMode="contain" />
+                </View>
+              ))}
+            </ScrollView>
+            {/* Image Counter */}
+            <View style={styles.imageCounter}>
+              <Text style={styles.imageCounterText}>
+                {viewerInitialIndex + 1} / {salon.images.length}
+              </Text>
+            </View>
+          </View>
+        </Modal>
+
         <View style={styles.bottomPadding} />
       </ScrollView>
 
@@ -612,8 +791,16 @@ const styles = StyleSheet.create({
   },
   // Hero Section
   heroSection: {
-    height: 240,
+    height: 280,
     position: 'relative',
+  },
+  galleryScroll: {
+    width: SCREEN_WIDTH,
+    height: '100%',
+  },
+  gallerySlide: {
+    width: SCREEN_WIDTH,
+    height: '100%',
   },
   heroImage: {
     width: '100%',
@@ -627,10 +814,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  heroGradient: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: COLORS.primaryGreen,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   heroLogo: {
     width: 120,
     height: 120,
     opacity: 0.9,
+  },
+  dotsContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  dotActive: {
+    backgroundColor: '#fff',
+    width: 20,
+  },
+  logoAvatarContainer: {
+    position: 'absolute',
+    bottom: -30,
+    left: 20,
+    zIndex: 10,
+  },
+  logoAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 4,
+    borderColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
   },
   heroOverlay: {
     position: 'absolute',
@@ -639,7 +867,8 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 16,
     paddingTop: 60,
-    backgroundColor: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+    paddingLeft: 110,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   heroTitle: {
     fontWeight: 'bold',
@@ -648,10 +877,78 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+  // Gallery Grid
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  galleryThumbnail: {
+    width: (SCREEN_WIDTH - 48 - 16) / 3,
+    height: (SCREEN_WIDTH - 48 - 16) / 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  moreOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  // Image Viewer
+  imageViewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+  },
+  imageViewerClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  imageViewerSlide: {
+    width: SCREEN_WIDTH,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageViewerImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH,
+  },
+  imageCounter: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  imageCounterText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
   // Info Card
   infoCard: {
     margin: 16,
-    marginTop: -30,
+    marginTop: 40,
     padding: 20,
     backgroundColor: COLORS.cardBackground,
     borderRadius: 20,

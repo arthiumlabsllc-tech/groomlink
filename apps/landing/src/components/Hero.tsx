@@ -10,17 +10,18 @@ export default function Hero() {
         {/* VideoNest Video Background - Desktop Only (lg+) */}
         <div className="hidden lg:block absolute inset-0 w-full h-full overflow-hidden">
           <iframe
-            src="https://app.videonest.co/embed/single/1810314?show_title=false&show_description=false"
+            src="https://app.videonest.co/embed/single/1810314?show_title=false&show_description=false&autoplay=true&loop=true&muted=true&controls=false"
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
               width: '100vw',
-              height: '56.25vw', /* 16:9 ratio */
+              height: '56.25vw', /* 16:9 landscape ratio */
+              minWidth: '100%',
               minHeight: '100%',
-              minWidth: '177.78vh', /* ensures coverage on tall viewports */
               border: 'none',
+              pointerEvents: 'none',
             }}
             allow="autoplay; encrypted-media"
             allowFullScreen={false}

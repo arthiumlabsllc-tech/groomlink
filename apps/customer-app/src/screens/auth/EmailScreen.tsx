@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -66,7 +66,11 @@ export default function EmailScreen() {
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>GL</Text>
+              <Image
+                source={require('../../../assets/logo-white.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
             <View style={styles.logoAccent} />
           </View>
@@ -154,10 +158,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  logoText: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#fff',
+  logoImage: {
+    width: 60,
+    height: 60,
   },
   logoAccent: {
     width: 40,

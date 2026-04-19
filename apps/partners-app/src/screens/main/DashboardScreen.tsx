@@ -5,6 +5,7 @@ import {
   RefreshControl,
   FlatList,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import {
   Text,
@@ -191,13 +192,20 @@ export default function DashboardScreen() {
           <>
             {/* Header */}
             <View style={styles.header}>
-              <View>
-                <Text variant="bodyMedium" style={styles.greeting}>
-                  {getGreeting()},
-                </Text>
-                <Text variant="headlineMedium" style={styles.salonName}>
-                  {salon?.businessName || user?.firstName || 'Partner'}
-                </Text>
+              <View style={styles.headerLeft}>
+                <Image
+                  source={require('../../assets/logo-black.png')}
+                  style={styles.headerLogo}
+                  resizeMode="contain"
+                />
+                <View>
+                  <Text variant="bodyMedium" style={styles.greeting}>
+                    {getGreeting()},
+                  </Text>
+                  <Text variant="headlineMedium" style={styles.salonName}>
+                    {salon?.businessName || user?.firstName || 'Partner'}
+                  </Text>
+                </View>
               </View>
               <TouchableOpacity 
                 style={styles.notificationButton}
@@ -352,6 +360,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerLogo: {
+    width: 36,
+    height: 36,
   },
   greeting: {
     color: '#6B7280',
