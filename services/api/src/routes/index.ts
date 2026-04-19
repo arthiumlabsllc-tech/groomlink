@@ -19,6 +19,7 @@ import loyaltyRoutes from './loyalty.routes';
 import discoveryRoutes from './discovery.routes';
 import insightsRoutes from './insights.routes';
 import subscriptionRoutes from './subscription.routes';
+import platformRoutes from './platformFeedback';
 
 const router: RouterType = Router();
 
@@ -48,5 +49,6 @@ router.use('/loyalty', loyaltyRoutes);
 router.use('/discover', discoveryRoutes);
 router.use('/insights', insightsRoutes);
 router.use('/subscription', subscriptionRoutes);
+router.use('/platform', platformRoutes);
 
 export default router;

@@ -28,6 +28,7 @@
     "android": {
       "package": "com.arthiumlabs.groomlink",
       "versionCode": 1,
+      "targetSdkVersion": 34,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#CE1126"

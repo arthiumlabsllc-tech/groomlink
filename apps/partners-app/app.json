@@ -28,6 +28,7 @@
     "android": {
       "package": "com.arthiumlabs.partners",
       "versionCode": 1,
+      "targetSdkVersion": 34,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#006B3F"

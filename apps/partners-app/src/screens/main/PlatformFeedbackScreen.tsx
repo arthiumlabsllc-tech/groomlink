@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -15,7 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { platformAPI } from '@/api/platform';
 
 const COLORS = {
   primaryGreen: '#006B3F',
@@ -27,7 +28,6 @@ const COLORS = {
   border: '#E5E7EB',
 };
 
-const PLATFORM_FEEDBACK_KEY = '@groomlink_partners_platform_feedback';
 const STAR_SIZE = 44;
 
 export default function PlatformFeedbackScreen() {
@@ -42,21 +42,18 @@ export default function PlatformFeedbackScreen() {
 
     setSubmitting(true);
     try {
-      const feedback = {
+      await platformAPI.submitFeedback({
         rating,
         comment: comment.trim() || undefined,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Store in AsyncStorage since no backend endpoint exists yet
-      const existingFeedback = await AsyncStorage.getItem(PLATFORM_FEEDBACK_KEY);
-      const feedbackList = existingFeedback ? JSON.parse(existingFeedback) : [];
-      feedbackList.push(feedback);
-      await AsyncStorage.setItem(PLATFORM_FEEDBACK_KEY, JSON.stringify(feedbackList));
+      });
 
       setSubmitted(true);
-    } catch (error) {
-      console.error('Failed to save feedback:', error);
+    } catch (error: any) {
+      console.error('Failed to submit feedback:', error);
+      Alert.alert(
+        'Error',
+        'Failed to submit feedback. Please check your connection and try again.'
+      );
     } finally {
       setSubmitting(false);
     }

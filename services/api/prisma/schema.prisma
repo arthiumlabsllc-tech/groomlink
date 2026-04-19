@@ -861,6 +861,26 @@ model UserActivity {
   @@index([createdAt])
 }
 
+model PlatformFeedback {
+  id          String   @id @default(uuid())
+  rating      Int
+  comment     String?  @db.Text
+  userType    String   @map("user_type")
+  userId      String?  @map("user_id")
+  email       String?
+  deviceId    String?  @map("device_id")
+  appVersion  String?  @map("app_version")
+  status      String   @default("NEW")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userType])
+  @@index([rating])
+  @@index([status])
+  @@index([createdAt])
+  @@map("platform_feedback")
+}
+
 model SupportTicket {
   id          String                @id @default(uuid())
   subject     String
