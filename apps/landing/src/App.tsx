@@ -14,6 +14,7 @@ import TermsOfService from './pages/TermsOfService'
 import Register from './pages/Register'
 import SalonDetail from './pages/SalonDetail'
 import Explore from './pages/Explore'
+import PartnerWithUs from './pages/PartnerWithUs'
 
 function DesktopLanding() {
   const [scrolled, setScrolled] = useState(false)
@@ -68,6 +69,7 @@ function App() {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/partners" element={<PartnerWithUs />} />
       </Routes>
     </BrowserRouter>
   )

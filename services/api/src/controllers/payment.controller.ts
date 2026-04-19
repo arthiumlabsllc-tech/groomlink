@@ -16,7 +16,7 @@ enum PaymentProvider {
 
 const initializePaymentSchema = z.object({
   bookingId: z.string().uuid(),
-  provider: z.enum(['MTN_MOMO', 'VODAFONE_CASH', 'AIRTELTIGO_MONEY', 'CASH']),
+  provider: z.enum(['MTN_MOMO', 'VODAFONE_CASH', 'AIRTELTIGO_MONEY']),
   phoneNumber: z.string().regex(/^\+233[0-9]{9}$/, 'Invalid phone number format'),
 });
 

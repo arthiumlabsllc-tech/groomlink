@@ -7,21 +7,25 @@ export default function Hero() {
     <section className="relative min-h-[90vh] md:min-h-[700px] flex items-center overflow-hidden pt-20">
       {/* Background */}
       <div className="absolute inset-0">
-        {/* YouTube Video Background - Desktop Only (lg+) */}
+        {/* VideoNest Video Background - Desktop Only (lg+) */}
         <div className="hidden lg:block absolute inset-0 w-full h-full overflow-hidden">
           <iframe
-            src="https://www.youtube.com/embed/d6d6L6vc_t0?autoplay=1&mute=1&loop=1&playlist=d6d6L6vc_t0&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=https://groomlinkgh.com"
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            src="https://app.videonest.co/embed/single/1810314?show_title=false&show_description=false"
             style={{
-              width: '177.78vh', /* 16:9 ratio scaled for full coverage */
-              height: '100vh',
-              minWidth: '100%',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '100vw',
+              height: '56.25vw', /* 16:9 ratio */
               minHeight: '100%',
+              minWidth: '177.78vh', /* ensures coverage on tall viewports */
               border: 'none',
             }}
             allow="autoplay; encrypted-media"
             allowFullScreen={false}
             title="GroomLink Hero"
+            frameBorder="0"
           />
         </div>
 

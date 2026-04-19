@@ -65,7 +65,7 @@ interface BookingData {
 
 type BookingStep = 'service' | 'staff' | 'group' | 'datetime' | 'confirm' | 'success';
 
-type PaymentProvider = 'MTN_MOMO' | 'VODAFONE_CASH' | 'AIRTELTIGO_MONEY' | 'CASH';
+type PaymentProvider = 'MTN_MOMO' | 'VODAFONE_CASH' | 'AIRTELTIGO_MONEY';
 
 
 
@@ -152,7 +152,7 @@ export default function BookSalon() {
   const [createdBooking, setCreatedBooking] = useState<{ id: string; reference: string; payment?: { id: string; reference: string } } | null>(null);
   
   // Payment state
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentProvider>('CASH');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentProvider>('MTN_MOMO');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [initializingPayment, setInitializingPayment] = useState(false);
 
@@ -373,18 +373,7 @@ export default function BookSalon() {
 
       const response = await bookingApi.createBooking(bookingData);
       
-      // If cash payment, show success directly
-      if (selectedPaymentMethod === 'CASH') {
-        setCreatedBooking({
-          id: response.id,
-          reference: response.reference,
-        });
-        setCurrentStep('success');
-        toast.success('Booking created successfully! Pay at the salon when you arrive.');
-        return;
-      }
-      
-      // For mobile money, initialize payment via Hubtel
+      // Initialize payment via Hubtel
       setInitializingPayment(true);
       const paymentResponse = await paymentApi.initialize({
         bookingId: response.id,
@@ -467,7 +456,7 @@ export default function BookSalon() {
     setSelectedDate(new Date());
     setSelectedTime(null);
     setNotes('');
-    setSelectedPaymentMethod('CASH');
+    setSelectedPaymentMethod('MTN_MOMO');
     setPhoneNumber('');
     setCreatedBooking(null);
     setIsGroupBooking(false);
@@ -1296,21 +1285,6 @@ export default function BookSalon() {
         </div>
       ),
     },
-    {
-      id: 'CASH' as PaymentProvider,
-      name: 'Pay at Salon',
-      description: 'Pay when you arrive',
-      color: 'bg-gray-500',
-      textColor: 'text-white',
-      borderColor: 'border-gray-400',
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center">
-          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-        </div>
-      ),
-    },
   ];
 
   // Step 4: Confirm & Book
@@ -1534,7 +1508,7 @@ export default function BookSalon() {
       </div>
 
       {/* Phone Number Input for Mobile Money */}
-      {selectedPaymentMethod !== 'CASH' && (
+      {(
         <div className="card-v2 p-4">
           <label className="block font-medium text-gray-900 mb-2">
             Mobile Money Number
@@ -1599,9 +1573,7 @@ export default function BookSalon() {
         {isGroupBooking ? 'Group Booking Confirmed!' : 'Booking Confirmed!'}
       </h2>
       <p className="text-gray-600 mb-2">
-        {selectedPaymentMethod === 'CASH' 
-          ? "Your appointment has been booked. Please pay at the salon when you arrive."
-          : "Your appointment has been successfully booked. We've sent a confirmation to your phone."}
+        Your appointment has been successfully booked. We've sent a confirmation to your phone.
       </p>
       {isGroupBooking && (
         <p className="text-[#CE1126] font-semibold mb-6">
@@ -1617,18 +1589,6 @@ export default function BookSalon() {
           {createdBooking?.reference}
         </p>
       </div>
-
-      {selectedPaymentMethod === 'CASH' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6 max-w-md mx-auto">
-          <p className="text-sm text-yellow-800">
-            <span className="font-semibold">Payment:</span> You have selected to pay at the salon. 
-            Please arrive 10 minutes early and pay <span className="font-semibold">{formatPrice(totalPrice)}</span> at the reception.
-            {isGroupBooking && (
-              <span className="block mt-1">This covers all {totalPeople} people in your group.</span>
-            )}
-          </p>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
@@ -1698,7 +1658,7 @@ export default function BookSalon() {
               disabled={
                 (currentStep === 'service' && !selectedService) ||
                 (currentStep === 'datetime' && !selectedTime) ||
-                (currentStep === 'confirm' && selectedPaymentMethod !== 'CASH' && phoneNumber.length < 9) ||
+                (currentStep === 'confirm' && phoneNumber.length < 9) ||
                 creatingBooking ||
                 initializingPayment
               }
@@ -1711,7 +1671,7 @@ export default function BookSalon() {
                 </>
               ) : currentStep === 'confirm' ? (
                 <>
-                  {selectedPaymentMethod === 'CASH' ? 'Confirm Booking' : 'Confirm & Pay'}
+                  Confirm & Pay
                   <Icon name="check" size={20} />
                 </>
               ) : (

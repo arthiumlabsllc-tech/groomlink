@@ -153,7 +153,7 @@ export const bookingValidations = {
 export const paymentValidations = {
   createPayment: validate([
     body('bookingId').isUUID().withMessage('Invalid booking ID'),
-    body('provider').isIn(['MTN_MOMO', 'VODAFONE_CASH', 'AIRTEL_TIGO']).withMessage('Invalid payment provider'),
+    body('provider').isIn(['MTN_MOMO', 'VODAFONE_CASH', 'AIRTELTIGO_MONEY']).withMessage('Invalid payment provider'),
     commonValidations.amount,
   ]),
 

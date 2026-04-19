@@ -21,7 +21,7 @@ export default function Header({ scrolled }: HeaderProps) {
 
   const navLinks = [
     { name: 'Find a Salon', href: '/explore' },
-    { name: 'For Barbershop/Salon', href: 'https://partners.groomlinkgh.com' },
+    { name: 'Partner With Us', href: '/partners' },
   ]
 
   return (
@@ -37,7 +37,7 @@ export default function Header({ scrolled }: HeaderProps) {
             <img 
               src="/logo-full-black.png" 
               alt="GroomLink" 
-              className="h-8 w-auto"
+              className="h-10 md:h-14 w-auto"
             />
           </a>
 
