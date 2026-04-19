@@ -112,6 +112,13 @@ export interface Booking {
   checkedInAt?: string;
   checkinCode?: string;
   queuePosition?: number;
+  // Review field
+  review?: {
+    id: string;
+    rating: number;
+    comment?: string | null;
+    createdAt?: string;
+  } | null;
 }
 
 export interface Review {

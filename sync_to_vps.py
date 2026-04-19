@@ -5,8 +5,8 @@ import sys
 
 def sync_to_vps():
     """Sync local files to VPS"""
-    # Use rsync with SSH
-    cmd = 'rsync -avz --exclude ".git" --exclude "node_modules" --exclude "dist" --exclude ".env*" /home/ubuntu/Desktop/GroomLink/ root@187.124.210.205:/opt/groomlink/'
+    # Use rsync with SSH - exclude node_modules and .git, but include dist folders
+    cmd = 'rsync -avz --exclude ".git" --exclude "node_modules" --exclude ".env*" /home/ubuntu/Desktop/GroomLink/ root@187.124.210.205:/opt/groomlink/'
     
     child = pexpect.spawn(cmd, encoding='utf-8', timeout=300)
     

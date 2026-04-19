@@ -68,7 +68,7 @@ export default function BookingConfirmationScreen() {
   };
 
   const generateGroupReference = () => {
-    return booking.groupReference || `GRP-${bookingId.substring(0, 8).toUpperCase()}`;
+    return booking?.groupReference || `GRP-${bookingId.substring(0, 8).toUpperCase()}`;
   };
 
   const handleShare = async () => {

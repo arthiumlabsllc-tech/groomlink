@@ -70,6 +70,7 @@ function App() {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/register" element={<Register />} />
         <Route path="/partners" element={<PartnerWithUs />} />
+        <Route path="/for-salon-owners" element={<PartnerWithUs />} />
       </Routes>
     </BrowserRouter>
   )

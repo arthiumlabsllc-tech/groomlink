@@ -219,14 +219,20 @@ export default function BookingsScreen() {
                 <Ionicons name="chevron-forward" size={16} color={COLORS.primaryGreen} />
               </TouchableOpacity>
             )}
-            {item.status === 'COMPLETED' && (
-              <TouchableOpacity 
+            {item.status === 'COMPLETED' && !item.review && (
+              <TouchableOpacity
                 style={styles.rateButton}
                 onPress={() => navigation.navigate('RateBooking', { bookingId: item.id })}
               >
                 <Ionicons name="star" size={14} color={COLORS.accentGold} />
-                <Text style={styles.rateButtonText}>Rate</Text>
+                <Text style={styles.rateButtonText}>Rate This Visit</Text>
               </TouchableOpacity>
+            )}
+            {item.status === 'COMPLETED' && item.review && (
+              <View style={styles.reviewedBadge}>
+                <Ionicons name="star" size={14} color={COLORS.accentGold} />
+                <Text style={styles.reviewedText}>Reviewed ⭐ {item.review.rating}/5</Text>
+              </View>
             )}
           </View>
         </Card.Content>
@@ -525,6 +531,20 @@ const styles = StyleSheet.create({
   rateButtonText: {
     color: COLORS.accentGold,
     fontWeight: '600',
+  },
+  reviewedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  reviewedText: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
+    fontSize: 12,
   },
   emptyState: {
     flex: 1,

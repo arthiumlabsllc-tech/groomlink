@@ -14,6 +14,7 @@ import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen
 import BookingDetailScreen from '../screens/main/BookingDetailScreen';
 import BookingQRCodeScreen from '../screens/main/BookingQRCodeScreen';
 import RateBookingScreen from '../screens/main/RateBookingScreen';
+import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 
 // Design System Colors
 const COLORS = {
@@ -104,6 +105,16 @@ function ProfileStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen
+        name="PlatformFeedback"
+        component={PlatformFeedbackScreen}
+        options={{
+          title: 'Rate GroomLink',
+          headerShown: true,
+          headerStyle: { backgroundColor: '#FFFFFF' },
+          headerTitleStyle: { color: '#111827' },
+        }}
+      />
     </Stack.Navigator>
   );
 }

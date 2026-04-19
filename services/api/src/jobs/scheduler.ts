@@ -9,6 +9,7 @@ import { sendReminderSMS } from '../services/sms.service';
 import { startAutoCompletionJob } from './autoComplete';
 import { checkExpiredSponsorships } from '../services/sponsorship.service';
 import { cleanupOrphanedPayments } from '../services/payment.service';
+import { initSubscriptionJobs } from './subscription.jobs';
 
 /**
  * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
@@ -65,7 +66,10 @@ export function initScheduler(): void {
     }
   });
 
-  logger.info('Background job scheduler initialized with 7 jobs');
+  // Job 8: Initialize subscription jobs (reminders and expiration handling)
+  initSubscriptionJobs();
+
+  logger.info('Background job scheduler initialized with 8 jobs');
 }
 
 /**

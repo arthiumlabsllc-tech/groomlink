@@ -15,6 +15,9 @@ import { Escrow } from './pages/Escrow';
 import { Cancellations } from './pages/Cancellations';
 import { NoShows } from './pages/NoShows';
 import { SponsoredSalons } from './pages/SponsoredSalons';
+import { SubscriptionOverview } from './pages/SubscriptionOverview';
+import { SubscriptionPlans } from './pages/SubscriptionPlans';
+import { SubscriptionInvoices } from './pages/SubscriptionInvoices';
 import { Login } from './pages/Login';
 import NotFound from './pages/NotFound';
 import { useAuth } from './hooks';
@@ -178,6 +181,30 @@ function AppRoutes() {
           element={
             <PermissionGuard pageId="sponsored-salons">
               <SponsoredSalons />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="subscriptions" 
+          element={
+            <PermissionGuard pageId="subscriptions">
+              <SubscriptionOverview />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="subscriptions/plans" 
+          element={
+            <PermissionGuard pageId="subscriptions">
+              <SubscriptionPlans />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="subscriptions/invoices" 
+          element={
+            <PermissionGuard pageId="subscriptions">
+              <SubscriptionInvoices />
             </PermissionGuard>
           } 
         />

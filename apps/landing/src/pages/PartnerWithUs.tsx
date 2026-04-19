@@ -1,510 +1,423 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import Icon from '../components/Icon'
 
-// Animation hook using IntersectionObserver
-function useScrollAnimation(threshold = 0.2) {
+/* ─── Hooks ─── */
+function useScrollAnimation(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
-
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold }
-    )
-
-    if (ref.current) {
-      observer.observe(ref.current)
-    }
-
-    return () => observer.disconnect()
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setIsVisible(true); obs.disconnect() } }, { threshold })
+    obs.observe(el)
+    return () => obs.disconnect()
   }, [threshold])
-
   return { ref, isVisible }
 }
 
-// Benefit Card Component
-interface BenefitCardProps {
-  icon: string
-  title: string
-  description: string
-  delay: number
-  isVisible: boolean
+function useCountUp(end: number, isVisible: boolean, duration = 2000) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!isVisible) return
+    let start = 0
+    const startTime = performance.now()
+    const step = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.floor(eased * end))
+      if (progress < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [isVisible, end, duration])
+  return count
 }
 
-function BenefitCard({ icon, title, description, delay, isVisible }: BenefitCardProps) {
+/* ─── Inline SVG Icons ─── */
+function CalendarIcon() {
   return (
-    <div
-      className={`bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      }`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <div className="w-14 h-14 bg-gradient-to-br from-[#006B3F] to-[#004d2d] rounded-xl flex items-center justify-center mb-4">
-        <Icon name={icon} size={28} className="text-[#FCD116]" />
-      </div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-600 leading-relaxed">{description}</p>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FCD116" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
+}
+function ShieldIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FCD116" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" />
+    </svg>
+  )
+}
+function TrendingUpIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FCD116" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+    </svg>
+  )
+}
+function CheckIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#006B3F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+}
+function PhoneIcon() {
+  return (
+    <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+      <rect x="30" y="10" width="60" height="100" rx="10" stroke="#006B3F" strokeWidth="2" fill="#F0FDF4" />
+      <rect x="40" y="25" width="40" height="60" rx="2" fill="#DCFCE7" />
+      <circle cx="60" cy="98" r="5" stroke="#006B3F" strokeWidth="2" fill="white" />
+      <text x="60" y="58" textAnchor="middle" fontSize="22" fill="#006B3F">₵</text>
+      <circle cx="60" cy="80" r="4" fill="#22C55E" />
+    </svg>
+  )
+}
+function StarIcon({ filled = true }: { filled?: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#FCD116' : 'none'} stroke="#FCD116" strokeWidth="2">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  )
+}
+
+/* ─── Sub-components ─── */
+function FadeIn({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const { ref, isVisible } = useScrollAnimation()
+  return (
+    <div ref={ref} className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+      {children}
     </div>
   )
 }
 
-// Step Card Component
-interface StepCardProps {
-  number: number
-  icon: string
-  title: string
-  description: string
-  delay: number
-  isVisible: boolean
-}
-
-function StepCard({ number, icon, title, description, delay, isVisible }: StepCardProps) {
+function StatCounter({ value, suffix, label, isVisible, delay }: { value: number; suffix: string; label: string; isVisible: boolean; delay: number }) {
+  const count = useCountUp(value, isVisible)
   return (
-    <div
-      className={`relative text-center ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-      style={{ transitionDelay: `${delay}ms`, transition: 'all 0.6s ease-out' }}
-    >
-      {/* Connector line (hidden on mobile) */}
-      {number < 3 && (
-        <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-[#006B3F]/30 to-[#FCD116]/30" />
-      )}
-      
-      {/* Number badge */}
-      <div className="w-24 h-24 mx-auto mb-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#006B3F] to-[#004d2d] rounded-full flex items-center justify-center shadow-lg">
-          <Icon name={icon} size={32} className="text-[#FCD116]" />
-        </div>
-        <div className="absolute -top-1 -right-1 w-8 h-8 bg-[#CE1126] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-          {number}
-        </div>
-      </div>
-      
-      <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-600 max-w-xs mx-auto">{description}</p>
-    </div>
-  )
-}
-
-// Stat Card Component
-interface StatCardProps {
-  value: string
-  label: string
-  delay: number
-  isVisible: boolean
-}
-
-function StatCard({ value, label, delay, isVisible }: StatCardProps) {
-  return (
-    <div
-      className={`text-center p-6 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-      style={{ transitionDelay: `${delay}ms`, transition: 'all 0.6s ease-out' }}
-    >
-      <div className="text-4xl md:text-5xl font-bold text-[#FCD116] mb-2">{value}</div>
+    <div className="text-center p-6 transition-all duration-700" style={{ transitionDelay: `${delay}ms` }}>
+      <div className="text-4xl md:text-5xl font-bold text-[#FCD116] mb-2">{count}{suffix}</div>
       <div className="text-white/80 font-medium">{label}</div>
     </div>
   )
 }
 
-// FAQ Item Component
-interface FAQItemProps {
-  question: string
-  answer: string
-  isOpen: boolean
-  onClick: () => void
-}
-
+interface FAQItemProps { question: string; answer: string; isOpen: boolean; onClick: () => void }
 function FAQItem({ question, answer, isOpen, onClick }: FAQItemProps) {
   return (
     <div className="border-b border-gray-200 last:border-b-0">
-      <button
-        onClick={onClick}
-        className="w-full py-5 flex items-center justify-between text-left hover:bg-gray-50 transition-colors px-2 -mx-2 rounded-lg"
-      >
+      <button onClick={onClick} className="w-full py-5 flex items-center justify-between text-left hover:bg-gray-50 transition-colors px-2 -mx-2 rounded-lg">
         <span className="font-semibold text-gray-900 pr-4">{question}</span>
-        <Icon
-          name={isOpen ? 'expand_less' : 'expand_more'}
-          size={24}
-          className="text-[#006B3F] flex-shrink-0"
-        />
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#006B3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          isOpen ? 'max-h-40 opacity-100 pb-5' : 'max-h-0 opacity-0'
-        }`}
-      >
+      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-60 opacity-100 pb-5' : 'max-h-0 opacity-0'}`}>
         <p className="text-gray-600 leading-relaxed">{answer}</p>
       </div>
     </div>
   )
 }
 
+/* ─── Main Component ─── */
 export default function PartnerWithUs() {
   const [scrolled, setScrolled] = useState(false)
   const [openFAQ, setOpenFAQ] = useState<number | null>(0)
-
-  // Scroll animations
-  const benefitsAnim = useScrollAnimation(0.2)
-  const stepsAnim = useScrollAnimation(0.2)
   const statsAnim = useScrollAnimation(0.2)
-  const pricingAnim = useScrollAnimation(0.2)
-  const faqAnim = useScrollAnimation(0.2)
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    const h = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', h)
+    return () => window.removeEventListener('scroll', h)
   }, [])
 
-  const scrollToBenefits = () => {
-    const element = document.getElementById('benefits')
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
-
-  const benefits = [
-    {
-      icon: 'search',
-      title: 'Get Discovered',
-      description: 'Appear in search results when customers look for salons nearby. Be visible to thousands of potential clients actively seeking grooming services.',
-    },
-    {
-      icon: 'calendar_today',
-      title: 'Easy Booking Management',
-      description: 'Accept, manage, and track all bookings from one intuitive dashboard. No more phone tag or missed appointments.',
-    },
-    {
-      icon: 'trending_up',
-      title: 'Grow Your Revenue',
-      description: 'Fill empty slots, reduce no-shows with automated reminders, and attract new customers to boost your bottom line.',
-    },
-    {
-      icon: 'storefront',
-      title: 'Professional Online Presence',
-      description: 'Get your own branded page with photo gallery, customer reviews, services list, and business hours.',
-    },
-  ]
-
-  const steps = [
-    {
-      icon: 'person_add',
-      title: 'Sign Up For Free',
-      description: 'Create your partner account in just 2 minutes. No credit card required.',
-    },
-    {
-      icon: 'settings',
-      title: 'Set Up Your Salon',
-      description: 'Add your services, staff, business hours, and upload gallery photos.',
-    },
-    {
-      icon: 'event_available',
-      title: 'Start Receiving Bookings',
-      description: 'Customers find you through our app and book directly. You get notified instantly.',
-    },
-  ]
-
-  const stats = [
-    { value: '500+', label: 'Partner Salons' },
-    { value: '50K+', label: 'Monthly Bookings' },
-    { value: '98%', label: 'Satisfaction Rate' },
-  ]
+  const scrollToHowItWorks = useCallback(() => {
+    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
 
   const faqs = [
-    {
-      question: 'Is it really free?',
-      answer: 'Yes! Signing up and listing your salon on GroomLink is completely free. We only charge a small commission when you actually receive a booking, so we only make money when you make money.',
-    },
-    {
-      question: 'How do customers find my salon?',
-      answer: 'Customers discover your salon through our mobile app, website, and search results. We optimize your listing to appear when customers search for services you offer in your area.',
-    },
-    {
-      question: 'Do I need a smartphone?',
-      answer: 'Not necessarily. You can manage your salon entirely from the web dashboard on any computer. However, we also offer a mobile app for convenient on-the-go management.',
-    },
-    {
-      question: 'How do I get paid?',
-      answer: 'Customers pay directly at your salon after their service. GroomLink simply facilitates the booking process. We are working on integrated payment options for future releases.',
-    },
+    { question: 'What is GroomLink?', answer: 'GroomLink is Ghana\'s leading salon and barbershop booking platform. We connect customers with the best salons and barbershops across the country, making it easy to discover, book, and pay for grooming services online.' },
+    { question: 'How does the marketplace help me?', answer: 'We connect you with thousands of customers actively searching for grooming services in your area. Your salon gets visibility across our app, website, and social media channels — bringing you bookings you would never get on your own.' },
+    { question: 'What is online booking?', answer: 'Customers can book your services 24/7 from their phone — no more phone tag or WhatsApp back-and-forth. They see your availability in real-time and book instantly. You get notified immediately of every new booking.' },
+    { question: 'Who is GroomLink for?', answer: 'GroomLink is for salon owners, barbershop owners, hairstylists, nail technicians, and any grooming professional in Ghana who wants to grow their business with modern booking technology.' },
+    { question: 'How do I get paid?', answer: 'Payments go directly to your mobile money account (MTN MoMo, Vodafone Cash, AirtelTigo Money) immediately after you complete a service. No waiting days or weeks for your money.' },
+    { question: 'Is there a contract?', answer: 'No! GroomLink is free to join with no contracts or commitments. You can deactivate your listing at any time. We only earn when you earn — a small commission on completed bookings.' },
   ]
+
+  const testimonials = [
+    { quote: 'GroomLink has transformed my salon. I get 40% more bookings and payments come straight to my MoMo!', name: 'Akua Mensah', salon: 'Glow Beauty Salon', city: 'Accra' },
+    { quote: 'I used to spend hours on WhatsApp managing bookings. Now everything is automated.', name: 'Kwame Boateng', salon: 'Kings Barbershop', city: 'Kumasi' },
+    { quote: 'The instant payout feature is a game changer. No more chasing payments!', name: 'Ama Darko', salon: 'Style Hub', city: 'Takoradi' },
+  ]
+
+  const pricingFeatures = ['Free listing on GroomLink marketplace', 'Instant payouts to mobile money', '24/7 customer support', 'No hidden fees or charges', 'Custom booking link & QR code', 'Client management tools']
 
   return (
     <div className="min-h-screen bg-white">
       <Header scrolled={scrolled} />
 
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center pt-20 overflow-hidden">
-        {/* Background with Ghana colors gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#006B3F] via-[#004d2d] to-[#1a1a2e]">
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#FCD116]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#CE1126]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCD116]/5 rounded-full blur-3xl" />
-          
-          {/* Pattern overlay */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }} />
-          </div>
+      {/* ─── 1. Hero Section ─── */}
+      <section className="relative min-h-[92vh] flex items-center pt-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-white via-[#f0fdf4] to-white">
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2l2 3.5-2 3z' fill='%23000' fill-opacity='1'/%3E%3C/svg%3E")` }} />
         </div>
+        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-[#006B3F]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#CE1126]/5 rounded-full blur-3xl" />
 
         <div className="relative z-10 section-container py-16 lg:py-24">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Trust badge */}
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-8 animate-fade-in">
+            <div className="inline-flex items-center gap-2 bg-[#006B3F]/10 rounded-full px-5 py-2.5 mb-8">
               <span className="text-[#FCD116] text-lg">🇬🇭</span>
-              <span className="text-white/90 text-sm font-medium">
-                Ghana's Leading Salon Booking Platform
-              </span>
+              <span className="text-[#006B3F] text-sm font-semibold">Trusted by 500+ Ghanaian salons</span>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-display leading-tight mb-6 animate-fade-in-up">
-              Grow Your Salon Business with{' '}
-              <span className="text-[#FCD116]">GroomLink</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-gray-900 leading-tight mb-6">
+              The #1 Salon & Barbershop Booking Platform in{' '}
+              <span className="text-[#006B3F]">Ghana</span>
             </h1>
 
-            {/* Subheadline */}
-            <p className="text-lg sm:text-xl text-white/80 mb-10 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              Join Ghana's leading salon booking platform. Get discovered by thousands of customers, 
-              manage bookings effortlessly, and increase your revenue — all for free.
+            <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+              Get more bookings, get paid instantly, and build a loyal client base. Trusted by salons across Accra, Kumasi, and beyond.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <a
-                href="https://partners.groomlinkgh.com"
-                className="inline-flex items-center justify-center gap-2 bg-[#FCD116] text-[#1A1A1A] font-bold py-4 px-8 rounded-xl hover:bg-[#e5bc14] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              >
-                <Icon name="rocket_launch" size={20} />
-                Start For Free
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="https://partners.groomlinkgh.com" className="inline-flex items-center justify-center gap-2 bg-[#CE1126] text-white font-bold py-4 px-8 rounded-xl hover:bg-[#a80e1f] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-lg">
+                Start Free Now — No Credit Card Required
               </a>
-              <button
-                onClick={scrollToBenefits}
-                className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm text-white font-semibold py-4 px-8 rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20"
-              >
-                <Icon name="expand_more" size={20} />
-                Learn More
+              <button onClick={scrollToHowItWorks} className="inline-flex items-center justify-center gap-2 bg-white text-[#006B3F] font-semibold py-4 px-8 rounded-xl hover:bg-gray-50 transition-all duration-300 border-2 border-[#006B3F]/20">
+                See How It Works
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
               </button>
             </div>
-
-            {/* Social proof */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-white/70 text-sm animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <div className="flex items-center gap-2">
-                <Icon name="check_circle" size={18} className="text-[#FCD116]" filled />
-                <span>Free to join</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Icon name="check_circle" size={18} className="text-[#FCD116]" filled />
-                <span>No setup fees</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Icon name="check_circle" size={18} className="text-[#FCD116]" filled />
-                <span>Instant activation</span>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Bottom wave */}
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 80L48 74.7C96 69 192 59 288 53.3C384 48 480 48 576 53.3C672 59 768 69 864 69.3C960 69 1056 59 1152 53.3C1248 48 1344 48 1392 48L1440 48V80H1392C1344 80 1248 80 1152 80C1056 80 960 80 864 80C768 80 672 80 576 80C480 80 384 80 288 80C192 80 96 80 48 80H0Z" fill="#F8F9FA"/>
-          </svg>
+          <svg viewBox="0 0 1440 60" fill="none" className="w-full"><path d="M0 60L60 55C120 50 240 40 360 35C480 30 600 30 720 33C840 36 960 42 1080 45C1200 48 1320 48 1380 48L1440 48V60H0Z" fill="#F8F9FA" /></svg>
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section id="benefits" className="py-20 lg:py-28 bg-[#F8F9FA]">
+      {/* ─── 2. Social Proof Strip ─── */}
+      <section className="py-6 bg-[#F8F9FA] border-y border-gray-100">
         <div className="section-container">
-          <div className="text-center max-w-3xl mx-auto mb-16" ref={benefitsAnim.ref}>
-            <span className={`inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3 transition-all duration-700 ${benefitsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              Why Partner With Us
-            </span>
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 transition-all duration-700 delay-100 ${benefitsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              Everything You Need to{' '}
-              <span className="text-[#006B3F]">Succeed</span>
-            </h2>
-            <p className={`text-gray-600 text-lg transition-all duration-700 delay-200 ${benefitsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              Powerful tools and features designed to help your salon thrive in the digital age.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, index) => (
-              <BenefitCard
-                key={index}
-                icon={benefit.icon}
-                title={benefit.title}
-                description={benefit.description}
-                delay={index * 100}
-                isVisible={benefitsAnim.isVisible}
-              />
-            ))}
-          </div>
+          <p className="text-center text-gray-500 font-medium text-sm tracking-wide">
+            Join salons from <span className="text-gray-900 font-semibold">Accra</span>, <span className="text-gray-900 font-semibold">Kumasi</span>, <span className="text-gray-900 font-semibold">Takoradi</span>, <span className="text-gray-900 font-semibold">Tema</span>, <span className="text-gray-900 font-semibold">Cape Coast</span>
+          </p>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 lg:py-28 bg-white">
-        <div className="section-container">
-          <div className="text-center max-w-3xl mx-auto mb-16" ref={stepsAnim.ref}>
-            <span className={`inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3 transition-all duration-700 ${stepsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              Simple Process
-            </span>
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 transition-all duration-700 delay-100 ${stepsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              Get Started in{' '}
-              <span className="text-[#006B3F]">3 Easy Steps</span>
-            </h2>
-            <p className={`text-gray-600 text-lg transition-all duration-700 delay-200 ${stepsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              From signup to your first booking in minutes, not days.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 md:gap-12 max-w-5xl mx-auto" ref={stepsAnim.ref}>
-            {steps.map((step, index) => (
-              <StepCard
-                key={index}
-                number={index + 1}
-                icon={step.icon}
-                title={step.title}
-                description={step.description}
-                delay={index * 150}
-                isVisible={stepsAnim.isVisible}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 lg:py-20 bg-gradient-to-r from-[#006B3F] to-[#004d2d] relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#FCD116]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#CE1126]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-        <div className="section-container relative" ref={statsAnim.ref}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {stats.map((stat, index) => (
-              <StatCard
-                key={index}
-                value={stat.value}
-                label={stat.label}
-                delay={index * 100}
-                isVisible={statsAnim.isVisible}
-              />
-            ))}
-          </div>
-          
-          <div className={`text-center mt-12 transition-all duration-700 delay-300 ${statsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <p className="text-white/70 text-lg">
-              Trusted by barbershops and salons across Ghana
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing/CTA Section */}
+      {/* ─── 3. Three Benefit Columns ─── */}
       <section className="py-20 lg:py-28 bg-[#F8F9FA]">
         <div className="section-container">
-          <div className="max-w-4xl mx-auto" ref={pricingAnim.ref}>
-            <div className={`bg-gradient-to-br from-[#006B3F] to-[#004d2d] rounded-3xl p-8 md:p-12 lg:p-16 text-center relative overflow-hidden transition-all duration-700 ${pricingAnim.isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-              {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#FCD116]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#CE1126]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <FadeIn className="text-center max-w-3xl mx-auto mb-16">
+            <span className="inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3">Why GroomLink</span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Everything You Need to <span className="text-[#006B3F]">Thrive</span></h2>
+            <p className="text-gray-600 text-lg">Powerful tools designed for Ghanaian salon and barbershop owners.</p>
+          </FadeIn>
 
-              <div className="relative">
-                <div className={`inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6 transition-all duration-700 delay-100 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                  <Icon name="verified" size={18} className="text-[#FCD116]" filled />
-                  <span className="text-white/90 text-sm font-medium">No Hidden Fees</span>
-                </div>
-
-                <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 transition-all duration-700 delay-200 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                  Completely Free to Get Started
-                </h2>
-
-                <p className={`text-white/80 text-lg mb-8 max-w-xl mx-auto transition-all duration-700 delay-300 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                  No monthly fees. No setup costs. No credit card required. 
-                  Start growing your business today.
-                </p>
-
-                <div className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-700 delay-400 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                  <a
-                    href="https://partners.groomlinkgh.com"
-                    className="inline-flex items-center justify-center gap-2 bg-[#FCD116] text-[#1A1A1A] font-bold py-4 px-10 rounded-xl hover:bg-[#e5bc14] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-lg"
-                  >
-                    <Icon name="rocket_launch" size={22} />
-                    Start Now — It's Free
-                  </a>
-                </div>
-
-                <div className={`mt-8 flex flex-wrap items-center justify-center gap-6 text-white/60 text-sm transition-all duration-700 delay-500 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                  <div className="flex items-center gap-1">
-                    <Icon name="schedule" size={16} />
-                    <span>2 min setup</span>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              { Icon: CalendarIcon, title: 'Stay Booked, Without the Back and Forth', text: '24/7 online booking, automated reminders, and client management tools keep your calendar full.' },
+              { Icon: ShieldIcon, title: 'Focus on Your Clients, Not Admin', text: 'Streamline scheduling, payments, and client communication in one simple app.' },
+              { Icon: TrendingUpIcon, title: 'Build a Business You\'re Proud Of', text: 'Data-driven insights help you grow revenue and make smart decisions.' },
+            ].map((item, i) => (
+              <FadeIn key={i} delay={i * 150}>
+                <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#006B3F] to-[#004d2d] rounded-xl flex items-center justify-center mb-5">
+                    <item.Icon />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Icon name="support_agent" size={16} />
-                    <span>24/7 support</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Icon name="cancel" size={16} />
-                    <span>Cancel anytime</span>
-                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{item.text}</p>
                 </div>
-              </div>
-            </div>
+              </FadeIn>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* ─── 4. Pricing Section ─── */}
       <section className="py-20 lg:py-28 bg-white">
         <div className="section-container">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12" ref={faqAnim.ref}>
-              <span className={`inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3 transition-all duration-700 ${faqAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                Got Questions?
-              </span>
-              <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 transition-all duration-700 delay-100 ${faqAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                Frequently Asked{' '}
-                <span className="text-[#006B3F]">Questions</span>
-              </h2>
+          <FadeIn className="text-center max-w-3xl mx-auto mb-12">
+            <span className="inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3">Simple Pricing</span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Start for <span className="text-[#006B3F]">Free</span></h2>
+          </FadeIn>
+
+          <FadeIn className="max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="bg-[#006B3F] px-8 py-6 text-center">
+                <p className="text-white/80 text-sm font-semibold uppercase tracking-wider mb-1">FREE to Start</p>
+                <p className="text-5xl font-bold text-white">₵0<span className="text-lg font-normal text-white/70"> / month</span></p>
+              </div>
+              <div className="px-8 py-8">
+                <p className="text-gray-600 text-center mb-6">No setup fees. 10% commission only on completed bookings.</p>
+                <ul className="space-y-3 mb-8">
+                  {pricingFeatures.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="mt-0.5 flex-shrink-0"><CheckIcon /></span>
+                      <span className="text-gray-700">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a href="https://partners.groomlinkgh.com" className="block w-full text-center bg-[#CE1126] text-white font-bold py-4 px-8 rounded-xl hover:bg-[#a80e1f] transition-all duration-300 shadow-lg hover:shadow-xl text-lg">
+                  Start Free Now
+                </a>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ─── 5. By the Numbers ─── */}
+      <section className="py-16 lg:py-20 bg-gradient-to-r from-[#006B3F] to-[#004d2d] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#FCD116]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#CE1126]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        <div className="section-container relative" ref={statsAnim.ref}>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">By the Numbers</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <StatCounter value={500} suffix="+" label="Salons Trust Us" isVisible={statsAnim.isVisible} delay={0} />
+            <StatCounter value={10000} suffix="+" label="Happy Customers" isVisible={statsAnim.isVisible} delay={100} />
+            <StatCounter value={30} suffix="%" label="More Bookings" isVisible={statsAnim.isVisible} delay={200} />
+            <StatCounter value={25} suffix="%" label="No-Show Reduction" isVisible={statsAnim.isVisible} delay={300} />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 6. Testimonials ─── */}
+      <section className="py-20 lg:py-28 bg-[#F8F9FA]">
+        <div className="section-container">
+          <FadeIn className="text-center max-w-3xl mx-auto mb-16">
+            <span className="inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3">Testimonials</span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Loved by <span className="text-[#006B3F]">Salon Owners</span></h2>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {testimonials.map((t, i) => (
+              <FadeIn key={i} delay={i * 150}>
+                <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 h-full flex flex-col">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, j) => <StarIcon key={j} />)}
+                  </div>
+                  <p className="text-gray-700 leading-relaxed mb-6 flex-1">"{t.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#006B3F] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {t.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
+                      <p className="text-gray-500 text-xs">{t.salon}, {t.city}</p>
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 7. Feature Spotlight: Instant Payouts ─── */}
+      <section className="py-20 lg:py-28 bg-white">
+        <div className="section-container">
+          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+            <FadeIn>
+              <span className="inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3">Instant Payouts</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Get Paid <span className="text-[#006B3F]">Instantly</span> After Every Service</h2>
+              <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                No waiting days or weeks. Funds go directly to your mobile money (MTN, Vodafone, AirtelTigo) immediately when you complete a service.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {['MTN MoMo', 'Vodafone Cash', 'AirtelTigo Money'].map(p => (
+                  <span key={p} className="bg-green-50 text-[#006B3F] px-4 py-2 rounded-lg text-sm font-medium border border-green-100">{p}</span>
+                ))}
+              </div>
+            </FadeIn>
+            <FadeIn delay={200} className="flex justify-center">
+              <div className="relative">
+                <div className="absolute -inset-4 bg-green-50 rounded-3xl blur-xl" />
+                <div className="relative bg-gradient-to-br from-green-50 to-white rounded-3xl p-10 border border-green-100">
+                  <PhoneIcon />
+                  <div className="mt-4 text-center">
+                    <span className="text-[#006B3F] font-bold text-lg">Instant Payout</span>
+                    <p className="text-gray-500 text-sm">Funds in seconds, not days</p>
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 8. How It Works ─── */}
+      <section id="how-it-works" className="py-20 lg:py-28 bg-[#F8F9FA]">
+        <div className="section-container">
+          <FadeIn className="text-center max-w-3xl mx-auto mb-16">
+            <span className="inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3">How It Works</span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Get Started in <span className="text-[#006B3F]">3 Simple Steps</span></h2>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
+            {/* Connection lines (desktop only) */}
+            <div className="hidden md:block absolute top-16 left-[33%] w-[34%] h-0.5 bg-gradient-to-r from-[#006B3F]/30 to-[#FCD116]/30" />
+            <div className="hidden md:block absolute top-16 left-[66%] w-[34%] h-0.5 bg-gradient-to-r from-[#FCD116]/30 to-[#CE1126]/30" />
+
+            {[
+              { num: 1, title: 'Set up your profile', desc: 'Sign up in 5 minutes. Add your services, prices, and hours.', color: 'from-[#006B3F] to-[#004d2d]' },
+              { num: 2, title: 'Share your booking link', desc: 'Get a custom QR code and link to share on social media.', color: 'from-[#006B3F] to-[#004d2d]' },
+              { num: 3, title: 'Start getting booked', desc: 'Clients book 24/7. You get paid instantly.', color: 'from-[#006B3F] to-[#004d2d]' },
+            ].map((step, i) => (
+              <FadeIn key={i} delay={i * 150}>
+                <div className="text-center relative">
+                  <div className="w-28 h-28 mx-auto mb-6 relative">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${step.color} rounded-full flex items-center justify-center shadow-lg`}>
+                      <span className="text-3xl font-bold text-[#FCD116]">{step.num}</span>
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
+                  <p className="text-gray-600 max-w-xs mx-auto">{step.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 9. Final CTA Section ─── */}
+      <section className="py-20 lg:py-28 bg-[#006B3F] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#FCD116]/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3" />
+
+        <div className="section-container relative">
+          <FadeIn className="text-center max-w-3xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">Ready to Grow Your Salon Business?</h2>
+            <p className="text-white/80 text-lg mb-10">Join hundreds of Ghanaian salons already using GroomLink.</p>
+            <a href="https://partners.groomlinkgh.com" className="inline-flex items-center justify-center gap-2 bg-[#FCD116] text-[#1A1A1A] font-bold py-4 px-10 rounded-xl hover:bg-[#e5bc14] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-lg">
+              Start Free Now
+            </a>
+            <p className="text-white/50 text-sm mt-6">No credit card required. Free to list.</p>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ─── 10. FAQ Section ─── */}
+      <section className="py-20 lg:py-28 bg-white">
+        <div className="section-container">
+          <FadeIn className="max-w-3xl mx-auto">
+            <div className="text-center mb-12">
+              <span className="inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3">Got Questions?</span>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Frequently Asked <span className="text-[#006B3F]">Questions</span></h2>
             </div>
 
-            <div className={`bg-[#F8F9FA] rounded-2xl p-6 md:p-8 transition-all duration-700 delay-200 ${faqAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              {faqs.map((faq, index) => (
-                <FAQItem
-                  key={index}
-                  question={faq.question}
-                  answer={faq.answer}
-                  isOpen={openFAQ === index}
-                  onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
-                />
+            <div className="bg-[#F8F9FA] rounded-2xl p-6 md:p-8">
+              {faqs.map((faq, i) => (
+                <FAQItem key={i} question={faq.question} answer={faq.answer} isOpen={openFAQ === i} onClick={() => setOpenFAQ(openFAQ === i ? null : i)} />
               ))}
             </div>
 
-            <div className={`text-center mt-10 transition-all duration-700 delay-300 ${faqAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className="text-center mt-10">
               <p className="text-gray-600 mb-4">Still have questions?</p>
-              <a
-                href="mailto:hello@groomlinkgh.com"
-                className="inline-flex items-center gap-2 text-[#006B3F] font-semibold hover:text-[#004d2d] transition-colors"
-              >
-                <Icon name="mail" size={20} />
+              <a href="mailto:hello@groomlinkgh.com" className="inline-flex items-center gap-2 text-[#006B3F] font-semibold hover:text-[#004d2d] transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
                 Contact our team
               </a>
             </div>
-          </div>
+          </FadeIn>
         </div>
       </section>
 

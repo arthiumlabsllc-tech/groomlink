@@ -30,6 +30,10 @@ export default function Header({ scrolled }: HeaderProps) {
         scrolled ? 'bg-white shadow-md' : 'bg-white'
       }`}
     >
+      {/* Partner With Us Bar - Mobile Only */}
+      <a href="/partners" className="lg:hidden block bg-[#006B3F] text-white text-center text-xs py-1.5 font-medium tracking-wide hover:bg-[#005a35] transition-colors">
+        Are you a salon/barbershop owner? Partner With Us →
+      </a>
       <nav className="section-container">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}

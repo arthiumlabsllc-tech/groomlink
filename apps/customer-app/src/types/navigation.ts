@@ -18,6 +18,7 @@ export type MainStackParamList = {
   BookingDetail: { bookingId: string };
   BookingQRCode: { bookingId: string };
   RateBooking: { bookingId: string };
+  PlatformFeedback: undefined;
 };
 
 export type TabParamList = {

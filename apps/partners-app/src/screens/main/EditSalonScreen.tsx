@@ -143,11 +143,11 @@ export default function EditSalonScreen() {
       setBusinessName(salon.businessName || '');
       setAddress(salon.address || '');
       setCity(salon.city || '');
-      setRegion(salon.region || '');
-      setPhoneNumber(salon.phoneNumber || '');
+      setRegion(''); // Region field not in Salon type
+      setPhoneNumber(salon.phone || '');
       setEmail(salon.email || '');
       setDescription(salon.description || '');
-      setType(salon.type || 'BARBERSHOP');
+      setType('SALON'); // Default to SALON (type field not in Salon type)
       setGalleryImages(salon.images || []);
 
       if (salon.openingHours) {

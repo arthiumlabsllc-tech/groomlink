@@ -532,6 +532,76 @@ function TestimonialsSection() {
   )
 }
 
+// App Download Popup Banner (shows once for first-time visitors)
+function AppDownloadBanner() {
+  const [visible, setVisible] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    const wasDismissed = localStorage.getItem('gl_app_prompt_dismissed')
+    if (wasDismissed) {
+      setDismissed(true)
+      return
+    }
+
+    // Show after a brief delay for smooth entrance
+    const showTimer = setTimeout(() => setVisible(true), 800)
+    // Auto-dismiss after 10 seconds
+    const autoDismissTimer = setTimeout(() => {
+      setVisible(false)
+      localStorage.setItem('gl_app_prompt_dismissed', 'true')
+    }, 10800)
+
+    return () => {
+      clearTimeout(showTimer)
+      clearTimeout(autoDismissTimer)
+    }
+  }, [])
+
+  const handleDismiss = () => {
+    setVisible(false)
+    localStorage.setItem('gl_app_prompt_dismissed', 'true')
+    setDismissed(true)
+  }
+
+  if (dismissed && !visible) return null
+
+  return (
+    <div
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
+        visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+      }`}
+    >
+      <div className="bg-white border-b border-gray-200 shadow-lg mx-3 mt-3 rounded-xl p-3">
+        <div className="flex items-center gap-3">
+          <img
+            src="/favicon.png"
+            alt="GroomLink"
+            className="w-10 h-10 rounded-lg flex-shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-brand-text">Get the GroomLink App</p>
+            <p className="text-xs text-gray-500">Better experience on the app</p>
+          </div>
+          <a
+            href="https://my.groomlinkgh.com/login"
+            className="bg-[#006B3F] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#005a35] transition-colors flex-shrink-0"
+          >
+            Download
+          </a>
+          <button
+            onClick={handleDismiss}
+            className="text-gray-400 hover:text-gray-600 flex-shrink-0 -mr-1"
+            aria-label="Dismiss"
+          >
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Section 5: Download App
 function DownloadAppSection() {
   return (
@@ -714,6 +784,17 @@ export default function MobileHome() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Partner With Us Bar */}
+      <Link
+        to="/partners"
+        className="block bg-[#006B3F] text-white text-center text-xs py-1.5 font-medium tracking-wide hover:bg-[#005a35] transition-colors"
+      >
+        Are you a salon/barbershop owner? Partner With Us →
+      </Link>
+
+      {/* App Download Popup */}
+      <AppDownloadBanner />
+
       {/* Hero Section */}
       <HeroSection />
 

@@ -12,6 +12,7 @@ enum PaymentProvider {
   VODAFONE_CASH = 'VODAFONE_CASH',
   AIRTELTIGO_MONEY = 'AIRTELTIGO_MONEY',
   CASH = 'CASH',
+  PAYSTACK = 'PAYSTACK',
 }
 
 const initializePaymentSchema = z.object({
@@ -187,5 +188,74 @@ export async function getPaymentConfig(req: Request, res: Response): Promise<voi
     });
   } catch (error) {
     errorResponse(res, 'CONFIG_ERROR', (error as Error).message, 500);
+  }
+}
+
+// Paystack webhook endpoint
+export async function handlePaystackWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    const rawBody = JSON.stringify(req.body);
+    const headers = req.headers as Record<string, string>;
+    
+    logger.info('Paystack webhook received', {
+      event: req.body.event,
+      reference: req.body.data?.reference,
+    });
+
+    // Process the webhook through the payment service
+    const result = await paymentService.handlePaystackWebhook(rawBody, headers);
+    
+    // Always return 200 to prevent Paystack retries
+    res.status(200).json({ received: true, processed: result.success });
+  } catch (error) {
+    // Log error but still return 200 to prevent Paystack retries
+    logger.error('Paystack webhook error:', error);
+    res.status(200).json({ received: true, processed: false });
+  }
+}
+
+// Paystack callback endpoint (redirect after payment)
+export async function handlePaystackCallback(req: AuthenticatedRequest | Request, res: Response): Promise<void> {
+  try {
+    const { reference, trxref } = req.query;
+    
+    if (!reference && !trxref) {
+      // Redirect to frontend with error
+      res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=missing_reference`);
+      return;
+    }
+    
+    const paymentReference = (reference || trxref) as string;
+    
+    logger.info('Paystack callback received', { reference: paymentReference });
+
+    // Find payment by reference
+    const payment = await paymentService.findPaymentByReference(paymentReference);
+    
+    if (!payment) {
+      res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=payment_not_found`);
+      return;
+    }
+
+    // Verify payment with Paystack
+    const result = await paymentService.verifyAndCompletePayment(payment.id, paymentReference);
+    
+    if (result.success) {
+      // Redirect to success page with booking details
+      const bookingRef = result.bookingReference || payment.bookingId;
+      res.redirect(
+        `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/success?reference=${bookingRef}&amount=${result.amountPaid || 0}`
+      );
+    } else {
+      // Redirect to failure page
+      res.redirect(
+        `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=verification_failed&reference=${paymentReference}`
+      );
+    }
+  } catch (error) {
+    logger.error('Paystack callback error:', error);
+    res.redirect(
+      `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=callback_error`
+    );
   }
 }

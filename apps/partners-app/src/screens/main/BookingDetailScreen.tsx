@@ -652,7 +652,9 @@ export default function BookingDetailScreen() {
         )}
 
         {/* Review */}
-        {booking.review && (
+        {booking.review && (() => {
+          const review = booking.review!;
+          return (
           <Surface style={styles.section} elevation={0}>
             <View style={styles.sectionHeader}>
               <Ionicons name="star" size={20} color="#FCD116" />
@@ -662,26 +664,27 @@ export default function BookingDetailScreen() {
             </View>
             <Divider style={styles.divider} />
             <View style={styles.ratingRow}>
-              <Text style={styles.ratingValue}>{booking.review.rating}</Text>
+              <Text style={styles.ratingValue}>{review.rating}</Text>
               <Text style={styles.ratingMax}>/5</Text>
               <View style={styles.stars}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Ionicons
                     key={star}
-                    name={star <= booking.review.rating ? 'star' : 'star-outline'}
+                    name={star <= review.rating ? 'star' : 'star-outline'}
                     size={20}
                     color="#FCD116"
                   />
                 ))}
               </View>
             </View>
-            {booking.review.comment && (
+            {review.comment && (
               <Text style={styles.reviewComment}>
-                "{booking.review.comment}"
+                "{review.comment}"
               </Text>
             )}
           </Surface>
-        )}
+          );
+        })()}
 
         {/* Action Buttons */}
         {renderActionButtons()}

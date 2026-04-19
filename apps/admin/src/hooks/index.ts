@@ -10,3 +10,4 @@ export * from './useSupportStaff';
 export * from './useAdminManagement';
 export * from './useSettings';
 export * from './useAdmin';
+export * from './useSubscriptions';

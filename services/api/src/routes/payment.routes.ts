@@ -21,4 +21,11 @@ router.post('/webhook/momo', paymentController.handleWebhook);
 // Hubtel uses ResponseCode validation instead of HMAC signatures
 router.post('/webhook/hubtel', paymentController.handleHubtelWebhook);
 
+// Paystack webhook - handles Paystack payment events
+router.post('/webhook/paystack', paymentController.handlePaystackWebhook);
+
+// Paystack callback - handles redirect after payment
+router.post('/callback/paystack', paymentController.handlePaystackCallback);
+router.get('/callback/paystack', paymentController.handlePaystackCallback);
+
 export default router;

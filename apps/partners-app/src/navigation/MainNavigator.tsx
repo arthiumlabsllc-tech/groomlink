@@ -14,6 +14,8 @@ import EditSalonScreen from '../screens/main/EditSalonScreen';
 import AddServiceScreen from '../screens/main/AddServiceScreen';
 import AddStaffScreen from '../screens/main/AddStaffScreen';
 import QRScannerScreen from '../screens/main/QRScannerScreen';
+import PricingScreen from '../screens/main/PricingScreen';
+import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -37,6 +39,7 @@ function DashboardStack() {
       <Stack.Screen name="DashboardMain" component={DashboardScreen} options={{ headerShown: false }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
       <Stack.Screen name="EditSalon" component={EditSalonScreen} options={{ title: 'Edit Salon' }} />
+      <Stack.Screen name="Pricing" component={PricingScreen} options={{ title: 'Subscription Plans' }} />
       <Stack.Screen 
         name="QRScanner" 
         component={QRScannerScreen} 
@@ -141,12 +144,37 @@ function StaffStack() {
       }}
     >
       <Stack.Screen name="StaffMain" component={StaffScreen} options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="AddStaff" 
-        component={AddStaffScreen} 
-        options={({ route }) => ({ 
-          title: route.params?.staffId ? 'Edit Staff' : 'Add Staff' 
-        })} 
+      <Stack.Screen
+        name="AddStaff"
+        component={AddStaffScreen}
+        options={({ route }) => ({
+          title: route.params?.staffId ? 'Edit Staff' : 'Add Staff'
+        })}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function ProfileStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#FFFFFF',
+        },
+        headerTintColor: '#111827',
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+        headerShadowVisible: false,
+        headerBackTitleVisible: false,
+      }}
+    >
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="PlatformFeedback"
+        component={PlatformFeedbackScreen}
+        options={{ title: 'Rate GroomLink' }}
       />
     </Stack.Navigator>
   );
@@ -229,7 +257,7 @@ export default function MainNavigator() {
       />
       <Tab.Screen 
         name="Profile" 
-        component={ProfileScreen}
+        component={ProfileStack}
         options={{
           tabBarLabel: 'Profile',
         }}

@@ -20,6 +20,8 @@ export interface PaymentSettings {
   hubtelApiId: string | null;
   hubtelApiSecret: string | null;
   hubtelMerchantAccountId: string | null;
+  paystackPublicKey: string | null;
+  paystackSecretKey: string | null;
   isPaymentTestMode: boolean;
   transactionFeePercent: number | null;
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
+import PlatformFeedback from '../components/PlatformFeedback'
 import { useAuthStore } from '../store/auth'
 import apiClient from '../lib/api'
 
@@ -460,6 +461,9 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* Platform Feedback */}
+        <PlatformFeedback />
 
         {/* Account Actions Card */}
         <div className="card-v2 p-6 mb-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>

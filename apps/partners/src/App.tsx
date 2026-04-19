@@ -14,6 +14,8 @@ import KYC from './pages/KYC'
 import BrandedPage from './pages/BrandedPage'
 import Notifications from './pages/Notifications'
 import Insights from './pages/Insights'
+import PricingPage from './pages/PricingPage'
+import Subscription from './pages/Subscription'
 import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
 import { SocketProvider } from './components/SocketProvider'
@@ -127,6 +129,20 @@ function App() {
                 <ProtectedRoute>
                   <SalonSetupWrapper>
                     <Insights />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/pricing" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <PricingPage />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/subscription" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Subscription />
                   </SalonSetupWrapper>
                 </ProtectedRoute>
               } />

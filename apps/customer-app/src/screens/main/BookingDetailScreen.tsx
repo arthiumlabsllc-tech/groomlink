@@ -107,8 +107,12 @@ export default function BookingDetailScreen() {
         'Thank you for confirming your service completion. Payment has been released to the salon.',
         [
           {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
+            text: 'Rate Now',
+            onPress: () => navigation.navigate('RateBooking', { bookingId }),
+          },
+          {
+            text: 'Later',
+            style: 'cancel',
           },
         ]
       );
@@ -755,6 +759,65 @@ export default function BookingDetailScreen() {
                   </>
                 )}
               </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Rate This Visit - for completed bookings without review */}
+        {booking.status === 'COMPLETED' && !booking.review && (
+          <Card style={styles.rateCard}>
+            <Card.Content style={styles.rateCardContent}>
+              <View style={styles.rateIconContainer}>
+                <Ionicons name="star" size={28} color={COLORS.accentGold} />
+              </View>
+              <Text variant="titleSmall" style={styles.rateTitle}>
+                Rate This Visit
+              </Text>
+              <Text variant="bodySmall" style={styles.rateSubtitle}>
+                Your service is complete! Would you like to rate your experience?
+              </Text>
+              <View style={styles.rateButtons}>
+                <TouchableOpacity
+                  style={styles.rateNowButton}
+                  onPress={() => navigation.navigate('RateBooking', { bookingId })}
+                >
+                  <Ionicons name="star" size={18} color="#FFFFFF" />
+                  <Text style={styles.rateNowButtonText}>Rate Now</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.maybeLaterButton}
+                  onPress={() => {}}
+                >
+                  <Text style={styles.maybeLaterButtonText}>Maybe Later</Text>
+                </TouchableOpacity>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Already Reviewed - for completed bookings with review */}
+        {booking.status === 'COMPLETED' && booking.review && (
+          <Card style={styles.reviewedCard}>
+            <Card.Content style={styles.reviewedCardContent}>
+              <View style={styles.reviewedHeader}>
+                <Ionicons name="checkmark-circle" size={20} color={COLORS.primaryGreen} />
+                <Text variant="titleSmall" style={styles.reviewedTitle}>Reviewed</Text>
+              </View>
+              <View style={styles.reviewedStars}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Ionicons
+                    key={star}
+                    name={star <= booking.review!.rating ? 'star' : 'star-outline'}
+                    size={24}
+                    color={star <= booking.review!.rating ? COLORS.accentGold : COLORS.border}
+                  />
+                ))}
+              </View>
+              {booking.review.comment && (
+                <Text variant="bodySmall" style={styles.reviewedComment}>
+                  "{booking.review.comment}"
+                </Text>
+              )}
             </Card.Content>
           </Card>
         )}
@@ -1718,6 +1781,118 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontWeight: '500',
     marginBottom: 8,
+  },
+  // Rate Card
+  rateCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: `${COLORS.accentGold}40`,
+  },
+  rateCardContent: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  rateIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: `${COLORS.accentGold}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  rateTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  rateSubtitle: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  rateButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  rateNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#006B3F',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    gap: 8,
+    flex: 1,
+  },
+  rateNowButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  maybeLaterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: `${COLORS.textSecondary}10`,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    flex: 1,
+  },
+  maybeLaterButtonText: {
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  // Reviewed Card
+  reviewedCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primaryGreen,
+  },
+  reviewedCardContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  reviewedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  reviewedTitle: {
+    fontWeight: '600',
+    color: COLORS.primaryGreen,
+  },
+  reviewedStars: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 8,
+  },
+  reviewedComment: {
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingHorizontal: 16,
   },
   // Dispute Card
   disputeCard: {

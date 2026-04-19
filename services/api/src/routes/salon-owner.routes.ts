@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import * as salonOwnerController from '../controllers/salon-owner.controller';
 import { authenticateToken, requireRole, UserRole } from '../middleware/auth';
+import { checkStaffLimit } from '../middleware/subscription';
 
 const router = Router();
 
 // Staff Management
 router.get('/:salonId/staff', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.getStaff);
-router.post('/:salonId/staff', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.addStaff);
+router.post('/:salonId/staff', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), checkStaffLimit, salonOwnerController.addStaff);
 router.put('/:salonId/staff/:staffId', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.updateStaff);
 router.delete('/:salonId/staff/:staffId', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), salonOwnerController.removeStaff);
 

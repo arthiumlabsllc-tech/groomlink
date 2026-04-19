@@ -18,6 +18,7 @@ import waitlistRoutes from './waitlist.routes';
 import loyaltyRoutes from './loyalty.routes';
 import discoveryRoutes from './discovery.routes';
 import insightsRoutes from './insights.routes';
+import subscriptionRoutes from './subscription.routes';
 
 const router: RouterType = Router();
 
@@ -46,5 +47,6 @@ router.use('/waitlist', waitlistRoutes);
 router.use('/loyalty', loyaltyRoutes);
 router.use('/discover', discoveryRoutes);
 router.use('/insights', insightsRoutes);
+router.use('/subscription', subscriptionRoutes);
 
 export default router;

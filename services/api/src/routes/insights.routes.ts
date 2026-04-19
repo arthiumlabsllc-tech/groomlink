@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import * as insightsController from '../controllers/insights.controller';
 import { authenticateToken, requireRole, UserRole } from '../middleware/auth';
+import { requireFeature } from '../middleware/subscription';
 
 const router = Router();
 
 // All routes require authentication and salon owner role
+// All insights routes require the advanced_analytics feature (Pro/Premium)
 router.use(authenticateToken);
 router.use(requireRole(UserRole.SALON_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN));
+router.use(requireFeature('advanced_analytics'));
 
 // Peak hours analytics
 router.get('/peak-hours', insightsController.getPeakHours);

@@ -293,7 +293,7 @@ export default function ProfileScreen() {
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={16} color="#FCD116" />
               <Text style={[styles.statValue, { color: '#FCD116' }]}>
-                {stats?.avgRating ? stats.avgRating.toFixed(1) : '-'}
+                {stats?.averageRating ? stats.averageRating.toFixed(1) : '-'}
               </Text>
             </View>
             <Text style={styles.statLabel}>Rating</Text>
@@ -488,6 +488,22 @@ export default function ProfileScreen() {
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Help & Support</Text>
               <Text style={styles.menuSubtitle}>Get help with your account</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('PlatformFeedback')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#FEF9E7' }]}>
+              <Ionicons name="heart-outline" size={20} color="#FCD116" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Rate GroomLink</Text>
+              <Text style={styles.menuSubtitle}>Share your feedback about the app</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>

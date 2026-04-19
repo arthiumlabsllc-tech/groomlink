@@ -45,6 +45,8 @@ export function Settings() {
     hubtelApiId: '',
     hubtelApiSecret: '',
     hubtelMerchantAccountId: '',
+    paystackPublicKey: '',
+    paystackSecretKey: '',
     isPaymentTestMode: true,
     transactionFeePercent: 1.95,
   });
@@ -85,6 +87,8 @@ export function Settings() {
         hubtelApiId: paymentSettings.hubtelApiId || '',
         hubtelApiSecret: paymentSettings.hubtelApiSecret || '',
         hubtelMerchantAccountId: paymentSettings.hubtelMerchantAccountId || '',
+        paystackPublicKey: paymentSettings.paystackPublicKey || '',
+        paystackSecretKey: paymentSettings.paystackSecretKey || '',
         isPaymentTestMode: paymentSettings.isPaymentTestMode ?? true,
         transactionFeePercent: paymentSettings.transactionFeePercent ?? 1.95,
       });
@@ -164,6 +168,8 @@ export function Settings() {
         hubtelApiId: paymentFormData.hubtelApiId || null,
         hubtelApiSecret: paymentFormData.hubtelApiSecret || null,
         hubtelMerchantAccountId: paymentFormData.hubtelMerchantAccountId || null,
+        paystackPublicKey: paymentFormData.paystackPublicKey || null,
+        paystackSecretKey: paymentFormData.paystackSecretKey || null,
         isPaymentTestMode: paymentFormData.isPaymentTestMode,
         transactionFeePercent: paymentFormData.transactionFeePercent,
       });
@@ -544,10 +550,13 @@ export function Settings() {
                   onChange={(e) => setPaymentFormData({ ...paymentFormData, paymentGateway: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 bg-white"
                 >
-                  <option value="hubtel">Hubtel</option>
+                  <option value="hubtel">Hubtel (Mobile Money)</option>
+                  <option value="paystack">Paystack (Cards + Mobile Money)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  More payment gateways will be available in future updates
+                  {paymentFormData.paymentGateway === 'hubtel' 
+                    ? 'Best for: Mobile Money payments with instant payouts'
+                    : 'Best for: Card payments, bank transfers, and wider payment support'}
                 </p>
               </div>
 
@@ -655,6 +664,107 @@ export function Settings() {
                     The Hubtel merchant account number for receiving payments.
                   </p>
                 </div>
+
+                {/* Paystack Configuration Section */}
+                {paymentFormData.paymentGateway === 'paystack' && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-4">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M5.004 14.622L10.68 2.496c.198-.422.714-.592 1.12-.378.406.214.572.714.374 1.136L6.498 14.622H5.004zm2.61 2.756L13.29 3.246c.198-.422.714-.592 1.12-.378.406.214.572.714.374 1.136L9.108 17.378H7.614zm2.61 2.756L15.9 6.002c.198-.422.714-.592 1.12-.378.406.214.572.714.374 1.136l-5.676 13.372h-1.494z"/>
+                      </svg>
+                      Paystack Configuration
+                    </h3>
+
+                    {/* Paystack Public Key */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Public Key
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={paymentFormData.paystackPublicKey || ''}
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, paystackPublicKey: e.target.value })}
+                          className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                          placeholder="pk_live_xxxxxxxxxxxxxxxxxxxx"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(paymentFormData.paystackPublicKey || '', 'paystackPublicKey')}
+                          disabled={!paymentFormData.paystackPublicKey}
+                          className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          {copiedField === 'paystackPublicKey' ? (
+                            <Icon name="check" size={18} className="text-green-500" />
+                          ) : (
+                            <Icon name="content_copy" size={18} className="text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Get from: <a href="https://dashboard.paystack.com/#/settings/developers" target="_blank" rel="noopener noreferrer" className="text-[#006B3F] hover:underline">Paystack Dashboard → Settings → API Keys</a>
+                      </p>
+                    </div>
+
+                    {/* Paystack Secret Key */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Secret Key
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={showSecretKey ? 'text' : 'password'}
+                            value={paymentFormData.paystackSecretKey || ''}
+                            onChange={(e) => setPaymentFormData({ ...paymentFormData, paystackSecretKey: e.target.value })}
+                            className="w-full px-4 py-3 pr-10 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                            placeholder="sk_live_xxxxxxxxxxxxxxxxxxxx"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSecretKey(!showSecretKey)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showSecretKey ? <Icon name="visibility_off" size={18} /> : <Icon name="visibility" size={18} />}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(paymentFormData.paystackSecretKey || '', 'paystackSecretKey')}
+                          disabled={!paymentFormData.paystackSecretKey}
+                          className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          {copiedField === 'paystackSecretKey' ? (
+                            <Icon name="check" size={18} className="text-green-500" />
+                          ) : (
+                            <Icon name="content_copy" size={18} className="text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Keep this secret! Never expose it in client-side code.
+                      </p>
+                    </div>
+
+                    {/* Paystack Info Box */}
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <Icon name="info" size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-blue-800">
+                          <p className="font-medium mb-1">Paystack Setup Tips:</p>
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            <li>Enable Mobile Money in your Paystack dashboard for Ghana</li>
+                            <li>Configure webhook URL: <code className="bg-blue-100 px-1 rounded">https://groomlinkgh.com/api/payments/webhook/paystack</code></li>
+                            <li>Use test keys (pk_test/sk_test) for development</li>
+                            <li>Switch to live keys (pk_live/sk_live) when ready for production</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Transaction Fee - Editable */}

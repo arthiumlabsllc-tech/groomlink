@@ -727,6 +727,8 @@ const paymentSettingsSchema = z.object({
   hubtelApiId: z.string().max(500).optional().nullable(),
   hubtelApiSecret: z.string().max(500).optional().nullable(),
   hubtelMerchantAccountId: z.string().max(500).optional().nullable(),
+  paystackPublicKey: z.string().max(500).optional().nullable(),
+  paystackSecretKey: z.string().max(500).optional().nullable(),
   isPaymentTestMode: z.boolean().optional(),
   transactionFeePercent: z.preprocess(
     (val) => {
@@ -808,15 +810,21 @@ export async function getPaymentSettings(req: AuthenticatedRequest, res: Respons
     }
 
     // Mask the API secret - show only last 4 characters
-    const maskedApiSecret = (settings as any)?.hubtelApiSecret
+    const maskedHubtelSecret = (settings as any)?.hubtelApiSecret
       ? `****${(settings as any).hubtelApiSecret.slice(-4)}`
+      : null;
+    
+    const maskedPaystackSecret = (settings as any)?.paystackSecretKey
+      ? `****${(settings as any).paystackSecretKey.slice(-4)}`
       : null;
 
     successResponse(res, {
       paymentGateway: settings.paymentGateway,
       hubtelApiId: (settings as any)?.hubtelApiId || null,
-      hubtelApiSecret: maskedApiSecret,
+      hubtelApiSecret: maskedHubtelSecret,
       hubtelMerchantAccountId: (settings as any)?.hubtelMerchantAccountId || null,
+      paystackPublicKey: (settings as any)?.paystackPublicKey || null,
+      paystackSecretKey: maskedPaystackSecret,
       isPaymentTestMode: settings.isPaymentTestMode,
       transactionFeePercent: settings.transactionFeePercent,
     });
@@ -858,6 +866,17 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
     if (data.hubtelMerchantAccountId !== undefined) {
       updateData.hubtelMerchantAccountId = data.hubtelMerchantAccountId || null;
     }
+
+    // Paystack Public Key
+    if (data.paystackPublicKey !== undefined) {
+      updateData.paystackPublicKey = data.paystackPublicKey || null;
+    }
+
+    // Paystack Secret Key (with masking support)
+    if (data.paystackSecretKey !== undefined && data.paystackSecretKey !== null && !data.paystackSecretKey.includes('****')) {
+      updateData.paystackSecretKey = data.paystackSecretKey || null;
+    }
+    // If secret key contains '****', don't update it
 
     if (data.isPaymentTestMode !== undefined) {
       updateData.isPaymentTestMode = data.isPaymentTestMode;

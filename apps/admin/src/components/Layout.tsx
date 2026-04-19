@@ -26,6 +26,7 @@ const navItems = [
   { path: '/transactions', label: 'Transactions', icon: 'credit_card', pageId: 'transactions' },
   { path: '/promotions', label: 'Promotions', icon: 'redeem', pageId: 'promotions' },
   { path: '/sponsored-salons', label: 'Sponsored Salons', icon: 'star', pageId: 'sponsored-salons' },
+  { path: '/subscriptions', label: 'Subscriptions', icon: 'card_membership', pageId: 'subscriptions' },
   { path: '/support', label: 'Support', icon: 'headset', pageId: 'support' },
   { path: '/support-staff', label: 'Support Staff', icon: 'person_add', pageId: 'support-staff' },
 ];

@@ -158,6 +158,9 @@ export default function SalonDetail() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewsTotal, setReviewsTotal] = useState(0)
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsPage, setReviewsPage] = useState(1)
+  const [reviewsHasMore, setReviewsHasMore] = useState(false)
+  const [loadingMoreReviews, setLoadingMoreReviews] = useState(false)
 
   // Waitlist state
   const [, setMyWaitlistEntries] = useState<WaitlistEntry[]>([])
@@ -259,9 +262,11 @@ export default function SalonDetail() {
       // Fetch reviews
       setReviewsLoading(true)
       try {
-        const response = await salonApi.getSalonReviews(id)
+        const response = await salonApi.getSalonReviews(id, 1, 10)
         setReviews(response?.reviews || [])
         setReviewsTotal(response?.total || 0)
+        setReviewsPage(1)
+        setReviewsHasMore((response?.total || 0) > (response?.reviews?.length || 0))
       } catch (err) {
         console.error('Failed to fetch reviews:', err)
         setReviews([])
@@ -313,6 +318,22 @@ export default function SalonDetail() {
       }
     } finally {
       setFavoriteLoading(false)
+    }
+  }
+
+  const loadMoreReviews = async () => {
+    if (!id || loadingMoreReviews) return
+    const nextPage = reviewsPage + 1
+    setLoadingMoreReviews(true)
+    try {
+      const response = await salonApi.getSalonReviews(id, nextPage, 10)
+      setReviews(prev => [...prev, ...(response?.reviews || [])])
+      setReviewsPage(nextPage)
+      setReviewsHasMore(reviews.length + (response?.reviews?.length || 0) < reviewsTotal)
+    } catch (err) {
+      console.error('Failed to load more reviews:', err)
+    } finally {
+      setLoadingMoreReviews(false)
     }
   }
 
@@ -1019,6 +1040,47 @@ export default function SalonDetail() {
             {/* Reviews Tab */}
             {activeTab === 'reviews' && (
               <div>
+                {/* Rating Summary */}
+                {reviewsTotal > 0 && (
+                  <div className="flex items-center gap-4 mb-6 p-4 bg-gradient-to-r from-[#FCD116]/10 to-[#FCD116]/5 rounded-xl border border-[#FCD116]/20">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-gray-900">{salon.rating?.toFixed(1) || '0.0'}</p>
+                      <div className="flex items-center gap-0.5 mt-1 justify-center">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Icon
+                            key={s}
+                            name="star"
+                            size={14}
+                            filled={s <= Math.round(salon.rating || 0)}
+                            className={s <= Math.round(salon.rating || 0) ? 'text-[#FCD116]' : 'text-gray-300'}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">{reviewsTotal} review{reviewsTotal !== 1 ? 's' : ''}</p>
+                    </div>
+                    <div className="h-12 w-px bg-[#FCD116]/20" />
+                    <div className="flex-1 space-y-1.5">
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const count = reviews.filter(r => r.rating === star).length
+                        const pct = reviewsTotal > 0 ? (count / reviewsTotal) * 100 : 0
+                        return (
+                          <div key={star} className="flex items-center gap-2 text-sm">
+                            <span className="w-3 text-right text-gray-500">{star}</span>
+                            <Icon name="star" size={12} filled className="text-[#FCD116]" />
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-[#FCD116] rounded-full transition-all duration-300"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="w-8 text-right text-xs text-gray-400">{count}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {reviewsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Icon name="progress_activity" size={32} className="text-ghana-green animate-spin" />
@@ -1027,6 +1089,7 @@ export default function SalonDetail() {
                   <div className="text-center py-8">
                     <Icon name="star" size={48} className="text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No reviews yet</p>
+                    <p className="text-gray-400 text-sm mt-1">Be the first to review this salon!</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -1068,10 +1131,23 @@ export default function SalonDetail() {
                             </div>
                           </div>
                           {/* Star rating badge */}
-                          <div className="flex items-center gap-1 bg-ghana-gold/10 px-2.5 py-1 rounded-full">
-                            <Icon name="star" size={14} filled className="text-ghana-gold" />
+                          <div className="flex items-center gap-1 bg-[#FCD116]/10 px-2.5 py-1 rounded-full">
+                            <Icon name="star" size={14} filled className="text-[#FCD116]" />
                             <span className="font-bold text-sm text-ghana-green">{review.rating}</span>
                           </div>
+                        </div>
+
+                        {/* Full star row */}
+                        <div className="flex items-center gap-0.5 mb-2">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Icon
+                              key={s}
+                              name="star"
+                              size={14}
+                              filled={s <= review.rating}
+                              className={s <= review.rating ? 'text-[#FCD116]' : 'text-gray-300'}
+                            />
+                          ))}
                         </div>
 
                         {/* Review text */}
@@ -1100,9 +1176,44 @@ export default function SalonDetail() {
                             day: 'numeric',
                           })}
                         </p>
+
+                        {/* Salon Reply */}
+                        {(review as any).salonReply && (
+                          <div className="mt-3 ml-4 pl-4 border-l-2 border-[#006B3F]/20">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Icon name="store" size={14} className="text-[#006B3F]" />
+                              <span className="text-xs font-semibold text-[#006B3F]">Salon Response</span>
+                            </div>
+                            <p className="text-sm text-gray-600">{(review as any).salonReply}</p>
+                          </div>
+                        )}
                       </div>
                     ))}
-                    {reviewsTotal > reviews.length && (
+
+                    {/* Load More */}
+                    {reviewsHasMore && (
+                      <div className="text-center pt-2">
+                        <button
+                          onClick={loadMoreReviews}
+                          disabled={loadingMoreReviews}
+                          className="px-6 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2 mx-auto"
+                        >
+                          {loadingMoreReviews ? (
+                            <>
+                              <Icon name="progress_activity" size={16} className="animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="expand_more" size={16} />
+                              Load More Reviews
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {!reviewsHasMore && reviewsTotal > reviews.length && (
                       <p className="text-center text-sm text-gray-500">
                         Showing {reviews.length} of {reviewsTotal} reviews
                       </p>

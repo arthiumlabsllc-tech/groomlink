@@ -1705,3 +1705,185 @@ export async function cleanupOrphanedPayments(): Promise<{
   return summary;
 }
 
+/**
+ * Handle Paystack webhook events
+ */
+export async function handlePaystackWebhook(
+  rawBody: string,
+  headers: Record<string, string>
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const event = JSON.parse(rawBody);
+    
+    logger.info('Paystack webhook event received', {
+      event: event.event,
+      reference: event.data?.reference,
+      status: event.data?.status,
+    });
+
+    // Get Paystack credentials
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+    
+    const paystackSecretKey = (settings as any)?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+    
+    if (!paystackSecretKey) {
+      logger.error('Paystack secret key not configured');
+      return { success: false, message: 'Paystack not configured' };
+    }
+
+    const credentials = {
+      secretKey: paystackSecretKey,
+      publicKey: (settings as any)?.paystackPublicKey || process.env.PAYSTACK_PUBLIC_KEY || '',
+    };
+
+    // Import Paystack provider
+    const { PaystackProvider } = await import('./paystack.provider');
+    const paystack = new PaystackProvider();
+
+    // Verify webhook signature
+    const isValidSignature = paystack.verifyWebhookSignature(
+      { rawBody, headers },
+      credentials
+    );
+
+    if (!isValidSignature) {
+      logger.error('Invalid Paystack webhook signature');
+      return { success: false, message: 'Invalid signature' };
+    }
+
+    // Handle the webhook event
+    const webhookResponse = await paystack.handleWebhook(
+      { rawBody, headers },
+      credentials
+    );
+
+    // Process based on event type
+    switch (event.event) {
+      case 'charge.success':
+        const reference = event.data.reference;
+        
+        // Find payment by reference
+        const payment = await prisma.payment.findFirst({
+          where: {
+            providerRef: reference,
+          },
+          include: {
+            booking: {
+              include: {
+                salon: {
+                  select: {
+                    id: true,
+                    businessName: true,
+                    address: true,
+                    phoneNumber: true,
+                    owner: {
+                      select: {
+                        id: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                worker: {
+                  select: {
+                    fullName: true,
+                  },
+                },
+                customer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phoneNumber: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (!payment) {
+          logger.warn('Payment not found for Paystack webhook', { reference });
+          return { success: false, message: 'Payment not found' };
+        }
+
+        if (payment.status === PaymentStatus.SUCCESS) {
+          logger.info('Payment already completed', { reference });
+          return { success: true, message: 'Payment already processed' };
+        }
+
+        // Verify payment with Paystack
+        const verification = await paystack.verifyPayment(reference, credentials);
+        
+        if (!verification.success) {
+          logger.error('Paystack payment verification failed', { reference });
+          
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.FAILED,
+              providerData: {
+                ...event.data,
+                failedAt: new Date().toISOString(),
+              },
+            },
+          });
+
+          return { success: false, message: 'Payment verification failed' };
+        }
+
+        // Complete payment
+        const result = await verifyAndCompletePayment(payment.id, reference);
+        
+        if (result.success) {
+          logger.info('Paystack payment completed via webhook', {
+            reference,
+            bookingId: payment.bookingId,
+          });
+        } else {
+          logger.error('Failed to complete Paystack payment', {
+            reference,
+            message: result.message,
+          });
+        }
+
+        return { success: result.success, message: result.message };
+
+      case 'transfer.success':
+        logger.info('Paystack transfer successful', {
+          reference: event.data.reference,
+        });
+        // Update escrow account if needed
+        break;
+
+      case 'transfer.failed':
+        logger.error('Paystack transfer failed', {
+          reference: event.data.reference,
+        });
+        // Handle failed payout
+        break;
+
+      default:
+        logger.info('Unhandled Paystack webhook event', { event: event.event });
+    }
+
+    return { success: true, message: 'Webhook processed' };
+  } catch (error: any) {
+    logger.error('Paystack webhook handling error', {
+      message: error.message,
+      stack: error.stack,
+    });
+
+    return { success: false, message: 'Webhook processing failed' };
+  }
+}
+

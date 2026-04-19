@@ -786,6 +786,78 @@ async function main() {
     console.log(`✅ Policy: ${policy.policyName} = ${policy.policyValue}`);
   }
 
+  // Step 7: Seed default subscription plans
+  console.log('\n📦 Seeding subscription plans...');
+  const subscriptionPlans = [
+    {
+      name: 'Free',
+      slug: 'free',
+      priceMonthlyGhs: new Decimal(0),
+      priceYearlyGhs: new Decimal(0),
+      transactionFeePercentage: new Decimal(5.0),
+      maxStaff: 1,
+      maxLocations: 1,
+      features: {
+        instant_payouts: false,
+        analytics: false,
+        marketing_tools: false,
+        api_access: false,
+        priority_support: false,
+        custom_branding: false,
+      },
+      isActive: true,
+      sortOrder: 1,
+    },
+    {
+      name: 'Pro',
+      slug: 'pro',
+      priceMonthlyGhs: new Decimal(99),
+      priceYearlyGhs: new Decimal(990),
+      transactionFeePercentage: new Decimal(3.0),
+      maxStaff: 5,
+      maxLocations: 1,
+      features: {
+        instant_payouts: true,
+        analytics: true,
+        marketing_tools: false,
+        api_access: false,
+        priority_support: false,
+        custom_branding: false,
+      },
+      isActive: true,
+      sortOrder: 2,
+    },
+    {
+      name: 'Premium',
+      slug: 'premium',
+      priceMonthlyGhs: new Decimal(299),
+      priceYearlyGhs: new Decimal(2990),
+      transactionFeePercentage: new Decimal(1.0),
+      maxStaff: 20,
+      maxLocations: 5,
+      features: {
+        instant_payouts: true,
+        analytics: true,
+        marketing_tools: true,
+        api_access: true,
+        priority_support: true,
+        custom_branding: true,
+      },
+      isActive: true,
+      sortOrder: 3,
+    },
+  ];
+
+  for (const plan of subscriptionPlans) {
+    const { slug, ...planData } = plan;
+    await prisma.subscriptionPlan.upsert({
+      where: { slug },
+      update: planData,
+      create: plan,
+    });
+    console.log(`✅ Subscription Plan: ${plan.name} (${slug})`);
+  }
+
   // Summary
   console.log('\n' + '='.repeat(60));
   console.log('✨ Production database seed completed!\n');
@@ -797,6 +869,8 @@ async function main() {
   const reviewCount = await prisma.review.count();
   const policyCount = await prisma.platformPolicy.count();
 
+  const subscriptionPlanCount = await prisma.subscriptionPlan.count();
+
   console.log('📊 Summary:');
   console.log(`   Users: ${userCount} (5 customers + 20 salon owners + 2 admins)`);
   console.log(`   Salons: ${salonCount}`);
@@ -804,6 +878,7 @@ async function main() {
   console.log(`   Services: ${serviceCount}`);
   console.log(`   Reviews: ${reviewCount}`);
   console.log(`   Platform Policies: ${policyCount}`);
+  console.log(`   Subscription Plans: ${subscriptionPlanCount}`);
   
   console.log('\n🔐 Test Accounts (Password: Password123!):');
   console.log('   Super Admin: admin@groomlinkgh.com');

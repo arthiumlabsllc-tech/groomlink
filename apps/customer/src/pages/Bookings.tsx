@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
+import RateBookingModal from '../components/RateBookingModal'
 import toast from 'react-hot-toast'
 import { bookingApi, Booking, RefundPreview, QueuePositionResponse } from '../lib/api'
 
@@ -213,6 +214,10 @@ export default function Bookings() {
   const [autoCheckinLoading, setAutoCheckinLoading] = useState(false)
   const [showAutoCheckinBanner, setShowAutoCheckinBanner] = useState(false)
   const [autoCheckinDistance, setAutoCheckinDistance] = useState(0)
+
+  // Rate booking states
+  const [showRateModal, setShowRateModal] = useState(false)
+  const [rateBooking, setRateBooking] = useState<Booking | null>(null)
 
   // Auto check-in: Check proximity when bookings are loaded
   useEffect(() => {
@@ -943,12 +948,40 @@ export default function Bookings() {
                         <span>{formatTime(booking.startTime)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="font-semibold text-gray-900">
-                        {formatPrice(booking.finalAmount || booking.totalAmount)}
-                      </span>
-                      <Icon name="chevron_right" size={20} className="text-gray-400" />
-                    </div>
+                    {/* Rating status for COMPLETED bookings */}
+                    {booking.status === 'COMPLETED' && (
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="font-semibold text-gray-900">
+                          {formatPrice(booking.finalAmount || booking.totalAmount)}
+                        </span>
+                        {booking.review ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-[#FCD116]/10 text-amber-700 rounded-full">
+                            <Icon name="star" size={14} filled className="text-[#FCD116]" />
+                            Reviewed {booking.review.rating}/5
+                          </span>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setRateBooking(booking)
+                              setShowRateModal(true)
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#006B3F] text-white rounded-full hover:bg-[#006B3F]/90 transition-colors"
+                          >
+                            <Icon name="star" size={14} />
+                            Leave Review
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {booking.status !== 'COMPLETED' && (
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="font-semibold text-gray-900">
+                          {formatPrice(booking.finalAmount || booking.totalAmount)}
+                        </span>
+                        <Icon name="chevron_right" size={20} className="text-gray-400" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1316,6 +1349,43 @@ export default function Bookings() {
                       <Icon name="close" size={16} />
                       Cancel
                     </button>
+                  </div>
+                )}
+
+                {/* Rate button for COMPLETED bookings */}
+                {selectedBooking.status === 'COMPLETED' && (
+                  <div>
+                    {selectedBooking.review ? (
+                      <div className="bg-[#FCD116]/10 border border-[#FCD116]/20 rounded-lg p-4 flex items-center gap-3">
+                        <Icon name="star" size={24} filled className="text-[#FCD116]" />
+                        <div>
+                          <p className="font-medium text-gray-900">You rated this booking</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Icon
+                                key={s}
+                                name="star"
+                                size={16}
+                                filled={s <= (selectedBooking.review?.rating || 0)}
+                                className={s <= (selectedBooking.review?.rating || 0) ? 'text-[#FCD116]' : 'text-gray-300'}
+                              />
+                            ))}
+                            <span className="text-sm font-medium text-gray-700 ml-1">{selectedBooking.review.rating}/5</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setRateBooking(selectedBooking)
+                          setShowRateModal(true)
+                        }}
+                        className="w-full py-3 bg-[#006B3F] text-white font-medium rounded-xl hover:bg-[#006B3F]/90 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Icon name="star" size={20} />
+                        Leave a Review
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1731,6 +1801,33 @@ export default function Bookings() {
         </div>
       )}
 
+      {/* Rate Booking Modal */}
+      <RateBookingModal
+        isOpen={showRateModal}
+        onClose={() => {
+          setShowRateModal(false)
+          setRateBooking(null)
+        }}
+        bookingId={rateBooking?.id || ''}
+        salonName={rateBooking?.salon?.businessName || 'Salon'}
+        serviceName={rateBooking?.service?.name || 'Service'}
+        onReviewSubmitted={(rating) => {
+          // Update the booking in local state with the review
+          if (rateBooking) {
+            const updateBooking = (b: Booking) =>
+              b.id === rateBooking.id ? { ...b, review: { id: 'new', rating } } : b
+            setBookings(prev => ({
+              upcoming: prev.upcoming.map(updateBooking),
+              past: prev.past.map(updateBooking),
+              cancelled: prev.cancelled.map(updateBooking),
+            }))
+            // Also update selectedBooking if it's the same
+            if (selectedBooking?.id === rateBooking.id) {
+              setSelectedBooking({ ...selectedBooking, review: { id: 'new', rating } })
+            }
+          }
+        }}
+      />
       {/* Dispute Modal */}
       {showDisputeModal && selectedBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">

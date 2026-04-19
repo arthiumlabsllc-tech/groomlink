@@ -5,7 +5,9 @@ import Icon from './Icon'
 interface Salon {
   id: string
   businessName: string
-  coverPhoto?: string
+  coverImage?: string
+  images?: string[]
+  logo?: string
   rating?: number
   reviewCount?: number
   location?: string
@@ -75,7 +77,7 @@ export default function FeaturedSalons() {
         {/* Section Header */}
         <div className={`text-center mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           <h2 className="text-3xl sm:text-4xl font-bold text-brand-text mb-4">
-            Featured Salons
+            Featured Salons & Barbershops
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Discover top-rated salons and barbershops near you
@@ -132,9 +134,23 @@ export default function FeaturedSalons() {
               >
                 {/* Cover Photo */}
                 <div className="relative h-48 overflow-hidden bg-gray-200">
-                  {salon.coverPhoto ? (
+                  {salon.coverImage ? (
                     <img
-                      src={salon.coverPhoto}
+                      src={salon.coverImage}
+                      alt={salon.businessName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  ) : salon.images && salon.images.length > 0 ? (
+                    <img
+                      src={salon.images[0]}
+                      alt={salon.businessName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  ) : salon.logo ? (
+                    <img
+                      src={salon.logo}
                       alt={salon.businessName}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
@@ -193,7 +209,7 @@ export default function FeaturedSalons() {
               to="/explore"
               className="btn-secondary inline-block"
             >
-              View All Salons
+              View All Salons & Barbershops
             </Link>
           </div>
         )}

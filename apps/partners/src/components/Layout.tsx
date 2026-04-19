@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import { useSalon } from '../store/SalonContext';
+import { api } from '../lib/api';
 
 // Icon name mappings for navigation
 const navIcons: Record<string, string> = {
@@ -14,6 +15,7 @@ const navIcons: Record<string, string> = {
   'Insights': 'bar_chart',
   'Booking Page': 'language',
   'Verification': 'verified_user',
+  'Subscription': 'card_membership',
   'Settings': 'settings',
 };
 import { useNotificationStore, Notification } from '../store/notifications';
@@ -74,6 +76,46 @@ function NotificationItem({
       </div>
     </div>
   );
+}
+
+// Sidebar subscription status indicator
+function SidebarSubscriptionIndicator() {
+  const [planSlug, setPlanSlug] = useState<string>('free')
+  const [planName, setPlanName] = useState<string>('Free')
+
+  useEffect(() => {
+    async function fetchStatus() {
+      try {
+        const response = await api.request<{ success: boolean; data: { plan: { name: string; slug: string } } }>('/subscription/status')
+        if (response.success && response.data) {
+          setPlanSlug(response.data.plan.slug)
+          setPlanName(response.data.plan.name)
+        }
+      } catch {
+        // Default to free on error
+      }
+    }
+    fetchStatus()
+  }, [])
+
+  const badgeColor = planSlug === 'premium'
+    ? 'bg-ghana-gold/20 text-ghana-gold border-ghana-gold/30'
+    : planSlug === 'pro'
+      ? 'bg-ghana-green/20 text-ghana-green border-ghana-green/30'
+      : 'bg-gray-700 text-gray-400 border-gray-600'
+
+  return (
+    <Link
+      to="/subscription"
+      className={`flex items-center gap-2 px-3 py-2 mb-2 rounded-lg border text-xs font-medium hover:bg-white/5 transition-colors ${badgeColor}`}
+    >
+      <Icon name="card_membership" size={14} />
+      <span>{planName} Plan</span>
+      {planSlug === 'free' && (
+        <span className="ml-auto text-[10px] bg-ghana-red/20 text-ghana-red px-1.5 py-0.5 rounded-full font-semibold">Upgrade</span>
+      )}
+    </Link>
+  )
 }
 
 interface LayoutProps {
@@ -169,6 +211,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       items: [
         { name: 'Booking Page', path: '/branded-page' },
         { name: 'Verification', path: '/kyc' },
+        { name: 'Subscription', path: '/subscription' },
         { name: 'Settings', path: '/settings' },
       ]
     },
@@ -182,7 +225,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a2e] transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a2e] transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo Section */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/10">
           <Link to="/" className="flex items-center gap-3">
@@ -199,7 +242,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 scrollbar-hide">
+        <nav className="flex-1 overflow-y-auto py-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}>
           {navGroups.map((group, groupIdx) => (
             <div key={group.label} className={groupIdx > 0 ? 'mt-4' : ''}>
               <div className="px-4 mb-1.5">
@@ -240,7 +283,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               <span>Complete salon setup</span>
             </Link>
           )}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-2">
             {/* Salon Logo / Initials */}
             <div className={`w-10 h-10 rounded-full flex items-center justify-center border overflow-hidden ${needsSetup ? 'bg-ghana-gold/20 border-ghana-gold/30' : 'bg-ghana-gold/20 border-ghana-gold/30'}`}>
               {salon?.logo ? (
@@ -263,6 +306,8 @@ export default function Layout({ children, activeTab }: LayoutProps) {
             </div>
             <div className={`w-2 h-2 rounded-full ${needsSetup ? 'bg-ghana-gold' : 'bg-green-500'}`}></div>
           </div>
+          {/* Subscription status indicator */}
+          <SidebarSubscriptionIndicator />
           <button 
             onClick={handleLogout}
             className="flex items-center gap-2 text-gray-400 hover:text-ghana-gold w-full px-3 py-2 rounded-lg hover:bg-white/5 transition-all"

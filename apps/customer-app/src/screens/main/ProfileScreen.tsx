@@ -383,6 +383,8 @@ export default function ProfileScreen() {
               </View>
             ))}
             <Divider style={styles.settingDivider} />
+            {renderSettingItem('heart-outline', 'Rate GroomLink', () => navigation.navigate('PlatformFeedback'))}
+            <Divider style={styles.settingDivider} />
             {renderSettingItem('help-circle-outline', 'Help & Support', openSupport)}
             <Divider style={styles.settingDivider} />
             {renderSettingItem('document-text-outline', 'Terms & Privacy', handleTermsPress)}

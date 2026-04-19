@@ -26,6 +26,7 @@ import { bookingsApi } from '../../api/bookings';
 import { useAuthStore } from '../../store/authStore';
 import { Booking, MainStackParamList } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import SubscriptionStatusCard from '../../components/SubscriptionStatusCard';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -270,10 +271,13 @@ export default function DashboardScreen() {
                   Rating
                 </Text>
                 <Text variant="headlineSmall" style={[styles.statsValue, { color: '#3B82F6' }]}>
-                  {stats?.avgRating ? stats.avgRating.toFixed(1) : '-'}
+                  {stats?.averageRating ? stats.averageRating.toFixed(1) : '-'}
                 </Text>
               </View>
             </View>
+
+            {/* Subscription Status Card */}
+            <SubscriptionStatusCard />
 
             {/* Quick Actions */}
             <View style={styles.quickActions}>
