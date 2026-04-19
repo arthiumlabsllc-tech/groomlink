@@ -1,23 +1,46 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import redis from '../config/redis';
-import axios from 'axios';
 import { EscrowAccount } from '@prisma/client';
+import { initiateHubtelPayout, getHubtelChannel, formatGhanaPhone } from './payout.service';
 
-const PAYSTACK_BASE_URL = 'https://api.paystack.co';
+// Ghana phone prefix to mobile money provider mapping (for refund detection)
+const GHANA_PHONE_PREFIX_MAP: Record<string, 'mtn' | 'vodafone' | 'airteltigo'> = {
+  '024': 'mtn',
+  '054': 'mtn',
+  '055': 'mtn',
+  '059': 'mtn',
+  '020': 'vodafone',
+  '050': 'vodafone',
+  '053': 'vodafone',
+  '058': 'vodafone',
+  '027': 'airteltigo',
+  '057': 'airteltigo',
+  '026': 'airteltigo',
+  '056': 'airteltigo',
+};
 
-// Helper function to get Paystack secret key from SiteSettings
-async function getPaystackSecretKey(): Promise<string | null> {
-  const settings = await prisma.siteSettings.findUnique({
-    where: { id: 'default' }
-  });
-  
-  if (!settings || !settings.paystackSecretKey) {
-    logger.warn('Paystack secret key not configured in SiteSettings');
-    return null;
+/**
+ * Detect MoMo provider from a Ghana phone number prefix.
+ * Returns 'mtn' as a fallback if the prefix is not recognised.
+ */
+function detectMomoProviderFromPhone(phone: string): 'mtn' | 'vodafone' | 'airteltigo' {
+  const cleaned = phone.replace(/[\s-]/g, '');
+  // Extract the local prefix: 0XX
+  let localPrefix: string | undefined;
+  const localMatch = cleaned.match(/^0(\d{2})/);
+  if (localMatch) {
+    localPrefix = `0${localMatch[1]}`;
+  } else {
+    const intlMatch = cleaned.match(/^\+?233(\d{2})/);
+    if (intlMatch) {
+      localPrefix = `0${intlMatch[1]}`;
+    }
   }
-  
-  return settings.paystackSecretKey;
+  if (localPrefix && GHANA_PHONE_PREFIX_MAP[localPrefix]) {
+    return GHANA_PHONE_PREFIX_MAP[localPrefix];
+  }
+  return 'mtn'; // fallback
 }
 
 /**
@@ -151,60 +174,49 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
     const providerAmount = parseFloat(escrow.providerAmount.toString());
     const amountHeld = parseFloat(escrow.amountHeld.toString());
     
-    // Check if salon has payout account configured
-    if (!escrow.salon.paystackRecipientCode) {
-      logger.error('Cannot release escrow: Salon has no payout account configured', { 
+    // Check if salon has MoMo payout details configured
+    if (!escrow.salon.momoNumber || !escrow.salon.momoProvider) {
+      logger.error('Cannot release escrow: Salon has no MoMo payout account configured', { 
         escrowId,
         salonId: escrow.salonId 
       });
       throw new Error(
-        'Cannot release payment: Salon owner has not set up a payout account. ' +
+        'Cannot release payment: Salon owner has not set up a MoMo payout account. ' +
         'Please ask the salon owner to configure their payout settings in the dashboard.'
       );
     }
 
-    // Try to initiate Paystack transfer
-    const secretKey = await getPaystackSecretKey();
-    
-    if (secretKey) {
-      try {
-        const reference = `ESCROW-RELEASE-${escrowId}-${Date.now()}`;
-        
-        await axios.post(
-          `${PAYSTACK_BASE_URL}/transfer`,
-          {
-            source: 'balance',
-            amount: Math.round(providerAmount * 100), // Convert to pesewas
-            recipient: escrow.salon.paystackRecipientCode,
-            reason: `Booking payment - ${escrow.booking.reference || escrow.bookingId}`,
-            reference,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${secretKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        
-        logger.info(`Paystack transfer initiated for escrow ${escrowId}`, {
-          recipient: escrow.salon.paystackRecipientCode,
-          amount: providerAmount
-        });
-      } catch (transferError: any) {
-        logger.error('Paystack transfer failed:', {
-          escrowId,
-          error: transferError.message,
-          response: transferError.response?.data
-        });
-        
-        // Throw error so the caller knows the transfer failed
-        const errorMessage = transferError.response?.data?.message || transferError.message;
-        throw new Error(`Failed to transfer funds: ${errorMessage}. Please try again or contact support.`);
-      }
-    } else {
-      logger.error('Paystack not configured, cannot process transfer for escrow:', { escrowId });
-      throw new Error('Payment gateway is not configured. Please contact support.');
+    // Initiate Hubtel Send Money payout to salon
+    const payoutReference = 'GROOMLINK-PAYOUT-' + escrow.booking.reference + '-' + Date.now();
+    let hubtelPayoutReference: string | undefined;
+
+    try {
+      const payoutResult = await initiateHubtelPayout({
+        recipientPhone: escrow.salon.momoNumber,
+        recipientName: escrow.salon.businessName,
+        amount: providerAmount, // GHS (cedis decimal), NOT pesewas
+        channel: getHubtelChannel(escrow.salon.momoProvider),
+        reference: payoutReference,
+        description: 'Payment for service completion',
+      });
+
+      hubtelPayoutReference = payoutResult?.Data?.ClientReference || payoutReference;
+
+      logger.info(`Hubtel payout initiated for escrow ${escrowId}`, {
+        recipient: escrow.salon.momoNumber,
+        amount: providerAmount,
+        hubtelPayoutReference,
+      });
+    } catch (transferError: any) {
+      logger.error('Hubtel payout failed:', {
+        escrowId,
+        error: transferError.message,
+        response: transferError.response?.data
+      });
+
+      // Throw error so the caller knows the transfer failed
+      const errorMessage = transferError.response?.data?.message || transferError.message;
+      throw new Error(`Failed to transfer funds: ${errorMessage}. Please try again or contact support.`);
     }
     
     // Update escrow status and create transaction
@@ -215,6 +227,7 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
         data: {
           status: 'released',
           releasedAt: new Date(),
+          hubtelPayoutReference,
         }
       });
       
@@ -252,11 +265,15 @@ export async function refundEscrow(
   refundPercentage: number
 ): Promise<{ escrow: EscrowAccount; refundAmount: number }> {
   try {
-    // Fetch escrow
+    // Fetch escrow with booking and customer relations
     const escrow = await prisma.escrowAccount.findUnique({
       where: { id: escrowId },
       include: {
-        booking: true,
+        booking: {
+          include: {
+            customer: true,
+          }
+        },
       }
     });
     
@@ -285,47 +302,41 @@ export async function refundEscrow(
       }
     }
     
-    // Try Paystack refund if we have the payment transaction ID
-    let refundTransactionId: string | undefined;
-    
-    if (escrow.paymentTransactionId) {
-      const secretKey = await getPaystackSecretKey();
-      
-      if (secretKey) {
-        try {
-          const response = await axios.post(
-            `${PAYSTACK_BASE_URL}/refund`,
-            {
-              transaction: escrow.paymentTransactionId,
-              amount: Math.round(refundAmount * 100), // Convert to pesewas
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${secretKey}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
-          refundTransactionId = response.data.data?.reference || response.data.data?.id;
-          
-          logger.info(`Paystack refund initiated for escrow ${escrowId}`, {
-            transactionId: escrow.paymentTransactionId,
-            refundAmount
-          });
-        } catch (refundError: any) {
-          logger.error('Paystack refund failed:', {
-            escrowId,
-            error: refundError.message,
-            response: refundError.response?.data
-          });
-          // Continue with ledger update even if refund fails
-        }
-      } else {
-        logger.warn('Paystack not configured, skipping refund for escrow:', { escrowId });
+    // Send refund via Hubtel Send Money back to the customer
+    let hubtelPayoutReference: string | undefined;
+    const customerPhone = escrow.booking.customer?.phoneNumber;
+
+    if (customerPhone) {
+      const refundReference = 'GROOMLINK-REFUND-' + escrow.booking.reference + '-' + Date.now();
+      const detectedProvider = detectMomoProviderFromPhone(customerPhone);
+
+      try {
+        const payoutResult = await initiateHubtelPayout({
+          recipientPhone: customerPhone,
+          recipientName: `${escrow.booking.customer.firstName} ${escrow.booking.customer.lastName}`,
+          amount: refundAmount, // GHS (cedis decimal), NOT pesewas
+          channel: getHubtelChannel(detectedProvider),
+          reference: refundReference,
+          description: 'Refund for cancelled booking',
+        });
+
+        hubtelPayoutReference = payoutResult?.Data?.ClientReference || refundReference;
+
+        logger.info(`Hubtel refund payout initiated for escrow ${escrowId}`, {
+          customerPhone: formatGhanaPhone(customerPhone),
+          refundAmount,
+          hubtelPayoutReference,
+        });
+      } catch (refundError: any) {
+        logger.error('Hubtel refund payout failed:', {
+          escrowId,
+          error: refundError.message,
+          response: refundError.response?.data
+        });
+        // Continue with ledger update even if refund payout fails
       }
     } else {
-      logger.warn('No payment transaction ID found for escrow, skipping Paystack refund:', { escrowId });
+      logger.warn('No customer phone number found for escrow, skipping Hubtel refund payout:', { escrowId });
     }
     
     // Update escrow status and create transaction
@@ -335,7 +346,7 @@ export async function refundEscrow(
         where: { id: escrowId },
         data: {
           status: 'refunded',
-          refundTransactionId,
+          hubtelPayoutReference,
         }
       });
       
@@ -347,7 +358,7 @@ export async function refundEscrow(
           amount: refundAmount,
           previousBalance: amountHeld,
           newBalance: amountHeld - refundAmount,
-          reference: refundTransactionId,
+          reference: hubtelPayoutReference,
         }
       });
       

@@ -1,14 +1,11 @@
 import { useAuthStore } from '../store/auth';
+import LoadingScreen from './LoadingScreen';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
   
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#006B3F]"></div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
   
   if (!isAuthenticated) {

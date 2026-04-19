@@ -132,28 +132,37 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
   }
 }
 
-// Paystack webhook endpoint
-// This requires the raw body for signature verification
-export async function handlePaystackWebhook(req: Request, res: Response): Promise<void> {
+// Hubtel webhook endpoint
+// Hubtel webhooks don't use HMAC signatures - validate by checking ResponseCode
+export async function handleHubtelWebhook(req: Request, res: Response): Promise<void> {
   try {
-    // Get the raw body - this requires express.raw() middleware
-    const rawBody = req.body?.toString?.() || JSON.stringify(req.body);
-    const signature = req.headers['x-paystack-signature'] as string;
-
-    if (!signature) {
-      logger.warn('Paystack webhook received without signature');
-      // Still return 200 to prevent retries
-      res.status(200).json({ received: true });
-      return;
-    }
-
-    const result = await paymentService.handlePaystackWebhook(rawBody, signature);
+    // Get the request body
+    const payload = req.body;
     
-    // Always return 200 to prevent Paystack retries
+    // Hubtel webhook payload structure: { ResponseCode: "0000", Data: { ClientReference, Amount, TransactionId, ... } }
+    // ResponseCode "0000" means success
+    const responseCode = payload?.ResponseCode;
+    const data = payload?.Data;
+    
+    logger.info('Hubtel webhook received', { 
+      responseCode, 
+      clientReference: data?.ClientReference,
+      transactionId: data?.TransactionId,
+      transactionStatus: data?.TransactionStatus
+    });
+
+    // Process the webhook through the payment service
+    // The service handles both success and failure cases
+    const result = await paymentService.handleHubtelWebhook(
+      JSON.stringify(payload),
+      '' // Hubtel doesn't use signature-based verification in this implementation
+    );
+    
+    // Always return 200 to prevent Hubtel retries
     res.status(200).json({ received: true, processed: result.success });
   } catch (error) {
-    // Log error but still return 200 to prevent Paystack retries
-    logger.error('Paystack webhook error:', error);
+    // Log error but still return 200 to prevent Hubtel retries
+    logger.error('Hubtel webhook error:', error);
     res.status(200).json({ received: true, processed: false });
   }
 }

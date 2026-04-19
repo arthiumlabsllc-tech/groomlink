@@ -1,32 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Bell, 
-  Calendar, 
-  CreditCard, 
-  CheckCircle, 
-  XCircle, 
-  MessageSquare, 
-  Check,
-  ChevronLeft,
-  Loader2,
-  RefreshCw,
-  Filter
-} from 'lucide-react'
+import Icon from '../components/Icon'
 import { api, Notification, NotificationType } from '../lib/api'
 import Layout from '../components/Layout'
 
-const notificationIcons: Record<NotificationType, typeof Calendar> = {
-  BOOKING_CONFIRMED: Calendar,
-  BOOKING_CANCELLED: XCircle,
-  BOOKING_REMINDER: Calendar,
-  BOOKING_COMPLETED: CheckCircle,
-  PAYMENT_RECEIVED: CreditCard,
-  PAYMENT_FAILED: XCircle,
-  CHECKIN: CheckCircle,
-  REVIEW: MessageSquare,
-  PROMOTION: Bell,
-  SYSTEM: Bell,
+const notificationIcons: Record<NotificationType, string> = {
+  BOOKING_CONFIRMED: 'calendar_today',
+  BOOKING_CANCELLED: 'cancel',
+  BOOKING_REMINDER: 'calendar_today',
+  BOOKING_COMPLETED: 'check_circle',
+  PAYMENT_RECEIVED: 'credit_card',
+  PAYMENT_FAILED: 'cancel',
+  CHECKIN: 'check_circle',
+  REVIEW: 'chat_bubble',
+  PROMOTION: 'notifications',
+  SYSTEM: 'notifications',
 }
 
 const notificationColors: Record<NotificationType, string> = {
@@ -40,6 +28,22 @@ const notificationColors: Record<NotificationType, string> = {
   REVIEW: 'bg-orange-100 text-orange-600',
   PROMOTION: 'bg-pink-100 text-pink-600',
   SYSTEM: 'bg-gray-100 text-gray-600',
+}
+
+// Left border colors by notification category
+const getBorderColor = (type: NotificationType): string => {
+  if (type.includes('BOOKING')) return 'border-l-4 border-l-green-500'
+  if (type.includes('PAYMENT')) return 'border-l-4 border-l-amber-400'
+  if (type.includes('SYSTEM') || type.includes('PROMOTION')) return 'border-l-4 border-l-blue-500'
+  return 'border-l-4 border-l-red-500'
+}
+
+// Unread dot colors by notification category
+const getUnreadDotColor = (type: NotificationType): string => {
+  if (type.includes('BOOKING')) return 'bg-green-500'
+  if (type.includes('PAYMENT')) return 'bg-amber-400'
+  if (type.includes('SYSTEM') || type.includes('PROMOTION')) return 'bg-blue-500'
+  return 'bg-red-500'
 }
 
 const filterTypes = [
@@ -64,6 +68,34 @@ function formatRelativeTime(dateString: string): string {
   if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`
   if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+// Group notifications by date
+function getDateGroup(dateString: string): 'Today' | 'Yesterday' | 'Earlier' {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDay === 0) return 'Today'
+  if (diffDay === 1) return 'Yesterday'
+  return 'Earlier'
+}
+
+// Shimmer skeleton for notifications
+function NotificationSkeleton() {
+  return (
+    <div className="p-4 sm:p-6">
+      <div className="flex items-start gap-4">
+        <div className="skeleton-shimmer w-10 h-10 rounded-full flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="skeleton-shimmer h-4 w-3/4 mb-2" />
+          <div className="skeleton-shimmer h-3 w-full mb-2" />
+          <div className="skeleton-shimmer h-3 w-20" />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function Notifications() {
@@ -145,17 +177,27 @@ export default function Notifications() {
     fetchNotifications(nextPage, true)
   }
 
+  // Group notifications by date
+  const groupedNotifications = filteredNotifications.reduce((acc, notification) => {
+    const group = getDateGroup(notification.createdAt)
+    if (!acc[group]) acc[group] = []
+    acc[group].push(notification)
+    return acc
+  }, {} as Record<'Today' | 'Yesterday' | 'Earlier', Notification[]>)
+
+  const dateGroupOrder: ('Today' | 'Yesterday' | 'Earlier')[] = ['Today', 'Yesterday', 'Earlier']
+
   return (
     <Layout activeTab="notifications">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto page-enter">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
+              <Icon name="chevron_left" size={20} className="text-gray-600" />
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
@@ -168,28 +210,26 @@ export default function Notifications() {
           <button
             onClick={handleMarkAllAsRead}
             disabled={isMarkingAll || unreadCount === 0}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="btn-ripple flex items-center justify-center gap-2 px-4 py-2 bg-ghana-green text-white rounded-xl hover:bg-ghana-green/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isMarkingAll ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Icon name="progress_activity" size={16} className="animate-spin" />
             ) : (
-              <Check className="w-4 h-4" />
+              <Icon name="check" size={16} />
             )}
             <span>Mark all as read</span>
           </button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-          <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+          <Icon name="filter_list" size={16} className="text-gray-400 flex-shrink-0" />
           {filterTypes.map((filter) => (
             <button
               key={filter.value}
               onClick={() => setActiveFilter(filter.value)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                activeFilter === filter.value
-                  ? 'bg-ghana-green text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              className={`tab-pill whitespace-nowrap ${
+                activeFilter === filter.value ? 'tab-pill-active' : 'tab-pill-inactive'
               }`}
             >
               {filter.label}
@@ -198,14 +238,16 @@ export default function Notifications() {
         </div>
 
         {/* Notifications List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="card-v2 overflow-hidden">
           {isLoading && notifications.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-ghana-green animate-spin" />
+            <div className="divide-y divide-gray-100">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <NotificationSkeleton key={i} />
+              ))}
             </div>
           ) : filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-              <Bell className="w-16 h-16 mb-4 text-gray-300" />
+              <Icon name="notifications" size={64} className="mb-4 text-gray-300" />
               <p className="text-lg font-medium">No notifications</p>
               <p className="text-sm">
                 {activeFilter === 'ALL' 
@@ -216,61 +258,79 @@ export default function Notifications() {
           ) : (
             <>
               <div className="divide-y divide-gray-100">
-                {filteredNotifications.map((notification) => {
-                  const Icon = notificationIcons[notification.type] || Bell
-                  const colorClass = notificationColors[notification.type] || 'bg-gray-100 text-gray-600'
+                {dateGroupOrder.map((group) => {
+                  const groupNotifications = groupedNotifications[group]
+                  if (!groupNotifications || groupNotifications.length === 0) return null
                   
                   return (
-                    <div
-                      key={notification.id}
-                      onClick={() => !notification.isRead && handleMarkAsRead(notification.id)}
-                      className={`p-4 sm:p-6 cursor-pointer transition-colors hover:bg-gray-50 ${
-                        !notification.isRead ? 'bg-ghana-green/5' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Icon */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h3 className={`text-sm font-semibold ${
-                                !notification.isRead ? 'text-gray-900' : 'text-gray-700'
-                              }`}>
-                                {notification.title}
-                              </h3>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {notification.message}
-                              </p>
-                            </div>
-                            
-                            {/* Unread indicator */}
-                            {!notification.isRead && (
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="w-2 h-2 bg-ghana-green rounded-full"></span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleMarkAsRead(notification.id)
-                                  }}
-                                  className="p-1 text-gray-400 hover:text-ghana-green transition-colors"
-                                  title="Mark as read"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <p className="text-xs text-gray-400 mt-2">
-                            {formatRelativeTime(notification.createdAt)}
-                          </p>
-                        </div>
+                    <div key={group}>
+                      {/* Date Group Header */}
+                      <div className="px-4 sm:px-6 py-2 bg-gray-50/80 border-y border-gray-100">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          {group}
+                        </h3>
                       </div>
+                      
+                      {groupNotifications.map((notification) => {
+                        const iconName = notificationIcons[notification.type] || 'notifications'
+                        const colorClass = notificationColors[notification.type] || 'bg-gray-100 text-gray-600'
+                        const borderClass = getBorderColor(notification.type)
+                        const unreadDotColor = getUnreadDotColor(notification.type)
+                        
+                        return (
+                          <div
+                            key={notification.id}
+                            onClick={() => !notification.isRead && handleMarkAsRead(notification.id)}
+                            className={`p-4 sm:p-6 cursor-pointer transition-all hover:bg-gray-50 ${
+                              !notification.isRead ? `bg-ghana-green/5 ${borderClass}` : 'border-l-4 border-l-transparent'
+                            }`}
+                          >
+                            <div className="flex items-start gap-4">
+                              {/* Icon */}
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                                <Icon name={iconName} size={20} />
+                              </div>
+                              
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <h3 className={`text-sm font-semibold ${
+                                      !notification.isRead ? 'text-gray-900' : 'text-gray-700'
+                                    }`}>
+                                      {notification.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      {notification.message}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Unread indicator with colored dot */}
+                                  {!notification.isRead && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      <span className={`w-2.5 h-2.5 ${unreadDotColor} rounded-full animate-pulse`}></span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleMarkAsRead(notification.id)
+                                        }}
+                                        className="p-1.5 text-gray-400 hover:text-ghana-green hover:bg-ghana-green/10 rounded-lg transition-colors"
+                                        title="Mark as read"
+                                      >
+                                        <Icon name="check" size={16} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <p className="text-xs text-gray-400 mt-2">
+                                  {formatRelativeTime(notification.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   )
                 })}
@@ -282,12 +342,12 @@ export default function Notifications() {
                   <button
                     onClick={loadMore}
                     disabled={isLoading}
-                    className="w-full py-2 text-sm text-gray-600 hover:text-ghana-green font-medium transition-colors flex items-center justify-center gap-2"
+                    className="btn-ripple w-full py-2 text-sm text-gray-600 hover:text-ghana-green font-medium transition-colors flex items-center justify-center gap-2 rounded-xl hover:bg-gray-50"
                   >
                     {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Icon name="progress_activity" size={16} className="animate-spin" />
                     ) : (
-                      <RefreshCw className="w-4 h-4" />
+                      <Icon name="refresh" size={16} />
                     )}
                     Load more
                   </button>

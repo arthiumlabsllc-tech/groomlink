@@ -123,12 +123,10 @@ app.use('/api/auth/login', authLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Raw body for Paystack webhook signature verification
-// This must come AFTER the general JSON parser but we need a special route
-app.use('/api/payments/webhook/paystack', express.raw({ type: 'application/json' }));
-
-// Serve static files for uploaded avatars
+// Serve static files for uploaded avatars and email assets
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Also serve uploads under /api path for email template compatibility
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Logging
 app.use(morgan('dev', {

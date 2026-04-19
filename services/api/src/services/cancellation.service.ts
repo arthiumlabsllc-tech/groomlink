@@ -5,6 +5,7 @@ import { BookingStatus } from '@prisma/client';
 import * as smsService from './sms.service';
 import { getPolicyValue, refundEscrow } from './escrow.service';
 import { emitSlotUpdated, emitBookingCancelled } from '../config/socket';
+import { notifyWaitlistOnCancellation } from './waitlist.service';
 
 /**
  * Refund calculation result
@@ -273,6 +274,16 @@ export async function cancelBookingWithRefund(
     refundAmount: refundCalc.refundAmount,
   });
 
+  // Notify waitlisted customers about the available slot
+  notifyWaitlistOnCancellation(
+    booking.salonId,
+    booking.workerId || null,
+    booking.date,
+    booking.startTime
+  ).catch((err) => {
+    logger.error('Failed to notify waitlist on cancellation', { bookingId, err });
+  });
+
   // Send SMS to customer
   if (booking.customer.phoneNumber) {
     const customerMessage =
@@ -429,6 +440,16 @@ export async function handleProviderCancellation(
     reason,
     cancelledBy: 'provider',
     refundAmount: booking.finalAmount.toNumber(),
+  });
+
+  // Notify waitlisted customers about the available slot
+  notifyWaitlistOnCancellation(
+    booking.salonId,
+    booking.workerId || null,
+    booking.date,
+    booking.startTime
+  ).catch((err) => {
+    logger.error('Failed to notify waitlist on provider cancellation', { bookingId, err });
   });
 
   // Send SMS to customer (full refund + apology)

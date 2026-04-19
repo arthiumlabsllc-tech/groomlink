@@ -14,6 +14,10 @@ import impersonationRoutes from './impersonation.routes';
 import queueRoutes from './queue.routes';
 import kycRoutes from './kyc.routes';
 import reviewRoutes from './review.routes';
+import waitlistRoutes from './waitlist.routes';
+import loyaltyRoutes from './loyalty.routes';
+import discoveryRoutes from './discovery.routes';
+import insightsRoutes from './insights.routes';
 
 const router: RouterType = Router();
 
@@ -38,5 +42,9 @@ router.use('/impersonation', impersonationRoutes);
 router.use('/queue', queueRoutes);
 router.use('/kyc', kycRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/waitlist', waitlistRoutes);
+router.use('/loyalty', loyaltyRoutes);
+router.use('/discover', discoveryRoutes);
+router.use('/insights', insightsRoutes);
 
 export default router;

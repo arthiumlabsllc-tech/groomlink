@@ -411,6 +411,15 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Arthium Labs Footer */}
+        <TouchableOpacity 
+          style={styles.arthiumFooter}
+          onPress={() => {}}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.arthiumText}>An Arthium Labs Product</Text>
+        </TouchableOpacity>
+
         <View style={styles.bottomPadding} />
       </ScrollView>
 
@@ -666,6 +675,17 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 32,
+  },
+  // Arthium Labs Footer
+  arthiumFooter: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 12,
+  },
+  arthiumText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    opacity: 0.7,
   },
   // Dialog
   dialog: {

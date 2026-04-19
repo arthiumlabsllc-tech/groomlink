@@ -10,7 +10,11 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-ghana-green/5 via-white to-ghana-gold/10 flex items-center justify-center">
       <div className="text-center">
-        <div className="w-16 h-16 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <img
+          src="/logo-black.png"
+          alt="Redirecting..."
+          className="w-16 h-16 animate-pulse-logo mx-auto"
+        />
         <p className="text-gray-600 mt-4">Redirecting to customer registration...</p>
       </div>
     </div>

@@ -22,6 +22,8 @@ export interface Salon {
   rating: number;
   reviewCount: number;
   images: string[];
+  logo: string | null;
+  coverImage: string | null;
   openingHours: OpeningHours;
   status: 'PENDING' | 'APPROVED' | 'SUSPENDED';
   services: Service[];

@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { 
-  Users, Clock, CheckCircle, SkipForward, Play, Volume2,
-  RefreshCw, AlertCircle, Store, ArrowRightCircle
-} from 'lucide-react'
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, QueueEntry, QueueStatus } from '../lib/api'
@@ -15,6 +12,9 @@ export default function Queue() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+
+  // Active queue statuses that get pulsing dot
+  const ACTIVE_QUEUE_STATUSES = new Set(['CALLED', 'IN_SERVICE'])
 
   const fetchQueue = useCallback(async () => {
     if (!salonId) return
@@ -120,26 +120,48 @@ export default function Queue() {
 
   return (
     <Layout activeTab="queue">
+      <div className="page-enter">
       {(salonLoading || loading) ? (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading queue...</p>
+        <div className="space-y-4">
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="card-v2 p-4 sm:p-6">
+                <div className="skeleton-shimmer w-8 h-8 sm:w-10 sm:h-10 rounded-lg mb-3" />
+                <div className="skeleton-shimmer h-6 w-16 mb-2" />
+                <div className="skeleton-shimmer h-4 w-24" />
+              </div>
+            ))}
+          </div>
+          {/* Queue card skeletons */}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card-v2 p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="skeleton-shimmer w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="skeleton-shimmer h-4 w-1/3" />
+                  <div className="skeleton-shimmer h-3 w-1/4" />
+                  <div className="skeleton-shimmer h-3 w-1/5" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : hasSalon === false ? (
-        <div className="card text-center py-12">
-          <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Store className="w-10 h-10 text-ghana-gold" />
+        <div className="card-v2 text-center py-12 border-l-4 border-l-ghana-gold">
+          <div className="w-24 h-24 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Icon name="store" size={48} className="text-ghana-gold" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Set up your salon first</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Set up your salon first</h3>
           <p className="text-gray-500 max-w-md mx-auto mb-6">
             You need to create your salon profile before you can manage your queue.
           </p>
-          <Link 
-            to="/settings" 
-            className="btn-primary inline-flex items-center gap-2"
+          <Link
+            to="/settings"
+            className="btn-primary btn-ripple inline-flex items-center gap-2"
           >
             Create Salon Profile
-            <ArrowRightCircle className="w-5 h-5" />
+            <Icon name="arrow_forward" size={20} />
           </Link>
         </div>
       ) : (
@@ -161,7 +183,7 @@ export default function Queue() {
           {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700">
-              <AlertCircle className="w-5 h-5" />
+              <Icon name="error" size={20} />
               <span>{error}</span>
               <button 
                 onClick={fetchQueue}
@@ -177,7 +199,7 @@ export default function Queue() {
             <div className="stat-card border-l-4 border-l-amber-500 p-4 sm:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-amber-100">
-                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                  <Icon name="group" size={16} className="sm:w-5 sm:h-5 text-amber-600" />
                 </div>
               </div>
               <div className="text-xl sm:text-2xl font-bold text-gray-900">{queueData?.totalWaiting || 0}</div>
@@ -187,7 +209,7 @@ export default function Queue() {
             <div className="stat-card border-l-4 border-l-blue-500 p-4 sm:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-blue-100">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                  <Icon name="schedule" size={16} className="sm:w-5 sm:h-5 text-blue-600" />
                 </div>
               </div>
               <div className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -199,7 +221,7 @@ export default function Queue() {
             <div className="stat-card border-l-4 border-l-green-500 p-4 sm:p-6 col-span-2 lg:col-span-1">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-green-100">
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                  <Icon name="check_circle" size={16} className="sm:w-5 sm:h-5 text-green-600" />
                 </div>
               </div>
               <div className="text-xl sm:text-2xl font-bold text-gray-900">{inServiceEntries.length}</div>
@@ -212,18 +234,20 @@ export default function Queue() {
             <button
               onClick={fetchQueue}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 min-h-[44px]"
+              className="btn-ripple flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 min-h-[44px]"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <Icon name="refresh" size={16} className={`${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
 
           {/* Queue Content */}
-          {queueData?.entries.length === 0 ? (
-            <div className="card text-center py-16">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No customers in queue</h3>
+          {queueData?.entries?.length === 0 ? (
+            <div className="card-v2 text-center py-16">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="group" size={48} className="text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No customers in queue</h3>
               <p className="text-gray-500 max-w-md mx-auto">
                 Your queue is currently empty. Customers will appear here when they join the queue.
               </p>
@@ -234,7 +258,7 @@ export default function Queue() {
               {inServiceEntries.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                     Currently Serving
                   </h3>
                   <div className="space-y-3">
@@ -248,6 +272,7 @@ export default function Queue() {
                         getStatusLabel={getStatusLabel}
                         formatWaitTime={formatWaitTime}
                         formatEstimatedWait={formatEstimatedWait}
+                        isActive={true}
                       />
                     ))}
                   </div>
@@ -258,7 +283,7 @@ export default function Queue() {
               {calledEntries.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                     Called
                   </h3>
                   <div className="space-y-3">
@@ -272,6 +297,7 @@ export default function Queue() {
                         getStatusLabel={getStatusLabel}
                         formatWaitTime={formatWaitTime}
                         formatEstimatedWait={formatEstimatedWait}
+                        isActive={true}
                       />
                     ))}
                   </div>
@@ -296,6 +322,7 @@ export default function Queue() {
                         getStatusLabel={getStatusLabel}
                         formatWaitTime={formatWaitTime}
                         formatEstimatedWait={formatEstimatedWait}
+                        isActive={false}
                       />
                     ))}
                   </div>
@@ -305,6 +332,7 @@ export default function Queue() {
           )}
         </>
       )}
+      </div>
     </Layout>
   )
 }
@@ -326,14 +354,15 @@ function QueueCard({
   getStatusColor, 
   getStatusLabel,
   formatWaitTime,
-  formatEstimatedWait
-}: QueueCardProps) {
+  formatEstimatedWait,
+  isActive
+}: QueueCardProps & { isActive: boolean }) {
   const isLoading = (action: string) => actionLoading === `${action}-${entry.id}`
   // For 'call' action, check if actionLoading starts with 'call-' since it uses salonId
   const isLoadingCall = actionLoading?.startsWith('call-') ?? false
 
   return (
-    <div className="card hover:shadow-lg transition-shadow p-4 sm:p-6">
+    <div className="card-v2 p-4 sm:p-6 animate-fade-in-up">
       <div className="flex flex-col gap-3 sm:gap-4">
         {/* Top row: Position & Customer Info */}
         <div className="flex items-center gap-3 sm:gap-4">
@@ -357,7 +386,8 @@ function QueueCard({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
           {/* Status & Wait Time */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
+            <span className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'animate-pulse' : ''} ${entry.status === 'WAITING' ? 'bg-amber-500' : entry.status === 'CALLED' ? 'bg-blue-500' : entry.status === 'IN_SERVICE' ? 'bg-green-500' : entry.status === 'COMPLETED' ? 'bg-gray-500' : 'bg-red-500'}`}></span>
               {getStatusLabel(entry.status)}
             </span>
             {entry.status === 'WAITING' && (
@@ -373,12 +403,12 @@ function QueueCard({
               <button
                 onClick={() => onAction('call', entry.id)}
                 disabled={!!actionLoading}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                className="btn-ripple flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
               >
                 {isLoadingCall ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Volume2 className="w-4 h-4" />
+                  <Icon name="volume_up" size={16} />
                 )}
                 <span>Call Next</span>
               </button>
@@ -389,24 +419,24 @@ function QueueCard({
                 <button
                   onClick={() => onAction('start', entry.id)}
                   disabled={!!actionLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                  className="btn-ripple flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
                 >
                   {isLoading('start') ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <Play className="w-4 h-4" />
+                    <Icon name="play_arrow" size={16} />
                   )}
                   <span>Start</span>
                 </button>
                 <button
                   onClick={() => onAction('skip', entry.id)}
                   disabled={!!actionLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                  className="btn-ripple flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
                 >
                   {isLoading('skip') ? (
                     <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <SkipForward className="w-4 h-4" />
+                    <Icon name="skip_next" size={16} />
                   )}
                   <span>Skip</span>
                 </button>
@@ -417,12 +447,12 @@ function QueueCard({
               <button
                 onClick={() => onAction('complete', entry.id)}
                 disabled={!!actionLoading}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-ghana-green text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                className="btn-ripple flex items-center justify-center gap-2 px-4 py-2.5 bg-ghana-green text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
               >
                 {isLoading('complete') ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <CheckCircle className="w-4 h-4" />
+                  <Icon name="check_circle" size={16} />
                 )}
                 <span>Complete</span>
               </button>

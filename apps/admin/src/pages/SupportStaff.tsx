@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, Users, Phone, Mail, Loader2, AlertCircle, CheckCircle, X, Headphones } from 'lucide-react';
+import Icon from '../components/Icon';
 import { useSupportStaff, useCreateSupportStaff } from '../hooks';
 import { formatDate } from '../lib/utils';
 
@@ -46,19 +46,20 @@ export function SupportStaff() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
-          </div>
+      <div className="page-enter space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1,2,3].map(i => <div key={i} className="card-v2 p-5"><div className="skeleton-shimmer h-16 w-full" /></div>)}
+        </div>
+        <div className="card-v2 p-6">
+          <div className="skeleton-shimmer h-8 w-48 mb-4" />
+          {[1,2,3,4,5].map(i => <div key={i} className="skeleton-shimmer h-14 w-full mb-3" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -67,19 +68,19 @@ export function SupportStaff() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
+          className="btn-ripple flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
         >
-          <UserPlus size={18} />
+          <Icon name="person_add" size={18} />
           Add Staff
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="card-v2 p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-[#FCD116]/20 rounded-xl">
-              <Users className="text-[#B8960F]" size={24} />
+              <Icon name="group" className="text-[#B8960F]" size={24} />
             </div>
             <div>
               <p className="text-3xl font-bold text-gray-800">{staff.length}</p>
@@ -87,10 +88,10 @@ export function SupportStaff() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="card-v2 p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-[#006B3F]/10 rounded-xl">
-              <CheckCircle className="text-[#006B3F]" size={24} />
+              <Icon name="check_circle" className="text-[#006B3F]" size={24} />
             </div>
             <div>
               <p className="text-3xl font-bold text-gray-800">
@@ -100,10 +101,10 @@ export function SupportStaff() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="card-v2 p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-xl">
-              <Phone className="text-blue-500" size={24} />
+              <Icon name="call" className="text-blue-500" size={24} />
             </div>
             <div>
               <p className="text-3xl font-bold text-gray-800">
@@ -116,10 +117,10 @@ export function SupportStaff() {
       </div>
 
       {/* Staff List */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="card-v2 overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Headphones size={18} className="text-[#006B3F]" />
+            <Icon name="headset" size={18} className="text-[#006B3F]" />
             Support Team Members
           </h2>
         </div>
@@ -127,7 +128,7 @@ export function SupportStaff() {
         {staff.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="text-gray-300" size={32} />
+              <Icon name="group" className="text-gray-300" size={32} />
             </div>
             <p className="text-gray-500 font-medium">No support staff added yet</p>
             <p className="text-sm text-gray-400 mt-1">Add team members to handle customer support</p>
@@ -156,13 +157,13 @@ export function SupportStaff() {
                       <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                         {member.phoneNumber && (
                           <span className="flex items-center gap-1.5">
-                            <Phone size={14} className="text-gray-400" />
+                            <Icon name="call" size={14} className="text-gray-400" />
                             {member.phoneNumber}
                           </span>
                         )}
                         {member.email && (
                           <span className="flex items-center gap-1.5">
-                            <Mail size={14} className="text-gray-400" />
+                            <Icon name="mail" size={14} className="text-gray-400" />
                             {member.email}
                           </span>
                         )}
@@ -191,8 +192,8 @@ export function SupportStaff() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up max-w-md w-full">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
@@ -204,14 +205,14 @@ export function SupportStaff() {
                   onClick={closeModal}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <X size={20} className="text-gray-400" />
+                  <Icon name="close" size={20} className="text-gray-400" />
                 </button>
               </div>
             </div>
             
             {error && (
               <div className="mx-6 mt-4 p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
-                <AlertCircle size={16} />
+                <Icon name="error" size={16} />
                 {error}
               </div>
             )}
@@ -282,18 +283,18 @@ export function SupportStaff() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  className="btn-ripple flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createStaff.isPending}
-                  className="flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                  className="btn-ripple flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   {createStaff.isPending ? (
                     <>
-                      <Loader2 className="animate-spin" size={18} />
+                      <Icon name="progress_activity" className="animate-spin" size={18} />
                       Creating...
                     </>
                   ) : (

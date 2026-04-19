@@ -2,22 +2,25 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
-import Features from './components/Features'
 import HowItWorks from './components/HowItWorks'
+import FeaturedSalons from './components/FeaturedSalons'
+import PopularCategories from './components/PopularCategories'
 import Testimonials from './components/Testimonials'
-import Pricing from './components/Pricing'
-import CTA from './components/CTA'
+import ForSalonOwners from './components/ForSalonOwners'
 import Footer from './components/Footer'
+import MobileHome from './components/MobileHome'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 import Register from './pages/Register'
+import SalonDetail from './pages/SalonDetail'
+import Explore from './pages/Explore'
 
-function LandingPage() {
+function DesktopLanding() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50)
+      setScrolled(window.scrollY > 10)
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
@@ -28,15 +31,31 @@ function LandingPage() {
       <Header scrolled={scrolled} />
       <main>
         <Hero />
-        <Features />
         <HowItWorks />
+        <FeaturedSalons />
+        <PopularCategories />
         <Testimonials />
-        <Pricing />
-        <CTA />
+        <ForSalonOwners />
       </main>
       <Footer />
     </div>
   )
+}
+
+function LandingPage() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  return isMobile ? <MobileHome /> : <DesktopLanding />
 }
 
 function App() {
@@ -44,6 +63,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/salon/:id" element={<SalonDetail />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/register" element={<Register />} />

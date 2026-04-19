@@ -1,11 +1,61 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Building2, User, FileText, Video, CheckCircle, ArrowRight, ArrowLeft,
-  Upload, Loader2, AlertCircle, Shield, Check, X, Play, FileImage
-} from 'lucide-react'
+import Icon from '../components/Icon'
 import Layout from '../components/Layout'
 import { api, KycSubmission } from '../lib/api'
+
+// Step transition wrapper
+function StepContent({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
+  return (
+    <div className={`transition-all duration-500 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 absolute inset-0 pointer-events-none'}`}>
+      {children}
+    </div>
+  )
+}
+
+// Shimmer skeleton components
+function KycLoadingSkeleton() {
+  return (
+    <div className="max-w-3xl mx-auto page-enter">
+      <div className="card-v2 p-8">
+        <div className="flex items-center justify-center mb-8">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center">
+              <div className="skeleton-shimmer w-10 h-10 rounded-full" />
+              {i < 5 && <div className="skeleton-shimmer w-8 sm:w-16 h-0.5 mx-2" />}
+            </div>
+          ))}
+        </div>
+        <div className="space-y-6">
+          <div className="skeleton-shimmer h-6 w-48 mb-2" />
+          <div className="skeleton-shimmer h-4 w-64 mb-8" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="skeleton-shimmer h-32 rounded-xl" />
+            <div className="skeleton-shimmer h-32 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatusLoadingSkeleton() {
+  return (
+    <div className="max-w-3xl mx-auto page-enter">
+      <div className="card-v2 p-8">
+        <div className="text-center py-8">
+          <div className="skeleton-shimmer w-20 h-20 rounded-full mx-auto mb-4" />
+          <div className="skeleton-shimmer h-8 w-64 mx-auto mb-2" />
+          <div className="skeleton-shimmer h-4 w-80 mx-auto" />
+        </div>
+        <div className="space-y-4 mt-6">
+          <div className="skeleton-shimmer h-20 rounded-xl" />
+          <div className="skeleton-shimmer h-20 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type BusinessType = 'REGISTERED_COMPANY' | 'INDIVIDUAL' | null
 type KycStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
@@ -37,11 +87,11 @@ interface UploadingState {
 }
 
 const steps = [
-  { number: 1, title: 'Business Type', icon: Building2 },
-  { number: 2, title: 'Personal Details', icon: User },
-  { number: 3, title: 'Documents', icon: FileText },
-  { number: 4, title: 'Video Verification', icon: Video },
-  { number: 5, title: 'Review & Submit', icon: CheckCircle },
+  { number: 1, title: 'Business Type', icon: 'domain' },
+  { number: 2, title: 'Personal Details', icon: 'person' },
+  { number: 3, title: 'Documents', icon: 'description' },
+  { number: 4, title: 'Video Verification', icon: 'videocam' },
+  { number: 5, title: 'Review & Submit', icon: 'check_circle' },
 ]
 
 export default function KYC() {
@@ -247,15 +297,15 @@ export default function KYC() {
 
   // Render read-only view for PENDING or APPROVED status
   const renderReadOnlyView = () => (
-    <div className="max-w-3xl mx-auto">
-      <div className="card">
+    <div className="max-w-3xl mx-auto page-enter">
+      <div className="card-v2">
         {/* Status Header */}
-        <div className={`text-center py-8 ${kycStatus === 'APPROVED' ? 'bg-green-50' : 'bg-blue-50'} rounded-t-lg -mx-6 -mt-6 mb-6 px-6`}>
-          <div className={`w-20 h-20 ${kycStatus === 'APPROVED' ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+        <div className={`text-center py-10 ${kycStatus === 'APPROVED' ? 'bg-gradient-to-br from-green-50 to-emerald-50' : 'bg-gradient-to-br from-blue-50 to-indigo-50'} rounded-t-2xl -mx-8 -mt-8 mb-8 px-8 border-b ${kycStatus === 'APPROVED' ? 'border-green-100' : 'border-blue-100'}`}>
+          <div className={`w-20 h-20 ${kycStatus === 'APPROVED' ? 'bg-green-100 shadow-green-200' : 'bg-blue-100 shadow-blue-200'} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg`}>
             {kycStatus === 'APPROVED' ? (
-              <CheckCircle className="w-10 h-10 text-green-600" />
+              <Icon name="check_circle" size={40} className="text-green-600" />
             ) : (
-              <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+              <Icon name="progress_activity" size={40} className="text-blue-600 animate-spin" />
             )}
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -269,30 +319,33 @@ export default function KYC() {
         </div>
 
         {/* Submitted Details */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Business Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Business Type</p>
-                <p className="font-medium text-gray-900">
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Icon name="business" size={18} className="text-ghana-green" />
+              Business Information
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="card-v2 p-4 bg-gradient-to-br from-gray-50 to-transparent border border-gray-100">
+                <p className="text-sm text-gray-500 mb-1">Business Type</p>
+                <p className="font-semibold text-gray-900">
                   {existingKyc?.businessType === 'REGISTERED_COMPANY' ? 'Registered Company' : 'Individual'}
                 </p>
               </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Owner's Legal Name</p>
-                <p className="font-medium text-gray-900">{existingKyc?.ownerLegalName}</p>
+              <div className="card-v2 p-4 bg-gradient-to-br from-gray-50 to-transparent border border-gray-100">
+                <p className="text-sm text-gray-500 mb-1">Owner's Legal Name</p>
+                <p className="font-semibold text-gray-900">{existingKyc?.ownerLegalName}</p>
               </div>
               {existingKyc?.businessType === 'REGISTERED_COMPANY' && (
                 <>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Business Registered Name</p>
-                    <p className="font-medium text-gray-900">{existingKyc?.businessRegName}</p>
+                  <div className="card-v2 p-4 bg-gradient-to-br from-gray-50 to-transparent border border-gray-100">
+                    <p className="text-sm text-gray-500 mb-1">Business Registered Name</p>
+                    <p className="font-semibold text-gray-900">{existingKyc?.businessRegName}</p>
                   </div>
                   {existingKyc?.tinNumber && (
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-500">TIN Number</p>
-                      <p className="font-medium text-gray-900">{existingKyc?.tinNumber}</p>
+                    <div className="card-v2 p-4 bg-gradient-to-br from-gray-50 to-transparent border border-gray-100">
+                      <p className="text-sm text-gray-500 mb-1">TIN Number</p>
+                      <p className="font-semibold text-gray-900">{existingKyc?.tinNumber}</p>
                     </div>
                   )}
                 </>
@@ -302,30 +355,33 @@ export default function KYC() {
 
           {/* Documents */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Uploaded Documents</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Icon name="description" size={18} className="text-ghana-gold" />
+              Uploaded Documents
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {existingKyc?.governmentIdUrl && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-2">Government ID</p>
-                  <img src={existingKyc.governmentIdUrl} alt="Government ID" className="w-full h-32 object-cover rounded" />
+                <div className="card-v2 p-4 overflow-hidden">
+                  <p className="text-sm text-gray-500 mb-3 font-medium">Government ID</p>
+                  <img src={existingKyc.governmentIdUrl} alt="Government ID" className="w-full h-32 object-cover rounded-lg" />
                 </div>
               )}
               {existingKyc?.selfieWithIdUrl && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-2">Selfie with ID</p>
-                  <img src={existingKyc.selfieWithIdUrl} alt="Selfie with ID" className="w-full h-32 object-cover rounded" />
+                <div className="card-v2 p-4 overflow-hidden">
+                  <p className="text-sm text-gray-500 mb-3 font-medium">Selfie with ID</p>
+                  <img src={existingKyc.selfieWithIdUrl} alt="Selfie with ID" className="w-full h-32 object-cover rounded-lg" />
                 </div>
               )}
               {existingKyc?.businessCertUrl && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-2">Business Certificate</p>
-                  <img src={existingKyc.businessCertUrl} alt="Business Certificate" className="w-full h-32 object-cover rounded" />
+                <div className="card-v2 p-4 overflow-hidden">
+                  <p className="text-sm text-gray-500 mb-3 font-medium">Business Certificate</p>
+                  <img src={existingKyc.businessCertUrl} alt="Business Certificate" className="w-full h-32 object-cover rounded-lg" />
                 </div>
               )}
               {existingKyc?.proofOfAddressUrl && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-2">Proof of Address</p>
-                  <img src={existingKyc.proofOfAddressUrl} alt="Proof of Address" className="w-full h-32 object-cover rounded" />
+                <div className="card-v2 p-4 overflow-hidden">
+                  <p className="text-sm text-gray-500 mb-3 font-medium">Proof of Address</p>
+                  <img src={existingKyc.proofOfAddressUrl} alt="Proof of Address" className="w-full h-32 object-cover rounded-lg" />
                 </div>
               )}
             </div>
@@ -333,18 +389,21 @@ export default function KYC() {
 
           {/* Videos */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Video Verification</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Icon name="videocam" size={18} className="text-blue-500" />
+              Video Verification
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {existingKyc?.storefrontVideoUrl && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-2">Storefront Video</p>
-                  <video src={existingKyc.storefrontVideoUrl} controls className="w-full h-40 rounded" />
+                <div className="card-v2 p-4 overflow-hidden">
+                  <p className="text-sm text-gray-500 mb-3 font-medium">Storefront Video</p>
+                  <video src={existingKyc.storefrontVideoUrl} controls className="w-full h-40 rounded-lg" />
                 </div>
               )}
               {existingKyc?.interiorVideoUrl && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-2">Interior Video</p>
-                  <video src={existingKyc.interiorVideoUrl} controls className="w-full h-40 rounded" />
+                <div className="card-v2 p-4 overflow-hidden">
+                  <p className="text-sm text-gray-500 mb-3 font-medium">Interior Video</p>
+                  <video src={existingKyc.interiorVideoUrl} controls className="w-full h-40 rounded-lg" />
                 </div>
               )}
             </div>
@@ -356,11 +415,13 @@ export default function KYC() {
 
   // Render rejected view
   const renderRejectedView = () => (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto page-enter">
       {/* Rejection Banner */}
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-5 mb-6">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Icon name="error" size={20} className="text-red-600" />
+          </div>
           <div>
             <h3 className="font-semibold text-red-800">Verification Rejected</h3>
             <p className="text-red-700 text-sm mt-1">{existingKyc?.rejectionReason || 'Your submission did not meet our requirements.'}</p>
@@ -369,18 +430,18 @@ export default function KYC() {
       </div>
 
       {/* Re-submit option */}
-      <div className="card mb-6">
-        <div className="flex items-center justify-between">
+      <div className="card-v2 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-gray-900">Re-submit Verification</h3>
             <p className="text-sm text-gray-500">Please address the issues above and submit again.</p>
           </div>
           <button
             onClick={() => setKycStatus('NONE')}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary btn-ripple flex items-center gap-2 whitespace-nowrap"
           >
             Re-submit
-            <ArrowRight className="w-4 h-4" />
+            <Icon name="arrow_forward" size={16} />
           </button>
         </div>
       </div>
@@ -393,10 +454,11 @@ export default function KYC() {
   if (loading) {
     return (
       <Layout activeTab="kyc">
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading verification status...</p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Verification Status</h1>
+          <p className="text-gray-500">Your KYC verification details</p>
         </div>
+        <StatusLoadingSkeleton />
       </Layout>
     )
   }
@@ -430,110 +492,129 @@ export default function KYC() {
   // Multi-step form for new submission
   return (
     <Layout activeTab="kyc">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Business Verification</h1>
-        <p className="text-gray-500">Complete your KYC to start receiving bookings</p>
-      </div>
-
-      <div className="max-w-3xl mx-auto">
-        {/* Progress Stepper */}
-        <div className="card mb-6">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                      currentStep === step.number
-                        ? 'bg-ghana-green text-white'
-                        : currentStep > step.number
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-gray-100 text-gray-400'
-                    }`}
-                  >
-                    {currentStep > step.number ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <step.icon className="w-5 h-5" />
-                    )}
-                  </div>
-                  <span className={`text-xs mt-1 hidden sm:block ${
-                    currentStep >= step.number ? 'text-gray-900 font-medium' : 'text-gray-400'
-                  }`}>
-                    {step.title}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-8 sm:w-16 h-0.5 mx-2 ${
-                    currentStep > step.number ? 'bg-green-300' : 'bg-gray-200'
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
+      <div className="page-enter">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Business Verification</h1>
+          <p className="text-gray-500">Complete your KYC to start receiving bookings</p>
         </div>
+
+        <div className="max-w-3xl mx-auto">
+          {/* Progress Stepper */}
+          <div className="card-v2 mb-6 p-6">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.number} className="flex items-center">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        currentStep === step.number
+                          ? 'bg-ghana-green text-white shadow-lg shadow-ghana-green/30 scale-110'
+                          : currentStep > step.number
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-gray-100 text-gray-400'
+                      }`}
+                    >
+                      {currentStep > step.number ? (
+                        <Icon name="check" size={20} />
+                      ) : (
+                        <Icon name={step.icon} size={20} />
+                      )}
+                    </div>
+                    <span className={`text-xs mt-2 hidden sm:block transition-colors ${
+                      currentStep >= step.number ? 'text-gray-900 font-medium' : 'text-gray-400'
+                    }`}>
+                      {step.title}
+                    </span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-8 sm:w-16 h-1 mx-2 rounded-full transition-colors duration-500 ${
+                      currentStep > step.number ? 'bg-green-400' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="w-5 h-5" />
-              <p>{error}</p>
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <Icon name="error" size={18} />
+              </div>
+              <p className="font-medium">{error}</p>
             </div>
           </div>
         )}
 
         {/* Step Content */}
-        <div className="card">
+        <div className="card-v2 relative overflow-hidden min-h-[400px]">
           {/* Step 1: Business Type */}
-          {currentStep === 1 && (
-            <div>
+          <div className={`transition-all duration-500 ${currentStep === 1 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'}`}>
+            <div className="p-2">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Select Business Type</h2>
               <p className="text-gray-500 mb-6">Choose the option that best describes your business</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => setFormData(prev => ({ ...prev, businessType: 'REGISTERED_COMPANY' }))}
-                  className={`p-4 sm:p-6 rounded-lg border-2 text-left transition-all ${
+                  className={`card-v2 p-5 sm:p-6 text-left transition-all ${
                     formData.businessType === 'REGISTERED_COMPANY'
-                      ? 'border-ghana-green bg-ghana-green/5'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-2 border-ghana-green bg-gradient-to-br from-ghana-green/5 to-transparent shadow-lg shadow-ghana-green/10'
+                      : 'border-2 border-gray-100 hover:border-gray-200 hover:shadow-md'
                   }`}
                 >
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-ghana-green/10 flex items-center justify-center mb-3 sm:mb-4">
-                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-ghana-green" />
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors ${
+                    formData.businessType === 'REGISTERED_COMPANY' ? 'bg-ghana-green/15' : 'bg-ghana-green/10'
+                  }`}>
+                    <Icon name="domain" size={24} className="text-ghana-green" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">Registered Company</h3>
                   <p className="text-sm text-gray-500">Your business is registered with the Registrar General's Department</p>
+                  {formData.businessType === 'REGISTERED_COMPANY' && (
+                    <div className="mt-3 flex items-center gap-1 text-green-600 text-sm font-medium">
+                      <Icon name="check_circle" size={16} />
+                      <span>Selected</span>
+                    </div>
+                  )}
                 </button>
 
                 <button
                   onClick={() => setFormData(prev => ({ ...prev, businessType: 'INDIVIDUAL' }))}
-                  className={`p-4 sm:p-6 rounded-lg border-2 text-left transition-all ${
+                  className={`card-v2 p-5 sm:p-6 text-left transition-all ${
                     formData.businessType === 'INDIVIDUAL'
-                      ? 'border-ghana-green bg-ghana-green/5'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-2 border-ghana-gold bg-gradient-to-br from-ghana-gold/5 to-transparent shadow-lg shadow-ghana-gold/10'
+                      : 'border-2 border-gray-100 hover:border-gray-200 hover:shadow-md'
                   }`}
                 >
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-ghana-gold/10 flex items-center justify-center mb-3 sm:mb-4">
-                    <User className="w-5 h-5 sm:w-6 sm:h-6 text-ghana-gold" />
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors ${
+                    formData.businessType === 'INDIVIDUAL' ? 'bg-ghana-gold/15' : 'bg-ghana-gold/10'
+                  }`}>
+                    <Icon name="person" size={24} className="text-ghana-gold" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">Individual</h3>
                   <p className="text-sm text-gray-500">You operate as an individual without formal business registration</p>
+                  {formData.businessType === 'INDIVIDUAL' && (
+                    <div className="mt-3 flex items-center gap-1 text-amber-600 text-sm font-medium">
+                      <Icon name="check_circle" size={16} />
+                      <span>Selected</span>
+                    </div>
+                  )}
                 </button>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Step 2: Personal Details */}
-          {currentStep === 2 && (
-            <div>
+          <div className={`transition-all duration-500 ${currentStep === 2 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'}`}>
+            <div className="p-2">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Personal Details</h2>
               <p className="text-gray-500 mb-6">Enter your legal information as it appears on your ID</p>
 
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Owner's Full Legal Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -548,7 +629,7 @@ export default function KYC() {
                 {formData.businessType === 'REGISTERED_COMPANY' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Business Registered Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -562,7 +643,7 @@ export default function KYC() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           TIN Number
                         </label>
                         <input
@@ -574,7 +655,7 @@ export default function KYC() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Registration/Incorporation Number
                         </label>
                         <input
@@ -590,18 +671,18 @@ export default function KYC() {
                 )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Step 3: Document Uploads */}
-          {currentStep === 3 && (
-            <div>
+          <div className={`transition-all duration-500 ${currentStep === 3 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'}`}>
+            <div className="p-2">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Document Uploads</h2>
               <p className="text-gray-500 mb-6">Upload clear photos of your documents</p>
 
               <div className="space-y-6">
                 {/* Government ID */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="card-v2 p-4 border-2 border-dashed border-gray-200 hover:border-ghana-green/50 transition-colors">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Government-Issued ID <span className="text-red-500">*</span>
                   </label>
                   <p className="text-sm text-gray-500 mb-3">Ghana Card, Passport, or Voter's ID</p>
@@ -614,51 +695,60 @@ export default function KYC() {
                       className="hidden"
                     />
                     <div 
-                      className="w-32 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                      className="w-32 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green hover:bg-ghana-green/5 transition-all group"
                       onClick={() => fileInputRefs.governmentId.current?.click()}
                     >
                       {uploadedFiles.governmentIdUrl ? (
                         <div className="relative w-full h-full">
                           {uploadedFiles.governmentIdUrl.endsWith('.pdf') ? (
                             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <FileImage className="w-8 h-8 text-gray-400" />
+                              <Icon name="description" size={32} className="text-gray-400" />
                             </div>
                           ) : (
                             <img src={uploadedFiles.governmentIdUrl} alt="Government ID" className="w-full h-full object-cover" />
                           )}
                           {uploading.governmentId && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                              <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                            <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                              <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin" />
                             </div>
                           )}
-                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
+                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Icon name="check" size={12} className="text-white" />
                           </div>
+                          <div className="absolute inset-0 bg-ghana-green/0 group-hover:bg-ghana-green/10 transition-colors" />
                         </div>
                       ) : (
                         <div className="text-center">
                           {uploading.governmentId ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-ghana-green mx-auto" />
+                            <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto" />
                           ) : (
-                            <Upload className="w-6 h-6 text-gray-400 mx-auto" />
+                            <Icon name="upload" size={24} className="text-gray-400 mx-auto group-hover:text-ghana-green transition-colors" />
                           )}
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRefs.governmentId.current?.click()}
-                      disabled={uploading.governmentId}
-                      className="btn-secondary text-sm py-2"
-                    >
-                      {uploadedFiles.governmentIdUrl ? 'Change File' : 'Upload'}
-                    </button>
+                    <div className="flex-1">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.governmentId.current?.click()}
+                        disabled={uploading.governmentId}
+                        className="btn-secondary btn-ripple text-sm py-2 px-4"
+                      >
+                        {uploadedFiles.governmentIdUrl ? 'Change File' : 'Upload File'}
+                      </button>
+                      {uploadedFiles.governmentIdUrl && (
+                        <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                          <Icon name="check_circle" size={12} />
+                          File uploaded successfully
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Selfie with ID */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="card-v2 p-4 border-2 border-dashed border-gray-200 hover:border-ghana-green/50 transition-colors">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Selfie Holding ID <span className="text-red-500">*</span>
                   </label>
                   <p className="text-sm text-gray-500 mb-3">Take a clear selfie holding your ID document</p>
@@ -671,46 +761,55 @@ export default function KYC() {
                       className="hidden"
                     />
                     <div 
-                      className="w-32 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                      className="w-32 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green hover:bg-ghana-green/5 transition-all group"
                       onClick={() => fileInputRefs.selfieWithId.current?.click()}
                     >
                       {uploadedFiles.selfieWithIdUrl ? (
                         <div className="relative w-full h-full">
                           <img src={uploadedFiles.selfieWithIdUrl} alt="Selfie with ID" className="w-full h-full object-cover" />
                           {uploading.selfieWithId && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                              <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                            <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                              <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin" />
                             </div>
                           )}
-                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
+                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Icon name="check" size={12} className="text-white" />
                           </div>
+                          <div className="absolute inset-0 bg-ghana-green/0 group-hover:bg-ghana-green/10 transition-colors" />
                         </div>
                       ) : (
                         <div className="text-center">
                           {uploading.selfieWithId ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-ghana-green mx-auto" />
+                            <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto" />
                           ) : (
-                            <Upload className="w-6 h-6 text-gray-400 mx-auto" />
+                            <Icon name="photo_camera" size={24} className="text-gray-400 mx-auto group-hover:text-ghana-green transition-colors" />
                           )}
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRefs.selfieWithId.current?.click()}
-                      disabled={uploading.selfieWithId}
-                      className="btn-secondary text-sm py-2"
-                    >
-                      {uploadedFiles.selfieWithIdUrl ? 'Change File' : 'Upload'}
-                    </button>
+                    <div className="flex-1">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.selfieWithId.current?.click()}
+                        disabled={uploading.selfieWithId}
+                        className="btn-secondary btn-ripple text-sm py-2 px-4"
+                      >
+                        {uploadedFiles.selfieWithIdUrl ? 'Change File' : 'Upload Selfie'}
+                      </button>
+                      {uploadedFiles.selfieWithIdUrl && (
+                        <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                          <Icon name="check_circle" size={12} />
+                          File uploaded successfully
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Business Certificate (for registered companies) */}
                 {formData.businessType === 'REGISTERED_COMPANY' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="card-v2 p-4 border-2 border-dashed border-gray-200 hover:border-ghana-green/50 transition-colors">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Business Registration Certificate <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-gray-500 mb-3">Upload your business registration certificate</p>
@@ -723,53 +822,62 @@ export default function KYC() {
                         className="hidden"
                       />
                       <div 
-                        className="w-32 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                        className="w-32 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green hover:bg-ghana-green/5 transition-all group"
                         onClick={() => fileInputRefs.businessCert.current?.click()}
                       >
                         {uploadedFiles.businessCertUrl ? (
                           <div className="relative w-full h-full">
                             {uploadedFiles.businessCertUrl.endsWith('.pdf') ? (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <FileImage className="w-8 h-8 text-gray-400" />
+                                <Icon name="description" size={32} className="text-gray-400" />
                               </div>
                             ) : (
                               <img src={uploadedFiles.businessCertUrl} alt="Business Certificate" className="w-full h-full object-cover" />
                             )}
                             {uploading.businessCert && (
-                              <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                              <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                                <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin" />
                               </div>
                             )}
-                            <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                              <Check className="w-3 h-3 text-white" />
+                            <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                              <Icon name="check" size={12} className="text-white" />
                             </div>
+                            <div className="absolute inset-0 bg-ghana-green/0 group-hover:bg-ghana-green/10 transition-colors" />
                           </div>
                         ) : (
                           <div className="text-center">
                             {uploading.businessCert ? (
-                              <Loader2 className="w-6 h-6 animate-spin text-ghana-green mx-auto" />
+                              <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto" />
                             ) : (
-                              <Upload className="w-6 h-6 text-gray-400 mx-auto" />
+                              <Icon name="upload" size={24} className="text-gray-400 mx-auto group-hover:text-ghana-green transition-colors" />
                             )}
                           </div>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRefs.businessCert.current?.click()}
-                        disabled={uploading.businessCert}
-                        className="btn-secondary text-sm py-2"
-                      >
-                        {uploadedFiles.businessCertUrl ? 'Change File' : 'Upload'}
-                      </button>
+                      <div className="flex-1">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRefs.businessCert.current?.click()}
+                          disabled={uploading.businessCert}
+                          className="btn-secondary btn-ripple text-sm py-2 px-4"
+                        >
+                          {uploadedFiles.businessCertUrl ? 'Change File' : 'Upload Certificate'}
+                        </button>
+                        {uploadedFiles.businessCertUrl && (
+                          <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                            <Icon name="check_circle" size={12} />
+                            File uploaded successfully
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Proof of Address (for individuals) */}
                 {formData.businessType === 'INDIVIDUAL' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="card-v2 p-4 border-2 border-dashed border-gray-200 hover:border-ghana-green/50 transition-colors">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Proof of Address <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-gray-500 mb-3">Utility bill or bank statement (last 3 months)</p>
@@ -782,62 +890,71 @@ export default function KYC() {
                         className="hidden"
                       />
                       <div 
-                        className="w-32 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                        className="w-32 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green hover:bg-ghana-green/5 transition-all group"
                         onClick={() => fileInputRefs.proofOfAddress.current?.click()}
                       >
                         {uploadedFiles.proofOfAddressUrl ? (
                           <div className="relative w-full h-full">
                             {uploadedFiles.proofOfAddressUrl.endsWith('.pdf') ? (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <FileImage className="w-8 h-8 text-gray-400" />
+                                <Icon name="description" size={32} className="text-gray-400" />
                               </div>
                             ) : (
                               <img src={uploadedFiles.proofOfAddressUrl} alt="Proof of Address" className="w-full h-full object-cover" />
                             )}
                             {uploading.proofOfAddress && (
-                              <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                              <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                                <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin" />
                               </div>
                             )}
-                            <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                              <Check className="w-3 h-3 text-white" />
+                            <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                              <Icon name="check" size={12} className="text-white" />
                             </div>
+                            <div className="absolute inset-0 bg-ghana-green/0 group-hover:bg-ghana-green/10 transition-colors" />
                           </div>
                         ) : (
                           <div className="text-center">
                             {uploading.proofOfAddress ? (
-                              <Loader2 className="w-6 h-6 animate-spin text-ghana-green mx-auto" />
+                              <div className="w-8 h-8 border-3 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto" />
                             ) : (
-                              <Upload className="w-6 h-6 text-gray-400 mx-auto" />
+                              <Icon name="home" size={24} className="text-gray-400 mx-auto group-hover:text-ghana-green transition-colors" />
                             )}
                           </div>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRefs.proofOfAddress.current?.click()}
-                        disabled={uploading.proofOfAddress}
-                        className="btn-secondary text-sm py-2"
-                      >
-                        {uploadedFiles.proofOfAddressUrl ? 'Change File' : 'Upload'}
-                      </button>
+                      <div className="flex-1">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRefs.proofOfAddress.current?.click()}
+                          disabled={uploading.proofOfAddress}
+                          className="btn-secondary btn-ripple text-sm py-2 px-4"
+                        >
+                          {uploadedFiles.proofOfAddressUrl ? 'Change File' : 'Upload Document'}
+                        </button>
+                        {uploadedFiles.proofOfAddressUrl && (
+                          <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                            <Icon name="check_circle" size={12} />
+                            File uploaded successfully
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Step 4: Video Verification */}
-          {currentStep === 4 && (
-            <div>
+          <div className={`transition-all duration-500 ${currentStep === 4 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'}`}>
+            <div className="p-2">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Video Verification</h2>
               <p className="text-gray-500 mb-6">Record videos showing your salon location (max 50MB each)</p>
 
               <div className="space-y-6">
                 {/* Storefront Video */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="card-v2 p-4 border-2 border-dashed border-gray-200 hover:border-blue-400/50 transition-colors">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Storefront Video <span className="text-red-500">*</span>
                   </label>
                   <p className="text-sm text-gray-500 mb-3">Record a clear video showing the front of your salon with the business sign visible</p>
@@ -850,48 +967,56 @@ export default function KYC() {
                       className="hidden"
                     />
                     <div 
-                      className="w-40 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                      className="w-40 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-all group"
                       onClick={() => fileInputRefs.storefrontVideo.current?.click()}
                     >
                       {uploadedFiles.storefrontVideoUrl ? (
                         <div className="relative w-full h-full">
                           <video src={uploadedFiles.storefrontVideoUrl} className="w-full h-full object-cover" />
                           {uploading.storefrontVideo && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                              <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                            <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                              <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
                             </div>
                           )}
-                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
+                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Icon name="check" size={12} className="text-white" />
                           </div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Play className="w-8 h-8 text-white drop-shadow-lg" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                            <Icon name="play_arrow" size={32} className="text-white drop-shadow-lg" />
                           </div>
                         </div>
                       ) : (
                         <div className="text-center">
                           {uploading.storefrontVideo ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-ghana-green mx-auto" />
+                            <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
                           ) : (
-                            <Video className="w-6 h-6 text-gray-400 mx-auto" />
+                            <Icon name="videocam" size={28} className="text-gray-400 mx-auto group-hover:text-blue-500 transition-colors" />
                           )}
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRefs.storefrontVideo.current?.click()}
-                      disabled={uploading.storefrontVideo}
-                      className="btn-secondary text-sm py-2"
-                    >
-                      {uploadedFiles.storefrontVideoUrl ? 'Change Video' : 'Upload Video'}
-                    </button>
+                    <div className="flex-1">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.storefrontVideo.current?.click()}
+                        disabled={uploading.storefrontVideo}
+                        className="btn-secondary btn-ripple text-sm py-2 px-4 border-blue-200 text-blue-700 hover:bg-blue-50"
+                      >
+                        {uploadedFiles.storefrontVideoUrl ? 'Change Video' : 'Upload Video'}
+                      </button>
+                      {uploadedFiles.storefrontVideoUrl && (
+                        <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                          <Icon name="check_circle" size={12} />
+                          Video uploaded successfully
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Interior Video */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="card-v2 p-4 border-2 border-dashed border-gray-200 hover:border-blue-400/50 transition-colors">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Interior Video <span className="text-red-500">*</span>
                   </label>
                   <p className="text-sm text-gray-500 mb-3">Record a video walkthrough of the inside of your salon</p>
@@ -904,79 +1029,90 @@ export default function KYC() {
                       className="hidden"
                     />
                     <div 
-                      className="w-40 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                      className="w-40 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-all group"
                       onClick={() => fileInputRefs.interiorVideo.current?.click()}
                     >
                       {uploadedFiles.interiorVideoUrl ? (
                         <div className="relative w-full h-full">
                           <video src={uploadedFiles.interiorVideoUrl} className="w-full h-full object-cover" />
                           {uploading.interiorVideo && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                              <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
+                            <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                              <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
                             </div>
                           )}
-                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
+                          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Icon name="check" size={12} className="text-white" />
                           </div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Play className="w-8 h-8 text-white drop-shadow-lg" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                            <Icon name="play_arrow" size={32} className="text-white drop-shadow-lg" />
                           </div>
                         </div>
                       ) : (
                         <div className="text-center">
                           {uploading.interiorVideo ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-ghana-green mx-auto" />
+                            <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
                           ) : (
-                            <Video className="w-6 h-6 text-gray-400 mx-auto" />
+                            <Icon name="video_camera_back" size={28} className="text-gray-400 mx-auto group-hover:text-blue-500 transition-colors" />
                           )}
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRefs.interiorVideo.current?.click()}
-                      disabled={uploading.interiorVideo}
-                      className="btn-secondary text-sm py-2"
-                    >
-                      {uploadedFiles.interiorVideoUrl ? 'Change Video' : 'Upload Video'}
-                    </button>
+                    <div className="flex-1">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.interiorVideo.current?.click()}
+                        disabled={uploading.interiorVideo}
+                        className="btn-secondary btn-ripple text-sm py-2 px-4 border-blue-200 text-blue-700 hover:bg-blue-50"
+                      >
+                        {uploadedFiles.interiorVideoUrl ? 'Change Video' : 'Upload Video'}
+                      </button>
+                      {uploadedFiles.interiorVideoUrl && (
+                        <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                          <Icon name="check_circle" size={12} />
+                          Video uploaded successfully
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Step 5: Review & Submit */}
-          {currentStep === 5 && (
-            <div>
+          <div className={`transition-all duration-500 ${currentStep === 5 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'}`}>
+            <div className="p-2">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Review & Submit</h2>
               <p className="text-gray-500 mb-6">Please review your information before submitting</p>
 
               <div className="space-y-6">
                 {/* Business Information */}
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-3">Business Information</h3>
+                <div className="card-v2 p-5 bg-gradient-to-br from-gray-50 to-transparent border border-gray-100">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Icon name="business" size={18} className="text-ghana-green" />
+                    Business Information
+                  </h3>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="text-gray-500">Business Type:</span>
-                      <span className="ml-2 font-medium">
+                      <span className="font-semibold text-gray-900">
                         {formData.businessType === 'REGISTERED_COMPANY' ? 'Registered Company' : 'Individual'}
                       </span>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="text-gray-500">Owner's Name:</span>
-                      <span className="ml-2 font-medium">{formData.ownerLegalName}</span>
+                      <span className="font-semibold text-gray-900">{formData.ownerLegalName}</span>
                     </div>
                     {formData.businessType === 'REGISTERED_COMPANY' && (
                       <>
-                        <div>
+                        <div className="flex items-center gap-2">
                           <span className="text-gray-500">Business Name:</span>
-                          <span className="ml-2 font-medium">{formData.businessRegName}</span>
+                          <span className="font-semibold text-gray-900">{formData.businessRegName}</span>
                         </div>
                         {formData.tinNumber && (
-                          <div>
+                          <div className="flex items-center gap-2">
                             <span className="text-gray-500">TIN Number:</span>
-                            <span className="ml-2 font-medium">{formData.tinNumber}</span>
+                            <span className="font-semibold text-gray-900">{formData.tinNumber}</span>
                           </div>
                         )}
                       </>
@@ -986,13 +1122,17 @@ export default function KYC() {
 
                 {/* Documents */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-3">Uploaded Documents</h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Icon name="description" size={18} className="text-ghana-gold" />
+                    Uploaded Documents
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {uploadedFiles.governmentIdUrl && (
-                      <div className="aspect-square rounded-lg overflow-hidden">
+                      <div className="card-v2 aspect-square overflow-hidden p-0">
                         {uploadedFiles.governmentIdUrl.endsWith('.pdf') ? (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <FileImage className="w-8 h-8 text-gray-400" />
+                          <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
+                            <Icon name="description" size={32} className="text-gray-400 mb-2" />
+                            <span className="text-xs text-gray-500">Gov ID</span>
                           </div>
                         ) : (
                           <img src={uploadedFiles.governmentIdUrl} alt="Government ID" className="w-full h-full object-cover" />
@@ -1000,15 +1140,16 @@ export default function KYC() {
                       </div>
                     )}
                     {uploadedFiles.selfieWithIdUrl && (
-                      <div className="aspect-square rounded-lg overflow-hidden">
+                      <div className="card-v2 aspect-square overflow-hidden p-0">
                         <img src={uploadedFiles.selfieWithIdUrl} alt="Selfie with ID" className="w-full h-full object-cover" />
                       </div>
                     )}
                     {uploadedFiles.businessCertUrl && (
-                      <div className="aspect-square rounded-lg overflow-hidden">
+                      <div className="card-v2 aspect-square overflow-hidden p-0">
                         {uploadedFiles.businessCertUrl.endsWith('.pdf') ? (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <FileImage className="w-8 h-8 text-gray-400" />
+                          <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
+                            <Icon name="description" size={32} className="text-gray-400 mb-2" />
+                            <span className="text-xs text-gray-500">Certificate</span>
                           </div>
                         ) : (
                           <img src={uploadedFiles.businessCertUrl} alt="Business Certificate" className="w-full h-full object-cover" />
@@ -1016,10 +1157,11 @@ export default function KYC() {
                       </div>
                     )}
                     {uploadedFiles.proofOfAddressUrl && (
-                      <div className="aspect-square rounded-lg overflow-hidden">
+                      <div className="card-v2 aspect-square overflow-hidden p-0">
                         {uploadedFiles.proofOfAddressUrl.endsWith('.pdf') ? (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <FileImage className="w-8 h-8 text-gray-400" />
+                          <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
+                            <Icon name="description" size={32} className="text-gray-400 mb-2" />
+                            <span className="text-xs text-gray-500">Address</span>
                           </div>
                         ) : (
                           <img src={uploadedFiles.proofOfAddressUrl} alt="Proof of Address" className="w-full h-full object-cover" />
@@ -1031,27 +1173,38 @@ export default function KYC() {
 
                 {/* Videos */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-3">Uploaded Videos</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Icon name="videocam" size={18} className="text-blue-500" />
+                    Uploaded Videos
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {uploadedFiles.storefrontVideoUrl && (
-                      <div className="aspect-video rounded-lg overflow-hidden">
-                        <video src={uploadedFiles.storefrontVideoUrl} controls className="w-full h-full object-cover" />
+                      <div className="card-v2 p-3 overflow-hidden">
+                        <p className="text-xs text-gray-500 mb-2">Storefront</p>
+                        <div className="aspect-video rounded-lg overflow-hidden">
+                          <video src={uploadedFiles.storefrontVideoUrl} controls className="w-full h-full object-cover" />
+                        </div>
                       </div>
                     )}
                     {uploadedFiles.interiorVideoUrl && (
-                      <div className="aspect-video rounded-lg overflow-hidden">
-                        <video src={uploadedFiles.interiorVideoUrl} controls className="w-full h-full object-cover" />
+                      <div className="card-v2 p-3 overflow-hidden">
+                        <p className="text-xs text-gray-500 mb-2">Interior</p>
+                        <div className="aspect-video rounded-lg overflow-hidden">
+                          <video src={uploadedFiles.interiorVideoUrl} controls className="w-full h-full object-cover" />
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Notice */}
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                   <div className="flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Icon name="verified_user" size={20} className="text-blue-600" />
+                    </div>
                     <div>
-                      <h4 className="font-medium text-blue-900">Verification Process</h4>
+                      <h4 className="font-semibold text-blue-900">Verification Process</h4>
                       <p className="text-sm text-blue-700 mt-1">
                         Your submission will be reviewed within 1-2 business days. You'll receive a notification once your verification is complete.
                       </p>
@@ -1060,7 +1213,7 @@ export default function KYC() {
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Navigation Buttons */}
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
@@ -1068,13 +1221,13 @@ export default function KYC() {
               type="button"
               onClick={handlePrev}
               disabled={currentStep === 1}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${
                 currentStep === 1
                   ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 hover:bg-gray-100 hover:shadow-sm'
               }`}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <Icon name="arrow_back" size={18} />
               Previous
             </button>
 
@@ -1082,26 +1235,26 @@ export default function KYC() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="btn-primary flex items-center gap-2"
+                className="btn-primary btn-ripple flex items-center gap-2"
               >
                 Next
-                <ArrowRight className="w-4 h-4" />
+                <Icon name="arrow_forward" size={18} />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting || !isFormComplete()}
-                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                className="btn-primary btn-ripple flex items-center gap-2 disabled:opacity-50"
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Icon name="progress_activity" size={18} className="animate-spin" />
                     Submitting...
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="w-4 h-4" />
+                    <Icon name="check_circle" size={18} />
                     Submit for Verification
                   </>
                 )}
@@ -1109,6 +1262,7 @@ export default function KYC() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </Layout>
   )

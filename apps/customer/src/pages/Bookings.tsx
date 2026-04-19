@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, MapPin, ChevronRight, X, AlertCircle, Plus, Loader2, Phone, RefreshCw, ShieldAlert, Info, Users, Shield, CheckCircle, Ban, QrCode, AlertTriangle, MessageSquare, Copy, Navigation, Timer } from 'lucide-react'
+import Icon from '../components/Icon'
 import toast from 'react-hot-toast'
 import { bookingApi, Booking, RefundPreview, QueuePositionResponse } from '../lib/api'
 
@@ -14,6 +14,7 @@ const PENDING_BOOKING_TIMEOUT_MINUTES = 30
 function PendingBookingCountdown({ createdAt }: { createdAt: string }) {
   const [timeRemaining, setTimeRemaining] = useState<string>('')
   const [isExpired, setIsExpired] = useState(false)
+  const [minutesLeft, setMinutesLeft] = useState(30)
 
   useEffect(() => {
     const calculateTimeRemaining = () => {
@@ -30,6 +31,7 @@ function PendingBookingCountdown({ createdAt }: { createdAt: string }) {
 
       const minutes = Math.floor(diff / 60000)
       const seconds = Math.floor((diff % 60000) / 1000)
+      setMinutesLeft(minutes)
       setTimeRemaining(`${minutes}m ${seconds.toString().padStart(2, '0')}s`)
     }
 
@@ -39,11 +41,13 @@ function PendingBookingCountdown({ createdAt }: { createdAt: string }) {
     return () => clearInterval(interval)
   }, [createdAt])
 
+  const isUrgent = minutesLeft < 5 && !isExpired
+
   if (isExpired) {
     return (
-      <div className="flex items-center gap-2 mt-2">
-        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
-          <Timer className="w-3 h-3" />
+      <div className="flex items-center gap-2 mt-3">
+        <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold bg-red-100 text-red-700 rounded-full">
+          <Icon name="timer" size={16} />
           Expiring soon...
         </span>
       </div>
@@ -51,10 +55,16 @@ function PendingBookingCountdown({ createdAt }: { createdAt: string }) {
   }
 
   return (
-    <div className="flex items-center gap-2 mt-2">
-      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
-        <Timer className="w-3 h-3" />
-        Complete payment in: {timeRemaining}
+    <div className="flex items-center gap-2 mt-3">
+      <span className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg font-semibold ${
+        isUrgent 
+          ? 'bg-red-100 text-red-700 animate-pulse' 
+          : 'bg-amber-100 text-amber-700'
+      }`}>
+        <Icon name="timer" size={isUrgent ? 20 : 18} className={isUrgent ? 'animate-pulse' : ''} />
+        <span className="text-sm">
+          Complete payment in: <span className={`${isUrgent ? 'text-lg font-bold' : 'font-medium'}`}>{timeRemaining}</span>
+        </span>
       </span>
     </div>
   )
@@ -187,7 +197,7 @@ export default function Bookings() {
 
   // Queue position data for bookings
   const [queuePositionData, setQueuePositionData] = useState<Record<string, QueuePositionResponse>>({})
-  const [loadingQueuePositions, setLoadingQueuePositions] = useState(false)
+  const [_loadingQueuePositions, setLoadingQueuePositions] = useState(false)
 
   // Service completion modal states
   const [showCompletionModal, setShowCompletionModal] = useState(false)
@@ -301,7 +311,7 @@ export default function Bookings() {
             setAutoCheckinLoading(false)
           }
         },
-        (error) => {
+        (_error) => {
           toast.error('Unable to get your location. Please enable location permissions.')
           setAutoCheckinLoading(false)
         },
@@ -682,7 +692,7 @@ export default function Bookings() {
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="bg-white/20 rounded-full p-2">
-                <Navigation className="w-5 h-5" />
+                <Icon name="near_me" size={20} />
               </div>
               <div>
                 <h3 className="font-semibold text-lg">You've Arrived!</h3>
@@ -699,7 +709,7 @@ export default function Bookings() {
               }}
               className="text-white/80 hover:text-white"
             >
-              <X className="w-5 h-5" />
+              <Icon name="close" size={20} />
             </button>
           </div>
           <div className="flex gap-3 mt-3">
@@ -710,12 +720,12 @@ export default function Bookings() {
             >
               {autoCheckinLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Icon name="progress_activity" size={16} className="animate-spin" />
                   Checking in...
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-4 h-4" />
+                  <Icon name="check_circle" size={16} />
                   Check In Now
                 </>
               )}
@@ -743,25 +753,24 @@ export default function Bookings() {
           onClick={() => navigate('/explore')}
           className="btn-primary flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-sm w-full sm:w-auto justify-center"
         >
-          <Plus className="w-4 h-4" />
+          <Icon name="add" size={16} />
           <span className="sm:inline">Book a Salon</span>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 sm:gap-4 border-b border-gray-200 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth-x">
         {tabs.map((tab) => (
           <button 
             key={tab.key} 
             onClick={() => setActiveTab(tab.key)}
-            className={'pb-3 px-1 border-b-2 font-medium text-sm transition-colors ' + 
-              (activeTab === tab.key 
-                ? 'border-green-600 text-green-700' 
-                : 'border-transparent text-gray-500 hover:text-gray-700')}
+            className={`tab-pill flex items-center gap-2 whitespace-nowrap ${
+              activeTab === tab.key ? 'tab-pill-active' : 'tab-pill-inactive'
+            }`}
           >
             {tab.label}
-            <span className={'ml-2 px-2 py-0.5 rounded-full text-xs ' + 
-              (activeTab === tab.key ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600')}>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'}`}>
               {tab.count}
             </span>
           </button>
@@ -770,16 +779,29 @@ export default function Bookings() {
 
       {/* Loading State */}
       {loading && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-          <p className="mt-4 text-gray-500">Loading your bookings...</p>
+        <div className="space-y-4 animate-fade-in">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="card-v2 p-4">
+              <div className="flex items-start gap-4">
+                <div className="skeleton-shimmer w-16 h-16 rounded-xl flex-shrink-0"></div>
+                <div className="flex-1 space-y-3">
+                  <div className="skeleton-shimmer w-1/2 h-5"></div>
+                  <div className="skeleton-shimmer w-1/3 h-4"></div>
+                  <div className="flex gap-2">
+                    <div className="skeleton-shimmer w-20 h-4"></div>
+                    <div className="skeleton-shimmer w-20 h-4"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Error State */}
       {error && !loading && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <Icon name="error" size={48} className="text-red-500 mx-auto mb-4" />
           <p className="text-red-700 font-medium">{error}</p>
           <button 
             onClick={fetchBookings}
@@ -794,22 +816,38 @@ export default function Bookings() {
       {!loading && !error && (
         <div className="space-y-4">
           {currentBookings.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
-              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No {activeTab} bookings</h3>
-              <p className="text-gray-500 mb-6">
+            <div className="text-center py-16 animate-fade-in-up">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Icon name={activeTab === 'upcoming' ? 'calendar_today' : activeTab === 'past' ? 'history' : 'cancel'} size={48} className="text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
                 {activeTab === 'upcoming' 
-                  ? "You don't have any upcoming appointments." 
+                  ? "No upcoming bookings" 
                   : activeTab === 'past' 
-                    ? "You haven't completed any bookings yet."
-                    : "You haven't cancelled any bookings."}
+                    ? "No past bookings yet"
+                    : "No cancelled bookings"}
+              </h3>
+              <p className="text-gray-600 max-w-md mx-auto mb-6">
+                {activeTab === 'upcoming' 
+                  ? "Time to treat yourself! Discover amazing salons and book your next appointment." 
+                  : activeTab === 'past' 
+                    ? "Your completed appointments will appear here. Book your first salon visit!"
+                    : "You haven't cancelled any bookings. That's great!"}
               </p>
               {activeTab === 'upcoming' && (
                 <button 
                   onClick={() => navigate('/explore')}
-                  className="btn-primary bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                  className="px-6 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors font-medium shadow-card hover:shadow-card-hover"
                 >
-                  Find a Salon
+                  Explore Salons
+                </button>
+              )}
+              {activeTab === 'past' && (
+                <button 
+                  onClick={() => navigate('/explore')}
+                  className="px-6 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors font-medium shadow-card hover:shadow-card-hover"
+                >
+                  Book Now
                 </button>
               )}
             </div>
@@ -817,34 +855,40 @@ export default function Bookings() {
             currentBookings.map((booking) => (
               <div 
                 key={booking.id} 
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow cursor-pointer" 
+                className={`card-v2 p-4 cursor-pointer ${
+                  booking.status === 'CONFIRMED' ? 'border-l-4 border-l-green-500' :
+                  booking.status === 'PENDING' ? 'border-l-4 border-l-amber-400' :
+                  booking.status === 'COMPLETED' ? 'border-l-4 border-l-gray-400' :
+                  booking.status === 'CANCELLED' ? 'border-l-4 border-l-red-500' :
+                  'border-l-4 border-l-gray-300'
+                }`}
                 onClick={() => setSelectedBooking(booking)}
               >
                 <div className="flex items-start gap-4">
                   <img 
                     src={getSalonImage(booking)} 
                     alt={booking.salon?.businessName || 'Salon'} 
-                    className="w-16 h-16 rounded-lg object-cover bg-gray-100"
+                    className="w-16 h-16 rounded-xl object-cover bg-gray-100"
                   />
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-gray-900 truncate">
                             {booking.salon?.businessName || 'Unknown Salon'}
                           </h3>
                           {booking.isGroupBooking && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
-                              <Users className="w-3 h-3" />
+                              <Icon name="group" size={12} />
                               Group · {booking.totalPeople || 1} people
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 truncate">
                           {booking.service?.name || 'Unknown Service'}
                         </p>
                       </div>
-                      <span className={'px-2 py-1 text-xs font-medium rounded ' +
+                      <span className={'px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ' +
                         (statusColors[booking.status] || 'bg-gray-100 text-gray-600')}>
                         {statusLabels[booking.status] || booking.status}
                       </span>
@@ -862,13 +906,13 @@ export default function Bookings() {
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           {queueInfo.queuePosition !== null && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                              <Users className="w-3 h-3" />
+                              <Icon name="group" size={12} />
                               Queue #{queueInfo.queuePosition}
                             </span>
                           )}
                           {queueInfo.checkedIn ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
-                              <CheckCircle className="w-3 h-3" />
+                              <Icon name="check_circle" size={12} />
                               Checked In
                             </span>
                           ) : (
@@ -891,11 +935,11 @@ export default function Bookings() {
                     })()}
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
+                        <Icon name="calendar_today" size={16} />
                         <span>{formatDate(booking.date)}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Icon name="schedule" size={16} />
                         <span>{formatTime(booking.startTime)}</span>
                       </div>
                     </div>
@@ -903,7 +947,7 @@ export default function Bookings() {
                       <span className="font-semibold text-gray-900">
                         {formatPrice(booking.finalAmount || booking.totalAmount)}
                       </span>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                      <Icon name="chevron_right" size={20} className="text-gray-400" />
                     </div>
                   </div>
                 </div>
@@ -915,8 +959,8 @@ export default function Bookings() {
 
       {/* Booking Detail Modal */}
       {selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-elevated animate-slide-up">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Booking Details</h2>
@@ -928,7 +972,7 @@ export default function Bookings() {
                   }} 
                   className="p-1 hover:bg-gray-100 rounded-lg"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <Icon name="close" size={20} className="text-gray-500" />
                 </button>
               </div>
               
@@ -944,12 +988,12 @@ export default function Bookings() {
                     {selectedBooking.salon?.businessName || 'Unknown Salon'}
                   </h3>
                   <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
-                    <MapPin className="w-4 h-4" />
+                    <Icon name="location_on" size={16} />
                     <span>{selectedBooking.salon?.address || 'Address not available'}</span>
                   </div>
                   {selectedBooking.salon?.phoneNumber && (
                     <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
-                      <Phone className="w-4 h-4" />
+                      <Icon name="call" size={16} />
                       <span>{selectedBooking.salon.phoneNumber}</span>
                     </div>
                   )}
@@ -1015,7 +1059,7 @@ export default function Bookings() {
                 {selectedBooking.isGroupBooking && selectedBooking.guests && selectedBooking.guests.length > 0 && (
                   <div className="bg-purple-50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Users className="w-5 h-5 text-purple-600" />
+                      <Icon name="group" size={20} className="text-purple-600" />
                       <h4 className="font-semibold text-gray-900">Group Members ({selectedBooking.totalPeople || selectedBooking.guests.length})</h4>
                     </div>
                     <div className="space-y-3">
@@ -1032,7 +1076,7 @@ export default function Bookings() {
                             </div>
                             {guest.checkedIn && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
-                                <CheckCircle className="w-3 h-3" />
+                                <Icon name="check_circle" size={12} />
                                 Checked in
                               </span>
                             )}
@@ -1061,7 +1105,7 @@ export default function Bookings() {
                 {selectedBooking.escrow && (
                   <div className="bg-blue-50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Shield className="w-5 h-5 text-blue-600" />
+                      <Icon name="verified_user" size={20} className="text-blue-600" />
                       <h4 className="font-semibold text-gray-900">Payment Status</h4>
                     </div>
                     <div className="space-y-2">
@@ -1073,9 +1117,9 @@ export default function Bookings() {
                           selectedBooking.escrow.status === 'REFUNDED' ? 'bg-blue-100 text-blue-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
-                          {selectedBooking.escrow.status === 'HELD' && <Shield className="w-3 h-3" />}
-                          {selectedBooking.escrow.status === 'RELEASED' && <CheckCircle className="w-3 h-3" />}
-                          {selectedBooking.escrow.status === 'REFUNDED' && <Ban className="w-3 h-3" />}
+                          {selectedBooking.escrow.status === 'HELD' && <Icon name="verified_user" size={12} />}
+                          {selectedBooking.escrow.status === 'RELEASED' && <Icon name="check_circle" size={12} />}
+                          {selectedBooking.escrow.status === 'REFUNDED' && <Icon name="block" size={12} />}
                           {selectedBooking.escrow.status === 'HELD' ? 'Held in Escrow' :
                            selectedBooking.escrow.status === 'RELEASED' ? 'Released to Provider' :
                            selectedBooking.escrow.status === 'REFUNDED' ? 'Refunded' :
@@ -1102,7 +1146,7 @@ export default function Bookings() {
                 {/* No-Show Warning */}
                 {selectedBooking.noShowFlag && (
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                    <Icon name="error" size={20} className="text-orange-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-orange-800">No-Show Flagged</p>
                       <p className="text-xs text-orange-600 mt-1">This booking was marked as a no-show.</p>
@@ -1113,7 +1157,7 @@ export default function Bookings() {
                 {/* Provider Cancelled Notice */}
                 {selectedBooking.providerCancelled && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                    <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <Icon name="close" size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-red-800">Cancelled by Provider</p>
                       <p className="text-xs text-red-600 mt-1">The salon cancelled this booking. You may be eligible for a full refund.</p>
@@ -1125,7 +1169,7 @@ export default function Bookings() {
                 {activeTab === 'upcoming' && selectedBooking.status === 'CONFIRMED' && hasAppointmentTimePassed(selectedBooking) && !selectedBooking.serviceCompleted && !selectedBooking.disputeRaised && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      <Icon name="warning" size={20} className="text-amber-600" />
                       <h4 className="font-semibold text-gray-900">Was your service completed?</h4>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">
@@ -1155,7 +1199,7 @@ export default function Bookings() {
                 {selectedBooking.disputeRaised && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <Icon name="warning" size={20} className="text-red-600" />
                       <h4 className="font-semibold text-red-800">Dispute Raised</h4>
                     </div>
                     {selectedBooking.disputeReason && (
@@ -1173,7 +1217,7 @@ export default function Bookings() {
                 {selectedBooking.serviceCompleted && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <Icon name="check_circle" size={20} className="text-green-600" />
                       <h4 className="font-semibold text-green-800">Service Completed</h4>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-green-700">
@@ -1206,7 +1250,7 @@ export default function Bookings() {
                           className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                           title="Copy code"
                         >
-                          <Copy className="w-5 h-5" />
+                          <Icon name="content_copy" size={20} />
                         </button>
                       </div>
                     </div>
@@ -1224,12 +1268,12 @@ export default function Bookings() {
                     >
                       {loadingQRCode ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Icon name="progress_activity" size={16} className="animate-spin" />
                           Loading QR Code...
                         </>
                       ) : (
                         <>
-                          <QrCode className="w-4 h-4" />
+                          <Icon name="qr_code" size={16} />
                           Show QR Code
                         </>
                       )}
@@ -1241,14 +1285,14 @@ export default function Bookings() {
                         className="flex-1 btn-secondary flex items-center justify-center gap-2"
                         onClick={openRescheduleModal}
                       >
-                        <RefreshCw className="w-4 h-4" />
+                        <Icon name="refresh" size={16} />
                         Reschedule
                       </button>
                       <button 
                         onClick={openCancellationModal}
                         className="flex-1 btn-primary bg-red-500 hover:bg-red-600 flex items-center justify-center gap-2"
                       >
-                        <X className="w-4 h-4" />
+                        <Icon name="close" size={16} />
                         Cancel
                       </button>
                     </div>
@@ -1262,14 +1306,14 @@ export default function Bookings() {
                       className="flex-1 btn-secondary flex items-center justify-center gap-2"
                       onClick={openRescheduleModal}
                     >
-                      <RefreshCw className="w-4 h-4" />
+                      <Icon name="refresh" size={16} />
                       Reschedule
                     </button>
                     <button 
                       onClick={openCancellationModal}
                       className="flex-1 btn-primary bg-red-500 hover:bg-red-600 flex items-center justify-center gap-2"
                     >
-                      <X className="w-4 h-4" />
+                      <Icon name="close" size={16} />
                       Cancel
                     </button>
                   </div>
@@ -1282,8 +1326,8 @@ export default function Bookings() {
 
       {/* Cancellation Modal */}
       {showCancellationModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-elevated animate-slide-up">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Cancel Booking</h2>
@@ -1291,13 +1335,13 @@ export default function Bookings() {
                   onClick={closeCancellationModal}
                   className="p-1 hover:bg-gray-100 rounded-lg"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <Icon name="close" size={20} className="text-gray-500" />
                 </button>
               </div>
 
               {loadingRefundPreview ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+                  <Icon name="progress_activity" size={32} className="text-green-600 animate-spin" />
                   <p className="mt-4 text-gray-500">Calculating refund...</p>
                 </div>
               ) : refundPreview ? (
@@ -1305,7 +1349,7 @@ export default function Bookings() {
                   {/* Refund Breakdown */}
                   <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                     <div className="flex items-center gap-2 mb-3">
-                      <Info className="w-5 h-5 text-blue-500" />
+                      <Icon name="info" size={20} className="text-blue-500" />
                       <h3 className="font-semibold text-gray-900">Refund Information</h3>
                     </div>
                     
@@ -1368,7 +1412,7 @@ export default function Bookings() {
                   {/* Warning for no refund */}
                   {refundPreview.refundPercentage === 0 && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                      <ShieldAlert className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <Icon name="gpp_maybe" size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-red-700">
                         You will not receive a refund for this cancellation as it's less than 12 hours before your appointment.
                       </p>
@@ -1405,7 +1449,7 @@ export default function Bookings() {
                     >
                       {cancelling ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Icon name="progress_activity" size={16} className="animate-spin" />
                           Cancelling...
                         </>
                       ) : refundPreview.refundPercentage > 0 ? (
@@ -1418,7 +1462,7 @@ export default function Bookings() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                  <Icon name="error" size={48} className="text-red-400 mx-auto mb-3" />
                   <p className="text-gray-600">Failed to load refund information</p>
                   <button 
                     onClick={openCancellationModal}
@@ -1435,8 +1479,8 @@ export default function Bookings() {
 
       {/* Reschedule Modal */}
       {showRescheduleModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-elevated animate-slide-up">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Reschedule Booking</h2>
@@ -1444,7 +1488,7 @@ export default function Bookings() {
                   onClick={closeRescheduleModal}
                   className="p-1 hover:bg-gray-100 rounded-lg"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <Icon name="close" size={20} className="text-gray-500" />
                 </button>
               </div>
 
@@ -1482,11 +1526,11 @@ export default function Bookings() {
                   </label>
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
+                      <Icon name="progress_activity" size={24} className="text-green-600 animate-spin" />
                     </div>
                   ) : availableSlots.length === 0 ? (
                     <div className="text-center py-6 bg-gray-50 rounded-lg">
-                      <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <Icon name="schedule" size={32} className="text-gray-300 mx-auto mb-2" />
                       <p className="text-sm text-gray-500">No available slots for this date</p>
                     </div>
                   ) : (
@@ -1531,12 +1575,12 @@ export default function Bookings() {
                   >
                     {rescheduling ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Icon name="progress_activity" size={16} className="animate-spin" />
                         Rescheduling...
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="w-4 h-4" />
+                        <Icon name="refresh" size={16} />
                         Confirm Reschedule
                       </>
                     )}
@@ -1550,8 +1594,8 @@ export default function Bookings() {
 
       {/* QR Code Modal */}
       {showQRCodeModal && selectedBooking && qrCodeData && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-sm w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-sm w-full shadow-elevated animate-slide-up">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Check-in QR Code</h2>
@@ -1562,7 +1606,7 @@ export default function Bookings() {
                   }}
                   className="p-1 hover:bg-gray-100 rounded-lg"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <Icon name="close" size={20} className="text-gray-500" />
                 </button>
               </div>
 
@@ -1599,7 +1643,7 @@ export default function Bookings() {
                         className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                         title="Copy code"
                       >
-                        <Copy className="w-5 h-5 text-gray-600" />
+                        <Icon name="content_copy" size={20} className="text-gray-600" />
                       </button>
                     </div>
                   </div>
@@ -1622,8 +1666,8 @@ export default function Bookings() {
 
       {/* Service Completion Confirmation Modal */}
       {showCompletionModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-elevated animate-scale-in">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Confirm Service Completion</h2>
@@ -1631,7 +1675,7 @@ export default function Bookings() {
                   onClick={() => setShowCompletionModal(false)}
                   className="p-1 hover:bg-gray-100 rounded-lg"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <Icon name="close" size={20} className="text-gray-500" />
                 </button>
               </div>
 
@@ -1670,12 +1714,12 @@ export default function Bookings() {
                   >
                     {confirmingCompletion ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Icon name="progress_activity" size={16} className="animate-spin" />
                         Confirming...
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-4 h-4" />
+                        <Icon name="check_circle" size={16} />
                         Yes, Release Payment
                       </>
                     )}
@@ -1689,8 +1733,8 @@ export default function Bookings() {
 
       {/* Dispute Modal */}
       {showDisputeModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-elevated animate-scale-in">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Report an Issue</h2>
@@ -1701,7 +1745,7 @@ export default function Bookings() {
                   }}
                   className="p-1 hover:bg-gray-100 rounded-lg"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <Icon name="close" size={20} className="text-gray-500" />
                 </button>
               </div>
 
@@ -1721,7 +1765,7 @@ export default function Bookings() {
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-2">
-                    <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <Icon name="info" size={20} className="text-blue-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm text-blue-800 font-medium">Payment Protected</p>
                       <p className="text-xs text-blue-600 mt-1">
@@ -1750,12 +1794,12 @@ export default function Bookings() {
                   >
                     {submittingDispute ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Icon name="progress_activity" size={16} className="animate-spin" />
                         Submitting...
                       </>
                     ) : (
                       <>
-                        <MessageSquare className="w-4 h-4" />
+                        <Icon name="chat" size={16} />
                         Submit Dispute
                       </>
                     )}

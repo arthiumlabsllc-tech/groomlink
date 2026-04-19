@@ -64,4 +64,56 @@ export const salonApi = {
     const response = await apiClient.put(`/salon/${salonId}/completion-settings`, settings);
     return response.data.data;
   },
+
+  // Upload salon logo
+  uploadLogo: async (salonId: string, uri: string): Promise<Salon> => {
+    const formData = new FormData();
+    formData.append('logo', {
+      uri,
+      type: 'image/jpeg',
+      name: 'logo.jpg',
+    } as any);
+    const response = await apiClient.post(`/uploads/salon/${salonId}/logo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  // Upload salon cover image
+  uploadCover: async (salonId: string, uri: string): Promise<Salon> => {
+    const formData = new FormData();
+    formData.append('cover', {
+      uri,
+      type: 'image/jpeg',
+      name: 'cover.jpg',
+    } as any);
+    const response = await apiClient.post(`/uploads/salon/${salonId}/cover`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  // Upload gallery images (max 5 per request)
+  uploadGalleryImages: async (salonId: string, uris: string[]): Promise<Salon> => {
+    const formData = new FormData();
+    uris.forEach((uri, index) => {
+      formData.append('images', {
+        uri,
+        type: 'image/jpeg',
+        name: `gallery_${index}.jpg`,
+      } as any);
+    });
+    const response = await apiClient.post(`/uploads/salon/${salonId}/gallery`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  // Delete a gallery image
+  deleteGalleryImage: async (salonId: string, imageUrl: string): Promise<Salon> => {
+    const response = await apiClient.delete(`/uploads/salon/${salonId}/gallery`, {
+      data: { imageUrl },
+    });
+    return response.data.data;
+  },
 };

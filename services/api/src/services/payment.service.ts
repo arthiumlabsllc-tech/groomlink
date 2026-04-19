@@ -24,62 +24,68 @@ export interface PaymentResult {
   paymentId?: string;
   reference?: string;
   message: string;
-  authorization_url?: string;
+  checkout_url?: string;
   access_code?: string;
 }
 
-export interface PaystackKeys {
-  publicKey: string;
-  secretKey: string;
-  isTestMode: boolean;
+export interface HubtelCredentials {
+  apiId: string;
+  apiSecret: string;
+  merchantAccountId: string;
 }
 
-// Helper function to get Paystack keys from SiteSettings with env var fallback
-async function getPaystackKeys(): Promise<PaystackKeys | null> {
+// Helper function to get Hubtel credentials from SiteSettings with env var fallback
+async function getHubtelCredentials(): Promise<HubtelCredentials | null> {
   const settings = await prisma.siteSettings.findUnique({
     where: { id: 'default' }
   });
   
-  // Check if SiteSettings has keys configured
-  const dbSecretKey = settings?.paystackSecretKey;
-  const dbPublicKey = settings?.paystackPublicKey;
+  // Check if SiteSettings has credentials configured
+  const dbApiId = (settings as any)?.hubtelApiId;
+  const dbApiSecret = (settings as any)?.hubtelApiSecret;
+  const dbMerchantAccountId = (settings as any)?.hubtelMerchantAccountId;
   
-  if (dbSecretKey && dbPublicKey) {
-    logger.info('Paystack keys loaded from SiteSettings', {
+  if (dbApiId && dbApiSecret && dbMerchantAccountId) {
+    logger.info('Hubtel credentials loaded from SiteSettings', {
       source: 'database',
-      isTestMode: settings.isPaymentTestMode
     });
     return {
-      publicKey: dbPublicKey,
-      secretKey: dbSecretKey,
-      isTestMode: settings.isPaymentTestMode,
+      apiId: dbApiId,
+      apiSecret: dbApiSecret,
+      merchantAccountId: dbMerchantAccountId,
     };
   }
   
   // Fall back to environment variables
-  const envSecretKey = process.env.PAYSTACK_SECRET_KEY;
-  const envPublicKey = process.env.PAYSTACK_PUBLIC_KEY;
+  const envApiId = process.env.HUBTEL_API_ID;
+  const envApiSecret = process.env.HUBTEL_API_SECRET;
+  const envMerchantAccountId = process.env.HUBTEL_MERCHANT_ACCOUNT_ID;
   
-  if (envSecretKey && envPublicKey) {
-    logger.info('Paystack keys loaded from environment variables', {
+  if (envApiId && envApiSecret && envMerchantAccountId) {
+    logger.info('Hubtel credentials loaded from environment variables', {
       source: 'env_vars',
-      isTestMode: envSecretKey.startsWith('sk_test_')
     });
     return {
-      publicKey: envPublicKey,
-      secretKey: envSecretKey,
-      isTestMode: envSecretKey.startsWith('sk_test_'),
+      apiId: envApiId,
+      apiSecret: envApiSecret,
+      merchantAccountId: envMerchantAccountId,
     };
   }
   
-  // Neither SiteSettings nor env vars have keys configured
-  logger.warn('Paystack keys not configured in SiteSettings or environment variables');
+  // Neither SiteSettings nor env vars have credentials configured
+  logger.warn('Hubtel credentials not configured in SiteSettings or environment variables');
   return null;
+}
+
+// Helper to build Hubtel Basic Auth header
+function getHubtelAuthHeader(apiId: string, apiSecret: string) {
+  const credentials = Buffer.from(`${apiId}:${apiSecret}`).toString('base64');
+  return { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/json' };
 }
 
 /**
  * Send all booking notifications after payment success
- * This is called from both verifyAndCompletePayment() and handlePaystackWebhook()
+ * This is called from both verifyAndCompletePayment() and handleHubtelWebhook()
  * to ensure consistent notification behavior regardless of payment path.
  */
 async function sendBookingNotificationsOnPaymentSuccess(params: {
@@ -311,7 +317,7 @@ async function sendBookingNotificationsOnPaymentSuccess(params: {
   logger.info(`Booking notifications sent for booking: ${bookingId}`);
 }
 
-// Mock payment provider implementations (fallback when Paystack is not configured)
+// Mock payment provider implementations (fallback when Hubtel is not configured)
 class MockPaymentProvider {
   static async initiateMTNMomo(phoneNumber: string, amount: number, reference: string): Promise<PaymentResult> {
     // Simulate API call delay
@@ -391,24 +397,24 @@ class MockPaymentProvider {
   }
 }
 
-// Paystack Payment Provider
-class PaystackPaymentProvider {
-  private static BASE_URL = 'https://api.paystack.co';
+// Hubtel Payment Provider
+class HubtelPaymentProvider {
+  private static BASE_URL = 'https://api.hubtel.com/v1/receivemoney';
 
   /**
-   * Map internal payment provider to Paystack mobile money provider code
+   * Map internal payment provider to Hubtel mobile money channel code
    */
-  private static getMobileMoneyProvider(provider: PaymentProvider): string {
-    const providerMap: Record<string, string> = {
-      [PaymentProvider.MTN_MOMO]: 'mtn',
-      [PaymentProvider.VODAFONE_CASH]: 'vod',
-      [PaymentProvider.AIRTELTIGO_MONEY]: 'tgo',
+  private static getChannel(provider: PaymentProvider): string {
+    const channelMap: Record<string, string> = {
+      [PaymentProvider.MTN_MOMO]: 'mtn-gh',
+      [PaymentProvider.VODAFONE_CASH]: 'vod-gh',
+      [PaymentProvider.AIRTELTIGO_MONEY]: 'tgo-gh',
     };
-    return providerMap[provider] || 'mtn';
+    return channelMap[provider] || 'mtn-gh';
   }
 
   /**
-   * Initialize a payment transaction with Paystack
+   * Initialize a payment transaction with Hubtel
    */
   static async initializePayment(
     amount: number,
@@ -416,125 +422,98 @@ class PaystackPaymentProvider {
     reference: string,
     bookingId: string,
     provider: PaymentProvider,
-    secretKey: string,
+    apiId: string,
+    apiSecret: string,
+    merchantAccountId: string,
     phoneNumber?: string
   ): Promise<PaymentResult> {
     try {
-      // Convert amount to pesewas (smallest currency unit for GHS)
-      const amountInPesewas = Math.round(amount * 100);
-      
-      // Map provider to Paystack mobile money channel
-      const channelMap: Record<string, string[]> = {
-        [PaymentProvider.MTN_MOMO]: ['mobile_money'],
-        [PaymentProvider.VODAFONE_CASH]: ['mobile_money'],
-        [PaymentProvider.AIRTELTIGO_MONEY]: ['mobile_money'],
-        [PaymentProvider.CASH]: [],
-      };
-      
-      const channels = channelMap[provider] || ['mobile_money'];
-      
-      // Build the request body
-      const requestBody: any = {
-        amount: amountInPesewas,
-        email,
-        reference,
-        channels,
-        callback_url: process.env.PAYSTACK_CALLBACK_URL || 'https://my.groomlinkgh.com/payment/verify',
-        metadata: {
-          bookingId,
-          provider,
-          custom_fields: [
-            {
-              display_name: 'Booking',
-              variable_name: 'booking_id',
-              value: bookingId,
-            },
-          ],
-        },
-      };
-      
-      // Add mobile_money object for Ghana mobile money payments
-      // This is critical for the MoMo prompt to appear on the customer's phone
-      if (channels.includes('mobile_money') && phoneNumber) {
-        const momoProvider = this.getMobileMoneyProvider(provider);
-        requestBody.mobile_money = {
-          phone: phoneNumber,
-          provider: momoProvider,
-        };
-        logger.info(`Mobile money payment configured for ${provider}`, { 
-          phone: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Mask phone for logging
-          momoProvider 
-        });
+      // Amount in GHS (cedis) — NOT pesewas
+      const channel = this.getChannel(provider);
+
+      // Ensure phone number has +233 prefix
+      let customerMsisdn = phoneNumber || '';
+      if (customerMsisdn && !customerMsisdn.startsWith('+')) {
+        customerMsisdn = `+${customerMsisdn}`;
       }
 
+      const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 'https://groomlinkgh.com/api/payments/webhook/hubtel';
+
+      const requestBody = {
+        CustomerName: email || 'Customer',
+        CustomerEmail: email,
+        CustomerMsisdn: customerMsisdn,
+        Channel: channel,
+        Amount: amount,
+        ClientReference: reference,
+        Description: `GroomLink Booking ${bookingId}`,
+        PrimaryCallbackUrl: webhookUrl,
+        SecondaryCallbackUrl: webhookUrl,
+      };
+
       const response = await axios.post(
-        `${this.BASE_URL}/transaction/initialize`,
+        `${this.BASE_URL}/receive`,
         requestBody,
         {
-          headers: {
-            Authorization: `Bearer ${secretKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers: getHubtelAuthHeader(apiId, apiSecret),
         }
       );
 
-      const { data } = response.data;
-      
-      logger.info(`Paystack payment initialized: ${reference}`, { bookingId });
-      
+      const data = response.data;
+
+      logger.info(`Hubtel payment initialized: ${reference}`, { bookingId });
+
       return {
         success: true,
-        reference: data.reference,
-        authorization_url: data.authorization_url,
-        access_code: data.access_code,
-        message: 'Payment initialized. Please complete payment.',
+        reference,
+        checkout_url: data?.checkoutUrl || data?.redirectUrl || undefined,
+        message: 'Payment initialized. Please complete payment on your phone.',
       };
     } catch (error: any) {
-      logger.error('Paystack initialize payment error:', {
+      logger.error('Hubtel initialize payment error:', {
         message: error.message,
         response: error.response?.data,
       });
 
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to initialize payment with Paystack',
+        message: error.response?.data?.message || 'Failed to initialize payment with Hubtel',
       };
     }
   }
 
   /**
-   * Verify a payment transaction with Paystack
+   * Verify a payment transaction with Hubtel
    */
   static async verifyPayment(
     reference: string,
-    secretKey: string
+    apiId: string,
+    apiSecret: string
   ): Promise<{ success: boolean; status: string; data: any }> {
     try {
       const response = await axios.get(
-        `${this.BASE_URL}/transaction/verify/${reference}`,
+        `${this.BASE_URL}/status?ClientReference=${reference}`,
         {
-          headers: {
-            Authorization: `Bearer ${secretKey}`,
-          },
+          headers: getHubtelAuthHeader(apiId, apiSecret),
         }
       );
 
-      const { data } = response.data;
-      const status = data.status;
-      
-      logger.info(`Paystack payment verified: ${reference}`, { status });
-      
+      const data = response.data;
+      const isSuccessful = data.Status === '0000' && data.Data?.TransactionStatus === 'success';
+
+      logger.info(`Hubtel payment verified: ${reference}`, { status: data.Status, transactionStatus: data.Data?.TransactionStatus });
+
       return {
-        success: status === 'success',
-        status,
+        success: isSuccessful,
+        status: isSuccessful ? 'success' : (data.Data?.TransactionStatus || 'unknown'),
         data,
       };
     } catch (error: any) {
-      logger.error('Paystack verify payment error:', {
+      logger.error('Hubtel verify payment error:', {
         message: error.message,
         response: error.response?.data,
       });
-      
+
       return {
         success: false,
         status: 'failed',
@@ -544,61 +523,19 @@ class PaystackPaymentProvider {
   }
 
   /**
-   * Verify webhook signature from Paystack
+   * Verify webhook signature from Hubtel
+   * Hubtel uses HMAC-SHA512 of request body with API secret
    */
   static verifyWebhookSignature(
     payload: string,
     signature: string,
-    secretKey: string
+    apiSecret: string
   ): boolean {
     const hash = crypto
-      .createHmac('sha512', secretKey)
+      .createHmac('sha512', apiSecret)
       .update(payload)
       .digest('hex');
     return hash === signature;
-  }
-
-  /**
-   * Initiate a refund with Paystack
-   */
-  static async refund(
-    transactionRef: string,
-    secretKey: string,
-    amount?: number
-  ): Promise<{ success: boolean; data?: any }> {
-    try {
-      const body: any = { transaction: transactionRef };
-      if (amount) {
-        body.amount = Math.round(amount * 100); // Convert to pesewas
-      }
-      
-      const response = await axios.post(
-        `${this.BASE_URL}/refund`,
-        body,
-        {
-          headers: {
-            Authorization: `Bearer ${secretKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      logger.info(`Paystack refund initiated: ${transactionRef}`);
-      
-      return {
-        success: true,
-        data: response.data.data,
-      };
-    } catch (error: any) {
-      logger.error('Paystack refund error:', {
-        message: error.message,
-        response: error.response?.data,
-      });
-      
-      return {
-        success: false,
-      };
-    }
   }
 }
 
@@ -690,9 +627,9 @@ export async function initializePayment(
     },
   });
 
-  // Check if Paystack is configured
-  const paystackKeys = await getPaystackKeys();
-  // Use totalChargeAmount which includes platform fee
+  // Check if Hubtel is configured
+  const hubtelCredentials = await getHubtelCredentials();
+  // Use totalChargeAmount which includes platform fee (already in GHS, NOT pesewas)
   const amount = totalChargeAmount;
 
   // Cash payment doesn't need payment gateway
@@ -714,27 +651,27 @@ export async function initializePayment(
 
   let result: PaymentResult;
 
-  // Use Paystack if keys are configured, otherwise fall back to mock
-  if (paystackKeys) {
+  // Use Hubtel if credentials are configured, otherwise fall back to mock
+  if (hubtelCredentials) {
     // Use customer email or generate a placeholder email
     const email = booking.customer?.email || `customer_${userId}@groomlink.temp`;
     
-    result = await PaystackPaymentProvider.initializePayment(
+    result = await HubtelPaymentProvider.initializePayment(
       amount,
       email,
       reference,
       bookingId,
       provider,
-      paystackKeys.secretKey,
+      hubtelCredentials.apiId,
+      hubtelCredentials.apiSecret,
+      hubtelCredentials.merchantAccountId,
       phoneNumber  // Pass phone number for mobile money prompt
     );
     
-    logger.info(`Paystack payment initiated for booking: ${bookingId}`, { 
-      mode: paystackKeys.isTestMode ? 'test' : 'live' 
-    });
+    logger.info(`Hubtel payment initiated for booking: ${bookingId}`);
   } else {
     // Fall back to mock provider
-    logger.warn('Paystack not configured, using mock payment provider');
+    logger.warn('Hubtel not configured, using mock payment provider');
     
     switch (provider) {
       case PaymentProvider.MTN_MOMO:
@@ -856,15 +793,16 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     };
   }
 
-  // Check if Paystack is configured
-  const paystackKeys = await getPaystackKeys();
+  // Check if Hubtel is configured
+  const hubtelCredentials = await getHubtelCredentials();
   let isSuccess = false;
 
-  if (paystackKeys) {
-    // Verify with Paystack
-    const verification = await PaystackPaymentProvider.verifyPayment(
+  if (hubtelCredentials) {
+    // Verify with Hubtel
+    const verification = await HubtelPaymentProvider.verifyPayment(
       reference,
-      paystackKeys.secretKey
+      hubtelCredentials.apiId,
+      hubtelCredentials.apiSecret
     );
     
     isSuccess = verification.success;
@@ -1114,7 +1052,7 @@ export async function getPaymentHistory(userId: string, page: number = 1, limit:
   return { payments, total };
 }
 
-// Find payment by provider reference (used when Paystack redirects with just the reference)
+// Find payment by provider reference (used when Hubtel redirects with just the reference)
 export async function findPaymentByReference(reference: string) {
   const payment = await prisma.payment.findFirst({
     where: { providerRef: reference },
@@ -1181,280 +1119,284 @@ export async function handlePaymentWebhook(provider: string, payload: any): Prom
   }
 }
 
-// Paystack webhook handler
-export async function handlePaystackWebhook(
+// Hubtel webhook handler
+export async function handleHubtelWebhook(
   rawBody: string,
   signature: string
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // Get Paystack keys for signature verification
-    const paystackKeys = await getPaystackKeys();
+    // Get Hubtel credentials for signature verification
+    const hubtelCredentials = await getHubtelCredentials();
     
-    if (!paystackKeys) {
-      logger.warn('Paystack webhook received but keys not configured');
-      return { success: false, message: 'Paystack not configured' };
+    if (!hubtelCredentials) {
+      logger.warn('Hubtel webhook received but credentials not configured');
+      return { success: false, message: 'Hubtel not configured' };
     }
 
-    // Verify webhook signature
-    const isValid = PaystackPaymentProvider.verifyWebhookSignature(
+    // Verify webhook signature (Hubtel uses HMAC-SHA512 with API secret)
+    const isValid = HubtelPaymentProvider.verifyWebhookSignature(
       rawBody,
       signature,
-      paystackKeys.secretKey
+      hubtelCredentials.apiSecret
     );
 
     if (!isValid) {
-      logger.warn('Paystack webhook signature verification failed');
+      logger.warn('Hubtel webhook signature verification failed');
       return { success: false, message: 'Invalid signature' };
     }
 
     const payload = JSON.parse(rawBody);
-    const event = payload.event;
-    const data = payload.data;
+    const clientReference = payload.ClientReference;
+    const transactionId = payload.TransactionId;
+    const transactionStatus = payload.TransactionStatus;
+    const status = payload.Status;
 
-    logger.info(`Paystack webhook event: ${event}`, { reference: data?.reference });
+    logger.info(`Hubtel webhook event: Status=${status}, TransactionStatus=${transactionStatus}`, { clientReference });
 
-    // Handle different event types
-    switch (event) {
-      case 'charge.success': {
-        const payment = await prisma.payment.findFirst({
-          where: { providerRef: data.reference },
-          include: {
-            booking: {
-              include: {
-                salon: {
-                  select: {
-                    id: true,
-                    businessName: true,
-                    address: true,
-                    phoneNumber: true,
-                    owner: {
-                      select: {
-                        id: true,
-                        email: true,
-                      },
+    // Handle success: Status === "0000" or TransactionStatus === "success"
+    if ((status === '0000' || transactionStatus === 'success') && clientReference) {
+      const payment = await prisma.payment.findFirst({
+        where: { providerRef: clientReference },
+        include: {
+          booking: {
+            include: {
+              salon: {
+                select: {
+                  id: true,
+                  businessName: true,
+                  address: true,
+                  phoneNumber: true,
+                  owner: {
+                    select: {
+                      id: true,
+                      email: true,
                     },
                   },
                 },
-                service: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
+              },
+              service: {
+                select: {
+                  id: true,
+                  name: true,
                 },
-                worker: {
-                  select: {
-                    fullName: true,
-                  },
+              },
+              worker: {
+                select: {
+                  fullName: true,
                 },
-                customer: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                    phoneNumber: true,
-                  },
+              },
+              customer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  phoneNumber: true,
                 },
               },
             },
           },
+        },
+      });
+
+      if (payment) {
+        const completedAt = new Date();
+        
+        // Update payment status and store hubtelTransactionId
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.SUCCESS,
+            completedAt,
+            providerData: {
+              ...((payment.providerData as any) || {}),
+              hubtelTransactionId: transactionId,
+              hubtelPayload: payload,
+            },
+          },
         });
 
-        if (payment) {
-          const completedAt = new Date();
-          
-          // Update payment status
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: PaymentStatus.SUCCESS,
-              completedAt,
-              providerData: data,
-            },
-          });
+        // Send payment receipt emails (fire-and-forget)
+        const booking = payment.booking;
 
-          // Send payment receipt emails (fire-and-forget)
-          const booking = payment.booking;
+        // Calculate cancellation deadline based on policy
+        let cancellationDeadline: Date | undefined;
+        try {
+          const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
+          const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
+          const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
+          cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
+        } catch (policyError) {
+          logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
+          const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
+          cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
+        }
 
-          // Calculate cancellation deadline based on policy
-          let cancellationDeadline: Date | undefined;
-          try {
-            const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
-            const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
-            const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
-            cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
-          } catch (policyError) {
-            logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
-            const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
-            cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
-          }
+        // Update booking status with escrow fields
+        await prisma.booking.update({
+          where: { id: payment.bookingId },
+          data: { 
+            status: 'CONFIRMED',
+            cancellationDeadline,
+            refundEligible: true,
+            refundPercentage: 100,
+          },
+        });
 
-          // Update booking status with escrow fields
-          await prisma.booking.update({
-            where: { id: payment.bookingId },
-            data: { 
-              status: 'CONFIRMED',
-              cancellationDeadline,
-              refundEligible: true,
-              refundPercentage: 100,
-            },
-          });
+        logger.info(`Payment completed via webhook: ${payment.id}`);
 
-          logger.info(`Payment completed via webhook: ${payment.id}`);
-
-          // Create escrow account (non-blocking - don't let escrow failures break payment flow)
-          try {
-            await escrowService.createEscrow({
-              bookingId: booking.id,
-              customerId: booking.customer.id,
-              providerId: booking.salon.owner?.id || booking.salon.id,
-              salonId: booking.salon.id,
-              amount: Number(payment.amount),
-              paymentTransactionId: payment.providerRef || undefined,
-            });
-            logger.info(`Escrow created for booking: ${booking.id}`);
-          } catch (escrowError) {
-            logger.error('Failed to create escrow after payment success:', { 
-              paymentId: payment.id, 
-              bookingId: payment.bookingId, 
-              error: escrowError 
-            });
-            // Don't throw - payment is still successful even if escrow creation fails
-          }
-
-          // Send ALL booking notifications (email, SMS, check-in code, socket events)
-          // This is the ONLY place these notifications should be sent - after payment success
-          sendBookingNotificationsOnPaymentSuccess({
+        // Create escrow account (non-blocking - don't let escrow failures break payment flow)
+        try {
+          await escrowService.createEscrow({
             bookingId: booking.id,
+            customerId: booking.customer.id,
+            providerId: booking.salon.owner?.id || booking.salon.id,
             salonId: booking.salon.id,
-            salonName: booking.salon.businessName,
-            salonAddress: booking.salon.address,
-            salonPhone: booking.salon.phoneNumber,
-            serviceName: booking.service.name,
-            workerName: booking.worker?.fullName,
-            customer: {
-              id: booking.customer.id,
-              firstName: booking.customer.firstName,
-              lastName: booking.customer.lastName,
-              email: booking.customer.email,
-              phoneNumber: booking.customer.phoneNumber,
-            },
-            salonOwnerId: booking.salon.owner?.id,
-            salonOwnerEmail: booking.salon.owner?.email,
-            date: booking.date,
-            startTime: booking.startTime,
-            endTime: booking.endTime,
-            totalAmount: Number(booking.totalAmount),
-            finalAmount: Number(booking.finalAmount),
-            customerNotes: booking.customerNotes,
-            isGroupBooking: booking.isGroupBooking,
-            totalPeople: booking.totalPeople,
-          }).catch((err) => {
-            logger.error('Failed to send booking notifications after payment success', { bookingId: booking.id, err });
+            amount: Number(payment.amount),
+            paymentTransactionId: payment.providerRef || undefined,
           });
-
-          const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
-          const paymentMethod = payment.provider.replace(/_/g, ' ');
-
-          // Send to customer
-          if (booking.customer.email) {
-            emailService.sendPaymentReceiptEmail(
-              booking.customer.email,
-              {
-                customerName: customerFullName,
-                bookingReference: booking.id,
-                paymentReference: payment.providerRef || undefined,
-                salonName: booking.salon.businessName,
-                serviceName: booking.service.name,
-                date: booking.date.toISOString(),
-                startTime: booking.startTime,
-                amount: Number(payment.amount),
-                currency: payment.currency,
-                paymentMethod,
-                paidAt: completedAt.toISOString(),
-              }
-            ).catch((err) => logger.error('Failed to send payment receipt email to customer', { err }));
-          }
-
-          // Send to salon owner
-          if (booking.salon.owner?.email) {
-            emailService.sendPaymentReceivedNotificationEmail(
-              booking.salon.owner.email,
-              {
-                customerName: customerFullName,
-                bookingReference: booking.id,
-                paymentReference: payment.providerRef || undefined,
-                serviceName: booking.service.name,
-                date: booking.date.toISOString(),
-                startTime: booking.startTime,
-                amount: Number(payment.amount),
-                currency: payment.currency,
-                paymentMethod,
-                paidAt: completedAt.toISOString(),
-              }
-            ).catch((err) => logger.error('Failed to send payment received notification email to salon owner', { err }));
-          }
+          logger.info(`Escrow created for booking: ${booking.id}`);
+        } catch (escrowError) {
+          logger.error('Failed to create escrow after payment success:', { 
+            paymentId: payment.id, 
+            bookingId: payment.bookingId, 
+            error: escrowError 
+          });
+          // Don't throw - payment is still successful even if escrow creation fails
         }
-        break;
-      }
 
-      case 'charge.failed': {
-        const payment = await prisma.payment.findFirst({
-          where: { providerRef: data.reference },
-          include: {
-            booking: {
-              include: {
-                customer: {
-                  select: {
-                    id: true,
-                    phoneNumber: true,
-                  },
+        // Send ALL booking notifications (email, SMS, check-in code, socket events)
+        // This is the ONLY place these notifications should be sent - after payment success
+        sendBookingNotificationsOnPaymentSuccess({
+          bookingId: booking.id,
+          salonId: booking.salon.id,
+          salonName: booking.salon.businessName,
+          salonAddress: booking.salon.address,
+          salonPhone: booking.salon.phoneNumber,
+          serviceName: booking.service.name,
+          workerName: booking.worker?.fullName,
+          customer: {
+            id: booking.customer.id,
+            firstName: booking.customer.firstName,
+            lastName: booking.customer.lastName,
+            email: booking.customer.email,
+            phoneNumber: booking.customer.phoneNumber,
+          },
+          salonOwnerId: booking.salon.owner?.id,
+          salonOwnerEmail: booking.salon.owner?.email,
+          date: booking.date,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          totalAmount: Number(booking.totalAmount),
+          finalAmount: Number(booking.finalAmount),
+          customerNotes: booking.customerNotes,
+          isGroupBooking: booking.isGroupBooking,
+          totalPeople: booking.totalPeople,
+        }).catch((err) => {
+          logger.error('Failed to send booking notifications after payment success', { bookingId: booking.id, err });
+        });
+
+        const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
+        const paymentMethod = payment.provider.replace(/_/g, ' ');
+
+        // Send to customer
+        if (booking.customer.email) {
+          emailService.sendPaymentReceiptEmail(
+            booking.customer.email,
+            {
+              customerName: customerFullName,
+              bookingReference: booking.id,
+              paymentReference: payment.providerRef || undefined,
+              salonName: booking.salon.businessName,
+              serviceName: booking.service.name,
+              date: booking.date.toISOString(),
+              startTime: booking.startTime,
+              amount: Number(payment.amount),
+              currency: payment.currency,
+              paymentMethod,
+              paidAt: completedAt.toISOString(),
+            }
+          ).catch((err) => logger.error('Failed to send payment receipt email to customer', { err }));
+        }
+
+        // Send to salon owner
+        if (booking.salon.owner?.email) {
+          emailService.sendPaymentReceivedNotificationEmail(
+            booking.salon.owner.email,
+            {
+              customerName: customerFullName,
+              bookingReference: booking.id,
+              paymentReference: payment.providerRef || undefined,
+              serviceName: booking.service.name,
+              date: booking.date.toISOString(),
+              startTime: booking.startTime,
+              amount: Number(payment.amount),
+              currency: payment.currency,
+              paymentMethod,
+              paidAt: completedAt.toISOString(),
+            }
+          ).catch((err) => logger.error('Failed to send payment received notification email to salon owner', { err }));
+        }
+      }
+    } else if (transactionStatus === 'failed' && clientReference) {
+      // Handle failed payment
+      const payment = await prisma.payment.findFirst({
+        where: { providerRef: clientReference },
+        include: {
+          booking: {
+            include: {
+              customer: {
+                select: {
+                  id: true,
+                  phoneNumber: true,
                 },
               },
             },
           },
+        },
+      });
+
+      if (payment) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.FAILED,
+            providerData: {
+              ...((payment.providerData as any) || {}),
+              hubtelTransactionId: transactionId,
+              hubtelPayload: payload,
+            },
+          },
         });
 
-        if (payment) {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: PaymentStatus.FAILED,
-              providerData: data,
-            },
-          });
+        // Update booking with failure reason and increment retry count
+        await prisma.booking.update({
+          where: { id: payment.bookingId },
+          data: {
+            paymentFailedReason: payload.Reason || 'Payment failed',
+            paymentRetryCount: { increment: 1 },
+          },
+        });
 
-          // Update booking with failure reason and increment retry count
-          await prisma.booking.update({
-            where: { id: payment.bookingId },
-            data: {
-              paymentFailedReason: data.gateway_response || 'Payment failed',
-              paymentRetryCount: { increment: 1 },
-            },
-          });
+        logger.info(`Payment failed via webhook: ${payment.id}`);
 
-          logger.info(`Payment failed via webhook: ${payment.id}`);
-
-          // Send failure SMS to customer if phone number is available
-          const booking = payment.booking;
-          if (booking?.customer?.phoneNumber) {
-            const failureMessage = `GroomLink: Payment failed for your booking. Please try again. Ref: ${booking.reference}`;
-            smsService.sendSMS({
-              to: booking.customer.phoneNumber,
-              message: failureMessage,
-            }).catch((err) => logger.error('Failed to send payment failure SMS to customer', { err }));
-          }
+        // Send failure SMS to customer if phone number is available
+        const booking = payment.booking;
+        if (booking?.customer?.phoneNumber) {
+          const failureMessage = `GroomLink: Payment failed for your booking. Please try again. Ref: ${booking.reference}`;
+          smsService.sendSMS({
+            to: booking.customer.phoneNumber,
+            message: failureMessage,
+          }).catch((err) => logger.error('Failed to send payment failure SMS to customer', { err }));
         }
-        break;
       }
-
-      default:
-        logger.info(`Unhandled Paystack event: ${event}`);
+    } else {
+      logger.info(`Unhandled Hubtel webhook: Status=${status}, TransactionStatus=${transactionStatus}`);
     }
 
     return { success: true, message: 'Webhook processed' };
   } catch (error) {
-    logger.error('Paystack webhook error:', error);
+    logger.error('Hubtel webhook error:', error);
     return { success: false, message: 'Webhook processing failed' };
   }
 }
@@ -1525,16 +1467,16 @@ export async function completeServiceAndRelease(bookingId: string): Promise<{ bo
   }
 }
 
-// Export PaystackPaymentProvider for direct use (e.g., refunds)
-export { PaystackPaymentProvider, getPaystackKeys };
+// Export HubtelPaymentProvider and credential helper for direct use
+export { HubtelPaymentProvider, getHubtelCredentials };
 
 /**
- * Verify a payment with Paystack by reference
+ * Verify a payment with Hubtel by reference
  * This is a reusable function that can be used by both the existing verify flow AND admin sync
- * @param reference - The Paystack transaction reference
- * @returns The Paystack verification response data (status, amount, etc.)
+ * @param reference - The Hubtel client reference
+ * @returns The Hubtel verification response data (status, amount, etc.)
  */
-export async function verifyPaymentWithPaystack(reference: string): Promise<{
+export async function verifyPaymentWithHubtel(reference: string): Promise<{
   success: boolean;
   status: string;
   amount?: number;
@@ -1546,47 +1488,46 @@ export async function verifyPaymentWithPaystack(reference: string): Promise<{
   error?: string;
 }> {
   try {
-    const paystackKeys = await getPaystackKeys();
+    const hubtelCredentials = await getHubtelCredentials();
     
-    if (!paystackKeys) {
-      logger.warn('Paystack keys not configured, cannot verify payment');
+    if (!hubtelCredentials) {
+      logger.warn('Hubtel credentials not configured, cannot verify payment');
       return {
         success: false,
         status: 'error',
-        error: 'Paystack not configured',
+        error: 'Hubtel not configured',
       };
     }
 
     const response = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
+      `https://api.hubtel.com/v1/receivemoney/status?ClientReference=${reference}`,
       {
-        headers: {
-          Authorization: `Bearer ${paystackKeys.secretKey}`,
-        },
+        headers: getHubtelAuthHeader(hubtelCredentials.apiId, hubtelCredentials.apiSecret),
       }
     );
 
-    const { data } = response.data;
-    const status = data.status;
+    const data = response.data;
+    const isSuccessful = data.Status === '0000' && data.Data?.TransactionStatus === 'success';
+    const status = isSuccessful ? 'success' : (data.Data?.TransactionStatus || data.Status || 'unknown');
     
-    logger.info(`Paystack payment verified via API: ${reference}`, { 
-      status,
-      amount: data.amount,
-      currency: data.currency,
+    logger.info(`Hubtel payment verified via API: ${reference}`, { 
+      status: data.Status,
+      transactionStatus: data.Data?.TransactionStatus,
+      amount: data.Data?.Amount,
     });
     
     return {
-      success: status === 'success',
+      success: isSuccessful,
       status,
-      amount: data.amount ? data.amount / 100 : undefined, // Convert from pesewas
-      currency: data.currency,
-      gatewayResponse: data.gateway_response,
-      paidAt: data.paid_at,
-      channel: data.channel,
+      amount: data.Data?.Amount, // Already in GHS, no conversion needed
+      currency: 'GHS',
+      gatewayResponse: data.Data?.TransactionStatus,
+      paidAt: data.Data?.TransactionDate,
+      channel: data.Data?.Channel,
       data,
     };
   } catch (error: any) {
-    logger.error('Paystack verify payment API error:', {
+    logger.error('Hubtel verify payment API error:', {
       reference,
       message: error.message,
       response: error.response?.data,
@@ -1595,7 +1536,7 @@ export async function verifyPaymentWithPaystack(reference: string): Promise<{
     return {
       success: false,
       status: 'error',
-      error: error.response?.data?.message || error.message || 'Failed to verify payment with Paystack',
+      error: error.response?.data?.message || error.message || 'Failed to verify payment with Hubtel',
     };
   }
 }
@@ -1649,12 +1590,12 @@ export async function cleanupOrphanedPayments(): Promise<{
   for (const payment of orphanedPayments) {
     try {
       if (payment.status === PaymentStatus.PROCESSING && payment.providerRef) {
-        // For PROCESSING payments: try to verify with Paystack first
-        const verification = await verifyPaymentWithPaystack(payment.providerRef);
+        // For PROCESSING payments: try to verify with Hubtel first
+        const verification = await verifyPaymentWithHubtel(payment.providerRef);
         
         if (verification.success && verification.status === 'success') {
-          // Payment was actually successful on Paystack - complete it normally
-          logger.info(`Orphaned payment ${payment.id} verified as successful via Paystack`, {
+          // Payment was actually successful on Hubtel - complete it normally
+          logger.info(`Orphaned payment ${payment.id} verified as successful via Hubtel`, {
             reference: payment.providerRef,
           });
           
@@ -1686,17 +1627,17 @@ export async function cleanupOrphanedPayments(): Promise<{
           
           continue;
         } else {
-          // Paystack says failed or not found - mark as FAILED
-          logger.info(`Orphaned PROCESSING payment ${payment.id} marked as failed after Paystack verification`, {
+          // Hubtel says failed or not found - mark as FAILED
+          logger.info(`Orphaned PROCESSING payment ${payment.id} marked as failed after Hubtel verification`, {
             reference: payment.providerRef,
-            paystackStatus: verification.status,
+            hubtelStatus: verification.status,
           });
           
           await prisma.payment.update({
             where: { id: payment.id },
             data: {
               status: PaymentStatus.FAILED,
-              providerData: verification.data || { cleanupReason: 'Orphaned - Paystack verification failed' },
+              providerData: verification.data || { cleanupReason: 'Orphaned - Hubtel verification failed' },
             },
           });
           
@@ -1763,3 +1704,4 @@ export async function cleanupOrphanedPayments(): Promise<{
   
   return summary;
 }
+

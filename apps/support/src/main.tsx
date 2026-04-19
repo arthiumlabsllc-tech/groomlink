@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 import './index.css'
 
+// Remove the initial HTML loader once React mounts
+document.getElementById('app-loader')?.remove();
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

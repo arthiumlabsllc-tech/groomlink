@@ -1,12 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Bell, Search, Menu, Check, BellOff, User, Calendar, X, CreditCard, Star, Tag, AlertCircle } from 'lucide-react';
+import Icon from './Icon';
 import { useNotificationStore, Notification, NotificationType } from '../store/notifications';
 import { useAuthStore } from '../store/auth';
 import { Link } from 'react-router-dom';
-
-interface HeaderProps {
-  onMenuToggle?: () => void;
-}
 
 // Helper function to format relative time
 function formatRelativeTime(dateString: string): string {
@@ -27,25 +23,23 @@ function formatRelativeTime(dateString: string): string {
 
 // Get icon for notification type
 function getNotificationIcon(type: NotificationType) {
-  const iconProps = { className: 'w-5 h-5' };
-  
   switch (type) {
     case 'BOOKING_CONFIRMED':
     case 'BOOKING_REMINDER':
-      return <Calendar {...iconProps} className="w-5 h-5 text-green-500" />;
+      return <Icon name="calendar_today" size={20} className="text-green-500" />;
     case 'BOOKING_CANCELLED':
-      return <X {...iconProps} className="w-5 h-5 text-red-500" />;
+      return <Icon name="close" size={20} className="text-red-500" />;
     case 'BOOKING_COMPLETED':
-      return <Check {...iconProps} className="w-5 h-5 text-blue-500" />;
+      return <Icon name="check" size={20} className="text-blue-500" />;
     case 'PAYMENT_RECEIVED':
-      return <CreditCard {...iconProps} className="w-5 h-5 text-emerald-500" />;
+      return <Icon name="credit_card" size={20} className="text-emerald-500" />;
     case 'REVIEW_REQUEST':
-      return <Star {...iconProps} className="w-5 h-5 text-yellow-500" />;
+      return <Icon name="star" size={20} className="text-yellow-500" />;
     case 'PROMOTION':
-      return <Tag {...iconProps} className="w-5 h-5 text-purple-500" />;
+      return <Icon name="label" size={20} className="text-purple-500" />;
     case 'SYSTEM':
     default:
-      return <AlertCircle {...iconProps} className="w-5 h-5 text-gray-500" />;
+      return <Icon name="error" size={20} className="text-gray-500" />;
   }
 }
 
@@ -59,8 +53,8 @@ function NotificationItem({
 }) {
   return (
     <div
-      className={`p-3 cursor-pointer transition-colors hover:bg-gray-50 ${
-        !notification.isRead ? 'bg-blue-50/50' : ''
+      className={`p-3 cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
+        !notification.isRead ? 'border-l-2 border-l-[#CE1126] bg-gray-50/30' : 'border-l-2 border-l-transparent'
       }`}
       onClick={() => !notification.isRead && onMarkRead(notification.id)}
     >
@@ -74,7 +68,7 @@ function NotificationItem({
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-medium text-gray-900">{notification.title}</p>
             {!notification.isRead && (
-              <div className="w-2 h-2 mt-1.5 bg-primary-500 rounded-full flex-shrink-0" />
+              <div className="w-2 h-2 mt-1.5 bg-[#CE1126] rounded-full flex-shrink-0" />
             )}
           </div>
           <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">{notification.message}</p>
@@ -85,7 +79,7 @@ function NotificationItem({
   );
 }
 
-export default function Header({ onMenuToggle }: HeaderProps) {
+export default function Header() {
   const { isAuthenticated, user } = useAuthStore();
   const { 
     notifications, 
@@ -137,39 +131,28 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
-      <div className="flex items-center justify-between">
-        {/* Mobile Menu Button & Search */}
-        <div className="flex items-center gap-2 flex-1 max-w-xl">
-          {/* Mobile menu button */}
-          <button
-            onClick={onMenuToggle}
-            className="p-2 rounded-lg hover:bg-gray-100 md:hidden transition-colors"
-          >
-            <Menu size={20} className="text-gray-600" />
-          </button>
-          
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search salons, services..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-            />
-          </div>
-        </div>
+    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-40 h-14">
+      <div className="flex items-center justify-between h-full px-4 max-w-7xl mx-auto">
+        {/* Logo */}
+        <Link to="/dashboard" className="flex items-center gap-2 transition-all duration-200 hover:opacity-80">
+          <img 
+            src="/logo-black.png" 
+            alt="GroomLink" 
+            className="h-7 w-auto"
+          />
+        </Link>
 
         {/* Right Side */}
-        <div className="flex items-center gap-3 md:gap-4 ml-3 md:ml-6 relative">
+        <div className="flex items-center gap-2 relative">
           {/* Notifications */}
           <button 
             ref={bellRef}
             onClick={toggleDropdown}
-            className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-full transition-all duration-200"
           >
-            <Bell className="w-5 h-5" />
+            <Icon name="notifications" size={20} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+              <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 bg-[#CE1126] text-white text-xs font-medium rounded-full flex items-center justify-center px-1">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -179,37 +162,30 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           {isDropdownOpen && (
             <div 
               ref={dropdownRef}
-              className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+              className="absolute right-0 top-full mt-2 w-80 sm:w-96 card-v2 shadow-elevated overflow-hidden z-50 animate-scale-in"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                 <h3 className="font-semibold text-gray-900">Notifications</h3>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <>
-                      <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
-                        {unreadCount} unread
-                      </span>
-                      <button
-                        onClick={handleMarkAllAsRead}
-                        className="text-xs text-gray-500 hover:text-primary-600 transition-colors"
-                      >
-                        Mark all read
-                      </button>
-                    </>
-                  )}
-                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-xs text-gray-500 hover:text-[#CE1126] transition-all duration-200"
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
 
               {/* Content */}
               <div className="max-h-[300px] overflow-y-auto">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 border-[#CE1126] border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : notifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                    <BellOff className="w-10 h-10 mb-2 text-gray-300" />
+                    <Icon name="notifications_off" size={40} className="mb-2 text-gray-300" />
                     <p className="text-sm">No notifications yet</p>
                   </div>
                 ) : (
@@ -231,9 +207,10 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                   <Link
                     to="/notifications"
                     onClick={closeDropdown}
-                    className="block text-center py-2.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-gray-600 hover:text-[#CE1126] hover:bg-gray-100 transition-all duration-200"
                   >
-                    View all notifications
+                    See all
+                    <Icon name="arrow_forward" size={14} />
                   </Link>
                 </div>
               )}
@@ -241,8 +218,11 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           )}
 
           {/* User Avatar */}
-          <Link to="/profile" className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 md:w-9 md:h-9 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+          <Link 
+            to="/profile" 
+            className="p-1 rounded-full transition-all duration-200 hover:ring-2 hover:ring-gray-200"
+          >
+            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
               {user?.avatar ? (
                 <img 
                   src={user.avatar} 
@@ -250,12 +230,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User className="w-5 h-5 text-primary-600" />
+                <Icon name="person" size={16} className="text-gray-500" />
               )}
             </div>
-            <span className="text-sm text-gray-600 font-medium hidden sm:inline">
-              {user?.firstName ? `${user.firstName}${user.lastName ? ' ' + user.lastName.charAt(0) + '.' : ''}` : 'User'}
-            </span>
           </Link>
         </div>
       </div>

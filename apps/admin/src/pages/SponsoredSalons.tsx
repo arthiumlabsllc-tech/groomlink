@@ -1,20 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Star,
-  Plus,
-  Search,
-  X,
-  Loader2,
-  AlertCircle,
-  Store,
-  Clock,
-  Calendar,
-  CreditCard,
-  Trash2,
-  Package,
-  Check,
-  ChevronDown,
-} from 'lucide-react';
+import Icon from '../components/Icon';
 import {
   useSponsoredSalons,
   useSponsorshipPackages,
@@ -73,7 +58,7 @@ export function SponsoredSalons() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -82,27 +67,28 @@ export function SponsoredSalons() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center justify-center px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] transition-colors font-medium"
+          className="btn-ripple inline-flex items-center justify-center px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium"
         >
-          <Plus size={20} className="mr-2" />
+          <Icon name="add" size={20} className="mr-2" />
           Add Sponsored Salon
         </button>
       </div>
 
       {/* Active Sponsorships List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="card-v2 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Active Sponsorships</h2>
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-[#006B3F]" />
+          <div className="p-6 space-y-4">
+            <div className="skeleton-shimmer h-8 w-48" />
+            {[1,2,3,4,5].map(i => <div key={i} className="skeleton-shimmer h-14 w-full" />)}
           </div>
         ) : sponsorships.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <Star className="w-8 h-8 text-gray-400" />
+              <Icon name="star" className="w-8 h-8 text-gray-400" size={32} />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-1">No Active Sponsorships</h3>
             <p className="text-gray-500 max-w-sm">
@@ -152,7 +138,7 @@ export function SponsoredSalons() {
                                 className="w-10 h-10 rounded-lg object-cover"
                               />
                             ) : (
-                              <Store className="w-5 h-5 text-gray-400" />
+                              <Icon name="storefront" className="w-5 h-5 text-gray-400" size={20} />
                             )}
                           </div>
                           <div className="ml-4">
@@ -167,7 +153,7 @@ export function SponsoredSalons() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSponsorTypeColor(
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border-l-2 ${getSponsorTypeColor(
                             sponsorship.sponsorType
                           )}`}
                         >
@@ -176,14 +162,14 @@ export function SponsoredSalons() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center text-sm text-gray-900">
-                          <Clock className="w-4 h-4 mr-1.5 text-gray-400" />
+                          <Icon name="schedule" className="w-4 h-4 mr-1.5 text-gray-400" size={16} />
                           {formatDuration(sponsorship.durationHours)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
                           <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1.5 text-gray-400" />
+                            <Icon name="calendar_today" className="w-4 h-4 mr-1.5 text-gray-400" size={16} />
                             {formatDate(sponsorship.startTime).split(',')[0]}
                           </div>
                           <div className="text-gray-500 text-xs mt-0.5">
@@ -193,7 +179,7 @@ export function SponsoredSalons() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center text-sm text-gray-900">
-                          <CreditCard className="w-4 h-4 mr-1.5 text-gray-400" />
+                          <Icon name="credit_card" className="w-4 h-4 mr-1.5 text-gray-400" size={16} />
                           {sponsorship.amountPaid
                             ? formatCurrency(sponsorship.amountPaid)
                             : 'Free'}
@@ -201,10 +187,10 @@ export function SponsoredSalons() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border-l-2 ${
                             sponsorship.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
+                              ? 'bg-green-100 text-green-800 border-l-green-500'
+                              : 'bg-gray-100 text-gray-800 border-l-gray-400'
                           }`}
                         >
                           {sponsorship.isActive ? 'Active' : 'Expired'}
@@ -213,10 +199,10 @@ export function SponsoredSalons() {
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => openRemoveModal(sponsorship.id)}
-                          className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          className="btn-ripple text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
                           title="Remove sponsorship"
                         >
-                          <Trash2 size={18} />
+                          <Icon name="delete" size={18} />
                         </button>
                       </td>
                     </tr>
@@ -239,7 +225,7 @@ export function SponsoredSalons() {
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                         ) : (
-                          <Store className="w-6 h-6 text-gray-400" />
+                          <Icon name="storefront" className="w-6 h-6 text-gray-400" size={24} />
                         )}
                       </div>
                       <div className="ml-3">
@@ -251,24 +237,24 @@ export function SponsoredSalons() {
                     </div>
                     <button
                       onClick={() => openRemoveModal(sponsorship.id)}
-                      className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      className="btn-ripple text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      <Trash2 size={18} />
+                      <Icon name="delete" size={18} />
                     </button>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getSponsorTypeColor(
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border-l-2 ${getSponsorTypeColor(
                         sponsorship.sponsorType
                       )}`}
                     >
                       {formatSponsorType(sponsorship.sponsorType)}
                     </span>
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border-l-2 ${
                         sponsorship.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-green-100 text-green-800 border-l-green-500'
+                          : 'bg-gray-100 text-gray-800 border-l-gray-400'
                       }`}
                     >
                       {sponsorship.isActive ? 'Active' : 'Expired'}
@@ -276,11 +262,11 @@ export function SponsoredSalons() {
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center text-gray-600">
-                      <Clock className="w-4 h-4 mr-1.5 text-gray-400" />
+                      <Icon name="schedule" className="w-4 h-4 mr-1.5 text-gray-400" size={16} />
                       {formatDuration(sponsorship.durationHours)}
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <CreditCard className="w-4 h-4 mr-1.5 text-gray-400" />
+                      <Icon name="credit_card" className="w-4 h-4 mr-1.5 text-gray-400" size={16} />
                       {sponsorship.amountPaid
                         ? formatCurrency(sponsorship.amountPaid)
                         : 'Free'}
@@ -327,10 +313,10 @@ export function SponsoredSalons() {
 
       {/* Remove Confirmation Modal */}
       {showRemoveModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up max-w-md w-full p-6">
             <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
-              <AlertCircle className="w-6 h-6 text-red-600" />
+              <Icon name="error" className="w-6 h-6 text-red-600" size={24} />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
               Remove Sponsorship
@@ -344,17 +330,17 @@ export function SponsoredSalons() {
                   setShowRemoveModal(false);
                   setSelectedSponsorshipId(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="btn-ripple flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRemove}
                 disabled={removeSponsorship.isPending}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+                className="btn-ripple flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
               >
                 {removeSponsorship.isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                  <Icon name="progress_activity" className="w-5 h-5 animate-spin mx-auto" size={20} />
                 ) : (
                   'Remove'
                 )}
@@ -450,8 +436,8 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
   const isValid = selectedSalon && (selectedPackage || useCustomDuration);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-elevated animate-slide-up max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">Add Sponsored Salon</h2>
@@ -459,7 +445,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X size={20} className="text-gray-500" />
+            <Icon name="close" size={20} className="text-gray-500" />
           </button>
         </div>
 
@@ -479,7 +465,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                     : 'bg-gray-100 text-gray-600'
                 }`}
               >
-                {selectedSalon ? <Check size={16} /> : '1'}
+                {selectedSalon ? <Icon name="check" size={16} /> : '1'}
               </div>
               <span className="ml-2 text-sm font-medium">Select Salon</span>
             </div>
@@ -506,7 +492,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                   Search Salon
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" size={20} />
                   <input
                     type="text"
                     value={searchQuery}
@@ -515,7 +501,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#006B3F] focus:border-[#006B3F] outline-none"
                   />
                   {searchLoading && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-gray-400" />
+                    <Icon name="progress_activity" className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-gray-400" size={20} />
                   )}
                 </div>
 
@@ -536,7 +522,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                               className="w-10 h-10 rounded-lg object-cover"
                             />
                           ) : (
-                            <Store className="w-5 h-5 text-gray-400" />
+                            <Icon name="storefront" className="w-5 h-5 text-gray-400" size={20} />
                           )}
                         </div>
                         <div className="ml-3">
@@ -569,7 +555,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                           className="w-12 h-12 rounded-lg object-cover"
                         />
                       ) : (
-                        <Store className="w-6 h-6 text-gray-400" />
+                        <Icon name="storefront" className="w-6 h-6 text-gray-400" size={24} />
                       )}
                     </div>
                     <div className="ml-3 flex-1">
@@ -580,7 +566,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                         {selectedSalon.address}, {selectedSalon.city}
                       </div>
                     </div>
-                    <Check className="w-5 h-5 text-green-600" />
+                    <Icon name="check" className="w-5 h-5 text-green-600" size={20} />
                   </div>
                 </div>
               )}
@@ -616,7 +602,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
               {activePackages.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    <Package className="w-4 h-4 inline mr-1.5" />
+                    <Icon name="inventory_2" className="w-4 h-4 inline mr-1.5" size={16} />
                     Sponsorship Packages
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -643,7 +629,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                         </div>
                         {selectedPackage?.id === pkg.id && (
                           <div className="mt-2 flex items-center text-sm text-[#006B3F]">
-                            <Check className="w-4 h-4 mr-1" />
+                            <Icon name="check" className="w-4 h-4 mr-1" size={16} />
                             Selected
                           </div>
                         )}
@@ -656,7 +642,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
               {/* Custom Duration */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  <Clock className="w-4 h-4 inline mr-1.5" />
+                  <Icon name="schedule" className="w-4 h-4 inline mr-1.5" size={16} />
                   Or Custom Duration
                 </label>
                 <button
@@ -690,7 +676,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" size={16} />
                       </div>
                     </div>
                     <div className="text-lg font-semibold text-[#006B3F]">
@@ -711,14 +697,14 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
           {step === 'package' ? (
             <button
               onClick={() => setStep('salon')}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+              className="btn-ripple px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors font-medium"
             >
               Back
             </button>
           ) : (
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+              className="btn-ripple px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors font-medium"
             >
               Cancel
             </button>
@@ -728,7 +714,7 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
             <button
               onClick={() => setStep('package')}
               disabled={!selectedSalon}
-              className="px-6 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-ripple px-6 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue
             </button>
@@ -736,10 +722,10 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
             <button
               onClick={handleSubmit}
               disabled={!isValid || createSponsorship.isPending}
-              className="px-6 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-ripple px-6 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createSponsorship.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Icon name="progress_activity" className="w-5 h-5 animate-spin" size={20} />
               ) : (
                 'Confirm & Add'
               )}

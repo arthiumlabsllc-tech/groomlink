@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { Scissors, Mail, Lock, ArrowLeft, Shield, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import Icon from '../components/Icon';
 import { useAuth } from '../hooks';
 
 export function Login() {
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   
   const { requestEmailOTP, verifyEmailOTP } = useAuth();
 
@@ -16,7 +18,11 @@ export function Login() {
 
     try {
       await requestEmailOTP.mutateAsync(email);
-      setStep('otp');
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setStep('otp');
+        setIsTransitioning(false);
+      }, 200);
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || 'Failed to send OTP. Please check your email address.';
       setError(errorMessage);
@@ -26,159 +32,308 @@ export function Login() {
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    const code = otp.join('');
+
+    if (code.length !== 6) {
+      setError('Please enter all 6 digits');
+      return;
+    }
 
     try {
-      await verifyEmailOTP.mutateAsync({ email, code: otp });
+      await verifyEmailOTP.mutateAsync({ email, code });
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || 'Invalid or expired OTP. Please try again.';
       setError(errorMessage);
     }
   };
 
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      // Handle paste
+      const digits = value.replace(/\D/g, '').slice(0, 6);
+      const newOtp = [...otp];
+      digits.split('').forEach((digit, i) => {
+        if (i < 6) newOtp[i] = digit;
+      });
+      setOtp(newOtp);
+      // Focus the last filled input or the next empty one
+      const lastFilledIndex = Math.min(digits.length - 1, 5);
+      otpInputRefs.current[lastFilledIndex]?.focus();
+      return;
+    }
+
+    const digit = value.replace(/\D/g, '');
+    const newOtp = [...otp];
+    newOtp[index] = digit;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleChangeEmail = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setStep('email');
+      setOtp(['', '', '', '', '', '']);
+      setIsTransitioning(false);
+    }, 200);
+  };
+
   const isLoading = requestEmailOTP.isPending || verifyEmailOTP.isPending;
+  const stepNumber = step === 'email' ? 1 : 2;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] via-[#1a1a2e] to-[#006B3F] p-4 relative overflow-hidden">
-      {/* Decorative Elements */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[#006B3F]/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#FCD116]/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-      <div className="absolute top-1/4 right-1/4 w-48 h-48 bg-[#CE1126]/10 rounded-full blur-2xl"></div>
-      
-      <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-md relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-6 md:mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/80 rounded-2xl mb-4 shadow-lg relative">
-            <Scissors className="text-white" size={32} />
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#FCD116] rounded-full flex items-center justify-center">
-              <Sparkles size={12} className="text-[#1a1a2e]" />
-            </div>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e]">GroomLink</h1>
-          <p className="text-sm md:text-base text-gray-500 mt-1 font-medium">
-            Admin Dashboard
-          </p>
-          <p className="text-xs md:text-sm text-gray-400 mt-3">
-            {step === 'email' ? 'Enter your admin email to sign in' : `Enter the OTP sent to ${email}`}
-          </p>
+    <div className="min-h-screen flex page-enter">
+      {/* Desktop Left Panel - Brand Side (60%) */}
+      <div className="hidden lg:flex lg:w-[60%] bg-gradient-to-br from-[#1a1a2e] via-[#1a1a2e] to-[#006B3F] relative overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Abstract shapes */}
+          <div className="absolute top-20 left-10 w-64 h-64 bg-[#006B3F]/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-80 h-80 bg-[#FCD116]/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/3 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+          
+          {/* Geometric shapes */}
+          <div className="absolute top-1/4 right-1/4 w-32 h-32 border border-white/10 rounded-full" />
+          <div className="absolute bottom-1/3 left-1/4 w-24 h-24 border border-[#FCD116]/20 rotate-45" />
+          <div className="absolute top-1/3 left-1/2 w-16 h-16 bg-[#006B3F]/30 rounded-lg rotate-12" />
+          
+          {/* Subtle grid pattern */}
+          <div 
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                               linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="bg-[#CE1126]/10 border border-[#CE1126]/20 text-[#CE1126] px-4 py-3 rounded-xl text-sm mb-4 md:mb-6 flex items-center gap-2">
-            <Shield size={16} className="flex-shrink-0" />
-            {error}
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          {/* Logo */}
+          <div>
+            <img 
+              src="/logo-full-white.png" 
+              alt="GroomLink Admin" 
+              className="h-12 w-auto"
+            />
           </div>
-        )}
 
-        {/* Email Step */}
-        {step === 'email' && (
-          <form onSubmit={handleRequestOTP} className="space-y-4 md:space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 text-base border-2 border-gray-200 rounded-xl focus:ring-0 focus:border-[#006B3F] transition-colors bg-gray-50 focus:bg-white"
-                  placeholder="admin@groomlinkgh.com"
-                  required
-                />
-              </div>
+          {/* Tagline */}
+          <div className="max-w-md">
+            <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+              GroomLink Admin
+            </h1>
+            <p className="text-gray-300 text-lg">
+              Platform Management Dashboard
+            </p>
+            <p className="text-gray-400 mt-4">
+              Manage salons, bookings, users, and monitor platform performance from a single powerful interface.
+            </p>
+          </div>
+
+          {/* Trust Stats */}
+          <div className="flex items-center gap-6 text-white/80 text-sm">
+            <div className="flex items-center gap-2">
+              <Icon name="monitoring" size={18} className="text-[#FCD116]" />
+              <span>Real-time Monitoring</span>
+            </div>
+            <div className="w-1 h-1 rounded-full bg-white/30" />
+            <div className="flex items-center gap-2">
+              <Icon name="verified_user" size={18} className="text-[#006B3F]" />
+              <span>Secure Access</span>
+            </div>
+            <div className="w-1 h-1 rounded-full bg-white/30" />
+            <div className="flex items-center gap-2">
+              <Icon name="admin_panel_settings" size={18} className="text-[#FCD116]" />
+              <span>Admin Only</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Form Side (40% desktop, full mobile) */}
+      <div className="w-full lg:w-[40%] bg-white lg:bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
+        {/* Mobile Mesh Gradient Background */}
+        <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-[#1a1a2e]/5 via-white to-[#006B3F]/10" />
+        <div className="absolute inset-0 lg:hidden opacity-30">
+          <div className="absolute top-0 left-0 w-72 h-72 bg-[#006B3F]/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#FCD116]/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+        </div>
+        
+        {/* Mobile Logo */}
+        <div className="lg:hidden absolute top-8 left-0 right-0 flex flex-col items-center z-10">
+          <img 
+            src="/logo-full-black.png" 
+            alt="GroomLink Admin" 
+            className="h-10 w-auto"
+          />
+          <p className="text-xs text-gray-500 mt-1">Platform Management Dashboard</p>
+        </div>
+
+        {/* Form Card */}
+        <div className="w-full max-w-sm relative z-10">
+          <div className="bg-white lg:rounded-2xl lg:shadow-lg p-6 sm:p-8 rounded-2xl shadow-elevated">
+            {/* Step Dots */}
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${stepNumber >= 1 ? 'bg-[#006B3F] scale-110' : 'bg-gray-300'}`} />
+              <div className={`w-8 h-0.5 rounded ${stepNumber >= 2 ? 'bg-[#006B3F]' : 'bg-gray-200'}`} />
+              <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${stepNumber >= 2 ? 'bg-[#006B3F] scale-110' : 'bg-gray-300'}`} />
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-[#006B3F] to-[#006B3F]/90 text-white py-3 rounded-xl font-semibold hover:from-[#005a35] hover:to-[#005a35] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg shadow-[#006B3F]/25 flex items-center justify-center gap-2"
-            >
-              {requestEmailOTP.isPending ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Sending OTP...
-                </>
-              ) : (
-                <>
-                  Send OTP
-                  <span className="text-[#FCD116]">→</span>
-                </>
-              )}
-            </button>
-          </form>
-        )}
-
-        {/* OTP Step */}
-        {step === 'otp' && (
-          <form onSubmit={handleVerifyOTP} className="space-y-4 md:space-y-5">
-            <button
-              type="button"
-              onClick={() => setStep('email')}
-              className="flex items-center text-sm text-gray-500 hover:text-[#006B3F] transition-colors"
-            >
-              <ArrowLeft size={16} className="mr-1" />
-              Back
-            </button>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                OTP Code
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full pl-11 pr-4 py-3 text-base border-2 border-gray-200 rounded-xl focus:ring-0 focus:border-[#006B3F] transition-colors bg-gray-50 focus:bg-white text-center tracking-[0.5em] font-mono text-lg"
-                  placeholder="······"
-                  maxLength={6}
-                  required
-                />
+            {/* Error */}
+            {error && (
+              <div className="bg-[#CE1126]/10 border border-[#CE1126]/20 text-[#CE1126] px-4 py-3 rounded-xl text-sm mb-6 flex items-center gap-2 animate-shake">
+                <Icon name="error" size={16} className="flex-shrink-0" />
+                {error}
               </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Check your email for the 6-digit verification code
-              </p>
+            )}
+
+            {/* Form Content with Transition */}
+            <div className={`transition-all duration-200 ${isTransitioning ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
+              {/* Email Step */}
+              {step === 'email' && (
+                <form onSubmit={handleRequestOTP} className="space-y-5">
+                  <div>
+                    <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">Admin Sign In</h2>
+                    <p className="text-gray-500">Enter your admin email to continue</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Admin Email
+                    </label>
+                    <div className="relative">
+                      <Icon name="mail" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3.5 text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-0 focus:border-[#006B3F] transition-all placeholder-gray-400"
+                        placeholder="admin@groomlinkgh.com"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full btn-ripple bg-gradient-to-r from-[#006B3F] to-[#006B3F]/90 text-white py-3.5 rounded-xl font-semibold hover:from-[#005a35] hover:to-[#005a35] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg shadow-[#006B3F]/25 flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    {requestEmailOTP.isPending ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Sending OTP...
+                      </>
+                    ) : (
+                      <>
+                        Send OTP
+                        <Icon name="arrow_forward" size={18} />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* OTP Step */}
+              {step === 'otp' && (
+                <form onSubmit={handleVerifyOTP} className="space-y-5">
+                  <div>
+                    <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">Verify OTP</h2>
+                    <p className="text-gray-500">
+                      Enter the 6-digit code sent to <span className="font-medium text-[#1A1A1A]">{email}</span>
+                    </p>
+                  </div>
+
+                  {/* Modern 6-box OTP Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      OTP Code
+                    </label>
+                    <div className="flex gap-2 justify-center">
+                      {otp.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(el) => { otpInputRefs.current[index] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={digit}
+                          onChange={(e) => handleOtpChange(index, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold bg-gray-50 border-2 border-gray-200 rounded-xl text-[#1A1A1A] focus:border-[#006B3F] focus:ring-0 outline-none transition-all focus:scale-105 disabled:opacity-50"
+                          disabled={isLoading}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-3 text-center">
+                      Check your email for the verification code
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full btn-ripple bg-gradient-to-r from-[#006B3F] to-[#006B3F]/90 text-white py-3.5 rounded-xl font-semibold hover:from-[#005a35] hover:to-[#005a35] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg shadow-[#006B3F]/25 flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    {verifyEmailOTP.isPending ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        Verify & Sign In
+                        <Icon name="check_circle" size={18} />
+                      </>
+                    )}
+                  </button>
+
+                  {/* Resend & Change Email */}
+                  <div className="text-center space-y-3">
+                    <button
+                      type="button"
+                      onClick={handleRequestOTP}
+                      disabled={requestEmailOTP.isPending}
+                      className="text-sm text-[#006B3F] hover:text-[#005a35] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Resend OTP
+                    </button>
+                    
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleChangeEmail}
+                        className="text-sm text-gray-500 hover:text-[#1A1A1A] font-medium transition-colors flex items-center justify-center gap-1 mx-auto"
+                      >
+                        <Icon name="arrow_back" size={14} />
+                        Change email
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-[#006B3F] to-[#006B3F]/90 text-white py-3 rounded-xl font-semibold hover:from-[#005a35] hover:to-[#005a35] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg shadow-[#006B3F]/25 flex items-center justify-center gap-2"
-            >
-              {verifyEmailOTP.isPending ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Verifying...
-                </>
-              ) : (
-                'Verify & Sign In'
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleRequestOTP}
-              disabled={requestEmailOTP.isPending}
-              className="w-full text-sm text-[#006B3F] hover:text-[#005a35] font-medium transition-colors py-2"
-            >
-              Resend OTP
-            </button>
-          </form>
-        )}
-
-        <div className="mt-6 md:mt-8 pt-4 border-t border-gray-100 text-center">
-          <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-gray-400">
-            <Shield size={14} className="text-[#006B3F]" />
-            <span>Secure admin access only</span>
+            {/* Footer */}
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                <Icon name="verified_user" size={14} className="text-[#006B3F]" />
+                <span>Secure admin access only</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

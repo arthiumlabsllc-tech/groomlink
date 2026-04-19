@@ -66,7 +66,18 @@ const TIME_OPTIONS = [
   '17:00', '18:00', '19:00', '20:00', '21:00', '22:00',
 ];
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+// Display labels for days
+const DAY_LABELS: Record<string, string> = {
+  MONDAY: 'Mon',
+  TUESDAY: 'Tue',
+  WEDNESDAY: 'Wed',
+  THURSDAY: 'Thu',
+  FRIDAY: 'Fri',
+  SATURDAY: 'Sat',
+  SUNDAY: 'Sun',
+};
 
 export default function SalonSetupScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -91,7 +102,7 @@ export default function SalonSetupScreen() {
   // Section 3: Business Hours
   const [openingTime, setOpeningTime] = useState('08:00');
   const [closingTime, setClosingTime] = useState('18:00');
-  const [workingDays, setWorkingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+  const [workingDays, setWorkingDays] = useState<string[]>(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -228,7 +239,9 @@ export default function SalonSetupScreen() {
       // Update auth store - this will trigger navigation to MainNavigator
       setUser(profile);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create salon. Please try again.');
+      const apiError = err.response?.data?.error;
+      const fieldErrors = apiError?.details?.map((d: any) => d.message).join(', ');
+      setError(fieldErrors || apiError?.message || err.response?.data?.message || 'Failed to create salon. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -532,7 +545,7 @@ export default function SalonSetupScreen() {
                     styles.dayChipText,
                     workingDays.includes(day) && styles.dayChipTextSelected,
                   ]}>
-                    {day.slice(0, 3)}
+                    {DAY_LABELS[day]}
                   </Text>
                 </TouchableOpacity>
               ))}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, XCircle, ChevronLeft, ChevronRight, Search, AlertCircle, User, Store } from 'lucide-react';
+import Icon from '../components/Icon';
 import { useCancellations } from '../hooks';
 import { formatCurrency, formatDate } from '../lib/utils';
 import type { CancellationRecord } from '../api/admin';
@@ -27,12 +27,12 @@ export function Cancellations() {
   const getCancelledByBadge = (cancelledBy: string) => {
     const isCustomer = cancelledBy === 'CUSTOMER';
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border-l-2 ${
         isCustomer 
-          ? 'bg-blue-50 text-blue-700' 
-          : 'bg-purple-50 text-purple-700'
+          ? 'bg-blue-50 text-blue-700 border-l-blue-500' 
+          : 'bg-purple-50 text-purple-700 border-l-purple-500'
       }`}>
-        {isCustomer ? <User size={14} /> : <Store size={14} />}
+        {isCustomer ? <Icon name="person" size={14} /> : <Icon name="storefront" size={14} />}
         {cancelledBy.charAt(0) + cancelledBy.slice(1).toLowerCase()}
       </span>
     );
@@ -40,12 +40,10 @@ export function Cancellations() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
-          </div>
+      <div className="page-enter space-y-6">
+        <div className="card-v2 p-6">
+          <div className="skeleton-shimmer h-8 w-48 mb-4" />
+          {[1,2,3,4,5].map(i => <div key={i} className="skeleton-shimmer h-14 w-full mb-3" />)}
         </div>
       </div>
     );
@@ -54,7 +52,7 @@ export function Cancellations() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <AlertCircle size={48} className="text-[#CE1126]" />
+        <Icon name="error" size={48} className="text-[#CE1126]" />
         <p className="text-lg font-medium text-gray-600">Failed to load cancellations data</p>
         <p className="text-sm text-gray-500">Please try again later</p>
       </div>
@@ -62,15 +60,15 @@ export function Cancellations() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Cancellation Records</h1>
           <p className="text-sm text-gray-500 mt-1">View booking cancellation history and refund details</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
-          <XCircle size={18} className="text-gray-400" />
+        <div className="flex items-center gap-2 px-4 py-2 card-v2">
+          <Icon name="cancel" size={18} className="text-gray-400" />
           <span className="text-sm text-gray-500">Total:</span>
           <span className="text-lg font-bold text-gray-800">{pagination?.total || 0}</span>
         </div>
@@ -79,7 +77,7 @@ export function Cancellations() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search by salon, customer, or ID..."
@@ -117,7 +115,7 @@ export function Cancellations() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="hidden md:block card-v2 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -180,8 +178,8 @@ export function Cancellations() {
 
       {/* Empty State */}
       {filteredCancellations.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-gray-100">
-          <XCircle size={48} className="text-gray-300 mb-4" />
+        <div className="flex flex-col items-center justify-center py-12 card-v2">
+          <Icon name="cancel" size={48} className="text-gray-300 mb-4" />
           <p className="text-lg font-medium text-gray-600">No cancellations found</p>
           <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filter criteria</p>
         </div>
@@ -189,7 +187,7 @@ export function Cancellations() {
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
+        <div className="flex items-center justify-between card-v2 px-4 py-3">
           <p className="text-sm text-gray-600">
             Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, pagination.total)} of {pagination.total} records
           </p>
@@ -199,7 +197,7 @@ export function Cancellations() {
               disabled={page === 1}
               className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronLeft size={20} />
+              <Icon name="chevron_left" size={20} />
             </button>
             <span className="text-sm font-medium text-gray-700">
               Page {page} of {pagination.totalPages}
@@ -209,7 +207,7 @@ export function Cancellations() {
               disabled={page === pagination.totalPages}
               className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronRight size={20} />
+              <Icon name="chevron_right" size={20} />
             </button>
           </div>
         </div>
@@ -227,11 +225,11 @@ function CancellationCard({
   getCancelledByBadge: (cancelledBy: string) => JSX.Element;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+    <div className="card-v2 p-4 border-l-4 border-l-orange-500">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-[#CE1126]/10 to-[#CE1126]/20 rounded-xl flex items-center justify-center">
-            <XCircle size={20} className="text-[#CE1126]" />
+            <Icon name="cancel" size={20} className="text-[#CE1126]" />
           </div>
           <div>
             <p className="font-semibold text-gray-800">{cancellation.booking.salon.businessName}</p>

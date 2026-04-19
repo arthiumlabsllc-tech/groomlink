@@ -133,6 +133,14 @@ model User {
   accountRestricted Boolean   @default(false) @map("account_restricted")
   restrictedUntil   DateTime? @map("restricted_until")
 
+  // Preferences & Onboarding
+  preferredCategories String[] @map("preferred_categories")
+  onboardingComplete  Boolean  @default(false) @map("onboarding_complete")
+
+  // Relations
+  loyaltyAccount  LoyaltyAccount? @relation("CustomerLoyalty")
+  waitlistEntries Waitlist[]      @relation("CustomerWaitlist")
+
   @@index([phoneNumber])
   @@index([role])
   @@index([status])
@@ -193,6 +201,7 @@ model Salon {
   momoProvider          String? @map("momo_provider") // 'mtn', 'vod', 'tgo'
   momoNumber            String? @map("momo_number") // Phone number
   paystackRecipientCode String? @map("paystack_recipient_code")
+  hubtelRecipientId     String? @map("hubtel_recipient_id")
 
   // Ratings
   rating      Float @default(0)
@@ -226,6 +235,11 @@ model Salon {
   requiresCustomerConfirmation   Boolean @default(false) @map("requires_customer_confirmation")
   completionReminderEnabled      Boolean @default(true) @map("completion_reminder_enabled")
   qrCheckinEnabled               Boolean @default(true) @map("qr_checkin_enabled")
+
+  // Branding & Waitlist
+  slug            String?      @unique
+  waitlistEntries Waitlist[]
+  brandedPage     BrandedPage?
 
   @@index([ownerId])
   @@index([type])
@@ -403,6 +417,9 @@ model Booking {
   queuePosition       Int?
   queueEntryId        String?
 
+  // Hubtel
+  hubtelInvoiceReference String? @map("hubtel_invoice_reference")
+
   // Payment failure tracking
   paymentFailedReason String?   @map("payment_failed_reason")
   paymentRetryCount   Int       @default(0) @map("payment_retry_count")
@@ -469,8 +486,9 @@ model Payment {
   status   PaymentStatus   @default(PENDING)
 
   // Provider specific
-  providerRef  String? @map("provider_ref")
-  providerData Json?   @map("provider_data")
+  providerRef         String? @map("provider_ref")
+  providerData        Json?   @map("provider_data")
+  hubtelTransactionId String? @map("hubtel_transaction_id")
 
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -720,6 +738,9 @@ model SiteSettings {
   paymentGateway        String   @default("paystack")
   paystackPublicKey     String?
   paystackSecretKey     String?
+  hubtelApiId           String?  @map("hubtel_api_id")
+  hubtelApiSecret       String?  @map("hubtel_api_secret")
+  hubtelMerchantAccountId String? @map("hubtel_merchant_account_id")
   isPaymentTestMode     Boolean  @default(true)
   transactionFeePercent Decimal? @db.Decimal(5, 2)
   updatedAt             DateTime @updatedAt
@@ -872,9 +893,11 @@ model EscrowAccount {
   platformFee          Decimal             @default(0) @db.Decimal(10, 2)
   providerAmount       Decimal             @default(0) @db.Decimal(10, 2)
   status               String              @default("held") // held, released, refunded, disputed
-  paymentTransactionId String?
-  refundTransactionId  String?
-  releasedAt           DateTime?
+  paymentTransactionId   String?
+  refundTransactionId    String?
+  hubtelPayoutReference  String? @map("hubtel_payout_reference")
+  hubtelInvoiceReference String? @map("hubtel_invoice_reference")
+  releasedAt             DateTime?
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
   transactions         EscrowTransaction[]
@@ -1022,4 +1045,69 @@ model SponsorshipPackage {
   updatedAt     DateTime @updatedAt
 
   @@map("sponsorship_packages")
+}
+
+model LoyaltyAccount {
+  id             String              @id @default(cuid())
+  customerId     String              @unique
+  customer       User                @relation("CustomerLoyalty", fields: [customerId], references: [id], onDelete: Cascade)
+  points         Int                 @default(0)
+  lifetimePoints Int                 @default(0)
+  tier           String              @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
+  transactions   LoyaltyTransaction[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([customerId])
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyTransaction {
+  id        String         @id @default(cuid())
+  accountId String
+  account   LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type      String         // EARN, REDEEM, BONUS, REFERRAL
+  points    Int
+  reason    String
+  bookingId String?
+  createdAt DateTime       @default(now())
+
+  @@index([accountId])
+  @@map("loyalty_transactions")
+}
+
+model Waitlist {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   User     @relation("CustomerWaitlist", fields: [customerId], references: [id], onDelete: Cascade)
+  salonId    String
+  salon      Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  staffId    String?
+  date       DateTime
+  timeSlot   String
+  status     String   @default("WAITING") // WAITING, NOTIFIED, BOOKED, EXPIRED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([salonId])
+  @@index([status])
+  @@map("waitlist")
+}
+
+model BrandedPage {
+  id           String   @id @default(cuid())
+  salonId      String   @unique
+  salon        Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  slug         String   @unique
+  primaryColor String   @default("#CE1126")
+  tagline      String?
+  logoUrl      String?
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([salonId])
+  @@index([slug])
+  @@map("branded_pages")
 }

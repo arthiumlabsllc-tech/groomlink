@@ -1,31 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft,
-  MapPin,
-  Phone,
-  Mail,
-  Star,
-  Clock,
-  Calendar,
-  User,
-  DollarSign,
-  Loader2,
-  AlertCircle,
-  Store,
-  Check,
-  Wifi,
-  Car,
-  Wind,
-  Footprints,
-  Heart,
-  Users,
-  X,
-  LogOut,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react'
-import apiClient, { queueApi, QueueStatus, MyQueuePosition, favoritesApi, salonApi, Review } from '../lib/api'
+import Icon from '../components/Icon'
+import apiClient, { queueApi, QueueStatus, MyQueuePosition, favoritesApi, salonApi, Review, waitlistApi, WaitlistEntry } from '../lib/api'
 
 // Types
 interface ServiceLocal {
@@ -116,7 +92,11 @@ const formatDayName = (day: string): string => {
   return days[day.toUpperCase()] || day
 }
 
-const getSalonCoverImage = (salon: Salon): string => {
+// Default GroomLink assets
+const DEFAULT_LOGO_ICON = 'https://groomlinkgh.com/api/uploads/assets/logo-icon.png'
+const DEFAULT_LOGO_WHITE = 'https://groomlinkgh.com/api/uploads/assets/email-logo.png'
+
+const getSalonCoverImage = (salon: Salon): string | null => {
   // Prefer cover image if available
   if (salon.coverImage) {
     return salon.coverImage
@@ -125,18 +105,17 @@ const getSalonCoverImage = (salon: Salon): string => {
   if (salon.images && salon.images.length > 0) {
     return salon.images[0]
   }
-  // Fall back to logo
+  // Return null to trigger the branded fallback UI
+  return null
+}
+
+const getSalonLogo = (salon: Salon): string => {
+  // Use salon logo if available
   if (salon.logo) {
     return salon.logo
   }
-  // Default images by salon type
-  const defaultImages: Record<string, string> = {
-    BARBERSHOP: 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=800&h=400&fit=crop',
-    HAIR_SALON: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=400&fit=crop',
-    NAIL_SALON: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=400&fit=crop',
-    SPA: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=400&fit=crop',
-  }
-  return defaultImages[salon.type] || 'https://images.unsplash.com/photo-1522337360788-8b13ee0af107?w=800&h=400&fit=crop'
+  // Default to GL logo icon
+  return DEFAULT_LOGO_ICON
 }
 
 const formatPrice = (price: string): string => {
@@ -179,6 +158,25 @@ export default function SalonDetail() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewsTotal, setReviewsTotal] = useState(0)
   const [reviewsLoading, setReviewsLoading] = useState(false)
+
+  // Waitlist state
+  const [, setMyWaitlistEntries] = useState<WaitlistEntry[]>([])
+  const [, setWaitlistLoading] = useState(false)
+
+  // Sticky book button visibility
+  const [showStickyBook, setShowStickyBook] = useState(false)
+  const heroRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (heroRef.current) {
+        const heroBottom = heroRef.current.getBoundingClientRect().bottom
+        setShowStickyBook(heroBottom < 0)
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     if (!id) {
@@ -243,7 +241,7 @@ export default function SalonDetail() {
     return () => clearInterval(interval)
   }, [id])
 
-  // Check favorite status and fetch reviews on load
+  // Check favorite status, fetch reviews and waitlist on load
   useEffect(() => {
     if (!id) return
 
@@ -270,6 +268,21 @@ export default function SalonDetail() {
         setReviewsTotal(0)
       } finally {
         setReviewsLoading(false)
+      }
+
+      // Fetch my waitlist entries for this salon
+      setWaitlistLoading(true)
+      try {
+        const entries = await waitlistApi.getMyWaitlist()
+        // Filter entries for current salon
+        const salonEntries = entries.filter(entry => entry.salonId === id)
+        setMyWaitlistEntries(salonEntries)
+      } catch (err) {
+        // User might not be logged in, ignore error
+        console.log('Could not fetch waitlist entries')
+        setMyWaitlistEntries([])
+      } finally {
+        setWaitlistLoading(false)
       }
     }
 
@@ -347,6 +360,46 @@ export default function SalonDetail() {
     }
   }
 
+  // Waitlist handlers are reserved for future UI
+  // Re-implement when waitlist UI is added
+  /*
+  const handleJoinWaitlist = async (date: string, timeSlot: string, staffId?: string) => {
+    if (!id) return
+    try {
+      const entry = await waitlistApi.joinWaitlist({
+        salonId: id,
+        staffId,
+        date,
+        timeSlot
+      })
+      setMyWaitlistEntries(prev => [...prev, entry])
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        alert('Please log in to join the waitlist')
+      } else {
+        alert(err.response?.data?.error?.message || 'Failed to join waitlist')
+      }
+    }
+  }
+
+  const handleLeaveWaitlist = async (waitlistId: string) => {
+    try {
+      await waitlistApi.leaveWaitlist(waitlistId)
+      setMyWaitlistEntries(prev => prev.filter(entry => entry.id !== waitlistId))
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Failed to leave waitlist')
+    }
+  }
+
+  const isOnWaitlist = (date: string, timeSlot: string, staffId?: string): WaitlistEntry | undefined => {
+    return myWaitlistEntries.find(entry =>
+      entry.date === date &&
+      entry.timeSlot === timeSlot &&
+      (staffId ? entry.staffId === staffId : !entry.staffId)
+    )
+  }
+  */
+
   const handleBack = () => {
     navigate('/explore')
   }
@@ -357,9 +410,16 @@ export default function SalonDetail() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-12 h-12 text-ghana-green animate-spin mb-4" />
-        <p className="text-gray-600">Loading salon details...</p>
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
+        <div className="skeleton-shimmer h-64 md:h-80 w-full rounded-2xl" />
+        <div className="skeleton-shimmer h-12 w-3/4 rounded-xl" />
+        <div className="skeleton-shimmer h-8 w-1/2 rounded-lg" />
+        <div className="skeleton-shimmer h-24 w-full rounded-xl" />
+        <div className="skeleton-shimmer h-48 w-full rounded-xl" />
+        <div className="flex gap-4">
+          <div className="skeleton-shimmer h-32 flex-1 rounded-xl" />
+          <div className="skeleton-shimmer h-32 flex-1 rounded-xl" />
+        </div>
       </div>
     )
   }
@@ -371,11 +431,11 @@ export default function SalonDetail() {
           onClick={handleBack}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <Icon name="arrow_back" size={20} />
           Back to Explore
         </button>
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
+          <Icon name="error" size={64} className="text-red-400 mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             {error === 'Salon not found' ? 'Salon Not Found' : 'Error Loading Salon'}
           </h2>
@@ -407,71 +467,129 @@ export default function SalonDetail() {
   const workers = salon.workers || []
   // reviews are now fetched separately and stored in state
 
+  // Compute open/closed status
+  const isOpenNow = (() => {
+    const now = new Date()
+    const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
+    const today = dayNames[now.getDay()]
+    if (!salon.workingDays?.some(d => d.toUpperCase() === today)) return false
+    if (!salon.openingTime || !salon.closingTime) return true
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    const [oh, om] = salon.openingTime.split(':').map(Number)
+    const [ch, cm] = salon.closingTime.split(':').map(Number)
+    return nowMinutes >= oh * 60 + om && nowMinutes <= ch * 60 + cm
+  })()
+
   return (
-    <div className="max-w-4xl mx-auto pb-8">
+    <div className="max-w-4xl mx-auto pb-24 md:pb-8">
       {/* Back Button */}
       <button
         onClick={handleBack}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 px-4 sm:px-0"
       >
-        <ArrowLeft className="w-5 h-5" />
+        <Icon name="arrow_back" size={20} />
         Back to Explore
       </button>
 
-      {/* Hero Image */}
-      <div className="relative h-48 sm:h-64 lg:h-80 w-full overflow-hidden rounded-xl mb-4 sm:mb-6">
-        <img
-          src={getSalonCoverImage(salon)}
-          alt={salon.businessName || 'Salon'}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement
-            target.src = 'https://images.unsplash.com/photo-1522337360788-8b13ee0af107?w=800&h=400&fit=crop'
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 text-white">
-          <span className="inline-block px-2 sm:px-3 py-1 bg-ghana-gold text-ghana-green text-xs sm:text-sm font-medium rounded-full mb-1 sm:mb-2">
+      {/* Hero Image with Parallax */}
+      <div ref={heroRef} className="relative h-64 md:h-80 w-full overflow-hidden rounded-2xl animate-fade-in">
+        {getSalonCoverImage(salon) ? (
+          <>
+            <div
+              className="absolute inset-0 bg-fixed bg-cover bg-center scale-110"
+              style={{ backgroundImage: `url(${getSalonCoverImage(salon)})` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          </>
+        ) : (
+          <>
+            {/* Branded fallback: green gradient with white logo */}
+            <div 
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #006B3F, #004D2C)' }}
+            >
+              <img 
+                src={DEFAULT_LOGO_WHITE} 
+                alt="GroomLink" 
+                className="w-32 h-32 md:w-40 md:h-40 object-contain opacity-90"
+              />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          </>
+        )}
+        {/* Salon Name Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
+          <span className="inline-block px-3 py-1 bg-ghana-gold text-ghana-green text-xs font-semibold rounded-full mb-2">
             {formatCategoryLabel(salon.type)}
           </span>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{salon.businessName || 'Unnamed Salon'}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-1.5">{salon.businessName || 'Unnamed Salon'}</h1>
+          <div className="flex items-center gap-4 text-sm text-white/90">
+            <span className="flex items-center gap-1">
+              <Icon name="star" size={16} filled className="text-ghana-gold" />
+              {salon.rating?.toFixed(1) || '0.0'} ({salon.reviewCount || 0} reviews)
+            </span>
+            <span className="flex items-center gap-1">
+              <Icon name="location_on" size={14} />
+              {salon.city || salon.address}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Info Bar */}
+      <div className="sticky top-0 z-30 glass shadow-card -mt-5 mx-4 sm:mx-6 rounded-xl px-4 py-3 flex items-center justify-between animate-fade-in-up">
+        <div className="flex items-center gap-5 text-sm">
+          <span className="flex items-center gap-1.5">
+            <Icon name="star" size={16} filled className="text-ghana-gold" />
+            <span className="font-semibold">{salon.rating?.toFixed(1) || '0.0'}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${isOpenNow ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className={isOpenNow ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>{isOpenNow ? 'Open' : 'Closed'}</span>
+          </span>
+          <span className="hidden sm:flex items-center gap-1.5 text-gray-500">
+            <Icon name="schedule" size={14} />
+            {salon.openingTime || '--:--'} - {salon.closingTime || '--:--'}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleFavorite}
+            disabled={favoriteLoading}
+            className={`p-2 rounded-full transition-colors ${
+              isFavorited
+                ? 'text-red-500 hover:bg-red-50'
+                : 'text-gray-400 hover:text-red-500 hover:bg-gray-50'
+            }`}
+          >
+            <Icon name="favorite" size={22} filled={isFavorited} className={isFavorited ? 'text-red-500' : ''} />
+          </button>
+          <button
+            onClick={handleBookNow}
+            className="px-5 py-2 bg-[#CE1126] text-white font-medium rounded-xl hover:bg-[#CE1126]/90 transition-colors flex items-center gap-2 shadow-card"
+          >
+            <Icon name="calendar_today" size={18} />
+            Book Now
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-4 sm:px-0 space-y-6">
-        {/* Rating & Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Star className="w-5 h-5 text-ghana-gold fill-current" />
-              <span className="text-lg font-semibold">{salon.rating?.toFixed(1) || '0.0'}</span>
-              <span className="text-gray-500">({salon.reviewCount || 0} reviews)</span>
-            </div>
-            <button
-              onClick={toggleFavorite}
-              disabled={favoriteLoading}
-              className={`p-2 transition-colors ${
-                isFavorited
-                  ? 'text-red-500 hover:text-red-600'
-                  : 'text-gray-400 hover:text-red-500'
-              }`}
-            >
-              <Heart className={`w-6 h-6 ${isFavorited ? 'fill-current' : ''}`} />
-            </button>
+      <div className="px-4 sm:px-0 space-y-6 animate-fade-in-up">
+        {/* 24/7 Booking Banner */}
+        <div className="bg-ghana-gold/10 border border-ghana-gold/20 rounded-xl px-4 py-3 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-ghana-gold/20 flex items-center justify-center flex-shrink-0">
+            <Icon name="schedule" size={20} className="text-ghana-green" />
           </div>
-          <button
-            onClick={handleBookNow}
-            className="px-6 py-3 bg-ghana-green text-white font-medium rounded-lg hover:bg-ghana-green/90 transition-colors flex items-center gap-2"
-          >
-            <Calendar className="w-5 h-5" />
-            Book Now
-          </button>
+          <div>
+            <p className="text-sm font-medium text-ghana-green">Book anytime, 24/7 — even when salons are closed</p>
+            <p className="text-xs text-gray-600">Your appointment will be confirmed when the salon opens</p>
+          </div>
         </div>
 
         {/* Description */}
         {salon.description && (
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="card-v2 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-3">About</h2>
             <p className="text-gray-600 leading-relaxed">{salon.description}</p>
           </div>
@@ -479,7 +597,7 @@ export default function SalonDetail() {
 
         {/* Contact & Location Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="card-v2 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
             <div className="space-y-3">
               {salon.phoneNumber && (
@@ -487,7 +605,7 @@ export default function SalonDetail() {
                   href={`tel:${salon.phoneNumber}`}
                   className="flex items-center gap-3 text-gray-600 hover:text-ghana-green transition-colors"
                 >
-                  <Phone className="w-5 h-5 text-ghana-green" />
+                  <Icon name="call" size={20} className="text-ghana-green" />
                   <span>{salon.phoneNumber}</span>
                 </a>
               )}
@@ -496,12 +614,12 @@ export default function SalonDetail() {
                   href={`mailto:${salon.email}`}
                   className="flex items-center gap-3 text-gray-600 hover:text-ghana-green transition-colors"
                 >
-                  <Mail className="w-5 h-5 text-ghana-green" />
+                  <Icon name="mail" size={20} className="text-ghana-green" />
                   <span>{salon.email}</span>
                 </a>
               )}
               <div className="flex items-start gap-3 text-gray-600">
-                <MapPin className="w-5 h-5 text-ghana-green flex-shrink-0 mt-0.5" />
+                <Icon name="location_on" size={20} className="text-ghana-green flex-shrink-0 mt-0.5" />
                 <div>
                   <p>{salon.address || 'Address not available'}</p>
                   {(salon.city || salon.region) && (
@@ -514,12 +632,12 @@ export default function SalonDetail() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="card-v2 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Operating Hours</h2>
             <div className="space-y-3">
               {(salon.openingTime || salon.closingTime) && (
                 <div className="flex items-center gap-3 text-gray-600">
-                  <Clock className="w-5 h-5 text-ghana-green" />
+                  <Icon name="schedule" size={20} className="text-ghana-green" />
                   <span>
                     {salon.openingTime || '--:--'} - {salon.closingTime || '--:--'}
                   </span>
@@ -534,7 +652,7 @@ export default function SalonDetail() {
                     return (
                       <span
                         key={day}
-                        className={`px-2 py-1 text-xs font-medium rounded ${
+                        className={`px-2 py-1 text-xs font-medium rounded-lg ${
                           isOpen
                             ? 'bg-ghana-green/10 text-ghana-green'
                             : 'bg-gray-100 text-gray-400'
@@ -551,43 +669,43 @@ export default function SalonDetail() {
         </div>
 
         {/* Amenities */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <div className="card-v2 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Amenities</h2>
           <div className="flex flex-wrap gap-3">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${salon.hasWifi ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
-              <Wifi className="w-4 h-4" />
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${salon.hasWifi ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
+              <Icon name="wifi" size={16} />
               <span className="text-sm font-medium">WiFi</span>
-              {salon.hasWifi && <Check className="w-4 h-4" />}
+              {salon.hasWifi && <Icon name="check" size={16} />}
             </div>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${salon.hasParking ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
-              <Car className="w-4 h-4" />
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${salon.hasParking ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
+              <Icon name="directions_car" size={16} />
               <span className="text-sm font-medium">Parking</span>
-              {salon.hasParking && <Check className="w-4 h-4" />}
+              {salon.hasParking && <Icon name="check" size={16} />}
             </div>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${salon.hasAC ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
-              <Wind className="w-4 h-4" />
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${salon.hasAC ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
+              <Icon name="ac_unit" size={16} />
               <span className="text-sm font-medium">Air Conditioning</span>
-              {salon.hasAC && <Check className="w-4 h-4" />}
+              {salon.hasAC && <Icon name="check" size={16} />}
             </div>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${salon.acceptsWalkIns ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
-              <Footprints className="w-4 h-4" />
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${salon.acceptsWalkIns ? 'bg-ghana-green/10 text-ghana-green' : 'bg-gray-100 text-gray-400'}`}>
+              <Icon name="footprint" size={16} />
               <span className="text-sm font-medium">Walk-ins Welcome</span>
-              {salon.acceptsWalkIns && <Check className="w-4 h-4" />}
+              {salon.acceptsWalkIns && <Icon name="check" size={16} />}
             </div>
           </div>
         </div>
 
         {/* Gallery Section */}
         {salon.images && salon.images.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="card-v2 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Gallery</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="scroll-smooth-x flex gap-3 pb-2">
               {salon.images.map((img, idx) => (
-                <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group">
+                <div key={idx} className="img-zoom flex-shrink-0 w-48 h-48 rounded-2xl snap-start">
                   <img
                     src={img}
                     alt={`${salon.businessName} - ${idx + 1}`}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.style.display = 'none'
@@ -601,7 +719,7 @@ export default function SalonDetail() {
 
         {/* Live Queue Section */}
         {salon.acceptsWalkIns && (
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="card-v2 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Live Queue</h2>
               <div className="flex items-center gap-2">
@@ -615,7 +733,7 @@ export default function SalonDetail() {
 
             {queueLoading && !queueStatus ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-8 h-8 text-ghana-green animate-spin" />
+                <Icon name="progress_activity" size={32} className="text-ghana-green animate-spin" />
               </div>
             ) : (
               <div className="space-y-4">
@@ -623,7 +741,7 @@ export default function SalonDetail() {
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-ghana-green/10 flex items-center justify-center">
-                      <Users className="w-6 h-6 text-ghana-green" />
+                      <Icon name="group" size={24} className="text-ghana-green" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-gray-900">
@@ -634,7 +752,7 @@ export default function SalonDetail() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-ghana-gold/20 flex items-center justify-center">
-                      <Clock className="w-6 h-6 text-ghana-green" />
+                      <Icon name="schedule" size={24} className="text-ghana-green" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-gray-900">
@@ -664,9 +782,9 @@ export default function SalonDetail() {
                         className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
                       >
                         {leavingQueue ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Icon name="progress_activity" size={16} className="animate-spin" />
                         ) : (
-                          <LogOut className="w-4 h-4" />
+                          <Icon name="logout" size={16} />
                         )}
                         Leave Queue
                       </button>
@@ -677,7 +795,7 @@ export default function SalonDetail() {
                     onClick={() => setShowJoinModal(true)}
                     className="w-full py-3 bg-ghana-green text-white font-medium rounded-lg hover:bg-ghana-green/90 transition-colors flex items-center justify-center gap-2"
                   >
-                    <Users className="w-5 h-5" />
+                    <Icon name="group" size={20} />
                     Join Walk-in Queue
                   </button>
                 )}
@@ -696,7 +814,7 @@ export default function SalonDetail() {
                   onClick={() => setShowJoinModal(false)}
                   className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
                 >
-                  <X className="w-5 h-5" />
+                  <Icon name="close" size={20} />
                 </button>
               </div>
 
@@ -754,7 +872,7 @@ export default function SalonDetail() {
                 >
                   {joiningQueue ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Icon name="progress_activity" size={16} className="animate-spin" />
                       Joining...
                     </>
                   ) : (
@@ -767,37 +885,34 @@ export default function SalonDetail() {
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <div className="flex border-b border-gray-100">
+        <div className="card-v2 overflow-hidden">
+          <div className="flex gap-2 p-2 bg-gray-50/80">
             <button
               onClick={() => setActiveTab('services')}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'services'
-                  ? 'text-ghana-green border-b-2 border-ghana-green'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`tab-pill flex-1 ${activeTab === 'services' ? 'tab-pill-active' : 'tab-pill-inactive'}`}
             >
-              Services ({services.length})
+              <span className="flex items-center justify-center gap-1.5">
+                <Icon name="content_cut" size={16} />
+                Services ({services.length})
+              </span>
             </button>
             <button
               onClick={() => setActiveTab('staff')}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'staff'
-                  ? 'text-ghana-green border-b-2 border-ghana-green'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`tab-pill flex-1 ${activeTab === 'staff' ? 'tab-pill-active' : 'tab-pill-inactive'}`}
             >
-              Staff ({workers.length})
+              <span className="flex items-center justify-center gap-1.5">
+                <Icon name="person" size={16} />
+                Staff ({workers.length})
+              </span>
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'reviews'
-                  ? 'text-ghana-green border-b-2 border-ghana-green'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`tab-pill flex-1 ${activeTab === 'reviews' ? 'tab-pill-active' : 'tab-pill-inactive'}`}
             >
-              Reviews ({reviews.length})
+              <span className="flex items-center justify-center gap-1.5">
+                <Icon name="star" size={16} />
+                Reviews ({reviews.length})
+              </span>
             </button>
           </div>
 
@@ -807,19 +922,19 @@ export default function SalonDetail() {
               <div>
                 {services.length === 0 ? (
                   <div className="text-center py-8">
-                    <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <Icon name="store" size={48} className="text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No services listed yet</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {services.map((service) => (
                       <div
                         key={service.id}
-                        className="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="card-v2 p-4 flex items-start justify-between"
                       >
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-medium text-gray-900">{service.name}</h3>
+                            <h3 className="font-semibold text-gray-900">{service.name}</h3>
                             {service.promoLabel && (
                               <span className="px-2 py-0.5 bg-ghana-gold/20 text-amber-700 text-xs font-medium rounded-full">
                                 {service.promoLabel}
@@ -827,28 +942,28 @@ export default function SalonDetail() {
                             )}
                           </div>
                           {service.description && (
-                            <p className="text-sm text-gray-500 mt-1">{service.description}</p>
+                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{service.description}</p>
                           )}
                           <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
+                              <Icon name="schedule" size={14} />
                               {formatDuration(service.duration)}
                             </span>
                             {service.category && (
-                              <span className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-xs">
                                 {service.category}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right pl-4 flex-shrink-0">
                           {service.discountPrice && parseFloat(service.discountPrice) > 0 ? (
                             <div>
                               <p className="text-sm text-gray-400 line-through">{formatPrice(service.price)}</p>
-                              <p className="font-semibold text-ghana-green">{formatPrice(service.discountPrice)}</p>
+                              <p className="font-bold text-[#CE1126]">{formatPrice(service.discountPrice)}</p>
                             </div>
                           ) : (
-                            <p className="font-semibold text-ghana-green">{formatPrice(service.price)}</p>
+                            <p className="font-bold text-[#CE1126]">{formatPrice(service.price)}</p>
                           )}
                         </div>
                       </div>
@@ -863,54 +978,36 @@ export default function SalonDetail() {
               <div>
                 {workers.length === 0 ? (
                   <div className="text-center py-8">
-                    <User className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <Icon name="person" size={48} className="text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No staff members listed yet</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="scroll-smooth-x flex gap-6 pb-2 -mx-2 px-2">
                     {workers.map((worker) => (
                       <div
                         key={worker.id}
-                        className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg"
+                        className="flex-shrink-0 w-36 flex flex-col items-center text-center snap-start"
                       >
-                        <div className="w-12 h-12 rounded-full bg-ghana-green/10 flex items-center justify-center flex-shrink-0">
+                        <div className="w-20 h-20 rounded-full bg-ghana-green/10 flex items-center justify-center mb-3 overflow-hidden">
                           {worker.avatar ? (
                             <img
                               src={worker.avatar}
                               alt={worker.fullName}
-                              className="w-12 h-12 rounded-full object-cover"
+                              className="w-20 h-20 rounded-full object-cover"
                             />
                           ) : (
-                            <User className="w-6 h-6 text-ghana-green" />
+                            <Icon name="person" size={32} className="text-ghana-green" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-900 truncate">{worker.fullName}</h3>
-                          {worker.bio && (
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{worker.bio}</p>
-                          )}
-                          {worker.specialties && worker.specialties.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {worker.specialties.slice(0, 3).map((specialty, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-0.5 bg-ghana-gold/20 text-ghana-green text-xs rounded"
-                                >
-                                  {specialty}
-                                </span>
-                              ))}
-                              {worker.specialties.length > 3 && (
-                                <span className="text-xs text-gray-400">
-                                  +{worker.specialties.length - 3} more
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 mt-2">
-                            <Star className="w-4 h-4 text-ghana-gold fill-current" />
-                            <span className="text-sm font-medium">{worker.rating?.toFixed(1) || '0.0'}</span>
-                            <span className="text-sm text-gray-500">({worker.reviewCount || 0})</span>
-                          </div>
+                        <h3 className="font-medium text-gray-900 text-sm truncate w-full">{worker.fullName}</h3>
+                        {worker.specialties && worker.specialties.length > 0 && (
+                          <p className="text-xs text-gray-500 mt-0.5 truncate w-full">
+                            {worker.specialties.slice(0, 2).join(', ')}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1 mt-1.5">
+                          <Icon name="star" size={14} filled className="text-ghana-gold" />
+                          <span className="text-xs font-medium">{worker.rating?.toFixed(1) || '0.0'}</span>
                         </div>
                       </div>
                     ))}
@@ -924,20 +1021,25 @@ export default function SalonDetail() {
               <div>
                 {reviewsLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-8 h-8 text-ghana-green animate-spin" />
+                    <Icon name="progress_activity" size={32} className="text-ghana-green animate-spin" />
                   </div>
                 ) : reviews.length === 0 ? (
                   <div className="text-center py-8">
-                    <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <Icon name="star" size={48} className="text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No reviews yet</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {reviews.map((review) => (
-                      <div key={review.id} className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-start justify-between mb-2">
+                      <div
+                        key={review.id}
+                        className="card-v2 p-5"
+                      >
+                        {/* Header: Avatar, Name, Rating */}
+                        <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-ghana-green/10 flex items-center justify-center">
+                            {/* Avatar with first letter */}
+                            <div className="w-10 h-10 rounded-full bg-ghana-green/10 flex items-center justify-center flex-shrink-0">
                               {review.customer.avatar ? (
                                 <img
                                   src={review.customer.avatar}
@@ -945,30 +1047,59 @@ export default function SalonDetail() {
                                   className="w-10 h-10 rounded-full object-cover"
                                 />
                               ) : (
-                                <User className="w-5 h-5 text-ghana-green" />
+                                <span className="text-sm font-semibold text-ghana-green">
+                                  {review.customer.firstName.charAt(0).toUpperCase()}
+                                </span>
                               )}
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-semibold text-gray-900 text-sm">
                                 {review.customer.firstName} {review.customer.lastName}
                               </p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(review.createdAt).toLocaleDateString('en-GH', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                })}
-                              </p>
+                              {/* City badge */}
+                              {review.customer.city && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <Icon name="location_on" size={10} className="text-gray-400" />
+                                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {review.customer.city}, Ghana
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-ghana-gold fill-current" />
-                            <span className="font-medium">{review.rating}</span>
+                          {/* Star rating badge */}
+                          <div className="flex items-center gap-1 bg-ghana-gold/10 px-2.5 py-1 rounded-full">
+                            <Icon name="star" size={14} filled className="text-ghana-gold" />
+                            <span className="font-bold text-sm text-ghana-green">{review.rating}</span>
                           </div>
                         </div>
+
+                        {/* Review text */}
                         {review.comment && (
-                          <p className="text-gray-600 mt-2">{review.comment}</p>
+                          <p className="text-gray-700 text-sm leading-relaxed mb-3">{review.comment}</p>
                         )}
+
+                        {/* Service info */}
+                        {(review.service || review.worker) && (
+                          <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                            <Icon name="store" size={14} className="text-ghana-green" />
+                            <span>
+                              {review.service?.name || 'Service'}
+                              {review.worker && (
+                                <span className="text-gray-600"> with <span className="font-medium">{review.worker.fullName}</span></span>
+                              )}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Date */}
+                        <p className="text-xs text-gray-400 mt-3">
+                          {new Date(review.createdAt).toLocaleDateString('en-GH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </p>
                       </div>
                     ))}
                     {reviewsTotal > reviews.length && (
@@ -983,6 +1114,19 @@ export default function SalonDetail() {
           </div>
         </div>
       </div>
+
+      {/* Sticky Book Button - Mobile */}
+      {showStickyBook && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-gradient-to-t from-white via-white to-transparent md:hidden animate-slide-up">
+          <button
+            onClick={handleBookNow}
+            className="w-full py-3.5 bg-[#CE1126] text-white font-semibold rounded-xl shadow-elevated flex items-center justify-center gap-2 hover:bg-[#CE1126]/90 transition-colors"
+          >
+            <Icon name="calendar_today" size={20} />
+            Book Now
+          </button>
+        </div>
+      )}
     </div>
   )
 }

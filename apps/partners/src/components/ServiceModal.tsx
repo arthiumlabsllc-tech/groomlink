@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import Icon from './Icon'
 import { api, Service } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
@@ -146,35 +146,41 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-md"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-md h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-2xl shadow-elevated w-full max-w-md h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {isEditMode ? 'Edit Service' : 'Add Service'}
-          </h2>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-ghana-green/10 rounded-lg flex items-center justify-center">
+              <Icon name={isEditMode ? 'edit' : 'add_circle'} size={20} className="text-ghana-green" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {isEditMode ? 'Edit Service' : 'Add Service'}
+            </h2>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="btn-ripple p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <Icon name="close" size={20} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
+              <Icon name="error" size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
               Service Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -184,13 +190,13 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
               value={formData.name}
               onChange={handleChange}
               placeholder="e.g., Classic Haircut"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1.5">
               Category <span className="text-red-500">*</span>
             </label>
             <select
@@ -198,7 +204,7 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors bg-white"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
               required
             >
               <option value="">Select a category</option>
@@ -210,7 +216,7 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Duration (mins) <span className="text-red-500">*</span>
               </label>
               <input
@@ -221,13 +227,13 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
                 onChange={handleChange}
                 placeholder="30"
                 min="5"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Price (GHS) <span className="text-red-500">*</span>
               </label>
               <input
@@ -239,18 +245,22 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
                 placeholder="50.00"
                 min="0"
                 step="0.01"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
                 required
               />
             </div>
           </div>
 
           {/* Discount Section */}
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-sm font-medium text-gray-700 mb-3">Discount / Promo (Optional)</p>
+          <div className="pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Icon name="sell" size={16} className="text-ghana-gold" />
+              <p className="text-sm font-medium text-gray-700">Discount / Promo</p>
+              <span className="text-xs text-gray-400">(Optional)</span>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="discountPrice" className="block text-sm text-gray-600 mb-1">
+                <label htmlFor="discountPrice" className="block text-sm text-gray-600 mb-1.5">
                   Discount Price (GHS)
                 </label>
                 <input
@@ -262,12 +272,12 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
                   placeholder="40.00"
                   min="0"
                   step="0.01"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label htmlFor="promoLabel" className="block text-sm text-gray-600 mb-1">
+                <label htmlFor="promoLabel" className="block text-sm text-gray-600 mb-1.5">
                   Promo Label
                 </label>
                 <input
@@ -278,21 +288,26 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
                   onChange={handleChange}
                   placeholder="e.g., 20% OFF"
                   maxLength={50}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
                 />
               </div>
             </div>
             {formData.discountPrice && formData.price && (
-              <p className="text-xs text-gray-500 mt-2">
-                {parseFloat(formData.discountPrice) < parseFloat(formData.price) 
-                  ? `Customers save GHS ${(parseFloat(formData.price) - parseFloat(formData.discountPrice)).toFixed(2)}`
-                  : 'Discount must be less than regular price'}
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                {parseFloat(formData.discountPrice) < parseFloat(formData.price) ? (
+                  <>
+                    <Icon name="savings" size={14} className="text-green-500" />
+                    <span className="text-green-600">Customers save GHS {(parseFloat(formData.price) - parseFloat(formData.discountPrice)).toFixed(2)}</span>
+                  </>
+                ) : (
+                  <span className="text-red-500">Discount must be less than regular price</span>
+                )}
               </p>
             )}
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1.5">
               Description <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <textarea
@@ -302,7 +317,7 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
               onChange={handleChange}
               placeholder="Describe the service..."
               rows={3}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors resize-none"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white resize-none"
             />
           </div>
 
@@ -311,18 +326,18 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              className="btn-ripple flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-all duration-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="btn-ripple flex-1 px-4 py-2.5 bg-ghana-green text-white rounded-xl hover:bg-ghana-green/90 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Icon name="progress_activity" size={16} className="animate-spin" />
                   {isEditMode ? 'Saving...' : 'Adding...'}
                 </>
               ) : (

@@ -30,15 +30,39 @@ body {
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-transparent outline-none transition-all;
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green outline-none transition-all duration-200;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-shadow hover:shadow-md;
+  }
+  
+  .card-horizontal {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-shadow hover:shadow-md flex flex-row items-center gap-4;
   }
   
   .stat-card {
     @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md;
+  }
+  
+  .chip {
+    @apply rounded-full px-4 py-2 border border-gray-200 transition-all duration-200 cursor-pointer;
+  }
+  
+  .chip-active {
+    @apply bg-primary text-white border-primary;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .section-title {
+    @apply text-xl font-bold text-text-primary;
+  }
+  
+  .section-subtitle {
+    @apply text-sm text-text-secondary;
   }
 }
 
@@ -54,8 +78,53 @@ body {
   }
 }
 
+/* Card entrance animation */
+@keyframes slide-in-up {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Pulse animation for live elements */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes pulse-logo {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.92);
+  }
+}
+
+.animate-pulse-logo {
+  animation: pulse-logo 1.5s ease-in-out infinite;
+}
+
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
 }
 
 /* Hide scrollbar for mobile tabs */
@@ -65,4 +134,123 @@ body {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ===== Modern 2026 Design System ===== */
+
+/* Shimmer skeleton */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.glass-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Button with ripple effect */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+.btn-ripple:active::after {
+  transform: scale(0);
+  opacity: 1;
+  transition: 0s;
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #CE1126, #006B3F);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-gold {
+  background: linear-gradient(135deg, #CE1126, #FCD116);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Fade-in on scroll (used with IntersectionObserver) */
+.fade-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.fade-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Refined card styles */
+.card-v2 {
+  @apply bg-white rounded-2xl shadow-card transition-all duration-300;
+}
+.card-v2:hover {
+  @apply shadow-card-hover -translate-y-0.5;
+}
+
+/* Pill-style tab */
+.tab-pill {
+  @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200;
+}
+.tab-pill-active {
+  @apply bg-[#CE1126] text-white shadow-sm;
+}
+.tab-pill-inactive {
+  @apply bg-gray-100 text-gray-600 hover:bg-gray-200;
+}
+
+/* Toggle switch */
+.toggle-switch {
+  @apply relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200;
+}
+.toggle-switch-on {
+  @apply bg-[#CE1126];
+}
+.toggle-switch-off {
+  @apply bg-gray-300;
+}
+.toggle-switch-dot {
+  @apply inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200 shadow-sm;
+}
+
+/* Smooth scrollbar */
+.scroll-smooth-x {
+  @apply overflow-x-auto scroll-smooth snap-x snap-mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-smooth-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* Page transition */
+.page-enter {
+  animation: fadeInUp 0.4s ease-out;
 }

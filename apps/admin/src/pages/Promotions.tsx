@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Copy, Gift, Loader2, Send, Check, AlertCircle } from 'lucide-react';
+import Icon from '../components/Icon';
 import { useCoupons, useCreateCoupon, useDeleteCoupon } from '../hooks';
 import { formatDate } from '../lib/utils';
 import type { CreateCouponData } from '../api';
@@ -47,19 +47,16 @@ export function Promotions() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
-          </div>
+      <div className="page-enter space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2,3].map(i => <div key={i} className="card-v2 p-5"><div className="skeleton-shimmer h-32 w-full" /></div>)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -69,16 +66,16 @@ export function Promotions() {
         <div className="flex gap-3">
           <button
             onClick={() => setShowPushModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-[#006B3F] text-[#006B3F] rounded-xl hover:bg-[#006B3F]/5 transition-colors font-medium"
+            className="btn-ripple flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-[#006B3F] text-[#006B3F] rounded-xl hover:bg-[#006B3F]/5 transition-colors font-medium"
           >
-            <Send size={18} />
+            <Icon name="send" size={18} />
             Push Notification
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
+            className="btn-ripple flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
           >
-            <Plus size={18} />
+            <Icon name="add" size={18} />
             Create Coupon
           </button>
         </div>
@@ -91,8 +88,8 @@ export function Promotions() {
           return (
             <div 
               key={coupon.id} 
-              className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all duration-200 hover:shadow-md ${
-                expired ? 'border-gray-200 opacity-60' : 'border-gray-100'
+              className={`card-v2 overflow-hidden transition-all duration-200 ${
+                expired ? 'opacity-60' : ''
               }`}
             >
               {/* Card Header */}
@@ -102,7 +99,7 @@ export function Promotions() {
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                       expired ? 'bg-gray-200' : 'bg-[#FCD116]'
                     }`}>
-                      <Gift className={expired ? 'text-gray-500' : 'text-[#1a1a2e]'} size={24} />
+                      <Icon name="redeem" className={expired ? 'text-gray-500' : 'text-[#1a1a2e]'} size={24} />
                     </div>
                     <div>
                       <p className="font-mono text-lg font-bold text-gray-800">{coupon.code}</p>
@@ -143,16 +140,16 @@ export function Promotions() {
               <div className="px-4 pb-4 flex gap-2">
                 <button 
                   onClick={() => copyToClipboard(coupon.code)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-medium text-sm"
+                  className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-medium text-sm"
                 >
                   {copiedCode === coupon.code ? (
                     <>
-                      <Check size={16} />
+                      <Icon name="check" size={16} />
                       Copied!
                     </>
                   ) : (
                     <>
-                      <Copy size={16} />
+                      <Icon name="content_copy" size={16} />
                       Copy Code
                     </>
                   )}
@@ -160,9 +157,9 @@ export function Promotions() {
                 <button 
                   onClick={() => handleDelete(coupon.id)}
                   disabled={deleteCoupon.isPending}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#CE1126]/10 text-[#CE1126] rounded-xl hover:bg-[#CE1126]/20 disabled:opacity-50 transition-colors font-medium text-sm"
+                  className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 bg-[#CE1126]/10 text-[#CE1126] rounded-xl hover:bg-[#CE1126]/20 disabled:opacity-50 transition-colors font-medium text-sm"
                 >
-                  <Trash2 size={16} />
+                  <Icon name="delete" size={16} />
                 </button>
               </div>
             </div>
@@ -172,15 +169,15 @@ export function Promotions() {
 
       {/* Empty State */}
       {coupons.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+        <div className="card-v2 p-12 text-center">
           <div className="w-16 h-16 bg-[#FCD116]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Gift size={32} className="text-[#B8960F]" />
+            <Icon name="redeem" size={32} className="text-[#B8960F]" />
           </div>
           <p className="text-gray-500 font-medium">No coupons yet</p>
           <p className="text-sm text-gray-400 mt-1">Create your first coupon to start promoting</p>
           <button
             onClick={() => setShowModal(true)}
-            className="mt-4 px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium text-sm"
+            className="btn-ripple mt-4 px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium text-sm"
           >
             Create Coupon
           </button>
@@ -189,8 +186,8 @@ export function Promotions() {
 
       {/* Create Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-md">
             <div className="p-6 border-b border-gray-100">
               <h2 className="text-xl font-bold text-gray-800">Create New Coupon</h2>
               <p className="text-sm text-gray-500 mt-1">Generate a discount code for your customers</p>
@@ -272,18 +269,18 @@ export function Promotions() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  className="btn-ripple flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createCoupon.isPending}
-                  className="flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                  className="btn-ripple flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   {createCoupon.isPending ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" />
+                      <Icon name="progress_activity" size={18} className="animate-spin" />
                       Creating...
                     </>
                   ) : (
@@ -298,22 +295,22 @@ export function Promotions() {
 
       {/* Push Notification Modal */}
       {showPushModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-md">
             <div className="p-6 border-b border-gray-100">
               <h2 className="text-xl font-bold text-gray-800">Push Notification</h2>
               <p className="text-sm text-gray-500 mt-1">Send a promotional notification to users</p>
             </div>
             <div className="p-6">
               <div className="bg-[#FCD116]/10 border border-[#FCD116]/20 rounded-xl p-4 flex items-start gap-3">
-                <AlertCircle size={20} className="text-[#B8960F] flex-shrink-0 mt-0.5" />
+                <Icon name="error" size={20} className="text-[#B8960F] flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-[#B8960F]">
                   This feature is coming soon. You'll be able to send push notifications about new promotions to your users.
                 </p>
               </div>
               <button
                 onClick={() => setShowPushModal(false)}
-                className="w-full mt-4 px-4 py-3 bg-gray-100 rounded-xl text-gray-700 hover:bg-gray-200 font-medium transition-colors"
+                className="btn-ripple w-full mt-4 px-4 py-3 bg-gray-100 rounded-xl text-gray-700 hover:bg-gray-200 font-medium transition-colors"
               >
                 Close
               </button>

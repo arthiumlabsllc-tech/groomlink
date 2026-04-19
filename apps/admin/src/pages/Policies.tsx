@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, X, Loader2, Settings, AlertCircle } from 'lucide-react';
+import Icon from '../components/Icon';
 import { usePolicies, useUpdatePolicy } from '../hooks';
 import { formatDate } from '../lib/utils';
 import type { PlatformPolicy } from '../api/admin';
@@ -75,12 +75,10 @@ export function Policies() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
-          </div>
+      <div className="page-enter space-y-6">
+        <div className="card-v2 p-6">
+          <div className="skeleton-shimmer h-8 w-48 mb-4" />
+          {[1,2,3,4,5].map(i => <div key={i} className="skeleton-shimmer h-14 w-full mb-3" />)}
         </div>
       </div>
     );
@@ -89,7 +87,7 @@ export function Policies() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <AlertCircle size={48} className="text-[#CE1126]" />
+        <Icon name="error" size={48} className="text-[#CE1126]" />
         <p className="text-lg font-medium text-gray-600">Failed to load policies</p>
         <p className="text-sm text-gray-500">Please try again later</p>
       </div>
@@ -97,15 +95,15 @@ export function Policies() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Policy Management</h1>
           <p className="text-sm text-gray-500 mt-1">Configure platform-wide policies and settings</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
-          <Settings size={18} className="text-gray-400" />
+        <div className="flex items-center gap-2 px-4 py-2 card-v2">
+          <Icon name="settings" size={18} className="text-gray-400" />
           <span className="text-sm text-gray-500">Total:</span>
           <span className="text-lg font-bold text-gray-800">{policies?.length || 0}</span>
         </div>
@@ -114,10 +112,10 @@ export function Policies() {
       {/* Error Banner */}
       {saveError && (
         <div className="bg-[#CE1126]/10 border border-[#CE1126]/20 rounded-xl p-4 flex items-center gap-3">
-          <AlertCircle size={20} className="text-[#CE1126]" />
+          <Icon name="error" size={20} className="text-[#CE1126]" />
           <span className="text-[#CE1126] font-medium">{saveError}</span>
           <button onClick={() => setSaveError(null)} className="ml-auto">
-            <X size={18} className="text-[#CE1126]" />
+            <Icon name="close" size={18} className="text-[#CE1126]" />
           </button>
         </div>
       )}
@@ -125,11 +123,11 @@ export function Policies() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {policies?.map((policy) => (
-          <div key={policy.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div key={policy.id} className="card-v2 p-4 border-l-4 border-l-green-500">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
-                  <Settings size={20} className="text-[#006B3F]" />
+                  <Icon name="settings" size={20} className="text-[#006B3F]" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">{getPolicyLabel(policy.policyName)}</p>
@@ -163,25 +161,25 @@ export function Policies() {
                   <button
                     onClick={() => savePolicy(policy.id)}
                     disabled={updatePolicy.isPending}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium text-sm"
+                    className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium text-sm"
                   >
-                    {updatePolicy.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    {updatePolicy.isPending ? <Icon name="progress_activity" size={16} className="animate-spin" /> : <Icon name="save" size={16} />}
                     Save
                   </button>
                   <button
                     onClick={cancelEditing}
-                    className="flex items-center justify-center gap-2 py-2.5 px-4 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors font-medium text-sm"
+                    className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors font-medium text-sm"
                   >
-                    <X size={16} />
+                    <Icon name="close" size={16} />
                     Cancel
                   </button>
                 </>
               ) : (
                 <button
                   onClick={() => startEditing(policy)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[#006B3F] border-2 border-[#006B3F] hover:bg-[#006B3F]/10 rounded-xl transition-colors font-medium text-sm"
+                  className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 text-[#006B3F] border-2 border-[#006B3F] hover:bg-[#006B3F]/10 rounded-xl transition-colors font-medium text-sm"
                 >
-                  <Settings size={16} />
+                  <Icon name="settings" size={16} />
                   Edit
                 </button>
               )}
@@ -191,7 +189,7 @@ export function Policies() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="hidden md:block card-v2 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -239,26 +237,26 @@ export function Policies() {
                           <button
                             onClick={() => savePolicy(policy.id)}
                             disabled={updatePolicy.isPending}
-                            className="p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
+                            className="btn-ripple p-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors"
                             title="Save"
                           >
-                            {updatePolicy.isPending ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                            {updatePolicy.isPending ? <Icon name="progress_activity" size={18} className="animate-spin" /> : <Icon name="save" size={18} />}
                           </button>
                           <button
                             onClick={cancelEditing}
                             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Cancel"
                           >
-                            <X size={18} />
+                            <Icon name="close" size={18} />
                           </button>
                         </>
                       ) : (
                         <button
                           onClick={() => startEditing(policy)}
-                          className="p-2 text-[#006B3F] hover:bg-[#006B3F]/10 rounded-lg transition-colors"
+                          className="btn-ripple p-2 text-[#006B3F] hover:bg-[#006B3F]/10 rounded-xl transition-colors"
                           title="Edit"
                         >
-                          <Settings size={18} />
+                          <Icon name="settings" size={18} />
                         </button>
                       )}
                     </div>

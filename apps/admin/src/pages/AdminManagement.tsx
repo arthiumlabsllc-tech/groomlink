@@ -1,22 +1,5 @@
 import { useState } from 'react';
-import {
-  Shield,
-  Users,
-  UserCheck,
-  Crown,
-  Plus,
-  Loader2,
-  AlertCircle,
-  X,
-  Check,
-  Edit2,
-  Trash2,
-  Search,
-  Mail,
-  User,
-  CheckSquare,
-  Square,
-} from 'lucide-react';
+import Icon from '../components/Icon';
 import { useAdmins, useCreateAdmin, useUpdateAdminPermissions, useDeleteAdmin } from '../hooks';
 import { useAuth } from '../hooks';
 import { formatDate } from '../lib/utils';
@@ -162,19 +145,20 @@ export function AdminManagement() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
-          </div>
+      <div className="page-enter space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1,2,3].map(i => <div key={i} className="card-v2 p-5"><div className="skeleton-shimmer h-16 w-full" /></div>)}
+        </div>
+        <div className="card-v2 p-6">
+          <div className="skeleton-shimmer h-8 w-48 mb-4" />
+          {[1,2,3,4,5].map(i => <div key={i} className="skeleton-shimmer h-14 w-full mb-3" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -185,9 +169,9 @@ export function AdminManagement() {
         {currentUser?.role === 'SUPER_ADMIN' && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
+            className="btn-ripple flex items-center gap-2 px-4 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-lg shadow-[#006B3F]/25"
           >
-            <Plus size={18} />
+            <Icon name="add" size={18} />
             Add Admin
           </button>
         )}
@@ -195,10 +179,10 @@ export function AdminManagement() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="card-v2 p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-[#006B3F]/10 rounded-xl">
-              <Users className="text-[#006B3F]" size={24} />
+              <Icon name="group" className="text-[#006B3F]" size={24} />
             </div>
             <div>
               <p className="text-3xl font-bold text-gray-800">{totalAdmins}</p>
@@ -206,10 +190,10 @@ export function AdminManagement() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="card-v2 p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-[#FCD116]/20 rounded-xl">
-              <UserCheck className="text-[#B8960F]" size={24} />
+              <Icon name="how_to_reg" className="text-[#B8960F]" size={24} />
             </div>
             <div>
               <p className="text-3xl font-bold text-gray-800">{activeAdmins}</p>
@@ -217,10 +201,10 @@ export function AdminManagement() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="card-v2 p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-purple-50 rounded-xl">
-              <Crown className="text-purple-600" size={24} />
+              <Icon name="workspace_premium" className="text-purple-600" size={24} />
             </div>
             <div>
               <p className="text-3xl font-bold text-gray-800">{superAdmins}</p>
@@ -232,7 +216,7 @@ export function AdminManagement() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input
           type="text"
           placeholder="Search admins by name or email..."
@@ -243,10 +227,10 @@ export function AdminManagement() {
       </div>
 
       {/* Admin List */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="card-v2 overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Shield size={18} className="text-[#006B3F]" />
+            <Icon name="verified_user" size={18} className="text-[#006B3F]" />
             Admin Users
           </h2>
         </div>
@@ -254,7 +238,7 @@ export function AdminManagement() {
         {filteredAdmins.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="text-gray-300" size={32} />
+              <Icon name="group" className="text-gray-300" size={32} />
             </div>
             <p className="text-gray-500 font-medium">No admins found</p>
             <p className="text-sm text-gray-400 mt-1">
@@ -277,19 +261,19 @@ export function AdminManagement() {
                           {admin.firstName} {admin.lastName}
                         </p>
                         <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
-                          <Mail size={12} className="text-gray-400" />
+                          <Icon name="mail" size={12} className="text-gray-400" />
                           {admin.email}
                         </p>
                       </div>
                     </div>
                     {admin.role === 'SUPER_ADMIN' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                        <Crown size={12} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border-l-2 border-l-purple-500">
+                        <Icon name="workspace_premium" size={12} />
                         Super
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                        <Shield size={12} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border-l-2 border-l-blue-500">
+                        <Icon name="verified_user" size={12} />
                         Admin
                       </span>
                     )}
@@ -322,16 +306,16 @@ export function AdminManagement() {
                     <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
                       <button
                         onClick={() => handleEditPermissions(admin)}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[#006B3F] border-2 border-[#006B3F] hover:bg-[#006B3F]/10 rounded-xl transition-colors font-medium text-sm"
+                        className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 text-[#006B3F] border-2 border-[#006B3F] hover:bg-[#006B3F]/10 rounded-xl transition-colors font-medium text-sm"
                       >
-                        <Edit2 size={16} />
+                        <Icon name="edit" size={16} />
                         Edit Permissions
                       </button>
                       <button
                         onClick={() => handleDeleteClick(admin)}
-                        className="flex items-center justify-center gap-2 py-2.5 px-4 text-[#CE1126] border-2 border-[#CE1126] hover:bg-[#CE1126]/10 rounded-xl transition-colors font-medium text-sm"
+                        className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 text-[#CE1126] border-2 border-[#CE1126] hover:bg-[#CE1126]/10 rounded-xl transition-colors font-medium text-sm"
                       >
-                        <Trash2 size={16} />
+                        <Icon name="delete" size={16} />
                       </button>
                     </div>
                   )}
@@ -382,19 +366,19 @@ export function AdminManagement() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Mail size={14} className="text-gray-400" />
+                        <Icon name="mail" size={14} className="text-gray-400" />
                         {admin.email}
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       {admin.role === 'SUPER_ADMIN' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                          <Crown size={12} />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border-l-2 border-l-purple-500">
+                          <Icon name="workspace_premium" size={12} />
                           Super Admin
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                          <Shield size={12} />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border-l-2 border-l-blue-500">
+                          <Icon name="verified_user" size={12} />
                           Admin
                         </span>
                       )}
@@ -431,14 +415,14 @@ export function AdminManagement() {
                               className="p-2 text-gray-400 hover:text-[#006B3F] hover:bg-[#006B3F]/10 rounded-lg transition-colors"
                               title="Edit Permissions"
                             >
-                              <Edit2 size={16} />
+                              <Icon name="edit" size={16} />
                             </button>
                             <button
                               onClick={() => handleDeleteClick(admin)}
                               className="p-2 text-gray-400 hover:text-[#CE1126] hover:bg-[#CE1126]/10 rounded-lg transition-colors"
                               title="Delete Admin"
                             >
-                              <Trash2 size={16} />
+                              <Icon name="delete" size={16} />
                             </button>
                           </>
                         )}
@@ -455,8 +439,8 @@ export function AdminManagement() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
@@ -464,14 +448,14 @@ export function AdminManagement() {
                   <p className="text-sm text-gray-500 mt-1">Add a new admin user with page permissions</p>
                 </div>
                 <button onClick={closeModals} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <X size={20} className="text-gray-400" />
+                  <Icon name="close" size={20} className="text-gray-400" />
                 </button>
               </div>
             </div>
 
             {error && (
               <div className="mx-6 mt-4 p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
-                <AlertCircle size={16} />
+                <Icon name="error" size={16} />
                 {error}
               </div>
             )}
@@ -481,7 +465,7 @@ export function AdminManagement() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <Icon name="person" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       value={formData.firstName}
@@ -506,7 +490,7 @@ export function AdminManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <Icon name="mail" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input
                     type="email"
                     value={formData.email}
@@ -540,9 +524,9 @@ export function AdminManagement() {
                         className="text-[#006B3F]"
                       >
                         {formData.pages.includes(page.id) ? (
-                          <CheckSquare size={18} />
+                          <Icon name="check_box" size={18} />
                         ) : (
-                          <Square size={18} className="text-gray-400" />
+                          <Icon name="check_box_outline_blank" size={18} className="text-gray-400" />
                         )}
                       </button>
                       <span className="text-sm text-gray-700">{page.label}</span>
@@ -555,18 +539,18 @@ export function AdminManagement() {
                 <button
                   type="button"
                   onClick={closeModals}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  className="btn-ripple flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createAdmin.isPending}
-                  className="flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                  className="btn-ripple flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   {createAdmin.isPending ? (
                     <>
-                      <Loader2 className="animate-spin" size={18} />
+                      <Icon name="progress_activity" className="animate-spin" size={18} />
                       Creating...
                     </>
                   ) : (
@@ -581,8 +565,8 @@ export function AdminManagement() {
 
       {/* Edit Permissions Modal */}
       {showEditModal && selectedAdmin && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up max-w-lg w-full">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
@@ -592,14 +576,14 @@ export function AdminManagement() {
                   </p>
                 </div>
                 <button onClick={closeModals} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <X size={20} className="text-gray-400" />
+                  <Icon name="close" size={20} className="text-gray-400" />
                 </button>
               </div>
             </div>
 
             {error && (
               <div className="mx-6 mt-4 p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
-                <AlertCircle size={16} />
+                <Icon name="error" size={16} />
                 {error}
               </div>
             )}
@@ -628,9 +612,9 @@ export function AdminManagement() {
                         className="text-[#006B3F]"
                       >
                         {formData.pages.includes(page.id) ? (
-                          <CheckSquare size={18} />
+                          <Icon name="check_box" size={18} />
                         ) : (
-                          <Square size={18} className="text-gray-400" />
+                          <Icon name="check_box_outline_blank" size={18} className="text-gray-400" />
                         )}
                       </button>
                       <span className="text-sm text-gray-700">{page.label}</span>
@@ -643,18 +627,18 @@ export function AdminManagement() {
                 <button
                   type="button"
                   onClick={closeModals}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  className="btn-ripple flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updatePermissions.isPending}
-                  className="flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                  className="btn-ripple flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   {updatePermissions.isPending ? (
                     <>
-                      <Loader2 className="animate-spin" size={18} />
+                      <Icon name="progress_activity" className="animate-spin" size={18} />
                       Saving...
                     </>
                   ) : (
@@ -669,11 +653,11 @@ export function AdminManagement() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedAdmin && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up max-w-md w-full">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-[#CE1126]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="text-[#CE1126]" size={32} />
+                <Icon name="delete" className="text-[#CE1126]" size={32} />
               </div>
               <h2 className="text-xl font-bold text-gray-800">Delete Admin</h2>
               <p className="text-sm text-gray-500 mt-2">
@@ -686,7 +670,7 @@ export function AdminManagement() {
 
               {error && (
                 <div className="mt-4 p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
-                  <AlertCircle size={16} />
+                  <Icon name="error" size={16} />
                   {error}
                 </div>
               )}
@@ -694,18 +678,18 @@ export function AdminManagement() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={closeModals}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  className="btn-ripple flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmDelete}
                   disabled={deleteAdmin.isPending}
-                  className="flex-1 px-4 py-3 bg-[#CE1126] text-white rounded-xl hover:bg-[#b81022] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                  className="btn-ripple flex-1 px-4 py-3 bg-[#CE1126] text-white rounded-xl hover:bg-[#b81022] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   {deleteAdmin.isPending ? (
                     <>
-                      <Loader2 className="animate-spin" size={18} />
+                      <Icon name="progress_activity" className="animate-spin" size={18} />
                       Deleting...
                     </>
                   ) : (

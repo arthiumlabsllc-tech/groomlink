@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Scissors, Plus, Clock, Tag, Store, ArrowRightCircle, Pencil, Trash2, Percent } from 'lucide-react'
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api, Service } from '../lib/api'
@@ -8,6 +8,35 @@ import ServiceModal from '../components/ServiceModal'
 import DeleteServiceModal from '../components/DeleteServiceModal'
 
 const categories = ['All', 'Haircut', 'Braiding', 'Styling', 'Coloring', 'Treatment', 'Beard']
+
+function ServiceSkeleton() {
+  return (
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div key={i} className="card-v2 p-4 sm:p-6">
+          <div className="flex items-start justify-between mb-4 gap-2">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 skeleton-shimmer rounded-xl"></div>
+            <div className="w-20 h-6 skeleton-shimmer rounded-full"></div>
+          </div>
+          <div className="w-3/4 h-5 skeleton-shimmer rounded mb-2"></div>
+          <div className="w-full h-4 skeleton-shimmer rounded mb-1"></div>
+          <div className="w-2/3 h-4 skeleton-shimmer rounded mb-4"></div>
+          <div className="flex gap-4 mb-4">
+            <div className="w-20 h-4 skeleton-shimmer rounded"></div>
+            <div className="w-16 h-4 skeleton-shimmer rounded"></div>
+          </div>
+          <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+            <div className="w-24 h-7 skeleton-shimmer rounded"></div>
+            <div className="flex gap-2">
+              <div className="w-8 h-8 skeleton-shimmer rounded-lg"></div>
+              <div className="w-8 h-8 skeleton-shimmer rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function Services() {
   const { salonId, loading: salonLoading, hasSalon } = useSalon()
@@ -57,16 +86,25 @@ export default function Services() {
 
   const formatPrice = (price: string | number) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price
+    if (isNaN(numPrice)) return '0.00'
     return numPrice.toFixed(2)
+  }
+
+  const getDiscountPercent = (price: string | number, discount: string | number) => {
+    const p = typeof price === 'string' ? parseFloat(price) : price
+    const d = typeof discount === 'string' ? parseFloat(discount) : discount
+    if (isNaN(p) || isNaN(d) || p <= 0) return 0
+    return Math.round(((p - d) / p) * 100)
   }
 
   return (
     <Layout activeTab="services">
+      <div className="page-enter">
       {/* No Salon Setup Warning */}
       {hasSalon === false && !loading && (
-        <div className="card text-center py-12 mb-6">
+        <div className="card-v2 text-center py-12 mb-6">
           <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Store className="w-10 h-10 text-ghana-gold" />
+            <Icon name="store" size={40} className="text-ghana-gold" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Set up your salon first</h3>
           <p className="text-gray-500 max-w-md mx-auto mb-6">
@@ -74,10 +112,10 @@ export default function Services() {
           </p>
           <Link 
             to="/settings" 
-            className="btn-primary inline-flex items-center gap-2"
+            className="btn-primary btn-ripple inline-flex items-center gap-2"
           >
             Create Salon Profile
-            <ArrowRightCircle className="w-5 h-5" />
+            <Icon name="arrow_forward" size={20} />
           </Link>
         </div>
       )}
@@ -95,9 +133,9 @@ export default function Services() {
             setEditingService(null)
             setShowAddModal(true)
           }}
-          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
+          className="btn-primary btn-ripple flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
         >
-          <Plus className="w-5 h-5" />
+          <Icon name="add" size={20} />
           Add Service
         </button>
       </div>
@@ -108,10 +146,10 @@ export default function Services() {
           <button
             key={category}
             onClick={() => setActiveCategory(category)}
-            className={`px-4 py-2 rounded-full font-medium text-sm transition-all whitespace-nowrap flex-shrink-0 min-h-[44px] ${
+            className={`tab-pill whitespace-nowrap flex-shrink-0 min-h-[44px] ${
               activeCategory === category
-                ? 'bg-ghana-green text-white shadow-md'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                ? 'tab-pill-active'
+                : 'tab-pill-inactive'
             }`}
           >
             {category}
@@ -120,23 +158,18 @@ export default function Services() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading services...</p>
-        </div>
+        <ServiceSkeleton />
       ) : filteredServices.length > 0 ? (
         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredServices.map((service) => (
-            <div key={service.id} className="card hover:shadow-md transition-shadow p-4 sm:p-6">
+            <div key={service.id} className="card-v2 p-4 sm:p-6 group">
               <div className="flex items-start justify-between mb-4 gap-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-ghana-green/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Scissors className="w-5 h-5 sm:w-6 sm:h-6 text-ghana-green" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-ghana-green/10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-ghana-green/15 transition-colors">
+                  <Icon name="content_cut" size={24} className="text-ghana-green" />
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${getCategoryColor(service.category)}`}>
-                    {service.category || 'General'}
-                  </span>
-                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${getCategoryColor(service.category)}`}>
+                  {service.category || 'General'}
+                </span>
               </div>
 
               <h3 className="font-semibold text-gray-900 text-lg mb-2">{service.name}</h3>
@@ -146,11 +179,11 @@ export default function Services() {
 
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                  <Clock className="w-4 h-4 text-gray-400" />
+                  <Icon name="schedule" size={16} className="text-gray-400" />
                   <span>{service.duration} mins</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-sm">
-                  <Tag className="w-4 h-4 text-gray-400" />
+                  <span className={`w-2 h-2 rounded-full ${service.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                   <span className={service.isActive ? 'text-green-600' : 'text-gray-500'}>
                     {service.isActive ? 'Active' : 'Inactive'}
                   </span>
@@ -160,14 +193,17 @@ export default function Services() {
               {/* Price Display with Discount */}
               <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                 <div>
-                  <span className="text-sm text-gray-500">Price</span>
+                  <span className="text-xs text-gray-400 uppercase tracking-wider">Price</span>
                   {service.discountPrice && parseFloat(service.discountPrice) > 0 ? (
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm text-gray-400 line-through">GH₵ {formatPrice(service.price)}</span>
                       <span className="text-2xl font-bold text-ghana-green">GH₵ {formatPrice(service.discountPrice)}</span>
+                      <span className="px-2 py-0.5 bg-red-50 text-red-600 text-xs font-bold rounded-full flex items-center gap-1">
+                        -{getDiscountPercent(service.price, service.discountPrice)}%
+                      </span>
                       {service.promoLabel && (
                         <span className="px-2 py-0.5 bg-ghana-gold/20 text-amber-700 text-xs font-medium rounded-full flex items-center gap-1">
-                          <Percent className="w-3 h-3" />
+                          <Icon name="percent" size={14} />
                           {service.promoLabel}
                         </span>
                       )}
@@ -178,20 +214,20 @@ export default function Services() {
                 </div>
                 
                 {/* Edit/Delete Buttons */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => setEditingService(service)}
-                    className="p-2 text-gray-400 hover:text-ghana-green hover:bg-ghana-green/10 rounded-lg transition-colors"
+                    className="btn-ripple p-2 text-gray-400 hover:text-ghana-green hover:bg-ghana-green/10 rounded-lg transition-colors"
                     title="Edit service"
                   >
-                    <Pencil className="w-5 h-5" />
+                    <Icon name="edit" size={20} />
                   </button>
                   <button
                     onClick={() => setDeletingService(service)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="btn-ripple p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Delete service"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Icon name="delete" size={20} />
                   </button>
                 </div>
               </div>
@@ -199,9 +235,9 @@ export default function Services() {
           ))}
         </div>
       ) : (
-        <div className="card text-center py-16">
+        <div className="card-v2 text-center py-16">
           <div className="w-20 h-20 bg-ghana-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Scissors className="w-10 h-10 text-ghana-gold" />
+            <Icon name="content_cut" size={40} className="text-ghana-gold" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No services listed</h3>
           <p className="text-gray-500 max-w-md mx-auto mb-6">
@@ -212,9 +248,9 @@ export default function Services() {
               setEditingService(null)
               setShowAddModal(true)
             }}
-            className="btn-primary flex items-center justify-center gap-2 mx-auto"
+            className="btn-primary btn-ripple flex items-center justify-center gap-2 mx-auto"
           >
-            <Plus className="w-5 h-5" />
+            <Icon name="add" size={20} />
             Add Your First Service
           </button>
         </div>
@@ -240,6 +276,7 @@ export default function Services() {
         onSuccess={fetchServices}
         service={deletingService}
       />
+      </div>
     </Layout>
   )
 }

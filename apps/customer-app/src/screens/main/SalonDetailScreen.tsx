@@ -40,6 +40,10 @@ const COLORS = {
   border: '#E5E7EB',
 };
 
+// Default GroomLink assets
+const DEFAULT_LOGO_ICON = 'https://groomlinkgh.com/api/uploads/assets/logo-icon.png';
+const DEFAULT_LOGO_WHITE = 'https://groomlinkgh.com/api/uploads/assets/email-logo.png';
+
 type SalonDetailRouteProp = RouteProp<MainStackParamList, 'SalonDetail'>;
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -289,11 +293,11 @@ export default function SalonDetailScreen() {
       >
         {/* Hero Image Section */}
         <View style={styles.heroSection}>
-          {salon.images?.[0] ? (
-            <Image source={{ uri: salon.images[0] }} style={styles.heroImage} />
+          {salon.images?.[0] || salon.coverImage ? (
+            <Image source={{ uri: salon.images?.[0] || salon.coverImage }} style={styles.heroImage} />
           ) : (
-            <View style={styles.heroPlaceholder}>
-              <Ionicons name="storefront" size={64} color={COLORS.textSecondary} />
+            <View style={[styles.heroPlaceholder, { backgroundColor: COLORS.primaryGreen }]}>
+              <Image source={{ uri: DEFAULT_LOGO_WHITE }} style={styles.heroLogo} resizeMode="contain" />
             </View>
           )}
           <View style={styles.heroOverlay}>
@@ -622,6 +626,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  heroLogo: {
+    width: 120,
+    height: 120,
+    opacity: 0.9,
   },
   heroOverlay: {
     position: 'absolute',

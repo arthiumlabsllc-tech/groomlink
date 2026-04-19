@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Loader2, Wallet, TrendingUp, RotateCcw, ChevronLeft, ChevronRight, Search, AlertCircle } from 'lucide-react';
+import Icon from '../components/Icon';
 import { useEscrow } from '../hooks';
 import { formatCurrency, formatDate } from '../lib/utils';
 import type { EscrowAccount } from '../api/admin';
@@ -64,12 +64,13 @@ export function Escrow() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
-          </div>
+      <div className="page-enter space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1,2,3].map(i => <div key={i} className="card-v2 p-6"><div className="skeleton-shimmer h-20 w-full" /></div>)}
+        </div>
+        <div className="card-v2 p-6">
+          <div className="skeleton-shimmer h-8 w-48 mb-4" />
+          {[1,2,3,4,5].map(i => <div key={i} className="skeleton-shimmer h-14 w-full mb-3" />)}
         </div>
       </div>
     );
@@ -78,7 +79,7 @@ export function Escrow() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <AlertCircle size={48} className="text-[#CE1126]" />
+        <Icon name="error" size={48} className="text-[#CE1126]" />
         <p className="text-lg font-medium text-gray-600">Failed to load escrow data</p>
         <p className="text-sm text-gray-500">Please try again later</p>
       </div>
@@ -86,7 +87,7 @@ export function Escrow() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -102,7 +103,7 @@ export function Escrow() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-white/20 rounded-xl">
-                <Wallet size={24} />
+                <Icon name="account_balance_wallet" size={24} />
               </div>
               <span className="text-sm font-medium text-white/80">Total Held</span>
             </div>
@@ -115,7 +116,7 @@ export function Escrow() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-white/20 rounded-xl">
-                <TrendingUp size={24} />
+                <Icon name="trending_up" size={24} />
               </div>
               <span className="text-sm font-medium text-white/80">Total Released</span>
             </div>
@@ -128,7 +129,7 @@ export function Escrow() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-white/20 rounded-xl">
-                <RotateCcw size={24} />
+                <Icon name="refresh" size={24} />
               </div>
               <span className="text-sm font-medium text-white/80">Total Refunded</span>
             </div>
@@ -140,7 +141,7 @@ export function Escrow() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search by salon, customer, or ID..."
@@ -179,7 +180,7 @@ export function Escrow() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="hidden md:block card-v2 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -230,7 +231,7 @@ export function Escrow() {
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
+        <div className="flex items-center justify-between card-v2 px-4 py-3">
           <p className="text-sm text-gray-600">
             Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, pagination.total)} of {pagination.total} records
           </p>
@@ -240,7 +241,7 @@ export function Escrow() {
               disabled={page === 1}
               className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronLeft size={20} />
+              <Icon name="chevron_left" size={20} />
             </button>
             <span className="text-sm font-medium text-gray-700">
               Page {page} of {pagination.totalPages}
@@ -250,7 +251,7 @@ export function Escrow() {
               disabled={page === pagination.totalPages}
               className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronRight size={20} />
+              <Icon name="chevron_right" size={20} />
             </button>
           </div>
         </div>
@@ -261,12 +262,13 @@ export function Escrow() {
 
 // Mobile Card Component
 function EscrowCard({ escrow, getStatusBadge }: { escrow: EscrowAccount; getStatusBadge: (status: string) => JSX.Element }) {
+  const borderColor = escrow.status?.toUpperCase() === 'HELD' ? 'border-l-yellow-500' : escrow.status?.toUpperCase() === 'RELEASED' ? 'border-l-green-500' : 'border-l-blue-500';
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+    <div className={`card-v2 p-4 border-l-4 ${borderColor}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
-            <Wallet size={20} className="text-[#006B3F]" />
+            <Icon name="account_balance_wallet" size={20} className="text-[#006B3F]" />
           </div>
           <div>
             <p className="font-semibold text-gray-800">{escrow.booking?.salon?.businessName || 'Unknown Salon'}</p>

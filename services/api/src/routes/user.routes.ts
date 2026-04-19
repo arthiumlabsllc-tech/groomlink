@@ -25,6 +25,10 @@ router.delete('/favorites/staff/:staffId', authenticateToken, userController.rem
 // Bookings
 router.get('/bookings', authenticateToken, userController.getUserBookings);
 
+// Onboarding & Preferences
+router.put('/preferences', authenticateToken, userController.updatePreferences);
+router.put('/onboarding-complete', authenticateToken, userController.completeOnboarding);
+
 // No-Show Status
 router.get('/no-show-status', authenticateToken, userController.getNoShowStatusHandler);
 

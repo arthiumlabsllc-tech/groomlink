@@ -17,8 +17,9 @@ export interface MaintenanceSettings {
 
 export interface PaymentSettings {
   paymentGateway: string;
-  paystackPublicKey: string | null;
-  paystackSecretKey: string | null;
+  hubtelApiId: string | null;
+  hubtelApiSecret: string | null;
+  hubtelMerchantAccountId: string | null;
   isPaymentTestMode: boolean;
   transactionFeePercent: number | null;
 }

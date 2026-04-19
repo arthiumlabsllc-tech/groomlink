@@ -74,7 +74,7 @@ export interface ComprehensiveRevenueStats {
   recentTransactions30d: number;
 }
 
-export interface PaystackBalance {
+export interface HubtelBalance {
   currency: string;
   balance: number;
   rawBalance: number;
@@ -149,9 +149,9 @@ export const dashboardApi = {
     return response.data.data;
   },
 
-  // Get Paystack balance
-  getPaystackBalance: async (): Promise<{ balances: PaystackBalance[]; fetchedAt: string }> => {
-    const response = await apiClient.get('/admin/paystack-balance');
+  // Get Hubtel balance
+  getHubtelBalance: async (): Promise<{ balances: HubtelBalance[]; fetchedAt: string }> => {
+    const response = await apiClient.get('/admin/hubtel-balance');
     return response.data.data;
   },
 };

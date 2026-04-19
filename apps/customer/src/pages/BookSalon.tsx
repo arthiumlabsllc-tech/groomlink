@@ -1,26 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  User,
-  Check,
-  ChevronRight,
-  ChevronLeft,
-  Loader2,
-  AlertCircle,
-  Scissors,
-  MapPin,
-  Star,
-  FileText,
-  CheckCircle2,
-  CalendarDays,
-  RefreshCw,
-  Users,
-} from 'lucide-react';
-import apiClient, { bookingApi, paymentApi, queueApi, QueueStatus, BookingGuest, NoShowStatus } from '../lib/api';
+import Icon from '../components/Icon';
+import apiClient, { bookingApi, paymentApi, queueApi, QueueStatus, BookingGuest, NoShowStatus, waitlistApi, WaitlistEntry } from '../lib/api';
 
 // Types
 interface Service {
@@ -173,11 +155,10 @@ export default function BookSalon() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentProvider>('CASH');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [initializingPayment, setInitializingPayment] = useState(false);
-  const [paymentRedirecting, setPaymentRedirecting] = useState(false);
 
   // Queue state
   const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
-  const [queueLoading, setQueueLoading] = useState(false);
+  const [_queueLoading, setQueueLoading] = useState(false);
 
   // No-show status state
   const [noShowStatus, setNoShowStatus] = useState<NoShowStatus | null>(null);
@@ -189,6 +170,10 @@ export default function BookSalon() {
 
   // Platform fee state
   const [platformFeePercentage, setPlatformFeePercentage] = useState(5); // Default 5%
+
+  // Waitlist state
+  const [myWaitlistEntries, setMyWaitlistEntries] = useState<WaitlistEntry[]>([]);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   // Fetch platform fee percentage
   useEffect(() => {
@@ -292,6 +277,26 @@ export default function BookSalon() {
     fetchQueueStatus();
   }, [salonId]);
 
+  // Fetch my waitlist entries for this salon
+  useEffect(() => {
+    if (!salonId) return;
+
+    const fetchWaitlist = async () => {
+      try {
+        const entries = await waitlistApi.getMyWaitlist();
+        // Filter entries for current salon
+        const salonEntries = entries.filter(entry => entry.salonId === salonId);
+        setMyWaitlistEntries(salonEntries);
+      } catch (err) {
+        // User might not be logged in, ignore error
+        console.log('Could not fetch waitlist entries');
+        setMyWaitlistEntries([]);
+      }
+    };
+
+    fetchWaitlist();
+  }, [salonId]);
+
   // Fetch no-show status
   useEffect(() => {
     const fetchNoShowStatus = async () => {
@@ -379,7 +384,7 @@ export default function BookSalon() {
         return;
       }
       
-      // For mobile money, initialize payment
+      // For mobile money, initialize payment via Hubtel
       setInitializingPayment(true);
       const paymentResponse = await paymentApi.initialize({
         bookingId: response.id,
@@ -388,21 +393,9 @@ export default function BookSalon() {
         phoneNumber: `+233${phoneNumber.replace(/\s/g, '').replace(/\D/g, '')}`,
       });
       
-      // Store booking info for after payment return
-      setCreatedBooking({
-        id: response.id,
-        reference: response.reference,
-        payment: {
-          id: response.id, // Will be populated from payment response if available
-          reference: paymentResponse.reference,
-        },
-      });
-      
-      // Show redirecting overlay before navigating to Paystack
-      setPaymentRedirecting(true);
-      
-      // Redirect to Paystack checkout
-      window.location.href = paymentResponse.authorization_url;
+      // Navigate to the payment polling page with the client reference
+      // Hubtel flow: customer gets USSD/STK prompt on phone, we poll for confirmation
+      navigate(`/payment/callback?reference=${paymentResponse.clientReference}`);
       
     } catch (err: any) {
       const message = err.response?.data?.error?.message || 'Failed to create booking';
@@ -510,13 +503,55 @@ export default function BookSalon() {
     return slot.available;
   };
 
+  // Waitlist helper functions
+  const isOnWaitlist = (date: string, timeSlot: string, staffId?: string): WaitlistEntry | undefined => {
+    return myWaitlistEntries.find(entry =>
+      entry.date === date &&
+      entry.timeSlot === timeSlot &&
+      (staffId ? entry.staffId === staffId : !entry.staffId)
+    );
+  };
+
+  const handleJoinWaitlist = async (date: string, timeSlot: string, staffId?: string) => {
+    if (!salonId) return;
+    setJoiningWaitlist(true);
+    try {
+      const entry = await waitlistApi.joinWaitlist({
+        salonId,
+        staffId,
+        date,
+        timeSlot
+      });
+      setMyWaitlistEntries(prev => [...prev, entry]);
+      toast.success('You\'ve joined the waitlist! We\'ll notify you if a slot opens up.');
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        toast.error('Please log in to join the waitlist');
+      } else {
+        toast.error(err.response?.data?.error?.message || 'Failed to join waitlist');
+      }
+    } finally {
+      setJoiningWaitlist(false);
+    }
+  };
+
+  const handleLeaveWaitlist = async (waitlistId: string) => {
+    try {
+      await waitlistApi.leaveWaitlist(waitlistId);
+      setMyWaitlistEntries(prev => prev.filter(entry => entry.id !== waitlistId));
+      toast.success('You\'ve left the waitlist');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || 'Failed to leave waitlist');
+    }
+  };
+
   const dates = useMemo(() => getDates(30), []);
 
   if (loadingSalon) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#006B3F] animate-spin mx-auto mb-4" />
+          <Icon name="progress_activity" size={48} className="text-[#006B3F] animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading salon details...</p>
         </div>
       </div>
@@ -527,14 +562,14 @@ export default function BookSalon() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="text-center max-w-md">
-          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <Icon name="error" size={64} className="text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             {error === 'Salon not found' ? 'Salon Not Found' : 'Error Loading Salon'}
           </h2>
           <p className="text-gray-600 mb-6">{error || 'Unable to load salon details'}</p>
           <button
             onClick={() => navigate('/explore')}
-            className="px-6 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#006B3F]/90 transition-colors"
+            className="px-6 py-2 bg-[#CE1126] text-white rounded-xl hover:bg-[#CE1126]/90 transition-colors"
           >
             Back to Explore
           </button>
@@ -546,51 +581,57 @@ export default function BookSalon() {
   // Progress Steps Component
   const ProgressSteps = () => {
     const steps = [
-      { key: 'service', label: 'Service', shortLabel: 'Service', icon: Scissors },
-      { key: 'staff', label: 'Staff', shortLabel: 'Staff', icon: User },
-      { key: 'group', label: 'Who\'s Coming', shortLabel: 'Group', icon: Users },
-      { key: 'datetime', label: 'Date & Time', shortLabel: 'When', icon: Calendar },
-      { key: 'confirm', label: 'Confirm', shortLabel: 'Confirm', icon: Check },
+      { key: 'service', label: 'Service', iconName: 'content_cut' },
+      { key: 'staff', label: 'Staff', iconName: 'person' },
+      { key: 'group', label: 'Group', iconName: 'group' },
+      { key: 'datetime', label: 'Date/Time', iconName: 'calendar_today' },
+      { key: 'confirm', label: 'Confirm', iconName: 'check_circle' },
     ];
-
+  
     const currentIndex = steps.findIndex((s) => s.key === currentStep);
-
+  
     return (
-      <div className="bg-white border-b border-gray-200 py-3 sm:py-4 px-3 sm:px-6">
+      <div className="bg-white border-b border-gray-100 py-4 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = index <= currentIndex;
+              const isCompleted = index < currentIndex;
               const isCurrent = index === currentIndex;
-
+  
               return (
-                <div key={step.key} className="flex items-center">
+                <div key={step.key} className="flex items-center flex-1 last:flex-none">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
-                        isCurrent
-                          ? 'bg-[#006B3F] text-white'
-                          : isActive
-                          ? 'bg-[#006B3F]/10 text-[#006B3F]'
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isCompleted
+                          ? 'bg-green-500 text-white'
+                          : isCurrent
+                          ? 'bg-[#CE1126] text-white shadow-card'
                           : 'bg-gray-100 text-gray-400'
                       }`}
                     >
-                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      {isCompleted ? (
+                        <Icon name="check" size={20} />
+                      ) : (
+                        <Icon name={step.iconName} size={20} />
+                      )}
                     </div>
                     <span
-                      className={`text-[10px] sm:text-xs mt-1 font-medium text-center ${
-                        isCurrent ? 'text-[#006B3F]' : isActive ? 'text-gray-700' : 'text-gray-400'
+                      className={`text-[10px] sm:text-xs mt-1.5 font-medium text-center whitespace-nowrap ${
+                        isCompleted
+                          ? 'text-green-600'
+                          : isCurrent
+                          ? 'text-[#CE1126]'
+                          : 'text-gray-400'
                       }`}
                     >
-                      <span className="hidden sm:inline">{step.label}</span>
-                      <span className="sm:hidden">{step.shortLabel}</span>
+                      {step.label}
                     </span>
                   </div>
                   {index < steps.length - 1 && (
                     <div
-                      className={`w-4 sm:w-16 h-0.5 mx-0.5 sm:mx-2 ${
-                        index < currentIndex ? 'bg-[#006B3F]' : 'bg-gray-200'
+                      className={`flex-1 h-0.5 mx-2 sm:mx-3 rounded-full transition-colors duration-300 ${
+                        isCompleted ? 'bg-green-500' : 'bg-gray-200'
                       }`}
                     />
                   )}
@@ -615,7 +656,7 @@ export default function BookSalon() {
       {noShowStatus?.restricted && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-            <AlertCircle className="w-5 h-5 text-red-600" />
+            <Icon name="error" size={20} className="text-red-600" />
           </div>
           <div>
             <p className="text-sm font-medium text-red-800">
@@ -632,7 +673,7 @@ export default function BookSalon() {
       {!noShowStatus?.restricted && noShowStatus && noShowStatus.noShowCount > 0 && noShowStatus.noShowCount < 3 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
-            <AlertCircle className="w-5 h-5 text-yellow-600" />
+            <Icon name="error" size={20} className="text-yellow-600" />
           </div>
           <div>
             <p className="text-sm font-medium text-yellow-800">
@@ -649,7 +690,7 @@ export default function BookSalon() {
       {queueStatus && queueStatus.totalWaiting > 0 && (
         <div className="bg-ghana-gold/10 border border-ghana-gold/30 rounded-xl p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-ghana-gold/20 flex items-center justify-center flex-shrink-0">
-            <Users className="w-5 h-5 text-ghana-green" />
+            <Icon name="group" size={20} className="text-ghana-green" />
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900">
@@ -664,11 +705,15 @@ export default function BookSalon() {
 
       {loadingServices ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-[#006B3F] animate-spin" />
+          <div className="space-y-4 w-full">
+            <div className="skeleton-shimmer h-20 w-full rounded-xl" />
+            <div className="skeleton-shimmer h-20 w-full rounded-xl" />
+            <div className="skeleton-shimmer h-20 w-full rounded-xl" />
+          </div>
         </div>
       ) : services.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <Icon name="content_cut" size={48} className="text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No services available</p>
         </div>
       ) : (
@@ -677,10 +722,10 @@ export default function BookSalon() {
             <button
               key={service.id}
               onClick={() => setSelectedService(service)}
-              className={`w-full text-left p-5 rounded-xl border-2 transition-all ${
+              className={`card-v2 w-full text-left p-5 border-2 transition-all duration-200 ${
                 selectedService?.id === service.id
-                  ? 'border-[#006B3F] bg-[#006B3F]/5'
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                  ? 'border-[#CE1126] bg-[#CE1126]/5'
+                  : 'border-transparent hover:border-gray-200'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -688,7 +733,9 @@ export default function BookSalon() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <h3 className="font-semibold text-gray-900">{service.name}</h3>
                     {selectedService?.id === service.id && (
-                      <CheckCircle2 className="w-5 h-5 text-[#006B3F]" />
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#CE1126]">
+                        <Icon name="check" size={14} className="text-white" />
+                      </span>
                     )}
                     {service.promoLabel && (
                       <span className="px-2 py-0.5 bg-ghana-gold/20 text-amber-700 text-xs font-medium rounded-full">
@@ -701,7 +748,7 @@ export default function BookSalon() {
                   )}
                   <div className="flex items-center gap-4 mt-3">
                     <span className="flex items-center gap-1 text-sm text-gray-600">
-                      <Clock className="w-4 h-4" />
+                      <Icon name="schedule" size={16} />
                       {formatDuration(service.duration)}
                     </span>
                     {service.category && (
@@ -715,10 +762,10 @@ export default function BookSalon() {
                   {service.discountPrice && parseFloat(service.discountPrice) > 0 ? (
                     <div>
                       <p className="text-sm text-gray-400 line-through">{formatPrice(service.price)}</p>
-                      <p className="text-xl font-bold text-[#006B3F]">{formatPrice(service.discountPrice)}</p>
+                      <p className="text-xl font-bold text-[#CE1126]">{formatPrice(service.discountPrice)}</p>
                     </div>
                   ) : (
-                    <p className="text-xl font-bold text-[#006B3F]">{formatPrice(service.price)}</p>
+                    <p className="text-xl font-bold text-[#CE1126]">{formatPrice(service.price)}</p>
                   )}
                 </div>
               </div>
@@ -739,29 +786,33 @@ export default function BookSalon() {
 
       {loadingStaff ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-[#006B3F] animate-spin" />
+          <div className="space-y-4 w-full">
+            <div className="flex gap-4 justify-center">
+              <div className="skeleton-shimmer h-28 w-24 rounded-xl" />
+              <div className="skeleton-shimmer h-28 w-24 rounded-xl" />
+              <div className="skeleton-shimmer h-28 w-24 rounded-xl" />
+            </div>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {/* Any Available Option */}
           <button
             onClick={() => setSelectedWorker(null)}
-            className={`p-4 rounded-xl border-2 transition-all text-center ${
+            className={`p-4 rounded-2xl border-2 transition-all duration-200 text-center ${
               selectedWorker === null
-                ? 'border-[#006B3F] bg-[#006B3F]/5'
-                : 'border-gray-200 hover:border-gray-300 bg-white'
+                ? 'border-[#CE1126] bg-[#CE1126]/5'
+                : 'border-transparent card-v2 hover:border-gray-200'
             }`}
           >
             <div
-              className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ${
-                selectedWorker === null ? 'bg-[#006B3F]' : 'bg-gray-100'
+              className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ring-2 ring-offset-2 transition-all ${
+                selectedWorker === null ? 'ring-[#CE1126] bg-[#CE1126]/10' : 'ring-transparent bg-gray-100'
               }`}
             >
-              <RefreshCw
-                className={`w-7 h-7 ${selectedWorker === null ? 'text-white' : 'text-gray-500'}`}
-              />
+              <Icon name="refresh" size={28} className={selectedWorker === null ? 'text-[#CE1126]' : 'text-gray-500'} />
             </div>
-            <p className={`font-medium ${selectedWorker === null ? 'text-[#006B3F]' : 'text-gray-900'}`}>
+            <p className={`font-semibold ${selectedWorker === null ? 'text-[#CE1126]' : 'text-gray-900'}`}>
               Any Available
             </p>
             <p className="text-xs text-gray-500 mt-1">We'll assign the best staff</p>
@@ -772,15 +823,15 @@ export default function BookSalon() {
             <button
               key={worker.id}
               onClick={() => setSelectedWorker(worker)}
-              className={`p-4 rounded-xl border-2 transition-all text-center ${
+              className={`p-4 rounded-2xl border-2 transition-all duration-200 text-center ${
                 selectedWorker?.id === worker.id
-                  ? 'border-[#006B3F] bg-[#006B3F]/5'
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                  ? 'border-[#CE1126] bg-[#CE1126]/5'
+                  : 'border-transparent card-v2 hover:border-gray-200'
               }`}
             >
               <div
-                className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center overflow-hidden ${
-                  selectedWorker?.id === worker.id ? 'bg-[#006B3F]' : 'bg-gray-100'
+                className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center overflow-hidden ring-2 ring-offset-2 transition-all ${
+                  selectedWorker?.id === worker.id ? 'ring-[#CE1126]' : 'ring-transparent'
                 }`}
               >
                 {worker.avatar ? (
@@ -790,16 +841,14 @@ export default function BookSalon() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User
-                    className={`w-7 h-7 ${
-                      selectedWorker?.id === worker.id ? 'text-white' : 'text-gray-500'
-                    }`}
-                  />
+                  <Icon name="person" size={28} className={
+                      selectedWorker?.id === worker.id ? 'text-[#CE1126]' : 'text-gray-500'
+                    } />
                 )}
               </div>
               <p
-                className={`font-medium truncate ${
-                  selectedWorker?.id === worker.id ? 'text-[#006B3F]' : 'text-gray-900'
+                className={`font-semibold truncate ${
+                  selectedWorker?.id === worker.id ? 'text-[#CE1126]' : 'text-gray-900'
                 }`}
               >
                 {worker.fullName}
@@ -810,7 +859,7 @@ export default function BookSalon() {
                 </p>
               )}
               <div className="flex items-center justify-center gap-1 mt-2">
-                <Star className="w-3 h-3 text-[#FCD116] fill-current" />
+                <Icon name="star" size={12} filled className="text-[#FCD116]" />
                 <span className="text-xs font-medium">{worker.rating?.toFixed(1) || '0.0'}</span>
               </div>
             </button>
@@ -854,20 +903,20 @@ export default function BookSalon() {
             setGuests([]);
             setTotalPeople(1);
           }}
-          className={`p-6 rounded-xl border-2 transition-all text-center ${
+          className={`p-6 rounded-2xl border-2 transition-all duration-200 text-center ${
             !isGroupBooking
-              ? 'border-[#006B3F] bg-[#006B3F]/5'
-              : 'border-gray-200 hover:border-gray-300 bg-white'
+              ? 'border-[#CE1126] bg-[#CE1126]/5'
+              : 'border-transparent card-v2 hover:border-gray-200'
           }`}
         >
           <div
             className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ${
-              !isGroupBooking ? 'bg-[#006B3F]' : 'bg-gray-100'
+              !isGroupBooking ? 'bg-[#CE1126]/10' : 'bg-gray-100'
             }`}
           >
-            <User className={`w-8 h-8 ${!isGroupBooking ? 'text-white' : 'text-gray-500'}`} />
+            <Icon name="person" size={32} className={!isGroupBooking ? 'text-[#CE1126]' : 'text-gray-500'} />
           </div>
-          <p className={`font-semibold ${!isGroupBooking ? 'text-[#006B3F]' : 'text-gray-900'}`}>
+          <p className={`font-semibold ${!isGroupBooking ? 'text-[#CE1126]' : 'text-gray-900'}`}>
             Just Me
           </p>
           <p className="text-xs text-gray-500 mt-1">Book for yourself only</p>
@@ -880,20 +929,20 @@ export default function BookSalon() {
               addGuest();
             }
           }}
-          className={`p-6 rounded-xl border-2 transition-all text-center ${
+          className={`p-6 rounded-2xl border-2 transition-all duration-200 text-center ${
             isGroupBooking
-              ? 'border-[#006B3F] bg-[#006B3F]/5'
-              : 'border-gray-200 hover:border-gray-300 bg-white'
+              ? 'border-[#CE1126] bg-[#CE1126]/5'
+              : 'border-transparent card-v2 hover:border-gray-200'
           }`}
         >
           <div
             className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ${
-              isGroupBooking ? 'bg-[#006B3F]' : 'bg-gray-100'
+              isGroupBooking ? 'bg-[#CE1126]/10' : 'bg-gray-100'
             }`}
           >
-            <Users className={`w-8 h-8 ${isGroupBooking ? 'text-white' : 'text-gray-500'}`} />
+            <Icon name="group" size={32} className={isGroupBooking ? 'text-[#CE1126]' : 'text-gray-500'} />
           </div>
-          <p className={`font-semibold ${isGroupBooking ? 'text-[#006B3F]' : 'text-gray-900'}`}>
+          <p className={`font-semibold ${isGroupBooking ? 'text-[#CE1126]' : 'text-gray-900'}`}>
             With Guests
           </p>
           <p className="text-xs text-gray-500 mt-1">Book for multiple people</p>
@@ -904,10 +953,10 @@ export default function BookSalon() {
       {isGroupBooking && (
         <div className="space-y-4">
           {/* Primary (You) */}
-          <div className="bg-[#006B3F]/5 rounded-xl p-4 border border-[#006B3F]/20">
+          <div className="card-v2 p-4 border-l-4 border-l-[#CE1126]">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#006B3F] flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-full bg-[#CE1126] flex items-center justify-center">
+                <Icon name="person" size={16} className="text-white" />
               </div>
               <h3 className="font-semibold text-gray-900">You (Primary)</h3>
             </div>
@@ -916,7 +965,7 @@ export default function BookSalon() {
                 Service: <span className="font-medium text-gray-900">{selectedService?.name}</span>
               </p>
               <p className="text-sm text-gray-600">
-                Price: <span className="font-medium text-[#006B3F]">{formatPrice(selectedService?.price || 0)}</span>
+                Price: <span className="font-medium text-[#CE1126]">{formatPrice(selectedService?.price || 0)}</span>
               </p>
             </div>
           </div>
@@ -925,23 +974,21 @@ export default function BookSalon() {
           {guests.map((guest, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl p-4 border border-gray-200 relative"
+              className="card-v2 p-4 relative"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-500" />
+                    <Icon name="person" size={16} className="text-gray-500" />
                   </div>
                   <h3 className="font-semibold text-gray-900">Guest {index + 1}</h3>
                 </div>
                 <button
                   onClick={() => removeGuest(index)}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                   title="Remove guest"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <Icon name="close" size={18} />
                 </button>
               </div>
 
@@ -956,7 +1003,7 @@ export default function BookSalon() {
                     value={guest.guestName}
                     onChange={(e) => updateGuest(index, 'guestName', e.target.value)}
                     placeholder="Enter guest name"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
                   />
                 </div>
 
@@ -970,7 +1017,7 @@ export default function BookSalon() {
                     value={guest.guestPhone || ''}
                     onChange={(e) => updateGuest(index, 'guestPhone', e.target.value)}
                     placeholder="Enter phone number"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
                   />
                 </div>
 
@@ -986,7 +1033,7 @@ export default function BookSalon() {
                       updateGuest(index, 'guestAgeGroup', value);
                       updateGuest(index, 'isChild', value === 'child');
                     }}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent bg-white"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CE1126] focus:border-transparent bg-white"
                   >
                     <option value="child">Child (0-12)</option>
                     <option value="teen">Teen (13-19)</option>
@@ -1003,7 +1050,7 @@ export default function BookSalon() {
                   <select
                     value={guest.serviceId}
                     onChange={(e) => updateGuest(index, 'serviceId', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent bg-white"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CE1126] focus:border-transparent bg-white"
                   >
                     <option value="">Select a service</option>
                     {services.map((service) => (
@@ -1024,7 +1071,7 @@ export default function BookSalon() {
                     onChange={(e) => updateGuest(index, 'specialInstructions', e.target.value)}
                     placeholder="Any special requests or notes..."
                     rows={2}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent resize-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CE1126] focus:border-transparent resize-none"
                   />
                 </div>
               </div>
@@ -1034,11 +1081,9 @@ export default function BookSalon() {
           {/* Add Guest Button */}
           <button
             onClick={addGuest}
-            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#006B3F] hover:text-[#006B3F] transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#CE1126] hover:text-[#CE1126] transition-colors flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Icon name="add" size={20} />
             Add Another Guest
           </button>
 
@@ -1065,7 +1110,7 @@ export default function BookSalon() {
       {/* Date Selection */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
-          <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5 text-[#006B3F]" />
+          <Icon name="calendar_month" size={16} className="text-[#006B3F]" />
           Select Date
         </h3>
         <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
@@ -1082,10 +1127,10 @@ export default function BookSalon() {
                   setSelectedDate(date);
                   setSelectedTime(null);
                 }}
-                className={`flex-shrink-0 w-16 h-20 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${
+                className={`flex-shrink-0 w-16 h-20 rounded-2xl border-2 flex flex-col items-center justify-center transition-all duration-200 ${
                   isSelected
-                    ? 'border-[#006B3F] bg-[#006B3F] text-white'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    ? 'border-[#CE1126] bg-[#CE1126] text-white'
+                    : 'border-gray-200 bg-white hover:border-gray-300 shadow-card'
                 }`}
               >
                 <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
@@ -1096,7 +1141,7 @@ export default function BookSalon() {
                 </span>
                 {isToday && (
                   <span
-                    className={`text-[10px] mt-0.5 ${isSelected ? 'text-[#FCD116]' : 'text-[#006B3F]'}`}
+                    className={`text-[10px] mt-0.5 font-medium ${isSelected ? 'text-ghana-gold' : 'text-[#CE1126]'}`}
                   >
                     Today
                   </span>
@@ -1110,20 +1155,20 @@ export default function BookSalon() {
       {/* Time Selection */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
-          <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#006B3F]" />
+          <Icon name="schedule" size={20} className="text-[#006B3F]" />
           Select Time
         </h3>
         {loadingSlots ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 text-[#006B3F] animate-spin" />
+            <Icon name="progress_activity" size={32} className="text-[#006B3F] animate-spin" />
           </div>
         ) : !slotsLoaded ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 text-[#006B3F] animate-spin" />
+            <Icon name="progress_activity" size={32} className="text-[#006B3F] animate-spin" />
           </div>
         ) : displaySlots.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-xl">
-            <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <Icon name="schedule" size={48} className="text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">No available time slots for this date</p>
             <p className="text-sm text-gray-400 mt-1">Try selecting a different date or staff member</p>
           </div>
@@ -1134,32 +1179,48 @@ export default function BookSalon() {
               const isSelected = selectedTime === slot.startTime;
               const remainingSpots = slot.remainingSpots ?? (slot.available ? 10 : 0);
               const hasEnoughSpots = remainingSpots >= totalPeople;
-              const isDisabled = !isAvailable || remainingSpots === 0 || !hasEnoughSpots;
+              const isFullyBooked = remainingSpots === 0;
+              const isDisabled = !isAvailable || (remainingSpots === 0) || !hasEnoughSpots;
 
-              // Determine badge color and text based on remaining spots
-              // Green (4+), Amber (2-3), Red (1), Disabled (0)
-              let badgeColor = '';
-              let badgeText = '';
-              
-              if (remainingSpots === 0) {
-                badgeColor = 'bg-red-100 text-red-600';
-                badgeText = 'Full';
-              } else if (!hasEnoughSpots) {
-                // Not enough spots for the group size
-                badgeColor = 'bg-red-100 text-red-600';
-                badgeText = remainingSpots === 1 ? '1 slot' : `${remainingSpots} slots`;
-              } else if (remainingSpots === 1) {
-                // Only 1 slot left - RED for urgency
-                badgeColor = 'bg-red-100 text-red-600';
-                badgeText = '1 slot left';
-              } else if (remainingSpots <= 3) {
-                // 2-3 slots left - AMBER for low availability
-                badgeColor = 'bg-amber-100 text-amber-700';
-                badgeText = `${remainingSpots} slots left`;
-              } else {
-                // 4+ slots - GREEN for good availability
-                badgeColor = 'bg-green-100 text-green-700';
-                badgeText = `${remainingSpots} slots left`;
+              // Check if user is on waitlist for this slot
+              const dateStr = selectedDate.toISOString().split('T')[0];
+              const waitlistEntry = isOnWaitlist(dateStr, slot.startTime, selectedWorker?.id);
+              const isOnWaitlistForSlot = !!waitlistEntry;
+
+
+              // Fully booked slot with waitlist option
+              if (isFullyBooked) {
+                return (
+                  <div key={slot.startTime} className="relative">
+                    <div className="py-3 px-2 rounded-full text-sm font-medium bg-gray-100 text-gray-400 text-center line-through">
+                      {formatTime(slot.startTime)}
+                    </div>
+                    {/* Waitlist button */}
+                    {isOnWaitlistForSlot ? (
+                      <button
+                        onClick={() => waitlistEntry && handleLeaveWaitlist(waitlistEntry.id)}
+                        disabled={joiningWaitlist}
+                        className="mt-1 w-full py-1.5 px-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium rounded-full transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Icon name="notifications" size={12} />
+                        On waitlist
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleJoinWaitlist(dateStr, slot.startTime, selectedWorker?.id)}
+                        disabled={joiningWaitlist}
+                        className="mt-1 w-full py-1.5 px-1 bg-[#CE1126] hover:bg-[#CE1126]/90 text-white text-xs font-medium rounded-full transition-colors flex items-center justify-center gap-1"
+                      >
+                        {joiningWaitlist ? (
+                          <Icon name="progress_activity" size={12} className="animate-spin" />
+                        ) : (
+                          <Icon name="notifications" size={12} />
+                        )}
+                        Join waitlist
+                      </button>
+                    )}
+                  </div>
+                );
               }
 
               return (
@@ -1168,23 +1229,23 @@ export default function BookSalon() {
                   onClick={() => !isDisabled && setSelectedTime(slot.startTime)}
                   disabled={isDisabled}
                   title={!hasEnoughSpots && remainingSpots > 0 ? `Not enough slots for your group of ${totalPeople}. Only ${remainingSpots} available.` : ''}
-                  className={`py-3 px-2 rounded-lg text-sm font-medium transition-all relative ${
+                  className={`py-2.5 px-3 rounded-full text-sm font-medium transition-all duration-200 relative ${
                     isSelected
-                      ? 'bg-[#006B3F] text-white'
+                      ? 'bg-[#CE1126] text-white shadow-card'
                       : isDisabled
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-white border border-gray-200 hover:border-[#006B3F] text-gray-700'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed line-through'
+                      : 'bg-white border border-gray-200 hover:border-[#CE1126] text-gray-700'
                   }`}
                 >
                   {formatTime(slot.startTime)}
                   {/* Capacity Badge */}
-                  <span
-                    className={`absolute -top-1 -right-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                      isSelected ? 'bg-white/20 text-white' : badgeColor
-                    }`}
-                  >
-                    {isSelected ? (remainingSpots === 1 ? '1 slot left' : `${remainingSpots} slots left`) : badgeText}
-                  </span>
+                  {remainingSpots <= 3 && remainingSpots > 0 && !isSelected && (
+                    <span
+                      className={`ml-1 text-[10px] font-medium ${remainingSpots === 1 ? 'text-red-500' : 'text-amber-600'}`}
+                    >
+                      ({remainingSpots})
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -1261,34 +1322,34 @@ export default function BookSalon() {
       </div>
 
       {/* Salon Info */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="card-v2 shadow-elevated p-4">
         <div className="flex items-center gap-4">
           <img
             src={salon.logo || getDefaultSalonImage(salon.type)}
             alt={salon.businessName}
-            className="w-16 h-16 rounded-lg object-cover"
+            className="w-14 h-14 rounded-xl object-cover"
           />
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900">{salon.businessName}</h3>
             <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-              <MapPin className="w-4 h-4" />
+              <Icon name="location_on" size={14} />
               <span className="truncate">{salon.address}</span>
             </div>
             <div className="flex items-center gap-1 mt-1">
-              <Star className="w-4 h-4 text-[#FCD116] fill-current" />
+              <Icon name="star" size={14} filled className="text-ghana-gold" />
               <span className="text-sm font-medium">{salon.rating?.toFixed(1) || '0.0'}</span>
-              <span className="text-sm text-gray-500">({salon.reviewCount || 0} reviews)</span>
+              <span className="text-sm text-gray-500">({salon.reviewCount || 0})</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Booking Summary */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <div className="card-v2 shadow-elevated p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-900">Booking Summary</h3>
           {isGroupBooking && (
-            <span className="px-2 py-1 bg-[#006B3F]/10 text-[#006B3F] text-xs font-medium rounded-full">
+            <span className="px-2.5 py-1 bg-[#CE1126]/10 text-[#CE1126] text-xs font-semibold rounded-full">
               Group Booking
             </span>
           )}
@@ -1297,31 +1358,33 @@ export default function BookSalon() {
         <div className="space-y-3">
           {/* Primary Service */}
           <div className="flex items-start gap-3">
-            <Scissors className="w-5 h-5 text-[#006B3F] mt-0.5" />
+            <div className="w-8 h-8 rounded-lg bg-[#CE1126]/10 flex items-center justify-center flex-shrink-0">
+              <Icon name="content_cut" size={16} className="text-[#CE1126]" />
+            </div>
             <div className="flex-1">
               <p className="font-medium text-gray-900">{selectedService?.name}</p>
               <p className="text-sm text-gray-500">
                 {isGroupBooking ? 'You (Primary)' : formatDuration(selectedService?.duration || 0)}
               </p>
             </div>
-            <p className="font-semibold text-[#006B3F]">
+            <p className="font-bold text-[#CE1126]">
               {formatPrice(selectedService?.price || 0)}
             </p>
           </div>
 
           {/* Guest Services */}
           {isGroupBooking && guests.length > 0 && (
-            <div className="space-y-2 pl-8 border-l-2 border-gray-100">
+            <div className="space-y-2 pl-11 border-l-2 border-gray-100">
               {guests.map((guest, index) => {
                 const guestService = services.find(s => s.id === guest.serviceId);
                 return (
                   <div key={index} className="flex items-start gap-3">
-                    <User className="w-4 h-4 text-gray-400 mt-0.5" />
+                    <Icon name="person" size={14} className="text-gray-400 mt-0.5" />
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 text-sm">{guestService?.name || 'Service not selected'}</p>
                       <p className="text-xs text-gray-500">{guest.guestName || `Guest ${index + 1}`}</p>
                     </div>
-                    <p className="font-semibold text-[#006B3F] text-sm">
+                    <p className="font-semibold text-[#CE1126] text-sm">
                       {formatPrice(guestService?.price || 0)}
                     </p>
                   </div>
@@ -1331,7 +1394,9 @@ export default function BookSalon() {
           )}
 
           <div className="flex items-start gap-3">
-            <User className="w-5 h-5 text-[#006B3F] mt-0.5" />
+            <div className="w-8 h-8 rounded-lg bg-[#CE1126]/10 flex items-center justify-center flex-shrink-0">
+              <Icon name="person" size={16} className="text-[#CE1126]" />
+            </div>
             <div>
               <p className="font-medium text-gray-900">
                 {selectedWorker?.fullName || 'Any Available Staff'}
@@ -1343,7 +1408,9 @@ export default function BookSalon() {
           </div>
 
           <div className="flex items-start gap-3">
-            <Calendar className="w-5 h-5 text-[#006B3F] mt-0.5" />
+            <div className="w-8 h-8 rounded-lg bg-[#CE1126]/10 flex items-center justify-center flex-shrink-0">
+              <Icon name="calendar_today" size={16} className="text-[#CE1126]" />
+            </div>
             <div>
               <p className="font-medium text-gray-900">
                 {formatDate(selectedDate.toISOString())}
@@ -1354,7 +1421,9 @@ export default function BookSalon() {
 
           {isGroupBooking && (
             <div className="flex items-start gap-3">
-              <Users className="w-5 h-5 text-[#006B3F] mt-0.5" />
+              <div className="w-8 h-8 rounded-lg bg-[#CE1126]/10 flex items-center justify-center flex-shrink-0">
+                <Icon name="group" size={16} className="text-[#CE1126]" />
+              </div>
               <div>
                 <p className="font-medium text-gray-900">
                   {totalPeople} {totalPeople === 1 ? 'person' : 'people'}
@@ -1402,14 +1471,14 @@ export default function BookSalon() {
           </div>
           
           {/* Total */}
-          <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             <div>
               <span className="text-gray-900 font-semibold">Total Amount</span>
               {isGroupBooking && (
                 <p className="text-xs text-gray-500">Combined billing for all services</p>
               )}
             </div>
-            <span className="text-2xl font-bold text-[#006B3F]">{formatPrice(totalPrice * (1 + platformFeePercentage / 100))}</span>
+            <span className="text-2xl font-bold text-[#CE1126]">{formatPrice(totalPrice * (1 + platformFeePercentage / 100))}</span>
           </div>
           
           {/* Security info */}
@@ -1443,10 +1512,10 @@ export default function BookSalon() {
             <button
               key={method.id}
               onClick={() => setSelectedPaymentMethod(method.id)}
-              className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+              className={`card-v2 flex items-center gap-3 p-4 border-2 transition-all duration-200 text-left ${
                 selectedPaymentMethod === method.id
-                  ? `${method.borderColor} bg-gray-50 ring-1 ring-[#006B3F]`
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                  ? `border-[#CE1126] ring-1 ring-[#CE1126]/20`
+                  : 'border-transparent hover:border-gray-200'
               }`}
             >
               {method.icon}
@@ -1455,8 +1524,8 @@ export default function BookSalon() {
                 <p className="text-xs text-gray-500">{method.description}</p>
               </div>
               {selectedPaymentMethod === method.id && (
-                <div className="w-5 h-5 rounded-full bg-[#006B3F] flex items-center justify-center flex-shrink-0">
-                  <Check className="w-3 h-3 text-white" />
+                <div className="w-5 h-5 rounded-full bg-[#CE1126] flex items-center justify-center flex-shrink-0">
+                  <Icon name="check" size={12} className="text-white" />
                 </div>
               )}
             </button>
@@ -1466,7 +1535,7 @@ export default function BookSalon() {
 
       {/* Phone Number Input for Mobile Money */}
       {selectedPaymentMethod !== 'CASH' && (
-        <div className="bg-[#006B3F]/5 rounded-xl p-4">
+        <div className="card-v2 p-4">
           <label className="block font-medium text-gray-900 mb-2">
             Mobile Money Number
           </label>
@@ -1483,11 +1552,11 @@ export default function BookSalon() {
                 setPhoneNumber(value);
               }}
               placeholder="XX XXX XXXX"
-              className="w-full pl-14 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent"
+              className="w-full pl-14 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
             />
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Enter your mobile money number without the country code. You will receive a prompt to authorize the payment.
+            Enter your mobile money number. You'll receive a prompt on your phone to authorize the payment.
           </p>
         </div>
       )}
@@ -1495,7 +1564,7 @@ export default function BookSalon() {
       {/* Notes */}
       <div>
         <label className="flex items-center gap-2 font-medium text-gray-900 mb-2">
-          <FileText className="w-5 h-5 text-[#006B3F]" />
+          <Icon name="description" size={20} className="text-[#006B3F]" />
           Additional Notes (Optional)
         </label>
         <textarea
@@ -1503,7 +1572,7 @@ export default function BookSalon() {
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Any special requests or notes for the salon..."
           rows={3}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006B3F] focus:border-transparent resize-none"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CE1126] focus:border-transparent resize-none"
         />
       </div>
     </div>
@@ -1511,10 +1580,21 @@ export default function BookSalon() {
 
   // Step 6: Success
   const renderSuccessStep = () => (
-    <div className="text-center py-8">
-      <div className="w-20 h-20 bg-[#006B3F]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-        <CheckCircle2 className="w-12 h-12 text-[#006B3F]" />
+    <div className="text-center py-8 animate-fade-in-up">
+      {/* Confetti-like decorative dots */}
+      <div className="relative inline-block">
+        <div className="absolute -top-4 -left-6 w-3 h-3 rounded-full bg-[#CE1126]/30 animate-scale-in" style={{animationDelay: '0.1s'}} />
+        <div className="absolute -top-2 -right-8 w-2 h-2 rounded-full bg-ghana-gold/40 animate-scale-in" style={{animationDelay: '0.2s'}} />
+        <div className="absolute top-4 -left-10 w-2 h-2 rounded-full bg-ghana-green/30 animate-scale-in" style={{animationDelay: '0.3s'}} />
+        <div className="absolute -top-6 right-2 w-3 h-3 rounded-full bg-ghana-gold/30 animate-scale-in" style={{animationDelay: '0.4s'}} />
+        <div className="absolute top-8 -right-6 w-2 h-2 rounded-full bg-[#CE1126]/20 animate-scale-in" style={{animationDelay: '0.5s'}} />
+
+        {/* Large checkmark */}
+        <div className="w-24 h-24 bg-[#CE1126]/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-scale-in">
+          <Icon name="check_circle" size={56} filled className="text-[#CE1126]" />
+        </div>
       </div>
+
       <h2 className="text-2xl font-bold text-gray-900 mb-2">
         {isGroupBooking ? 'Group Booking Confirmed!' : 'Booking Confirmed!'}
       </h2>
@@ -1524,22 +1604,22 @@ export default function BookSalon() {
           : "Your appointment has been successfully booked. We've sent a confirmation to your phone."}
       </p>
       {isGroupBooking && (
-        <p className="text-[#006B3F] font-medium mb-6">
+        <p className="text-[#CE1126] font-semibold mb-6">
           {totalPeople} people booked
         </p>
       )}
 
-      <div className="bg-[#006B3F]/5 rounded-xl p-6 mb-8">
+      <div className="card-v2 shadow-elevated p-6 mb-8 mx-auto max-w-sm">
         <p className="text-sm text-gray-600 mb-1">
           {isGroupBooking ? 'Group Reference' : 'Booking Reference'}
         </p>
-        <p className="text-3xl font-bold text-[#006B3F] tracking-wider">
+        <p className="text-3xl font-bold text-[#CE1126] tracking-wider">
           {createdBooking?.reference}
         </p>
       </div>
 
       {selectedPaymentMethod === 'CASH' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6 max-w-md mx-auto">
           <p className="text-sm text-yellow-800">
             <span className="font-semibold">Payment:</span> You have selected to pay at the salon. 
             Please arrive 10 minutes early and pay <span className="font-semibold">{formatPrice(totalPrice)}</span> at the reception.
@@ -1550,19 +1630,19 @@ export default function BookSalon() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
           onClick={() => navigate('/bookings')}
-          className="px-6 py-3 bg-[#006B3F] text-white font-medium rounded-lg hover:bg-[#006B3F]/90 transition-colors flex items-center justify-center gap-2"
+          className="px-6 py-3 bg-[#CE1126] text-white font-medium rounded-xl hover:bg-[#CE1126]/90 transition-colors flex items-center justify-center gap-2 shadow-card"
         >
-          <Calendar className="w-5 h-5" />
+          <Icon name="calendar_today" size={20} />
           View My Bookings
         </button>
         <button
           onClick={handleReset}
-          className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+          className="px-6 py-3 border-2 border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
         >
-          <RefreshCw className="w-5 h-5" />
+          <Icon name="refresh" size={20} />
           Book Another
         </button>
       </div>
@@ -1577,9 +1657,9 @@ export default function BookSalon() {
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
-              className="p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <Icon name="arrow_back" size={20} />
             </button>
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-gray-900">Book Appointment</h1>
@@ -1594,7 +1674,7 @@ export default function BookSalon() {
 
       {/* Main Content */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="card-v2 p-6">
           {currentStep === 'service' && renderServiceStep()}
           {currentStep === 'staff' && renderStaffStep()}
           {currentStep === 'group' && renderGroupStep()}
@@ -1608,9 +1688,9 @@ export default function BookSalon() {
           <div className="flex items-center justify-between mt-6">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              className="flex items-center gap-2 px-6 py-3 border-2 border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 font-medium rounded-xl transition-colors"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <Icon name="chevron_left" size={20} />
               Back
             </button>
             <button
@@ -1622,49 +1702,28 @@ export default function BookSalon() {
                 creatingBooking ||
                 initializingPayment
               }
-              className="flex items-center gap-2 px-8 py-3 bg-[#006B3F] text-white font-medium rounded-lg hover:bg-[#006B3F]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-8 py-3 bg-[#CE1126] text-white font-medium rounded-xl hover:bg-[#CE1126]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-card"
             >
               {creatingBooking || initializingPayment ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Icon name="progress_activity" size={20} className="animate-spin" />
                   {initializingPayment ? 'Processing Payment...' : 'Booking...'}
                 </>
               ) : currentStep === 'confirm' ? (
                 <>
                   {selectedPaymentMethod === 'CASH' ? 'Confirm Booking' : 'Confirm & Pay'}
-                  <Check className="w-5 h-5" />
+                  <Icon name="check" size={20} />
                 </>
               ) : (
                 <>
                   Continue
-                  <ChevronRight className="w-5 h-5" />
+                  <Icon name="chevron_right" size={20} />
                 </>
               )}
             </button>
           </div>
         )}
       </div>
-
-      {/* Payment Redirect Overlay */}
-      {paymentRedirecting && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
-            <div className="w-20 h-20 bg-[#006B3F]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Loader2 className="w-10 h-10 text-[#006B3F] animate-spin" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Redirecting to Payment...
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Please authorize the payment prompt on your phone
-            </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <div className="w-2 h-2 bg-[#006B3F] rounded-full animate-pulse" />
-              <span>Connecting to Paystack...</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, MapPin, Phone, User, LogIn, Search, Eye, Star, X, ChevronLeft } from 'lucide-react';
+import Icon from '../components/Icon';
 import { api } from '../api';
 import { useImpersonation } from '../hooks/useImpersonation';
 import { formatPhoneNumber, formatDate, getStatusColor, cn } from '../lib';
@@ -78,7 +78,7 @@ export default function Salons() {
           onClick={() => setShowDetailModal(false)}
           className="md:hidden flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <Icon name="chevron_left" size={20} />
           Back to salons
         </button>
 
@@ -86,12 +86,12 @@ export default function Salons() {
           <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-transparent">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
-                <Store className="w-8 h-8 text-white" />
+                <Icon name="store" size={32} className="text-white" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 font-heading">{selectedSalon.businessName}</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <Icon name="location_on" size={16} className="text-gray-400" />
                   <span className="text-gray-600">{selectedSalon.city}</span>
                 </div>
               </div>
@@ -109,10 +109,7 @@ export default function Salons() {
               <span className="text-gray-500">Rating</span>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Star 
-                    key={star} 
-                    className={`w-4 h-4 ${star <= (selectedSalon.rating || 4) ? 'text-ghana-yellow fill-ghana-yellow' : 'text-gray-300'}`} 
-                  />
+                  <Icon key={star} name="star" size={16} filled={star <= (selectedSalon.rating || 4)} className={star <= (selectedSalon.rating || 4) ? 'text-ghana-yellow' : 'text-gray-300'} />
                 ))}
                 <span className="ml-1 text-sm text-gray-600">({selectedSalon.rating || 4.0})</span>
               </div>
@@ -160,7 +157,7 @@ export default function Salons() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 page-enter">
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-heading">Salons</h1>
@@ -168,16 +165,16 @@ export default function Salons() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+      <div className="card-v2 p-4 sm:p-5">
         <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-gray-400" />
+            <Icon name="search" size={18} className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by salon or owner..."
-              className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all text-sm"
+              className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200 text-sm"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -186,10 +183,8 @@ export default function Salons() {
                 key={status.value}
                 onClick={() => setSelectedStatus(status.value)}
                 className={cn(
-                  "px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 min-h-[44px] sm:min-h-0",
-                  selectedStatus === status.value
-                    ? "bg-ghana-green text-white shadow-md shadow-ghana-green/20"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  "tab-pill",
+                  selectedStatus === status.value ? "tab-pill-active" : "tab-pill-inactive"
                 )}
               >
                 {status.label}
@@ -201,25 +196,47 @@ export default function Salons() {
 
       {/* Salons Grid */}
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ghana-green"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="card-v2 p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl skeleton-shimmer"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-2/3 rounded skeleton-shimmer"></div>
+                  <div className="h-4 w-1/2 rounded skeleton-shimmer"></div>
+                </div>
+              </div>
+              <div className="space-y-2.5 mb-4">
+                <div className="h-4 w-full rounded skeleton-shimmer"></div>
+                <div className="h-4 w-3/4 rounded skeleton-shimmer"></div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredSalons.map((salon) => (
+          {filteredSalons.map((salon) => {
+            const statusBorderClass = salon.status === 'PENDING' 
+              ? 'border-l-4 border-l-amber-400' 
+              : salon.status === 'APPROVED' 
+                ? 'border-l-4 border-l-emerald-500' 
+                : salon.status === 'SUSPENDED' 
+                  ? 'border-l-4 border-l-red-500' 
+                  : '';
+            return (
             <div
               key={salon.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-lg transition-all duration-200 group"
+              className={cn("card-v2 p-5 hover:-translate-y-1 transition-all duration-200 group", statusBorderClass)}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center group-hover:from-purple-500 group-hover:to-purple-600 transition-all duration-200">
-                    <Store className="w-6 h-6 text-purple-600 group-hover:text-white transition-colors" />
+                    <Icon name="store" size={24} className="text-purple-600 group-hover:text-white transition-colors" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 line-clamp-1">{salon.businessName}</h3>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                      <Icon name="location_on" size={14} className="text-gray-400" />
                       <p className="text-sm text-gray-500">{salon.city}</p>
                     </div>
                   </div>
@@ -232,19 +249,19 @@ export default function Salons() {
               <div className="space-y-2.5 text-sm text-gray-600 mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-400" />
+                    <Icon name="person" size={16} className="text-gray-400" />
                   </div>
                   <span className="font-medium">{salon.owner.firstName} {salon.owner.lastName}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                    <Phone className="w-4 h-4 text-gray-400" />
+                    <Icon name="call" size={16} className="text-gray-400" />
                   </div>
                   <span>{formatPhoneNumber(salon.phone)}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                    <Star className="w-4 h-4 text-ghana-yellow fill-ghana-yellow" />
+                    <Icon name="star" size={16} filled className="text-ghana-yellow" />
                   </div>
                   <span className="text-ghana-yellow font-medium">{salon.rating || '4.0'}</span>
                 </div>
@@ -256,22 +273,22 @@ export default function Salons() {
                     setSelectedSalon(salon);
                     setShowDetailModal(true);
                   }}
-                  className="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center justify-center gap-2 btn-ripple"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Icon name="visibility" size={16} />
                   View
                 </button>
                 <button
                   onClick={() => handleImpersonate(salon)}
                   disabled={isImpersonating}
-                  className="flex-1 py-2.5 px-4 bg-ghana-yellow text-ghana-dark rounded-lg font-semibold hover:bg-yellow-400 active:bg-yellow-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-4 bg-ghana-yellow text-ghana-dark rounded-lg font-semibold hover:bg-yellow-400 active:bg-yellow-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2 btn-ripple"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <Icon name="login" size={16} />
                   Impersonate
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -300,12 +317,12 @@ export default function Salons() {
 
       {/* Desktop Detail Modal */}
       {showDetailModal && selectedSalon && (
-        <div className="hidden md:flex fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div className="hidden md:flex fixed inset-0 bg-black/40 backdrop-blur-md items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated max-w-md w-full p-6 animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Store className="w-6 h-6 text-white" />
+                  <Icon name="store" size={24} className="text-white" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900 font-heading">{selectedSalon.businessName}</h3>
@@ -316,7 +333,7 @@ export default function Salons() {
                 onClick={() => setShowDetailModal(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <Icon name="close" size={20} />
               </button>
             </div>
             
@@ -362,7 +379,7 @@ export default function Salons() {
                   handleImpersonate(selectedSalon);
                 }}
                 disabled={isImpersonating}
-                className="flex-1 py-2.5 px-4 bg-ghana-yellow text-ghana-dark rounded-xl font-semibold hover:bg-yellow-400 active:bg-yellow-500 transition-all disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 bg-ghana-yellow text-ghana-dark rounded-xl font-semibold hover:bg-yellow-400 active:bg-yellow-500 transition-all disabled:opacity-50 btn-ripple"
               >
                 Impersonate Owner
               </button>

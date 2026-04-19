@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { 
-  Search, CheckCircle, XCircle, Eye, MapPin, Phone, Loader2, AlertCircle, Store,
-  Plus, X, Clock, Calendar, Star, Users, Scissors, CreditCard, Ban, RotateCcw,
-  Mail, Navigation, Shield, FileText, Video, Image, Building2, User, ExternalLink
-} from 'lucide-react';
+import Icon from '../components/Icon';
+import LoadingScreen from '../components/LoadingScreen';
 import { 
   useSalons, useApproveSalon, useRejectSalon, usePendingSalons, 
   useSuspendSalon, useReactivateSalon, useCreateSalon, useSalonDetails,
@@ -221,7 +218,7 @@ export function Salons() {
     
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${style.bg} ${style.text}`}>
-        <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`}></span>
+        <span className={`w-1.5 h-1.5 rounded-full ${style.dot} ${status === 'PENDING' ? 'animate-pulse' : ''}`}></span>
         {status.toLowerCase()}
       </span>
     );
@@ -229,9 +226,9 @@ export function Salons() {
 
   const getKycStatusBadge = (status: KycStatus) => {
     const styles: Record<KycStatus, { bg: string; text: string; icon: React.ReactNode }> = {
-      APPROVED: { bg: 'bg-[#006B3F]/10', text: 'text-[#006B3F]', icon: <CheckCircle size={14} /> },
-      PENDING: { bg: 'bg-[#FCD116]/20', text: 'text-[#B8960F]', icon: <Clock size={14} /> },
-      REJECTED: { bg: 'bg-[#CE1126]/10', text: 'text-[#CE1126]', icon: <XCircle size={14} /> },
+      APPROVED: { bg: 'bg-[#006B3F]/10', text: 'text-[#006B3F]', icon: <Icon name="check_circle" size={14} /> },
+      PENDING: { bg: 'bg-[#FCD116]/20', text: 'text-[#B8960F]', icon: <Icon name="schedule" size={14} className="animate-pulse" /> },
+      REJECTED: { bg: 'bg-[#CE1126]/10', text: 'text-[#CE1126]', icon: <Icon name="cancel" size={14} /> },
     };
     const style = styles[status];
     
@@ -250,7 +247,7 @@ export function Salons() {
           ? 'bg-blue-100 text-blue-700' 
           : 'bg-purple-100 text-purple-700'
       }`}>
-        {type === 'REGISTERED_COMPANY' ? <Building2 size={14} /> : <User size={14} />}
+        {type === 'REGISTERED_COMPANY' ? <Icon name="apartment" size={14} /> : <Icon name="person" size={14} />}
         {type === 'REGISTERED_COMPANY' ? 'Company' : 'Individual'}
       </span>
     );
@@ -258,11 +255,54 @@ export function Salons() {
 
   if (isLoading && activeTab === 'salons') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
+      <div className="page-enter space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="skeleton-shimmer h-8 w-52" />
+            <div className="skeleton-shimmer h-4 w-64" />
+          </div>
+          <div className="flex gap-3">
+            <div className="skeleton-shimmer h-10 w-32 rounded-xl" />
+            <div className="skeleton-shimmer h-10 w-28 rounded-xl" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="skeleton-shimmer h-10 w-24 rounded-full" />
+          <div className="skeleton-shimmer h-10 w-28 rounded-full" />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="skeleton-shimmer h-12 flex-1 rounded-xl" />
+          <div className="flex gap-2">
+            <div className="skeleton-shimmer h-10 w-16 rounded-full" />
+            <div className="skeleton-shimmer h-10 w-20 rounded-full" />
+            <div className="skeleton-shimmer h-10 w-20 rounded-full" />
+            <div className="skeleton-shimmer h-10 w-20 rounded-full" />
+            <div className="skeleton-shimmer h-10 w-24 rounded-full" />
+          </div>
+        </div>
+        <div className="hidden md:block bg-white rounded-2xl shadow-card overflow-hidden border border-gray-100">
+          <div className="p-6 space-y-4">
+            <div className="flex gap-6">
+              <div className="skeleton-shimmer h-4 w-20" />
+              <div className="skeleton-shimmer h-4 w-16" />
+              <div className="skeleton-shimmer h-4 w-20" />
+              <div className="skeleton-shimmer h-4 w-16" />
+              <div className="skeleton-shimmer h-4 w-16" />
+              <div className="skeleton-shimmer h-4 w-16" />
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-6 py-3">
+                <div className="skeleton-shimmer h-10 w-10 rounded-lg" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="skeleton-shimmer h-4 w-36" />
+                  <div className="skeleton-shimmer h-3 w-24" />
+                </div>
+                <div className="skeleton-shimmer h-4 w-24" />
+                <div className="skeleton-shimmer h-4 w-20" />
+                <div className="skeleton-shimmer h-6 w-20 rounded-full" />
+                <div className="skeleton-shimmer h-4 w-8" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -273,7 +313,7 @@ export function Salons() {
   const kycTotalCount = kycData?.pagination?.total || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -284,14 +324,14 @@ export function Salons() {
           {activeTab === 'salons' && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-sm"
+              className="btn-ripple flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-sm"
             >
-              <Plus size={18} />
+              <Icon name="add" size={18} />
               Add Salon
             </button>
           )}
           <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
-            <Store size={18} className="text-gray-400" />
+            <Icon name="storefront" size={18} className="text-gray-400" />
             <span className="text-sm text-gray-500">Total:</span>
             <span className="text-lg font-bold text-gray-800">{totalCount}</span>
           </div>
@@ -304,42 +344,24 @@ export function Salons() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2">
         <button
           onClick={() => setActiveTab('salons')}
-          className={`px-6 py-3 text-sm font-medium transition-colors relative ${
-            activeTab === 'salons'
-              ? 'text-[#006B3F]'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
+          className={`tab-pill flex items-center gap-2 ${activeTab === 'salons' ? 'tab-pill-active' : 'tab-pill-inactive'}`}
         >
-          <span className="flex items-center gap-2">
-            <Store size={18} />
-            Salons
-          </span>
-          {activeTab === 'salons' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#006B3F]"></span>
-          )}
+          <Icon name="storefront" size={18} />
+          Salons
         </button>
         <button
           onClick={() => setActiveTab('kyc')}
-          className={`px-6 py-3 text-sm font-medium transition-colors relative ${
-            activeTab === 'kyc'
-              ? 'text-[#006B3F]'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
+          className={`tab-pill flex items-center gap-2 ${activeTab === 'kyc' ? 'tab-pill-active' : 'tab-pill-inactive'}`}
         >
-          <span className="flex items-center gap-2">
-            <Shield size={18} />
-            KYC Verification
-            {pendingKycCount > 0 && (
-              <span className="bg-[#CE1126] text-white text-xs px-2 py-0.5 rounded-full">
-                {pendingKycCount}
-              </span>
-            )}
-          </span>
-          {activeTab === 'kyc' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#006B3F]"></span>
+          <Icon name="verified_user" size={18} />
+          KYC Verification
+          {pendingKycCount > 0 && (
+            <span className="bg-[#CE1126] text-white text-xs px-2 py-0.5 rounded-full">
+              {pendingKycCount}
+            </span>
           )}
         </button>
       </div>
@@ -349,7 +371,7 @@ export function Salons() {
           {/* Salon Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
                 placeholder="Search salons or owners..."
@@ -363,14 +385,14 @@ export function Salons() {
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                  className={`tab-pill ${
                     statusFilter === status
-                      ? status === 'PENDING' ? 'bg-[#FCD116] text-[#1a1a2e]' :
-                        status === 'APPROVED' ? 'bg-[#006B3F] text-white' :
-                        status === 'REJECTED' ? 'bg-[#CE1126] text-white' :
-                        status === 'SUSPENDED' ? 'bg-gray-500 text-white' :
-                        'bg-[#1a1a2e] text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                      ? status === 'PENDING' ? 'bg-[#FCD116] text-[#1a1a2e] shadow-sm' :
+                        status === 'APPROVED' ? 'bg-[#006B3F] text-white shadow-sm' :
+                        status === 'REJECTED' ? 'bg-[#CE1126] text-white shadow-sm' :
+                        status === 'SUSPENDED' ? 'bg-gray-500 text-white shadow-sm' :
+                        'tab-pill-active'
+                      : 'tab-pill-inactive'
                   }`}
                 >
                   {status === 'all' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
@@ -382,11 +404,16 @@ export function Salons() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {filteredSalons.map((salon) => (
-          <div key={salon.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div key={salon.id} className={`card-v2 p-4 border-l-4 ${
+            salon.status === 'PENDING' ? 'border-l-[#FCD116]' :
+            salon.status === 'APPROVED' ? 'border-l-[#006B3F]' :
+            salon.status === 'SUSPENDED' ? 'border-l-[#CE1126]' :
+            'border-l-gray-300'
+          }`}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
-                  <Store size={24} className="text-[#006B3F]" />
+                  <Icon name="storefront" size={24} className="text-[#006B3F]" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">{salon.businessName}</p>
@@ -401,58 +428,58 @@ export function Salons() {
                 <span className="font-medium text-gray-800">{salon.owner.firstName || 'Unknown'} {salon.owner.lastName || ''}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
-                <Phone size={14} className="text-gray-400" />
+                <Icon name="call" size={14} className="text-gray-400" />
                 <span>{formatPhoneNumber(salon.phoneNumber)}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
-                <MapPin size={14} className="text-gray-400" />
+                <Icon name="location_on" size={14} className="text-gray-400" />
                 <span>{salon.city}, {salon.region}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 flex-wrap">
-              <button 
+              <button
                 onClick={() => openDetailModal(salon.id)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
+                className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
               >
-                <Eye size={18} />
+                <Icon name="visibility" size={18} />
                 View
               </button>
               {salon.status === 'PENDING' && (
                 <>
-                  <button 
+                  <button
                     onClick={() => handleApprove(salon.id)}
                     disabled={approveSalon.isPending}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
+                    className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
                   >
-                    <CheckCircle size={18} />
+                    <Icon name="check_circle" size={18} />
                     Approve
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleReject(salon.id)}
                     disabled={rejectSalon.isPending}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] disabled:opacity-50 transition-colors font-medium"
+                    className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] disabled:opacity-50 transition-colors font-medium"
                   >
-                    <XCircle size={18} />
+                    <Icon name="cancel" size={18} />
                     Reject
                   </button>
                 </>
               )}
               {salon.status === 'APPROVED' && (
-                <button 
+                <button
                   onClick={() => openSuspendModal(salon.id)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium"
+                  className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium"
                 >
-                  <Ban size={18} />
+                  <Icon name="block" size={18} />
                   Suspend
                 </button>
               )}
               {salon.status === 'SUSPENDED' && (
-                <button 
+                <button
                   onClick={() => handleReactivate(salon.id)}
                   disabled={reactivateSalon.isPending}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
+                  className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
                 >
-                  <RotateCcw size={18} />
+                  <Icon name="refresh" size={18} />
                   Reactivate
                 </button>
               )}
@@ -462,7 +489,7 @@ export function Salons() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="hidden md:block card-v2 overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -477,11 +504,16 @@ export function Salons() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredSalons.map((salon) => (
-                <tr key={salon.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr key={salon.id} className={`hover:bg-gray-50/50 transition-colors border-l-4 ${
+                  salon.status === 'PENDING' ? 'border-l-[#FCD116]' :
+                  salon.status === 'APPROVED' ? 'border-l-[#006B3F]' :
+                  salon.status === 'SUSPENDED' ? 'border-l-[#CE1126]' :
+                  'border-l-gray-300'
+                }`}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-lg flex items-center justify-center">
-                        <Store size={18} className="text-[#006B3F]" />
+                        <Icon name="storefront" size={18} className="text-[#006B3F]" />
                       </div>
                       <div>
                         <p className="font-medium text-gray-800">{salon.businessName}</p>
@@ -493,14 +525,14 @@ export function Salons() {
                     <div>
                       <p className="text-sm font-medium text-gray-800">{salon.owner.firstName || 'Unknown'} {salon.owner.lastName || ''}</p>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <Phone size={14} className="text-gray-400" />
+                        <Icon name="call" size={14} className="text-gray-400" />
                         <span className="text-sm text-gray-500">{formatPhoneNumber(salon.phoneNumber)}</span>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5">
-                      <MapPin size={16} className="text-gray-400" />
+                      <Icon name="location_on" size={16} className="text-gray-400" />
                       <span className="text-sm text-gray-600">{salon.city}, {salon.region}</span>
                     </div>
                   </td>
@@ -510,47 +542,47 @@ export function Salons() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         onClick={() => openDetailModal(salon.id)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="btn-ripple p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
-                        <Eye size={18} />
+                        <Icon name="visibility" size={18} />
                       </button>
                       {salon.status === 'PENDING' && (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleApprove(salon.id)}
                             disabled={approveSalon.isPending}
-                            className="p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
+                            className="btn-ripple p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
                           >
-                            <CheckCircle size={18} />
+                            <Icon name="check_circle" size={18} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleReject(salon.id)}
                             disabled={rejectSalon.isPending}
-                            className="p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors"
+                            className="btn-ripple p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors"
                           >
-                            <XCircle size={18} />
+                            <Icon name="cancel" size={18} />
                           </button>
                         </>
                       )}
                       {salon.status === 'APPROVED' && (
-                        <button 
+                        <button
                           onClick={() => openSuspendModal(salon.id)}
-                          className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                          className="btn-ripple p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
                           title="Suspend salon"
                         >
-                          <Ban size={18} />
+                          <Icon name="block" size={18} />
                         </button>
                       )}
                       {salon.status === 'SUSPENDED' && (
-                        <button 
+                        <button
                           onClick={() => handleReactivate(salon.id)}
                           disabled={reactivateSalon.isPending}
-                          className="p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
+                          className="btn-ripple p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
                           title="Reactivate salon"
                         >
-                          <RotateCcw size={18} />
+                          <Icon name="refresh" size={18} />
                         </button>
                       )}
                     </div>
@@ -564,9 +596,9 @@ export function Salons() {
 
       {/* Empty State */}
       {filteredSalons.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-gray-100">
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle size={32} className="text-gray-300" />
+            <Icon name="error" size={32} className="text-gray-300" />
           </div>
           <p className="text-gray-500 font-medium">No salons found</p>
           <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filter</p>
@@ -575,15 +607,15 @@ export function Salons() {
 
       {/* Add Salon Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-800">Add New Salon</h2>
               <button 
                 onClick={() => { setShowAddModal(false); setFormData(initialFormData); }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <Icon name="close" size={20} />
               </button>
             </div>
             <form onSubmit={handleCreateSalon} className="p-6 space-y-6">
@@ -785,9 +817,9 @@ export function Salons() {
                 <button
                   type="submit"
                   disabled={createSalon.isPending}
-                  className="px-6 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-ripple px-6 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  {createSalon.isPending && <Loader2 className="animate-spin" size={18} />}
+                  {createSalon.isPending && <Icon name="progress_activity" className="animate-spin" size={18} />}
                   Create Salon
                 </button>
               </div>
@@ -798,21 +830,39 @@ export function Salons() {
 
       {/* Salon Detail Modal */}
       {showDetailModal && selectedSalonId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-800">Salon Details</h2>
               <button 
                 onClick={() => { setShowDetailModal(false); setSelectedSalonId(null); }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <Icon name="close" size={20} />
               </button>
             </div>
             
             {detailsLoading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="animate-spin text-[#006B3F]" size={32} />
+                <div className="space-y-4 w-full px-6">
+                  <div className="flex items-center gap-3">
+                    <div className="skeleton-shimmer h-16 w-16 rounded-xl" />
+                    <div className="space-y-2 flex-1">
+                      <div className="skeleton-shimmer h-6 w-48" />
+                      <div className="skeleton-shimmer h-4 w-24" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                  </div>
+                </div>
               </div>
             ) : salonDetails ? (
               <div className="p-6 space-y-6">
@@ -821,7 +871,7 @@ export function Salons() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
-                        <Store size={32} className="text-[#006B3F]" />
+                        <Icon name="storefront" size={32} className="text-[#006B3F]" />
                       </div>
                       <div>
                         <h3 className="text-lg font-bold text-gray-800">{salonDetails.businessName}</h3>
@@ -835,14 +885,14 @@ export function Salons() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 rounded-xl p-4">
                       <div className="flex items-center gap-2 text-gray-500 mb-1">
-                        <Calendar size={16} />
+                        <Icon name="calendar_today" size={16} />
                         <span className="text-xs">Created</span>
                       </div>
                       <p className="font-semibold text-gray-800">{formatDate(salonDetails.createdAt)}</p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-4">
                       <div className="flex items-center gap-2 text-gray-500 mb-1">
-                        <Star size={16} />
+                        <Icon name="star" size={16} />
                         <span className="text-xs">Rating</span>
                       </div>
                       <p className="font-semibold text-gray-800">
@@ -859,12 +909,12 @@ export function Salons() {
                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact</h4>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-gray-600">
-                        <Phone size={16} className="text-gray-400" />
+                        <Icon name="call" size={16} className="text-gray-400" />
                         <span>{formatPhoneNumber(salonDetails.phoneNumber)}</span>
                       </div>
                       {salonDetails.email && (
                         <div className="flex items-center gap-2 text-gray-600">
-                          <Mail size={16} className="text-gray-400" />
+                          <Icon name="mail" size={16} className="text-gray-400" />
                           <span>{salonDetails.email}</span>
                         </div>
                       )}
@@ -873,7 +923,7 @@ export function Salons() {
                   <div className="space-y-3">
                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Location</h4>
                     <div className="flex items-start gap-2 text-gray-600">
-                      <MapPin size={16} className="text-gray-400 mt-0.5" />
+                      <Icon name="location_on" size={16} className="text-gray-400 mt-0.5" />
                       <div>
                         <p>{salonDetails.address}</p>
                         <p>{salonDetails.city}, {salonDetails.region}</p>
@@ -881,7 +931,7 @@ export function Salons() {
                     </div>
                     {salonDetails.latitude && salonDetails.longitude && (
                       <div className="flex items-center gap-2 text-gray-500 text-sm">
-                        <Navigation size={14} />
+                        <Icon name="navigation" size={14} />
                         <span>{salonDetails.latitude.toFixed(4)}, {salonDetails.longitude.toFixed(4)}</span>
                       </div>
                     )}
@@ -893,7 +943,7 @@ export function Salons() {
                   <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Operating Hours</h4>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Clock size={16} className="text-gray-400" />
+                      <Icon name="schedule" size={16} className="text-gray-400" />
                       <span className="text-gray-600">{salonDetails.openingTime} - {salonDetails.closingTime}</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
@@ -926,22 +976,22 @@ export function Salons() {
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-[#006B3F]/5 rounded-xl p-4 text-center">
-                    <Users size={20} className="mx-auto text-[#006B3F] mb-2" />
+                    <Icon name="group" size={20} className="mx-auto text-[#006B3F] mb-2" />
                     <p className="text-2xl font-bold text-gray-800">{salonDetails.workers?.length || 0}</p>
                     <p className="text-xs text-gray-500">Workers</p>
                   </div>
                   <div className="bg-[#FCD116]/10 rounded-xl p-4 text-center">
-                    <Scissors size={20} className="mx-auto text-[#B8960F] mb-2" />
+                    <Icon name="content_cut" size={20} className="mx-auto text-[#B8960F] mb-2" />
                     <p className="text-2xl font-bold text-gray-800">{salonDetails.services?.length || 0}</p>
                     <p className="text-xs text-gray-500">Services</p>
                   </div>
                   <div className="bg-blue-50 rounded-xl p-4 text-center">
-                    <Calendar size={20} className="mx-auto text-blue-500 mb-2" />
+                    <Icon name="calendar_today" size={20} className="mx-auto text-blue-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-800">{salonDetails._count?.bookings || 0}</p>
                     <p className="text-xs text-gray-500">Bookings</p>
                   </div>
                   <div className="bg-green-50 rounded-xl p-4 text-center">
-                    <CreditCard size={20} className="mx-auto text-green-500 mb-2" />
+                    <Icon name="credit_card" size={20} className="mx-auto text-green-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-800">{formatCurrency(salonDetails.totalRevenue || 0)}</p>
                     <p className="text-xs text-gray-500">Revenue</p>
                   </div>
@@ -1000,8 +1050,8 @@ export function Salons() {
 
       {/* Suspend Modal */}
       {showSuspendModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-800">Suspend Salon</h2>
             </div>
@@ -1024,9 +1074,9 @@ export function Salons() {
                 <button
                   onClick={handleSuspend}
                   disabled={!suspendReason.trim() || suspendSalon.isPending}
-                  className="px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-ripple px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  {suspendSalon.isPending && <Loader2 className="animate-spin" size={16} />}
+                  {suspendSalon.isPending && <Icon name="progress_activity" className="animate-spin" size={16} />}
                   Suspend
                 </button>
               </div>
@@ -1040,7 +1090,7 @@ export function Salons() {
           {/* KYC Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
                 placeholder="Search KYC submissions..."
@@ -1052,13 +1102,13 @@ export function Salons() {
                 <button
                   key={status}
                   onClick={() => setKycStatusFilter(status)}
-                  className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                  className={`tab-pill ${
                     kycStatusFilter === status
-                      ? status === 'PENDING' ? 'bg-[#FCD116] text-[#1a1a2e]' :
-                        status === 'APPROVED' ? 'bg-[#006B3F] text-white' :
-                        status === 'REJECTED' ? 'bg-[#CE1126] text-white' :
-                        'bg-[#1a1a2e] text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                      ? status === 'PENDING' ? 'bg-[#FCD116] text-[#1a1a2e] shadow-sm' :
+                        status === 'APPROVED' ? 'bg-[#006B3F] text-white shadow-sm' :
+                        status === 'REJECTED' ? 'bg-[#CE1126] text-white shadow-sm' :
+                        'tab-pill-active'
+                      : 'tab-pill-inactive'
                   }`}
                 >
                   {status === 'all' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
@@ -1069,8 +1119,40 @@ export function Salons() {
 
           {/* KYC Loading State */}
           {kycLoading && (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="animate-spin text-[#006B3F]" size={32} />
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="skeleton-shimmer h-12 flex-1 rounded-xl" />
+                <div className="flex gap-2">
+                  <div className="skeleton-shimmer h-10 w-16 rounded-full" />
+                  <div className="skeleton-shimmer h-10 w-20 rounded-full" />
+                  <div className="skeleton-shimmer h-10 w-20 rounded-full" />
+                  <div className="skeleton-shimmer h-10 w-20 rounded-full" />
+                </div>
+              </div>
+              <div className="hidden md:block bg-white rounded-2xl shadow-card overflow-hidden border border-gray-100">
+                <div className="p-6 space-y-4">
+                  <div className="flex gap-6">
+                    <div className="skeleton-shimmer h-4 w-20" />
+                    <div className="skeleton-shimmer h-4 w-16" />
+                    <div className="skeleton-shimmer h-4 w-24" />
+                    <div className="skeleton-shimmer h-4 w-20" />
+                    <div className="skeleton-shimmer h-4 w-16" />
+                    <div className="skeleton-shimmer h-4 w-16" />
+                  </div>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-6 py-3">
+                      <div className="skeleton-shimmer h-10 w-10 rounded-lg" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="skeleton-shimmer h-4 w-36" />
+                        <div className="skeleton-shimmer h-3 w-20" />
+                      </div>
+                      <div className="skeleton-shimmer h-6 w-20 rounded-full" />
+                      <div className="skeleton-shimmer h-4 w-16" />
+                      <div className="skeleton-shimmer h-6 w-16 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -1078,11 +1160,16 @@ export function Salons() {
           {!kycLoading && (
             <div className="md:hidden space-y-4">
               {kycSubmissions.map((kyc: KycSubmission) => (
-                <div key={kyc.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                <div key={kyc.id} className={`card-v2 p-4 border-l-4 ${
+                  kyc.status === 'PENDING' ? 'border-l-[#FCD116]' :
+                  kyc.status === 'APPROVED' ? 'border-l-[#006B3F]' :
+                  kyc.status === 'REJECTED' ? 'border-l-[#CE1126]' :
+                  'border-l-gray-300'
+                }`}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
-                        <Shield size={24} className="text-[#006B3F]" />
+                        <Icon name="verified_user" size={24} className="text-[#006B3F]" />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-800">{kyc.salon.businessName}</p>
@@ -1101,34 +1188,34 @@ export function Salons() {
                       {getBusinessTypeBadge(kyc.businessType)}
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
-                      <Phone size={14} className="text-gray-400" />
+                      <Icon name="call" size={14} className="text-gray-400" />
                       <span>{formatPhoneNumber(kyc.owner?.phoneNumber)}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 flex-wrap">
-                    <button 
+                    <button
                       onClick={() => openKycDetailModal(kyc.id)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
+                      className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
                     >
-                      <Eye size={18} />
+                      <Icon name="visibility" size={18} />
                       Review
                     </button>
                     {kyc.status === 'PENDING' && (
                       <>
-                        <button 
+                        <button
                           onClick={() => handleApproveKyc(kyc.id)}
                           disabled={approveKyc.isPending}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
+                          className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
                         >
-                          <CheckCircle size={18} />
+                          <Icon name="check_circle" size={18} />
                           Approve
                         </button>
-                        <button 
+                        <button
                           onClick={() => openKycRejectModal(kyc.id)}
                           disabled={rejectKyc.isPending}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] disabled:opacity-50 transition-colors font-medium"
+                          className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] disabled:opacity-50 transition-colors font-medium"
                         >
-                          <XCircle size={18} />
+                          <Icon name="cancel" size={18} />
                           Reject
                         </button>
                       </>
@@ -1141,7 +1228,7 @@ export function Salons() {
 
           {/* KYC Desktop Table View */}
           {!kycLoading && (
-            <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+            <div className="hidden md:block card-v2 overflow-hidden border border-gray-100">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-100">
@@ -1156,11 +1243,16 @@ export function Salons() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {kycSubmissions.map((kyc: KycSubmission) => (
-                      <tr key={kyc.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={kyc.id} className={`hover:bg-gray-50/50 transition-colors border-l-4 ${
+                        kyc.status === 'PENDING' ? 'border-l-[#FCD116]' :
+                        kyc.status === 'APPROVED' ? 'border-l-[#006B3F]' :
+                        kyc.status === 'REJECTED' ? 'border-l-[#CE1126]' :
+                        'border-l-gray-300'
+                      }`}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-lg flex items-center justify-center">
-                              <Shield size={18} className="text-[#006B3F]" />
+                              <Icon name="verified_user" size={18} className="text-[#006B3F]" />
                             </div>
                             <div>
                               <p className="font-medium text-gray-800">{kyc.salon.businessName}</p>
@@ -1185,30 +1277,30 @@ export function Salons() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <button 
+                            <button
                               onClick={() => openKycDetailModal(kyc.id)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="btn-ripple p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Review KYC"
                             >
-                              <Eye size={18} />
+                              <Icon name="visibility" size={18} />
                             </button>
                             {kyc.status === 'PENDING' && (
                               <>
-                                <button 
+                                <button
                                   onClick={() => handleApproveKyc(kyc.id)}
                                   disabled={approveKyc.isPending}
-                                  className="p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
+                                  className="btn-ripple p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
                                   title="Approve KYC"
                                 >
-                                  <CheckCircle size={18} />
+                                  <Icon name="check_circle" size={18} />
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => openKycRejectModal(kyc.id)}
                                   disabled={rejectKyc.isPending}
-                                  className="p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors"
+                                  className="btn-ripple p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors"
                                   title="Reject KYC"
                                 >
-                                  <XCircle size={18} />
+                                  <Icon name="cancel" size={18} />
                                 </button>
                               </>
                             )}
@@ -1224,9 +1316,9 @@ export function Salons() {
 
           {/* KYC Empty State */}
           {!kycLoading && kycSubmissions.length === 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+            <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-gray-100">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield size={32} className="text-gray-300" />
+                <Icon name="verified_user" size={32} className="text-gray-300" />
               </div>
               <p className="text-gray-500 font-medium">No KYC submissions found</p>
               <p className="text-sm text-gray-400 mt-1">Try adjusting your filter</p>
@@ -1237,8 +1329,8 @@ export function Salons() {
 
       {/* KYC Detail Modal */}
       {showKycDetailModal && selectedKycId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-bold text-gray-800">KYC Review</h2>
@@ -1248,13 +1340,29 @@ export function Salons() {
                 onClick={() => { setShowKycDetailModal(false); setSelectedKycId(null); }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <Icon name="close" size={20} />
               </button>
             </div>
             
             {kycDetailsLoading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="animate-spin text-[#006B3F]" size={32} />
+                <div className="space-y-4 w-full px-6">
+                  <div className="flex items-center gap-3">
+                    <div className="skeleton-shimmer h-14 w-14 rounded-xl" />
+                    <div className="space-y-2 flex-1">
+                      <div className="skeleton-shimmer h-6 w-48" />
+                      <div className="skeleton-shimmer h-4 w-32" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="skeleton-shimmer h-48 rounded-xl" />
+                    <div className="skeleton-shimmer h-48 rounded-xl" />
+                  </div>
+                </div>
               </div>
             ) : kycDetails ? (
               <div className="p-6 space-y-6">
@@ -1262,7 +1370,7 @@ export function Salons() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-14 h-14 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-xl flex items-center justify-center text-white">
-                      <Store size={28} />
+                      <Icon name="storefront" size={28} />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-800">{kycDetails.salon.businessName}</h3>
@@ -1277,7 +1385,7 @@ export function Salons() {
                 {/* Personal Details */}
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                    <User size={16} />
+                    <Icon name="person" size={16} />
                     Personal Details
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1312,7 +1420,7 @@ export function Salons() {
                 {/* Documents */}
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                    <FileText size={16} />
+                    <Icon name="description" size={16} />
                     Documents
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1329,7 +1437,7 @@ export function Salons() {
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-blue-600 hover:underline"
                           >
-                            <ExternalLink size={16} />
+                            <Icon name="open_in_new" size={16} />
                             View PDF Document
                           </a>
                         ) : (
@@ -1372,7 +1480,7 @@ export function Salons() {
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 text-blue-600 hover:underline"
                             >
-                              <ExternalLink size={16} />
+                              <Icon name="open_in_new" size={16} />
                               View PDF Document
                             </a>
                           ) : (
@@ -1401,7 +1509,7 @@ export function Salons() {
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 text-blue-600 hover:underline"
                             >
-                              <ExternalLink size={16} />
+                              <Icon name="open_in_new" size={16} />
                               View PDF Document
                             </a>
                           ) : (
@@ -1421,7 +1529,7 @@ export function Salons() {
                 {/* Video Verification */}
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                    <Video size={16} />
+                    <Icon name="videocam" size={16} />
                     Video Verification
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1488,18 +1596,18 @@ export function Salons() {
                     <button
                       onClick={() => handleApproveKyc(kycDetails.id)}
                       disabled={approveKyc.isPending}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
+                      className="btn-ripple flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium"
                     >
-                      {approveKyc.isPending && <Loader2 className="animate-spin" size={18} />}
-                      <CheckCircle size={18} />
+                      {approveKyc.isPending && <Icon name="progress_activity" className="animate-spin" size={18} />}
+                      <Icon name="check_circle" size={18} />
                       Approve KYC
                     </button>
                     <button
                       onClick={() => openKycRejectModal(kycDetails.id)}
                       disabled={rejectKyc.isPending}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] disabled:opacity-50 transition-colors font-medium"
+                      className="btn-ripple flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] disabled:opacity-50 transition-colors font-medium"
                     >
-                      <XCircle size={18} />
+                      <Icon name="cancel" size={18} />
                       Reject KYC
                     </button>
                   </div>
@@ -1514,8 +1622,8 @@ export function Salons() {
 
       {/* KYC Reject Modal */}
       {showKycRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-800">Reject KYC Submission</h2>
             </div>
@@ -1538,9 +1646,9 @@ export function Salons() {
                 <button
                   onClick={handleRejectKyc}
                   disabled={!kycRejectReason.trim() || rejectKyc.isPending}
-                  className="px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-ripple px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  {rejectKyc.isPending && <Loader2 className="animate-spin" size={16} />}
+                  {rejectKyc.isPending && <Icon name="progress_activity" className="animate-spin" size={16} />}
                   Reject
                 </button>
               </div>
@@ -1560,7 +1668,7 @@ export function Salons() {
               onClick={() => setSelectedImage(null)}
               className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 transition-colors"
             >
-              <X size={24} />
+              <Icon name="close" size={24} />
             </button>
             <img 
               src={selectedImage} 

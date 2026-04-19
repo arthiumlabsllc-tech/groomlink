@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as salonController from '../controllers/salon.controller';
 import * as payoutController from '../controllers/payout.controller';
+import * as userController from '../controllers/user.controller';
 import { authenticateToken, requireRole, UserRole } from '../middleware/auth';
 import { salonValidations } from '../middleware/validation';
 
@@ -9,6 +10,7 @@ const router = Router();
 // Public routes with validation
 router.get('/', salonValidations.searchSalons, salonController.getSalons);
 router.get('/nearby', salonValidations.searchSalons, salonController.getNearbySalons);
+router.get('/recommended', authenticateToken, userController.getRecommendedSalons);
 router.get('/map', salonController.getSalonsForMap);  // Public endpoint, no auth needed
 router.get('/:id', salonController.getSalonById);
 router.get('/:id/staff', salonController.getSalonStaff);

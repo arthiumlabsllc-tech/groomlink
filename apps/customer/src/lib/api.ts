@@ -261,7 +261,16 @@ export interface Review {
     firstName: string;
     lastName: string;
     avatar: string | null;
+    city?: string | null;
   };
+  service?: {
+    id: string;
+    name: string;
+  } | null;
+  worker?: {
+    id: string;
+    fullName: string;
+  } | null;
 }
 
 export interface ReviewsResponse {
@@ -443,15 +452,25 @@ export const bookingApi = {
 
 // Payment types
 export interface PaymentInitializeResponse {
-  authorization_url: string;
-  reference: string;
-  access_code?: string;
+  clientReference: string;
+  hubtelTransactionId: string;
 }
 
 export interface PaymentVerifyResponse {
   success: boolean;
   status: string;
   message?: string;
+  data?: {
+    amountPaid?: number;
+    serviceAmount?: number;
+    platformFee?: number;
+    bookingReference?: string;
+    salonName?: string;
+    serviceName?: string;
+    isGroupBooking?: boolean;
+    totalPeople?: number;
+    [key: string]: any;
+  };
 }
 
 export interface Payment {
@@ -673,6 +692,49 @@ export const notificationApi = {
 
   markAllAsRead: async (): Promise<void> => {
     await apiClient.put('/notifications/read-all');
+  },
+};
+
+// Waitlist types
+export interface WaitlistEntry {
+  id: string;
+  salonId: string;
+  staffId: string | null;
+  date: string;
+  timeSlot: string;
+  status: 'WAITING' | 'NOTIFIED' | 'CONVERTED' | 'EXPIRED' | 'CANCELLED';
+  createdAt: string;
+  salon?: {
+    id: string;
+    businessName: string;
+  };
+  staff?: {
+    id: string;
+    fullName: string;
+  } | null;
+}
+
+export interface JoinWaitlistData {
+  salonId: string;
+  staffId?: string;
+  date: string;
+  timeSlot: string;
+}
+
+// Waitlist API functions
+export const waitlistApi = {
+  joinWaitlist: async (data: JoinWaitlistData): Promise<WaitlistEntry> => {
+    const response = await apiClient.post('/waitlist/join', data);
+    return response.data.data;
+  },
+
+  leaveWaitlist: async (waitlistId: string): Promise<void> => {
+    await apiClient.delete(`/waitlist/${waitlistId}`);
+  },
+
+  getMyWaitlist: async (): Promise<WaitlistEntry[]> => {
+    const response = await apiClient.get('/waitlist/my');
+    return response.data.data;
   },
 };
 

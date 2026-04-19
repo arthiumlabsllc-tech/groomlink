@@ -262,6 +262,27 @@ export interface SetupPayoutAccountPayload {
   momoNumber?: string;
 }
 
+export interface BrandedPage {
+  id: string;
+  salonId: string;
+  slug: string;
+  primaryColor: string;
+  tagline: string | null;
+  logoUrl: string | null;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateBrandedPagePayload {
+  salonId: string;
+  primaryColor?: string;
+  tagline?: string;
+  logoUrl?: string;
+  isPublished?: boolean;
+  slug?: string;
+}
+
 // API Client
 class ApiClient {
   private baseUrl: string;
@@ -713,6 +734,51 @@ class ApiClient {
 
   async getSupportedMomoProviders(): Promise<{ success: boolean; data: { providers: { code: string; name: string }[] } }> {
     return this.request<{ success: boolean; data: { providers: { code: string; name: string }[] } }>('/salons/payouts/momo-providers');
+  }
+
+  // Insights
+  async getPeakHours(salonId: string) {
+    return this.request<{ success: boolean; data: { peakDays: { day: string; bookingCount: number }[]; peakTimeRanges: { start: string; end: string; intensity: 'high' | 'medium' | 'low' }[] } }>(`/insights/peak-hours?salonId=${salonId}`);
+  }
+
+  async getPricingInsights(salonId: string) {
+    return this.request<{ success: boolean; data: { serviceId: string; serviceName: string; yourPrice: number; marketAverage: number; difference: number; percentile: number }[] }>(`/insights/pricing?salonId=${salonId}`);
+  }
+
+  async getStaffPerformance(salonId: string) {
+    return this.request<{ success: boolean; data: { workerId: string; workerName: string; bookings: number; revenue: number; rating: number; completionRate: number }[] }>(`/insights/staff-performance?salonId=${salonId}`);
+  }
+
+  async getLoyaltyMetrics(salonId: string) {
+    return this.request<{ success: boolean; data: { repeatCustomerRate: number; atRiskCustomers: number; loyalCustomers: number; averageVisitsPerCustomer: number } }>(`/insights/loyalty-metrics?salonId=${salonId}`);
+  }
+
+  async getRevenueInsights(salonId: string, period: 'daily' | 'weekly' | 'monthly') {
+    return this.request<{ success: boolean; data: { period: string; total: number; data: { label: string; value: number }[] } }>(`/insights/revenue?salonId=${salonId}&period=${period}`);
+  }
+
+  // Branded Page
+  async getMyBrandedPage(salonId: string): Promise<{ success: boolean; data: BrandedPage | null }> {
+    return this.request<{ success: boolean; data: BrandedPage | null }>(`/discover/branded-page/my?salonId=${salonId}`);
+  }
+
+  async updateBrandedPage(data: UpdateBrandedPagePayload): Promise<{ success: boolean; data: BrandedPage }> {
+    return this.request<{ success: boolean; data: BrandedPage }>('/discover/branded-page', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async uploadBrandedPageLogo(salonId: string, file: File): Promise<{ success: boolean; data: { logo: string } }> {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${this.baseUrl}/uploads/salon/${salonId}/logo`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    return response.json();
   }
 
   logout() {

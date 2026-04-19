@@ -302,3 +302,10 @@ export function emitNewBooking(salonId: string, booking: any) {
     io.to(`salon:${salonId}`).emit('booking:new', { booking });
   }
 }
+
+// Emit global booking count update for the live counter on the home screen
+export function emitBookingCountUpdate(count: number) {
+  if (io) {
+    io.emit('booking:count_update', { count });
+  }
+}

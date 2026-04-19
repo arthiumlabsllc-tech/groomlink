@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSalon } from '../store/SalonContext';
+import LoadingScreen from './LoadingScreen';
 
 /**
  * SalonSetupWrapper - Forces new partners without a salon to the settings page
@@ -15,14 +16,7 @@ export function SalonSetupWrapper({ children }: { children: React.ReactNode }) {
 
   // While loading, show nothing (or could show a spinner)
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // If user has no salon, force them to settings page

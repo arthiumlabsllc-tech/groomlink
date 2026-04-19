@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Bookings from './pages/Bookings'
@@ -10,13 +11,17 @@ import Reviews from './pages/Reviews'
 import Settings from './pages/Settings'
 import Queue from './pages/Queue'
 import KYC from './pages/KYC'
+import BrandedPage from './pages/BrandedPage'
 import Notifications from './pages/Notifications'
+import Insights from './pages/Insights'
 import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
 import { SocketProvider } from './components/SocketProvider'
 import { api } from './lib/api'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { SalonSetupWrapper } from './components/SalonSetupWrapper'
+
+const queryClient = new QueryClient()
 
 // Component to handle token from URL
 function TokenHandler({ children }: { children: React.ReactNode }) {
@@ -45,6 +50,7 @@ function TokenHandler({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <SalonProvider>
       <SocketProvider>
         <BrowserRouter>
@@ -105,9 +111,23 @@ function App() {
                   <KYC />
                 </ProtectedRoute>
               } />
+              <Route path="/branded-page" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <BrandedPage />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
               <Route path="/notifications" element={
                 <ProtectedRoute>
                   <Notifications />
+                </ProtectedRoute>
+              } />
+              <Route path="/insights" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Insights />
+                  </SalonSetupWrapper>
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
@@ -116,6 +136,7 @@ function App() {
         </BrowserRouter>
       </SocketProvider>
     </SalonProvider>
+    </QueryClientProvider>
   )
 }
 

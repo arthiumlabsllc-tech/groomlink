@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
-import { Star, MapPin, Navigation } from 'lucide-react';
+import Icon from './Icon';
 import { useNavigate } from 'react-router-dom';
 
 interface Salon {
@@ -100,7 +100,7 @@ export default function MapView({ salons, userLocation, defaultCenter: propCente
   if (loadError) {
     return (
       <div className="flex flex-col items-center justify-center h-[500px] bg-gray-50 rounded-xl border border-gray-200">
-        <MapPin className="w-12 h-12 text-gray-400 mb-4" />
+        <Icon name="location_on" size={48} className="text-gray-400 mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load map</h3>
         <p className="text-gray-600 text-center max-w-md px-4">
           There was an error loading Google Maps. Please check your internet connection and try again.
@@ -194,21 +194,21 @@ export default function MapView({ salons, userLocation, defaultCenter: propCente
               <div className="mt-3 space-y-2">
                 {/* Rating */}
                 <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-ghana-gold fill-current" />
+                  <Icon name="star" size={16} filled className="text-ghana-gold" />
                   <span className="text-sm font-medium">{selectedSalon.rating?.toFixed(1) || '0.0'}</span>
                   <span className="text-sm text-gray-500">({selectedSalon.reviewCount || 0} reviews)</span>
                 </div>
 
                 {/* Address */}
                 <div className="flex items-start gap-1 text-sm text-gray-600">
-                  <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <Icon name="location_on" size={16} className="flex-shrink-0 mt-0.5" />
                   <span className="line-clamp-2">{selectedSalon.address || 'Address not available'}</span>
                 </div>
 
                 {/* Distance */}
                 {selectedSalon.distance !== undefined && (
                   <div className="flex items-center gap-1 text-sm font-medium text-ghana-green">
-                    <Navigation className="w-4 h-4" />
+                    <Icon name="near_me" size={16} />
                     <span>{formatDistance(selectedSalon.distance)} away</span>
                   </div>
                 )}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Scissors, ArrowLeft } from 'lucide-react'
+import Icon from '../components/Icon'
 
 export default function PrivacyPolicy() {
   return (
@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-lg flex items-center justify-center">
-                <Scissors className="w-5 h-5 text-white" />
+                <Icon name="content_cut" size={20} className="text-white" />
               </div>
               <span className="text-xl font-bold text-gray-900 font-display">GroomLink</span>
             </Link>
@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
               to="/" 
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <Icon name="arrow_back" size={16} />
               Back to Home
             </Link>
           </div>

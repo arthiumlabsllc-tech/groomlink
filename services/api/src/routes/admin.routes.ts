@@ -27,7 +27,7 @@ router.get('/transactions', authenticateToken, requireAdminOrHigher, adminContro
 router.get('/transactions/:id', authenticateToken, requireAdminOrHigher, adminController.getTransactionDetails);
 router.post('/transactions/:id/refund', authenticateToken, requireAdminOrHigher, adminController.refundTransaction);
 
-// Payment Sync with Paystack
+// Payment Sync with Hubtel
 router.post('/payments/:paymentId/sync', authenticateToken, requireAdminOrHigher, adminController.syncPaymentStatus);
 router.post('/payments/sync-all', authenticateToken, requireAdminOrHigher, adminController.syncAllProcessingPayments);
 
@@ -38,8 +38,8 @@ router.get('/bookings/stats', authenticateToken, requireAdminOrHigher, adminCont
 router.get('/revenue/stats', authenticateToken, requireAdminOrHigher, adminController.getRevenueStats);
 router.get('/revenue/comprehensive', authenticateToken, requireAdminOrHigher, adminController.getComprehensiveRevenueStats);
 
-// Paystack Balance
-router.get('/paystack-balance', authenticateToken, requireAdminOrHigher, adminController.getPaystackBalanceHandler);
+// Hubtel Balance
+router.get('/hubtel-balance', authenticateToken, requireAdminOrHigher, adminController.getHubtelBalanceHandler);
 
 // Recent Activities
 router.get('/activities', authenticateToken, requireAdminOrHigher, adminController.getRecentActivities);

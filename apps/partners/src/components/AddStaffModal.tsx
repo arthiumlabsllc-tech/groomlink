@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import Icon from './Icon'
 import { api } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
@@ -87,33 +87,39 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffMo
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-md"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-none sm:rounded-2xl shadow-xl w-full max-w-md h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-2xl shadow-elevated w-full max-w-md h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900">Add Staff Member</h2>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-ghana-green/10 rounded-lg flex items-center justify-center">
+              <Icon name="person_add" size={20} className="text-ghana-green" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">Add Staff Member</h2>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="btn-ripple p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <Icon name="close" size={20} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
+              <Icon name="error" size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1.5">
               Full Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -123,13 +129,13 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffMo
               value={formData.fullName}
               onChange={handleChange}
               placeholder="Enter full name"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1.5">
               Phone Number <span className="text-red-500">*</span>
             </label>
             <input
@@ -139,13 +145,13 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffMo
               value={formData.phoneNumber}
               onChange={handleChange}
               placeholder="e.g., +233 20 123 4567"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
               Email <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <input
@@ -155,12 +161,12 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffMo
               value={formData.email}
               onChange={handleChange}
               placeholder="email@example.com"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
             />
           </div>
 
           <div>
-            <label htmlFor="specialties" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="specialties" className="block text-sm font-medium text-gray-700 mb-1.5">
               Specialties <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <input
@@ -170,13 +176,13 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffMo
               value={formData.specialties}
               onChange={handleChange}
               placeholder="e.g., Haircuts, Braiding, Coloring (comma-separated)"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
             />
-            <p className="text-xs text-gray-500 mt-1">Separate multiple specialties with commas</p>
+            <p className="text-xs text-gray-400 mt-1.5">Separate multiple specialties with commas</p>
           </div>
 
           <div>
-            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1.5">
               Bio <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <textarea
@@ -186,7 +192,7 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffMo
               onChange={handleChange}
               placeholder="A brief description of the staff member..."
               rows={3}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-colors resize-none"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white resize-none"
             />
           </div>
 
@@ -195,18 +201,18 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffMo
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              className="btn-ripple flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-all duration-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="btn-ripple flex-1 px-4 py-2.5 bg-ghana-green text-white rounded-xl hover:bg-ghana-green/90 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Icon name="progress_activity" size={16} className="animate-spin" />
                   Adding...
                 </>
               ) : (

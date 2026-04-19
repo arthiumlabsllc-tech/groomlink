@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { 
-  Search, Ban, Eye, Phone, Calendar, Loader2, CheckCircle, LogIn, Users as UsersIcon,
-  Plus, X, Mail, MapPin, Shield, AlertTriangle, CreditCard, Clock, Activity,
-  UserCheck, UserX, AlertCircle, Trash2
-} from 'lucide-react';
+import Icon from '../components/Icon';
+import LoadingScreen from '../components/LoadingScreen';
 import { 
   useUsers, useBlockUser, useUnblockUser, useCreateCustomer, 
   useUserDetails, useUserActivities, useBanUser, useUnbanUser, useDeleteUser
@@ -207,11 +204,54 @@ export function Users() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
+      <div className="page-enter space-y-6">
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="skeleton-shimmer h-8 w-48" />
+            <div className="skeleton-shimmer h-4 w-64" />
+          </div>
+          <div className="flex gap-3">
+            <div className="skeleton-shimmer h-10 w-40 rounded-xl" />
+            <div className="skeleton-shimmer h-10 w-28 rounded-xl" />
+          </div>
+        </div>
+        {/* Filter skeleton */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="skeleton-shimmer h-12 flex-1 rounded-xl" />
+          <div className="flex gap-2">
+            <div className="skeleton-shimmer h-10 w-24 rounded-xl" />
+            <div className="skeleton-shimmer h-10 w-28 rounded-xl" />
+            <div className="skeleton-shimmer h-10 w-28 rounded-xl" />
+            <div className="skeleton-shimmer h-10 w-32 rounded-xl" />
+          </div>
+        </div>
+        {/* Card grid skeleton */}
+        <div className="hidden md:block bg-white rounded-2xl shadow-card overflow-hidden border border-gray-100">
+          <div className="p-6 space-y-4">
+            <div className="flex gap-6">
+              <div className="skeleton-shimmer h-4 w-24" />
+              <div className="skeleton-shimmer h-4 w-16" />
+              <div className="skeleton-shimmer h-4 w-20" />
+              <div className="skeleton-shimmer h-4 w-16" />
+              <div className="skeleton-shimmer h-4 w-16" />
+              <div className="skeleton-shimmer h-4 w-16" />
+              <div className="skeleton-shimmer h-4 w-16" />
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-6 py-3">
+                <div className="skeleton-shimmer h-10 w-10 rounded-full" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="skeleton-shimmer h-4 w-32" />
+                  <div className="skeleton-shimmer h-3 w-48" />
+                </div>
+                <div className="skeleton-shimmer h-6 w-20 rounded-full" />
+                <div className="skeleton-shimmer h-4 w-24" />
+                <div className="skeleton-shimmer h-4 w-16" />
+                <div className="skeleton-shimmer h-6 w-16 rounded-full" />
+                <div className="skeleton-shimmer h-8 w-8 rounded-lg" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -219,7 +259,7 @@ export function Users() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -229,13 +269,13 @@ export function Users() {
         <div className="flex gap-3">
           <button
             onClick={() => setShowRegisterModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-sm"
+            className="btn-ripple flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] transition-colors font-medium shadow-sm"
           >
-            <Plus size={18} />
+            <Icon name="add" size={18} />
             Register Customer
           </button>
           <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
-            <UsersIcon size={18} className="text-gray-400" />
+            <Icon name="group" size={18} className="text-gray-400" />
             <span className="text-sm text-gray-500">Total:</span>
             <span className="text-lg font-bold text-gray-800">{totalCount}</span>
           </div>
@@ -245,7 +285,7 @@ export function Users() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search users..."
@@ -259,24 +299,16 @@ export function Users() {
             <button
               key={role}
               onClick={() => setRoleFilter(role)}
-              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
-                roleFilter === role
-                  ? 'bg-[#1a1a2e] text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-              }`}
+              className={`tab-pill ${roleFilter === role ? 'tab-pill-active' : 'tab-pill-inactive'}`}
             >
               {role === 'all' ? 'All Roles' : role === 'CUSTOMER' ? 'Customers' : 'Salon Owners'}
             </button>
           ))}
           <button
             onClick={() => setShowSuspiciousOnly(!showSuspiciousOnly)}
-            className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 flex items-center gap-2 ${
-              showSuspiciousOnly
-                ? 'bg-[#CE1126] text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-            }`}
+            className={`tab-pill flex items-center gap-2 ${showSuspiciousOnly ? 'bg-[#CE1126] text-white shadow-sm' : 'tab-pill-inactive'}`}
           >
-            <AlertTriangle size={16} />
+            <Icon name="warning" size={16} />
             Suspicious Only
           </button>
         </div>
@@ -285,7 +317,7 @@ export function Users() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {filteredUsers.map((user) => (
-          <div key={user.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div key={user.id} className="card-v2 p-4 border border-gray-100">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -294,7 +326,7 @@ export function Users() {
                   </div>
                   {user.hasSuspiciousActivity && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#CE1126] rounded-full flex items-center justify-center">
-                      <AlertTriangle size={12} className="text-white" />
+                      <Icon name="warning" size={12} className="text-white" />
                     </div>
                   )}
                 </div>
@@ -307,71 +339,73 @@ export function Users() {
             </div>
             <div className="space-y-2 text-sm bg-gray-50 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-600">
-                <Phone size={14} className="text-gray-400" />
+                <Icon name="call" size={14} className="text-gray-400" />
                 <span>{formatPhoneNumber(user.phoneNumber)}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
-                <Calendar size={14} className="text-gray-400" />
+                <Icon name="calendar_today" size={14} className="text-gray-400" />
                 <span>Joined {formatDate(user.createdAt)}</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-gray-200 mt-2">
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                  user.status === 'ACTIVE' 
-                    ? 'bg-[#006B3F]/10 text-[#006B3F]' 
-                    : 'bg-[#CE1126]/10 text-[#CE1126]'
+                  user.status === 'ACTIVE'
+                    ? 'bg-[#006B3F]/10 text-[#006B3F]'
+                    : user.status === 'SUSPENDED'
+                    ? 'bg-[#CE1126]/10 text-[#CE1126]'
+                    : 'bg-gray-100 text-gray-600'
                 }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#006B3F]' : 'bg-[#CE1126]'}`}></span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#006B3F]' : user.status === 'SUSPENDED' ? 'bg-[#CE1126] animate-pulse' : 'bg-gray-400'}`}></span>
                   {user.status.toLowerCase()}
                 </span>
                 <span className="text-sm text-gray-500">{user._count?.bookings || 0} bookings</span>
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 flex-wrap">
-              <button 
+              <button
                 onClick={() => openDetailModal(user.id)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm"
+                className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm"
               >
-                <Eye size={16} />
+                <Icon name="visibility" size={16} />
                 View
               </button>
               {(user.role === 'CUSTOMER' || user.role === 'SALON_OWNER') && (
                 <button
                   onClick={() => handleImpersonate(user.id)}
                   disabled={impersonating === user.id}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[#B8960F] border-2 border-[#FCD116] hover:bg-[#FCD116]/10 rounded-xl disabled:opacity-50 transition-colors font-medium text-sm"
+                  className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 text-[#B8960F] border-2 border-[#FCD116] hover:bg-[#FCD116]/10 rounded-xl disabled:opacity-50 transition-colors font-medium text-sm"
                   title="Login as this user"
                 >
                   {impersonating === user.id ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Icon name="progress_activity" size={16} className="animate-spin" />
                   ) : (
-                    <LogIn size={16} />
+                    <Icon name="login" size={16} />
                   )}
                   Impersonate
                 </button>
               )}
               {user.status === 'ACTIVE' ? (
-                <button 
+                <button
                   onClick={() => openBanModal(user.id)}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] transition-colors font-medium text-sm"
+                  className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1f] transition-colors font-medium text-sm"
                 >
-                  <Ban size={16} />
+                  <Icon name="block" size={16} />
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={() => handleUnban(user.id)}
                   disabled={unbanUserMutation.isPending}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium text-sm"
+                  className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors font-medium text-sm"
                 >
-                  <CheckCircle size={16} />
+                  <Icon name="check_circle" size={16} />
                 </button>
               )}
               {user.role !== 'SUPER_ADMIN' && (
-                <button 
+                <button
                   onClick={() => openDeleteModal(user)}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm"
+                  className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm"
                   title="Delete user"
                 >
-                  <Trash2 size={16} />
+                  <Icon name="delete" size={16} />
                 </button>
               )}
             </div>
@@ -380,7 +414,7 @@ export function Users() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="hidden md:block card-v2 overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -405,7 +439,7 @@ export function Users() {
                         </div>
                         {user.hasSuspiciousActivity && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#CE1126] rounded-full flex items-center justify-center">
-                            <AlertTriangle size={10} className="text-white" />
+                            <Icon name="warning" size={10} className="text-white" />
                           </div>
                         )}
                       </div>
@@ -420,7 +454,7 @@ export function Users() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5">
-                      <Phone size={16} className="text-gray-400" />
+                      <Icon name="call" size={16} className="text-gray-400" />
                       <span className="text-sm text-gray-600">{formatPhoneNumber(user.phoneNumber)}</span>
                     </div>
                   </td>
@@ -429,68 +463,70 @@ export function Users() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5">
-                      <Calendar size={16} className="text-gray-400" />
+                      <Icon name="calendar_today" size={16} className="text-gray-400" />
                       <span className="text-sm text-gray-600">{formatDate(user.createdAt)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      user.status === 'ACTIVE' 
-                        ? 'bg-[#006B3F]/10 text-[#006B3F]' 
-                        : 'bg-[#CE1126]/10 text-[#CE1126]'
+                      user.status === 'ACTIVE'
+                        ? 'bg-[#006B3F]/10 text-[#006B3F]'
+                        : user.status === 'SUSPENDED'
+                        ? 'bg-[#CE1126]/10 text-[#CE1126]'
+                        : 'bg-gray-100 text-gray-600'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#006B3F]' : 'bg-[#CE1126]'}`}></span>
+                      <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#006B3F]' : user.status === 'SUSPENDED' ? 'bg-[#CE1126] animate-pulse' : 'bg-gray-400'}`}></span>
                       {user.status.toLowerCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         onClick={() => openDetailModal(user.id)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                        className="btn-ripple p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="View details"
                       >
-                        <Eye size={18} />
+                        <Icon name="visibility" size={18} />
                       </button>
                       {(user.role === 'CUSTOMER' || user.role === 'SALON_OWNER') && (
                         <button
                           onClick={() => handleImpersonate(user.id)}
                           disabled={impersonating === user.id}
-                          className="p-2 text-[#B8960F] border border-[#FCD116] hover:bg-[#FCD116]/10 rounded-lg disabled:opacity-50 transition-colors"
+                          className="btn-ripple p-2 text-[#B8960F] border border-[#FCD116] hover:bg-[#FCD116]/10 rounded-lg disabled:opacity-50 transition-colors"
                           title="Login as this user"
                         >
                           {impersonating === user.id ? (
-                            <Loader2 size={18} className="animate-spin" />
+                            <Icon name="progress_activity" size={18} className="animate-spin" />
                           ) : (
-                            <LogIn size={18} />
+                            <Icon name="login" size={18} />
                           )}
                         </button>
                       )}
                       {user.status === 'ACTIVE' ? (
-                        <button 
+                        <button
                           onClick={() => openBanModal(user.id)}
-                          className="p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] transition-colors"
+                          className="btn-ripple p-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] transition-colors"
                           title="Ban user"
                         >
-                          <Ban size={18} />
+                          <Icon name="block" size={18} />
                         </button>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => handleUnban(user.id)}
                           disabled={unbanUserMutation.isPending}
-                          className="p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
+                          className="btn-ripple p-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
                           title="Unban user"
                         >
-                          <CheckCircle size={18} />
+                          <Icon name="check_circle" size={18} />
                         </button>
                       )}
                       {user.role !== 'SUPER_ADMIN' && (
-                        <button 
+                        <button
                           onClick={() => openDeleteModal(user)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="btn-ripple p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete user"
                         >
-                          <Trash2 size={18} />
+                          <Icon name="delete" size={18} />
                         </button>
                       )}
                     </div>
@@ -504,9 +540,9 @@ export function Users() {
 
       {/* Empty State */}
       {filteredUsers.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-gray-100">
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UsersIcon size={32} className="text-gray-300" />
+            <Icon name="group" size={32} className="text-gray-300" />
           </div>
           <p className="text-gray-500 font-medium">No users found</p>
           <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
@@ -515,15 +551,15 @@ export function Users() {
 
       {/* Register Customer Modal */}
       {showRegisterModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800">Register Customer</h2>
               <button 
                 onClick={() => { setShowRegisterModal(false); setFormData(initialFormData); }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <Icon name="close" size={20} />
               </button>
             </div>
             <form onSubmit={handleCreateCustomer} className="p-6 space-y-4">
@@ -581,9 +617,9 @@ export function Users() {
                 <button
                   type="submit"
                   disabled={createCustomer.isPending}
-                  className="px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-ripple px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  {createCustomer.isPending && <Loader2 className="animate-spin" size={16} />}
+                  {createCustomer.isPending && <Icon name="progress_activity" className="animate-spin" size={16} />}
                   Register
                 </button>
               </div>
@@ -594,31 +630,48 @@ export function Users() {
 
       {/* User Detail Modal */}
       {showDetailModal && selectedUserId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-800">User Details</h2>
               <button 
                 onClick={() => { setShowDetailModal(false); setSelectedUserId(null); }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <Icon name="close" size={20} />
               </button>
             </div>
             
             {detailsLoading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="animate-spin text-[#006B3F]" size={32} />
+                <div className="space-y-4 w-full px-6">
+                  <div className="flex items-center gap-4">
+                    <div className="skeleton-shimmer h-20 w-20 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <div className="skeleton-shimmer h-6 w-48" />
+                      <div className="skeleton-shimmer h-4 w-32" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="skeleton-shimmer h-24 rounded-xl" />
+                    <div className="skeleton-shimmer h-24 rounded-xl" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                    <div className="skeleton-shimmer h-20 rounded-xl" />
+                  </div>
+                </div>
               </div>
             ) : userDetails ? (
               <div className="p-6">
                 {/* Tabs */}
                 <div className="flex gap-2 mb-6 border-b border-gray-100 overflow-x-auto">
                   {[
-                    { id: 'profile', label: 'Profile', icon: UsersIcon },
-                    { id: 'activity', label: 'Activity', icon: Activity },
-                    { id: 'bookings', label: 'Bookings', icon: Calendar },
-                    { id: 'payments', label: 'Payments', icon: CreditCard },
+                    { id: 'profile', label: 'Profile', icon: 'group' },
+                    { id: 'activity', label: 'Activity', icon: 'monitoring' },
+                    { id: 'bookings', label: 'Bookings', icon: 'calendar_today' },
+                    { id: 'payments', label: 'Payments', icon: 'credit_card' },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -629,7 +682,7 @@ export function Users() {
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <tab.icon size={16} />
+                      <Icon name={tab.icon} size={16} />
                       {tab.label}
                     </button>
                   ))}
@@ -646,7 +699,7 @@ export function Users() {
                         </div>
                         {userDetails.hasSuspiciousActivity && (
                           <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#CE1126] rounded-full flex items-center justify-center">
-                            <AlertTriangle size={14} className="text-white" />
+                            <Icon name="warning" size={14} className="text-white" />
                           </div>
                         )}
                       </div>
@@ -655,11 +708,13 @@ export function Users() {
                         <div className="flex items-center gap-2 mt-1">
                           {getRoleBadge(userDetails.role)}
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            userDetails.status === 'ACTIVE' 
-                              ? 'bg-[#006B3F]/10 text-[#006B3F]' 
-                              : 'bg-[#CE1126]/10 text-[#CE1126]'
+                            userDetails.status === 'ACTIVE'
+                              ? 'bg-[#006B3F]/10 text-[#006B3F]'
+                              : userDetails.status === 'SUSPENDED'
+                              ? 'bg-[#CE1126]/10 text-[#CE1126]'
+                              : 'bg-gray-100 text-gray-600'
                           }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${userDetails.status === 'ACTIVE' ? 'bg-[#006B3F]' : 'bg-[#CE1126]'}`}></span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${userDetails.status === 'ACTIVE' ? 'bg-[#006B3F]' : userDetails.status === 'SUSPENDED' ? 'bg-[#CE1126] animate-pulse' : 'bg-gray-400'}`}></span>
                             {userDetails.status.toLowerCase()}
                           </span>
                         </div>
@@ -672,18 +727,18 @@ export function Users() {
                         <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact Information</h4>
                         <div className="space-y-3">
                           <div className="flex items-center gap-3">
-                            <Phone size={18} className="text-gray-400" />
+                            <Icon name="call" size={18} className="text-gray-400" />
                             <span className="text-gray-600">{formatPhoneNumber(userDetails.phoneNumber)}</span>
                           </div>
                           {userDetails.email && (
                             <div className="flex items-center gap-3">
-                              <Mail size={18} className="text-gray-400" />
+                              <Icon name="mail" size={18} className="text-gray-400" />
                               <span className="text-gray-600">{userDetails.email}</span>
                             </div>
                           )}
                           {userDetails.location?.city && (
                             <div className="flex items-center gap-3">
-                              <MapPin size={18} className="text-gray-400" />
+                              <Icon name="location_on" size={18} className="text-gray-400" />
                               <span className="text-gray-600">
                                 {userDetails.location.city}{userDetails.location.region ? `, ${userDetails.location.region}` : ''}
                               </span>
@@ -696,7 +751,7 @@ export function Users() {
                         <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Account Details</h4>
                         <div className="space-y-3">
                           <div className="flex items-center gap-3">
-                            <Calendar size={18} className="text-gray-400" />
+                            <Icon name="calendar_today" size={18} className="text-gray-400" />
                             <div>
                               <p className="text-xs text-gray-500">Joined</p>
                               <p className="text-gray-600">{formatDate(userDetails.createdAt)}</p>
@@ -704,7 +759,7 @@ export function Users() {
                           </div>
                           {userDetails.lastLoginAt && (
                             <div className="flex items-center gap-3">
-                              <Clock size={18} className="text-gray-400" />
+                              <Icon name="schedule" size={18} className="text-gray-400" />
                               <div>
                                 <p className="text-xs text-gray-500">Last Login</p>
                                 <p className="text-gray-600">{formatDate(userDetails.lastLoginAt)}</p>
@@ -712,7 +767,7 @@ export function Users() {
                             </div>
                           )}
                           <div className="flex items-center gap-3">
-                            <Shield size={18} className="text-gray-400" />
+                            <Icon name="verified_user" size={18} className="text-gray-400" />
                             <div>
                               <p className="text-xs text-gray-500">Verified</p>
                               <p className={`font-medium ${userDetails.isVerified ? 'text-[#006B3F]' : 'text-[#CE1126]'}`}>
@@ -728,7 +783,7 @@ export function Users() {
                     {userDetails.status === 'SUSPENDED' && userDetails.banReason && (
                       <div className="bg-[#CE1126]/10 rounded-xl p-4">
                         <div className="flex items-start gap-3">
-                          <AlertCircle className="text-[#CE1126] mt-0.5" size={20} />
+                          <Icon name="error" className="text-[#CE1126] mt-0.5" size={20} />
                           <div>
                             <p className="font-medium text-[#CE1126]">Account Suspended</p>
                             <p className="text-sm text-gray-600 mt-1">
@@ -769,7 +824,7 @@ export function Users() {
                   <div>
                     {activitiesLoading ? (
                       <div className="flex items-center justify-center h-32">
-                        <Loader2 className="animate-spin text-[#006B3F]" size={24} />
+                        <Icon name="progress_activity" className="animate-spin text-[#006B3F]" size={24} />
                       </div>
                     ) : userActivities?.data && userActivities.data.length > 0 ? (
                       <div className="space-y-3">
@@ -782,9 +837,9 @@ export function Users() {
                           >
                             <div className="flex items-center gap-3">
                               {activity.isSuspicious ? (
-                                <AlertTriangle size={18} className="text-[#CE1126]" />
+                                <Icon name="warning" size={18} className="text-[#CE1126]" />
                               ) : (
-                                <Activity size={18} className="text-gray-400" />
+                                <Icon name="monitoring" size={18} className="text-gray-400" />
                               )}
                               <div>
                                 <p className={`font-medium ${activity.isSuspicious ? 'text-[#CE1126]' : 'text-gray-800'}`}>
@@ -803,7 +858,7 @@ export function Users() {
                       </div>
                     ) : (
                       <div className="text-center py-12 text-gray-500">
-                        <Activity size={32} className="mx-auto mb-2 text-gray-300" />
+                        <Icon name="monitoring" size={32} className="mx-auto mb-2 text-gray-300" />
                         <p>No activity recorded</p>
                       </div>
                     )}
@@ -821,7 +876,7 @@ export function Users() {
                               <p className="font-medium text-gray-800">{booking.salon.businessName}</p>
                               <p className="text-sm text-gray-500">{booking.salon.city}</p>
                               <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                                <Calendar size={12} />
+                                <Icon name="calendar_today" size={12} />
                                 <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
                               </div>
                             </div>
@@ -839,7 +894,7 @@ export function Users() {
                       </div>
                     ) : (
                       <div className="text-center py-12 text-gray-500">
-                        <Calendar size={32} className="mx-auto mb-2 text-gray-300" />
+                        <Icon name="calendar_today" size={32} className="mx-auto mb-2 text-gray-300" />
                         <p>No bookings found</p>
                       </div>
                     )}
@@ -858,7 +913,7 @@ export function Users() {
                                 <p className="font-medium text-gray-800">{payment.booking.salon.businessName}</p>
                               )}
                               <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <CreditCard size={14} />
+                                <Icon name="credit_card" size={14} />
                                 <span>{payment.provider}</span>
                               </div>
                             </div>
@@ -876,7 +931,7 @@ export function Users() {
                       </div>
                     ) : (
                       <div className="text-center py-12 text-gray-500">
-                        <CreditCard size={32} className="mx-auto mb-2 text-gray-300" />
+                        <Icon name="credit_card" size={32} className="mx-auto mb-2 text-gray-300" />
                         <p>No payments found</p>
                       </div>
                     )}
@@ -888,21 +943,21 @@ export function Users() {
                   {userDetails.status === 'ACTIVE' ? (
                     <button
                       onClick={() => { setShowDetailModal(false); openBanModal(selectedUserId); }}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] transition-colors"
+                      className="btn-ripple flex items-center gap-2 px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] transition-colors"
                     >
-                      <UserX size={18} />
+                      <Icon name="person_remove" size={18} />
                       Ban User
                     </button>
                   ) : (
                     <button
                       onClick={() => handleUnban(selectedUserId)}
                       disabled={unbanUserMutation.isPending}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
+                      className="btn-ripple flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors"
                     >
                       {unbanUserMutation.isPending ? (
-                        <Loader2 className="animate-spin" size={18} />
+                        <Icon name="progress_activity" className="animate-spin" size={18} />
                       ) : (
-                        <UserCheck size={18} />
+                        <Icon name="how_to_reg" size={18} />
                       )}
                       Unban User
                     </button>
@@ -918,8 +973,8 @@ export function Users() {
 
       {/* Ban User Modal */}
       {showBanModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-800">Ban User</h2>
             </div>
@@ -942,9 +997,9 @@ export function Users() {
                 <button
                   onClick={handleBan}
                   disabled={!banReason.trim() || banUserMutation.isPending}
-                  className="px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-ripple px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  {banUserMutation.isPending && <Loader2 className="animate-spin" size={16} />}
+                  {banUserMutation.isPending && <Icon name="progress_activity" className="animate-spin" size={16} />}
                   Ban User
                 </button>
               </div>
@@ -955,15 +1010,15 @@ export function Users() {
 
       {/* Delete User Confirmation Modal */}
       {showDeleteModal && userToDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-800">Delete User</h2>
             </div>
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="text-red-600" size={24} />
+                  <Icon name="error" className="text-red-600" size={24} />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">
@@ -1002,9 +1057,9 @@ export function Users() {
                 <button
                   onClick={handleDelete}
                   disabled={deleteUserMutation.isPending}
-                  className="px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-ripple px-4 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#a50e1f] disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  {deleteUserMutation.isPending && <Loader2 className="animate-spin" size={16} />}
+                  {deleteUserMutation.isPending && <Icon name="progress_activity" className="animate-spin" size={16} />}
                   Delete User
                 </button>
               </div>

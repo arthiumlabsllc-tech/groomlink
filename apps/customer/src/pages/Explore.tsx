@@ -1,21 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Search, 
-  MapPin, 
-  Star, 
-  Filter,
-  Grid,
-  List,
-  Loader2,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Store,
-  Navigation,
-  X,
-  Map
-} from 'lucide-react'
+import Icon from '../components/Icon'
 import apiClient, { salonApi } from '../lib/api'
 import MapView from '../components/MapView'
 
@@ -309,7 +294,7 @@ export default function Explore() {
           disabled={page === 1 || loading}
           className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <Icon name="chevron_left" size={20} />
         </button>
         {pages.map((p, idx) => (
           p === '...' ? (
@@ -334,7 +319,7 @@ export default function Explore() {
           disabled={page === totalPages || loading}
           className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ChevronRight className="w-5 h-5" />
+          <Icon name="chevron_right" size={20} />
         </button>
       </div>
     )
@@ -351,16 +336,16 @@ export default function Explore() {
       {/* Search and Filters */}
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search salons, services, or locations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-10 py-2.5 sm:py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent text-sm sm:text-base"
+            className="w-full pl-11 pr-10 py-3 sm:py-3.5 bg-white shadow-card rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base transition-shadow hover:shadow-card-hover"
           />
           {loading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
+            <Icon name="progress_activity" size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -376,13 +361,13 @@ export default function Explore() {
           >
             {gettingLocation ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Icon name="progress_activity" size={16} className="animate-spin" />
                 <span className="hidden sm:inline">Getting location...</span>
                 <span className="sm:hidden">Locating...</span>
               </>
             ) : (
               <>
-                <Navigation className="w-4 h-4" />
+                <Icon name="near_me" size={16} />
                 <span>Near Me</span>
               </>
             )}
@@ -390,44 +375,49 @@ export default function Explore() {
 
           {/* Radius Filter - Only show when in nearby mode */}
           {locationMode === 'nearby' && (
-            <select
-              value={selectedRadius}
-              onChange={(e) => handleRadiusChange(Number(e.target.value))}
-              className="px-2 sm:px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-ghana-green focus:border-transparent text-sm"
-            >
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+              <span className="text-xs text-gray-500 whitespace-nowrap">Within:</span>
               {radiusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  Within {option.label}
-                </option>
+                <button
+                  key={option.value}
+                  onClick={() => handleRadiusChange(option.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+                    selectedRadius === option.value
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {option.label}
+                </button>
               ))}
-            </select>
+            </div>
           )}
 
           <button className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-sm sm:text-base">
-            <Filter className="w-4 h-4" />
+            <Icon name="filter_list" size={16} />
             <span className="hidden sm:inline">Filters</span>
           </button>
-          <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden ml-auto">
+          <div className="flex bg-gray-100 rounded-full p-1 ml-auto">
             <button 
               onClick={() => setDisplayMode('grid')} 
-              className={`p-2 ${displayMode === 'grid' ? 'bg-ghana-green/10 text-ghana-green' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`p-2 rounded-full transition-all duration-200 ${displayMode === 'grid' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               title="Grid view"
             >
-              <Grid className="w-4 h-4" />
+              <Icon name="grid_view" size={18} />
             </button>
             <button 
               onClick={() => setDisplayMode('list')} 
-              className={`p-2 ${displayMode === 'list' ? 'bg-ghana-green/10 text-ghana-green' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`p-2 rounded-full transition-all duration-200 ${displayMode === 'list' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               title="List view"
             >
-              <List className="w-4 h-4" />
+              <Icon name="list" size={18} />
             </button>
             <button 
               onClick={() => setDisplayMode('map')} 
-              className={`p-2 ${displayMode === 'map' ? 'bg-ghana-green/10 text-ghana-green' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`p-2 rounded-full transition-all duration-200 ${displayMode === 'map' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               title="Map view"
             >
-              <Map className="w-4 h-4" />
+              <Icon name="map" size={18} />
             </button>
           </div>
         </div>
@@ -436,7 +426,7 @@ export default function Explore() {
       {/* Location Error Banner */}
       {locationError && (
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <Icon name="error" size={20} className="flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="font-medium">Location access required</p>
             <p className="text-sm mt-1">{locationError}</p>
@@ -445,13 +435,13 @@ export default function Explore() {
             onClick={clearLocationError}
             className="p-1 hover:bg-amber-100 rounded transition-colors"
           >
-            <X className="w-4 h-4" />
+            <Icon name="close" size={16} />
           </button>
         </div>
       )}
 
       {/* Categories */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide scroll-smooth-x">
         {categories.map((category) => (
           <button
             key={category.value || 'all'}
@@ -459,10 +449,10 @@ export default function Explore() {
               setSelectedCategory(category.value)
               setPage(1)
             }}
-            className={`px-3 sm:px-4 py-2 rounded-full whitespace-nowrap transition-colors text-sm sm:text-base ${
+            className={`tab-pill whitespace-nowrap ${
               selectedCategory === category.value
-                ? 'bg-ghana-green text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'tab-pill-active'
+                : 'tab-pill-inactive'
             }`}
           >
             {category.label}
@@ -473,7 +463,7 @@ export default function Explore() {
       {/* Location mode indicator */}
       {locationMode === 'nearby' && userLocation && (
         <div className="flex items-center gap-2 text-sm text-gray-600 bg-ghana-green/5 px-3 py-2 rounded-lg">
-          <MapPin className="w-4 h-4 text-ghana-green" />
+          <Icon name="location_on" size={16} className="text-ghana-green" />
           <span>Showing salons within {radiusOptions.find(r => r.value === selectedRadius)?.label} of your location</span>
         </div>
       )}
@@ -481,7 +471,7 @@ export default function Explore() {
       {/* Error State */}
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <Icon name="error" size={20} className="flex-shrink-0" />
           <div className="flex-1">
             <p className="font-medium">Error loading salons</p>
             <p className="text-sm">{error}</p>
@@ -497,26 +487,41 @@ export default function Explore() {
 
       {/* Loading State */}
       {loading && salons.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="w-12 h-12 text-ghana-green animate-spin mb-4" />
-          <p className="text-gray-600">
-            {locationMode === 'nearby' ? 'Finding salons near you...' : 'Loading salons...'}
-          </p>
+        <div className="space-y-4 animate-fade-in">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="skeleton-shimmer w-20 h-8"></div>
+            <div className="skeleton-shimmer w-24 h-8"></div>
+            <div className="skeleton-shimmer w-16 h-8"></div>
+          </div>
+          <div className={displayMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="card-v2 overflow-hidden">
+                <div className="skeleton-shimmer w-full h-48"></div>
+                <div className="p-4 space-y-3">
+                  <div className="skeleton-shimmer w-3/4 h-5"></div>
+                  <div className="skeleton-shimmer w-1/2 h-4"></div>
+                  <div className="skeleton-shimmer w-2/3 h-4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && !error && salons.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Store className="w-16 h-16 text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in-up">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+            <Icon name="store" size={48} className="text-gray-400" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
             {locationMode === 'nearby' ? 'No salons found nearby' : 'No salons found'}
           </h3>
-          <p className="text-gray-600 max-w-md">
+          <p className="text-gray-600 max-w-md mb-6">
             {locationMode === 'nearby'
               ? `No approved salons were found within ${radiusOptions.find(r => r.value === selectedRadius)?.label} of your location. Try expanding your search radius or browse all salons.`
               : debouncedSearch || selectedCategory
-                ? 'Try adjusting your search or filters to find what you\'re looking for.'
+                ? 'We couldn\'t find any salons matching your search. Try adjusting your filters or search for something else.'
                 : 'There are no approved salons available at the moment. Please check back later.'}
           </p>
           {locationMode === 'nearby' && (
@@ -526,7 +531,7 @@ export default function Explore() {
                 setUserLocation(null)
                 setPage(1)
               }}
-              className="mt-4 px-4 py-2 bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors"
+              className="px-6 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors font-medium shadow-card hover:shadow-card-hover"
             >
               View All Salons
             </button>
@@ -538,7 +543,7 @@ export default function Explore() {
                 setSelectedCategory('')
                 setPage(1)
               }}
-              className="mt-4 px-4 py-2 bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors"
+              className="px-6 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors font-medium shadow-card hover:shadow-card-hover"
             >
               Clear Filters
             </button>
@@ -562,15 +567,15 @@ export default function Explore() {
               <div
                 key={salon.id}
                 onClick={() => handleSalonClick(salon.id)}
-                className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group ${
+                className={`card-v2 overflow-hidden cursor-pointer group ${
                   displayMode === 'list' ? 'flex' : ''
                 }`}
               >
-                <div className={`relative overflow-hidden ${displayMode === 'grid' ? 'w-full h-48' : 'w-48 h-full flex-shrink-0'}`}>
+                <div className={`img-zoom relative ${displayMode === 'grid' ? 'w-full h-48 rounded-t-2xl' : 'w-48 h-full rounded-l-2xl flex-shrink-0'}`}>
                   <img
                     src={getSalonImage(salon)}
                     alt={salon.businessName || 'Salon'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.src = 'https://images.unsplash.com/photo-1522337360788-8b13ee0af107?w=400&h=300&fit=crop'
@@ -579,7 +584,7 @@ export default function Explore() {
                   <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
                     {salon.isSponsored && (
                       <span className="px-2 py-1 text-xs font-medium rounded bg-amber-100 text-amber-700 border border-amber-300 flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-current" />
+                        <Icon name="star" size={12} filled className="text-amber-700" />
                         Sponsored
                       </span>
                     )}
@@ -593,14 +598,14 @@ export default function Explore() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 truncate">{salon.businessName || 'Unnamed Salon'}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <Star className="w-4 h-4 text-ghana-gold fill-current" />
+                        <Icon name="star" size={16} filled className="text-ghana-gold" />
                         <span className="text-sm font-medium">{salon.rating?.toFixed(1) || '0.0'}</span>
                         <span className="text-sm text-gray-500">({salon.reviewCount || 0} reviews)</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                    <Icon name="location_on" size={16} className="flex-shrink-0" />
                     <span className="truncate">{salon.address || 'Address not available'}</span>
                   </div>
                   {salon.city && (
@@ -611,7 +616,7 @@ export default function Explore() {
                   {/* Distance display for nearby mode */}
                   {locationMode === 'nearby' && salon.distance !== undefined && (
                     <div className="flex items-center gap-1 mt-2 text-sm font-medium text-ghana-green">
-                      <Navigation className="w-4 h-4" />
+                      <Icon name="near_me" size={16} />
                       <span>{formatDistance(salon.distance)}</span>
                     </div>
                   )}

@@ -61,10 +61,10 @@ export function useComprehensiveRevenueStats() {
   });
 }
 
-export function usePaystackBalance() {
+export function useHubtelBalance() {
   return useQuery({
-    queryKey: [DASHBOARD_KEY, 'paystack', 'balance'],
-    queryFn: () => dashboardApi.getPaystackBalance(),
+    queryKey: [DASHBOARD_KEY, 'hubtel', 'balance'],
+    queryFn: () => dashboardApi.getHubtelBalance(),
     staleTime: 60 * 1000, // 1 minute
   });
 }

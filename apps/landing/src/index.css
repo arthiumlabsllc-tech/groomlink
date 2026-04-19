@@ -7,25 +7,115 @@ html {
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1A1A1A;
 }
 
 @layer base {
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Poppins', system-ui, sans-serif;
+    font-weight: 700;
   }
 }
 
 @layer components {
+  /* Primary CTA Button - Red filled */
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl;
+    @apply bg-brand-primary hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg;
   }
   
+  /* Secondary CTA Button - Outline */
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-primary-500 font-semibold py-3 px-8 rounded-lg border-2 border-primary-500 transition-all duration-300;
+    @apply bg-transparent hover:bg-gray-50 text-brand-text font-semibold py-3 px-6 rounded-lg border-2 border-gray-300 hover:border-gray-400 transition-all duration-300;
   }
   
-  .btn-gold {
-    @apply bg-ghana-gold hover:bg-yellow-400 text-ghana-black font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg;
+  /* Outline white button for dark backgrounds */
+  .btn-outline-white {
+    @apply bg-transparent hover:bg-white/10 text-white font-semibold py-3 px-6 rounded-lg border-2 border-white/80 hover:border-white transition-all duration-300;
   }
+  
+  /* Gold accent button */
+  .btn-gold {
+    @apply bg-ghana-gold hover:bg-yellow-400 text-ghana-black font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-md;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 transition-all duration-300;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-md hover:-translate-y-1;
+  }
+
+  /* Section container */
+  .section-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Scroll reveal animation classes */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  /* Gradient backgrounds */
+  .gradient-ghana {
+    background: linear-gradient(135deg, #006B3F 0%, #004d2d 50%, #003d24 100%);
+  }
+  
+  .gradient-hero {
+    background: linear-gradient(135deg, rgba(0, 107, 63, 0.95) 0%, rgba(0, 77, 45, 0.95) 50%, rgba(0, 45, 26, 0.95) 100%);
+  }
+  
+  .gradient-dark {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-primary to-brand-secondary;
+  }
+
+  /* Hide scrollbar for mobile horizontal scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area for mobile bottom nav */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@keyframes pulse-logo {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.92);
+  }
+}
+
+.animate-pulse-logo {
+  animation: pulse-logo 1.5s ease-in-out infinite;
 }

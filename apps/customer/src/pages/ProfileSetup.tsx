@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Phone, ArrowRight, CheckCircle, Mail } from 'lucide-react';
+import Icon from '../components/Icon';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/auth';
 import apiClient from '../lib/api';
@@ -8,7 +8,7 @@ import apiClient from '../lib/api';
 export default function ProfileSetup() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setToken, fetchProfile } = useAuthStore();
+  const { user, setToken, fetchProfile: _fetchProfile } = useAuthStore();
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -175,7 +175,7 @@ export default function ProfileSetup() {
                     Email *
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Icon name="mail" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="email"
                       value={email}
@@ -201,7 +201,7 @@ export default function ProfileSetup() {
                     First Name *
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Icon name="person" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       value={firstName}
@@ -220,7 +220,7 @@ export default function ProfileSetup() {
                     Last Name *
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Icon name="person" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       value={lastName}
@@ -238,7 +238,7 @@ export default function ProfileSetup() {
                     Phone Number *
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Icon name="call" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="tel"
                       value={phoneNumber}
@@ -263,7 +263,7 @@ export default function ProfileSetup() {
                   ) : (
                     <>
                       Get Started
-                      <CheckCircle className="w-4 h-4" />
+                      <Icon name="check_circle" size={16} />
                     </>
                   )}
                 </button>

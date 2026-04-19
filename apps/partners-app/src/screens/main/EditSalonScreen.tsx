@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -24,6 +26,7 @@ import {
   Card,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { salonApi, CreateSalonData } from '../../api/salon';
 import { OpeningHours } from '../../types';
 
@@ -62,6 +65,9 @@ const TIME_OPTIONS = (() => {
   }
   return times;
 })();
+
+const MAX_GALLERY_IMAGES = 10;
+const MAX_PICK_PER_BATCH = 5;
 
 interface FormErrors {
   businessName?: string;
@@ -104,11 +110,19 @@ export default function EditSalonScreen() {
   const [businessName, setBusinessName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [phone, setPhone] = useState('');
+  const [region, setRegion] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('BARBERSHOP');
+  const [type, setType] = useState('BARBERSHOP');
   const [openingHours, setOpeningHours] = useState<HoursState>(defaultHours);
+
+  // Image state
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [deletingImage, setDeletingImage] = useState<string | null>(null);
 
   // Menu visibility
   const [openTimeMenus, setOpenTimeMenus] = useState<{ [key: string]: boolean }>({});
@@ -129,10 +143,12 @@ export default function EditSalonScreen() {
       setBusinessName(salon.businessName || '');
       setAddress(salon.address || '');
       setCity(salon.city || '');
-      setPhone(salon.phone || '');
+      setRegion(salon.region || '');
+      setPhoneNumber(salon.phoneNumber || '');
       setEmail(salon.email || '');
       setDescription(salon.description || '');
-      setCategory('BARBERSHOP');
+      setType(salon.type || 'BARBERSHOP');
+      setGalleryImages(salon.images || []);
 
       if (salon.openingHours) {
         const hours = salon.openingHours as OpeningHours;
@@ -149,6 +165,121 @@ export default function EditSalonScreen() {
     }
   }, [salon]);
 
+  // Invalidate salon queries to refresh data
+  const refreshSalon = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['mySalon'] });
+  }, [queryClient]);
+
+  // --- Image Picker Helpers ---
+
+  const pickSingleImage = async (): Promise<string | null> => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.length) return null;
+    return result.assets[0].uri;
+  };
+
+  const pickMultipleImages = async (remaining: number): Promise<string[]> => {
+    const limit = Math.min(remaining, MAX_PICK_PER_BATCH);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: limit,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.length) return [];
+    return result.assets.map((a) => a.uri);
+  };
+
+  // --- Upload Handlers ---
+
+  const handleLogoUpload = async () => {
+    if (!salon) return;
+    const uri = await pickSingleImage();
+    if (!uri) return;
+
+    setUploadingLogo(true);
+    try {
+      await salonApi.uploadLogo(salon.id, uri);
+      refreshSalon();
+      Alert.alert('Success', 'Logo updated successfully');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleCoverUpload = async () => {
+    if (!salon) return;
+    const uri = await pickSingleImage();
+    if (!uri) return;
+
+    setUploadingCover(true);
+    try {
+      await salonApi.uploadCover(salon.id, uri);
+      refreshSalon();
+      Alert.alert('Success', 'Cover image updated successfully');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to upload cover image');
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const handleGalleryAdd = async () => {
+    if (!salon) return;
+    const remaining = MAX_GALLERY_IMAGES - galleryImages.length;
+    if (remaining <= 0) {
+      Alert.alert('Limit Reached', `You can upload a maximum of ${MAX_GALLERY_IMAGES} gallery images.`);
+      return;
+    }
+
+    const uris = await pickMultipleImages(remaining);
+    if (!uris.length) return;
+
+    setUploadingGallery(true);
+    try {
+      await salonApi.uploadGalleryImages(salon.id, uris);
+      refreshSalon();
+      Alert.alert('Success', `${uris.length} image${uris.length > 1 ? 's' : ''} added to gallery`);
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to upload gallery images');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleGalleryDelete = async (imageUrl: string) => {
+    if (!salon) return;
+
+    Alert.alert(
+      'Delete Image',
+      'Are you sure you want to remove this image from the gallery?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingImage(imageUrl);
+            try {
+              await salonApi.deleteGalleryImage(salon.id, imageUrl);
+              refreshSalon();
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.message || 'Failed to delete image');
+            } finally {
+              setDeletingImage(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Update salon mutation
   const updateMutation = useMutation({
     mutationFn: (data: Partial<CreateSalonData & { openingHours?: HoursState }>) =>
@@ -159,8 +290,10 @@ export default function EditSalonScreen() {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to update salon: ${error.message}`);
+    onError: (error: any) => {
+      const apiError = error.response?.data?.error;
+      const fieldErrors = apiError?.details?.map((d: any) => d.message).join(', ');
+      Alert.alert('Error', fieldErrors || apiError?.message || error.response?.data?.message || 'Failed to update salon');
     },
   });
 
@@ -180,12 +313,36 @@ export default function EditSalonScreen() {
       newErrors.city = 'City is required';
     }
 
-    if (!phone.trim()) {
+    if (!phoneNumber.trim()) {
       newErrors.phone = 'Phone number is required';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Convert HoursState to workingDays array for API
+  const getWorkingDaysFromHours = (hours: HoursState): string[] => {
+    const days: string[] = [];
+    if (hours.monday.isOpen) days.push('MONDAY');
+    if (hours.tuesday.isOpen) days.push('TUESDAY');
+    if (hours.wednesday.isOpen) days.push('WEDNESDAY');
+    if (hours.thursday.isOpen) days.push('THURSDAY');
+    if (hours.friday.isOpen) days.push('FRIDAY');
+    if (hours.saturday.isOpen) days.push('SATURDAY');
+    if (hours.sunday.isOpen) days.push('SUNDAY');
+    return days;
+  };
+
+  // Get opening/closing time from first open day
+  const getOpeningTime = (hours: HoursState): string => {
+    const openDay = Object.values(hours).find(h => h.isOpen);
+    return openDay?.open || '09:00';
+  };
+
+  const getClosingTime = (hours: HoursState): string => {
+    const openDay = Object.values(hours).find(h => h.isOpen);
+    return openDay?.close || '18:00';
   };
 
   // Handle save
@@ -196,11 +353,15 @@ export default function EditSalonScreen() {
       businessName: businessName.trim(),
       address: address.trim(),
       city: city.trim(),
-      phone: phone.trim(),
+      region: region.trim(),
+      phoneNumber: phoneNumber.trim(),
       email: email.trim() || undefined,
       description: description.trim() || undefined,
-      category,
+      type,
       openingHours,
+      workingDays: getWorkingDaysFromHours(openingHours),
+      openingTime: getOpeningTime(openingHours),
+      closingTime: getClosingTime(openingHours),
     };
 
     updateMutation.mutate(data);
@@ -263,6 +424,8 @@ export default function EditSalonScreen() {
     );
   }
 
+  const remainingGallerySlots = MAX_GALLERY_IMAGES - galleryImages.length;
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <KeyboardAvoidingView
@@ -273,20 +436,137 @@ export default function EditSalonScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Salon Photo Section */}
-          <View style={styles.photoSection}>
-            <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoPlaceholderText}>
-                {businessName ? businessName[0].toUpperCase() : 'S'}
-              </Text>
+          {/* ─── Cover Image ─── */}
+          <TouchableOpacity
+            style={styles.coverContainer}
+            onPress={handleCoverUpload}
+            disabled={uploadingCover}
+            activeOpacity={0.8}
+          >
+            {salon.coverImage ? (
+              <Image source={{ uri: salon.coverImage }} style={styles.coverImage} />
+            ) : (
+              <View style={styles.coverPlaceholder}>
+                <Ionicons name="image-outline" size={32} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.coverPlaceholderText}>Add Cover Photo</Text>
+              </View>
+            )}
+            {uploadingCover && (
+              <View style={styles.imageUploadingOverlay}>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+              </View>
+            )}
+            <View style={styles.coverEditBadge}>
+              <Ionicons name="camera" size={14} color="#FFFFFF" />
+              <Text style={styles.coverEditBadgeText}>Edit</Text>
             </View>
-            <TouchableOpacity style={styles.photoButton}>
-              <Ionicons name="camera-outline" size={18} color="#006B3F" />
-              <Text style={styles.photoButtonText}>Change Photo</Text>
+          </TouchableOpacity>
+
+          {/* ─── Logo ─── */}
+          <View style={styles.logoRow}>
+            <TouchableOpacity
+              style={styles.logoContainer}
+              onPress={handleLogoUpload}
+              disabled={uploadingLogo}
+              activeOpacity={0.8}
+            >
+              {salon.logo ? (
+                <Image source={{ uri: salon.logo }} style={styles.logoImage} />
+              ) : (
+                <View style={styles.logoPlaceholder}>
+                  <Text style={styles.logoPlaceholderText}>
+                    {businessName ? businessName[0].toUpperCase() : 'S'}
+                  </Text>
+                </View>
+              )}
+              {uploadingLogo && (
+                <View style={styles.logoUploadingOverlay}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                </View>
+              )}
+              <View style={styles.logoEditBadge}>
+                <Ionicons name="camera" size={12} color="#FFFFFF" />
+              </View>
             </TouchableOpacity>
+            <View style={styles.logoInfo}>
+              <Text style={styles.logoInfoTitle}>{businessName || 'Salon Name'}</Text>
+              <Text style={styles.logoInfoSub}>Tap the logo to change it</Text>
+            </View>
           </View>
 
-          {/* Basic Information */}
+          {/* ─── Gallery Section ─── */}
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="images" size={20} color="#006B3F" />
+              <Text style={styles.sectionTitle}>Gallery</Text>
+              <Text style={styles.galleryCounter}>
+                {galleryImages.length}/{MAX_GALLERY_IMAGES}
+              </Text>
+            </View>
+            <Divider style={styles.sectionDivider} />
+
+            {galleryImages.length > 0 && (
+              <View style={styles.galleryGrid}>
+                {galleryImages.map((img, idx) => (
+                  <View key={img + idx} style={styles.galleryItem}>
+                    <Image source={{ uri: img }} style={styles.galleryImage} />
+                    {deletingImage === img ? (
+                      <View style={styles.galleryDeleteButton}>
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.galleryDeleteButton}
+                        onPress={() => handleGalleryDelete(img)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="close-circle" size={22} color="#EF4444" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {galleryImages.length === 0 && (
+              <View style={styles.galleryEmpty}>
+                <Ionicons name="image-outline" size={40} color="#D1D5DB" />
+                <Text style={styles.galleryEmptyText}>No gallery images yet</Text>
+                <Text style={styles.galleryEmptySub}>Add photos to showcase your salon</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.addPhotosButton,
+                remainingGallerySlots <= 0 && styles.addPhotosButtonDisabled,
+              ]}
+              onPress={handleGalleryAdd}
+              disabled={uploadingGallery || remainingGallerySlots <= 0}
+              activeOpacity={0.7}
+            >
+              {uploadingGallery ? (
+                <ActivityIndicator size="small" color="#006B3F" />
+              ) : (
+                <>
+                  <Ionicons name="add-circle-outline" size={20} color={remainingGallerySlots > 0 ? '#006B3F' : '#9CA3AF'} />
+                  <Text style={[
+                    styles.addPhotosButtonText,
+                    remainingGallerySlots <= 0 && styles.addPhotosButtonTextDisabled,
+                  ]}>
+                    Add Photos
+                  </Text>
+                  {remainingGallerySlots > 0 && (
+                    <Text style={styles.addPhotosRemaining}>
+                      (up to {Math.min(remainingGallerySlots, MAX_PICK_PER_BATCH)} at a time)
+                    </Text>
+                  )}
+                </>
+              )}
+            </TouchableOpacity>
+          </Surface>
+
+          {/* ─── Basic Information ─── */}
           <Surface style={styles.section} elevation={0}>
             <View style={styles.sectionHeader}>
               <Ionicons name="information-circle" size={20} color="#006B3F" />
@@ -361,9 +641,9 @@ export default function EditSalonScreen() {
               <View style={styles.halfInput}>
                 <TextInput
                   label="Phone *"
-                  value={phone}
+                  value={phoneNumber}
                   onChangeText={(text) => {
-                    setPhone(text);
+                    setPhoneNumber(text);
                     setTouched({ ...touched, phone: true });
                   }}
                   onBlur={() => setTouched({ ...touched, phone: true })}
@@ -413,7 +693,7 @@ export default function EditSalonScreen() {
             />
           </Surface>
 
-          {/* Category Section */}
+          {/* ─── Category Section ─── */}
           <Surface style={styles.section} elevation={0}>
             <View style={styles.sectionHeader}>
               <Ionicons name="pricetag" size={20} color="#006B3F" />
@@ -422,7 +702,7 @@ export default function EditSalonScreen() {
             <Divider style={styles.sectionDivider} />
             <View style={styles.categoryGrid}>
               {BUSINESS_CATEGORIES.map((cat) => {
-                const isSelected = category === cat.value;
+                const isSelected = type === cat.value;
                 return (
                   <TouchableOpacity
                     key={cat.value}
@@ -430,7 +710,7 @@ export default function EditSalonScreen() {
                       styles.categoryChip,
                       isSelected && styles.categoryChipSelected,
                     ]}
-                    onPress={() => setCategory(cat.value)}
+                    onPress={() => setType(cat.value)}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -450,7 +730,7 @@ export default function EditSalonScreen() {
             </View>
           </Surface>
 
-          {/* Business Hours */}
+          {/* ─── Business Hours ─── */}
           <Surface style={styles.section} elevation={0}>
             <View style={styles.sectionHeader}>
               <Ionicons name="time" size={20} color="#006B3F" />
@@ -590,46 +870,209 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
     paddingBottom: 32,
   },
-  photoSection: {
-    alignItems: 'center',
-    marginBottom: 24,
+
+  // ─── Cover Image Styles ───
+  coverContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 180,
   },
-  photoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  coverImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  coverPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#006B3F',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#006B3F',
-    marginBottom: 12,
+    gap: 8,
   },
-  photoPlaceholderText: {
-    fontSize: 40,
+  coverPlaceholderText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  coverEditBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  coverEditBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  imageUploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ─── Logo Styles ───
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: -36,
+    marginBottom: 20,
+  },
+  logoContainer: {
+    position: 'relative',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  logoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#006B3F',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoPlaceholderText: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  photoButton: {
+  logoUploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#006B3F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  logoInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  logoInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  logoInfoSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+
+  // ─── Gallery Styles ───
+  galleryCounter: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginLeft: 'auto',
+    fontWeight: '500',
+  },
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  galleryItem: {
+    position: 'relative',
+    width: '31%',
+    aspectRatio: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  galleryImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  galleryDeleteButton: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  galleryEmpty: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    marginBottom: 8,
+  },
+  galleryEmptyText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginTop: 8,
+  },
+  galleryEmptySub: {
+    fontSize: 13,
+    color: '#D1D5DB',
+    marginTop: 4,
+  },
+  addPhotosButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#E8F5E9',
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#006B3F',
+    borderStyle: 'dashed',
+    backgroundColor: '#F0FDF4',
   },
-  photoButtonText: {
+  addPhotosButtonDisabled: {
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  addPhotosButtonText: {
     color: '#006B3F',
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: 14,
   },
+  addPhotosButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+  addPhotosRemaining: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
+  // ─── Section Styles ───
   section: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
-    marginBottom: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -746,6 +1189,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 8,
     marginBottom: 24,
+    marginHorizontal: 16,
   },
   saveButton: {},
   buttonContent: {

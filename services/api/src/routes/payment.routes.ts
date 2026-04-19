@@ -13,12 +13,12 @@ router.post('/verify', authenticateToken, paymentController.verifyPayment);
 router.get('/history', authenticateToken, paymentController.getPaymentHistory);
 router.get('/:id', authenticateToken, paymentController.getPaymentById);
 
-// Webhook endpoints (public but should verify signature)
+// Webhook endpoints (public - no auth required)
 // Legacy mock webhook
 router.post('/webhook/momo', paymentController.handleWebhook);
 
-// Paystack webhook - uses express.raw() for signature verification
-// Note: The raw body parser must be configured at the app level for this to work
-router.post('/webhook/paystack', paymentController.handlePaystackWebhook);
+// Hubtel webhook - handles mobile money payment callbacks
+// Hubtel uses ResponseCode validation instead of HMAC signatures
+router.post('/webhook/hubtel', paymentController.handleHubtelWebhook);
 
 export default router;

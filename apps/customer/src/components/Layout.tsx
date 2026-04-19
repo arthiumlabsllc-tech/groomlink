@@ -1,42 +1,32 @@
-import { Outlet, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import Sidebar from './Sidebar'
+import { Outlet } from 'react-router-dom'
 import Header from './Header'
+import BottomNav from './BottomNav'
 
 export default function Layout() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const location = useLocation()
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false)
-  }, [location.pathname])
-
-  // Close mobile menu on window resize to desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false)
-      }
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar 
-        isMobileMenuOpen={isMobileMenuOpen}
-        onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
-          onMenuToggle={() => setIsMobileMenuOpen(true)}
-        />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Top Header - Minimal */}
+      <Header />
+
+      {/* Main Content - padding-bottom accounts for fixed bottom nav + safe area */}
+      <main className="flex-1 pt-14 pb-24">
+        <div className="page-enter">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
+
+      {/* Footer - Desktop Only */}
+      <footer className="py-3 text-center hidden md:block pb-24">
+        <a
+          href="#"
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          An Arthium Labs Product
+        </a>
+      </footer>
+
+      {/* Bottom Navigation - Fixed at bottom (mobile-web style) */}
+      <BottomNav />
     </div>
   )
 }

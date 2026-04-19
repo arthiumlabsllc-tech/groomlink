@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, RefreshCcw, Eye, Loader2, CreditCard, TrendingUp, X, User, MapPin, Calendar, Clock, Phone, RefreshCw, CheckCircle } from 'lucide-react';
+import Icon from '../components/Icon';
+import LoadingScreen from '../components/LoadingScreen';
 import { useTransactions, useRefundTransaction, useTransactionStats, useTransaction, useSyncPayment, useSyncAllProcessingPayments } from '../hooks';
 import { formatCurrency, formatDate } from '../lib/utils';
 
@@ -43,7 +44,7 @@ export function Transactions() {
       if (result.synced) {
         alert(`Payment synced successfully! Status updated from ${result.previousStatus} to ${result.newStatus}.`);
       } else {
-        alert(`Payment status unchanged. Current status: ${result.currentStatus || result.newStatus}. Paystack status: ${result.paystackStatus}.`);
+        alert(`Payment status unchanged. Current status: ${result.currentStatus || result.newStatus}. Hubtel status: ${result.hubtelStatus}.`);
       }
     } catch (error: any) {
       alert(`Sync failed: ${error.response?.data?.message || error.message}`);
@@ -51,7 +52,7 @@ export function Transactions() {
   };
 
   const handleSyncAll = async () => {
-    if (!confirm('This will sync all PROCESSING payments with Paystack. Continue?')) {
+    if (!confirm('This will sync all PROCESSING payments with Hubtel. Continue?')) {
       return;
     }
     try {
@@ -88,7 +89,7 @@ export function Transactions() {
     const style = styles[status] || styles.PENDING;
     
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${style.bg} ${style.text}`}>
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${style.bg} ${style.text}`}>
         <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`}></span>
         {status.toLowerCase()}
       </span>
@@ -97,19 +98,31 @@ export function Transactions() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
+      <div className="page-enter space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="skeleton-shimmer h-8 w-64 mb-2" />
+            <div className="skeleton-shimmer h-4 w-48" />
           </div>
+          <div className="skeleton-shimmer h-10 w-44 rounded-xl" />
+        </div>
+        <div className="skeleton-shimmer h-40 rounded-2xl" />
+        <div className="flex gap-4">
+          <div className="flex-1 skeleton-shimmer h-12 rounded-xl" />
+          <div className="flex gap-2">
+            {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton-shimmer h-10 w-20 rounded-xl" />)}
+          </div>
+        </div>
+        <div className="hidden md:block skeleton-shimmer h-64 rounded-2xl" />
+        <div className="md:hidden space-y-4">
+          {[1,2,3].map(i => <div key={i} className="card-v2 p-4 skeleton-shimmer h-48" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -119,26 +132,26 @@ export function Transactions() {
         <button
           onClick={handleSyncAll}
           disabled={syncAllProcessing.isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+          className="btn-ripple flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
         >
           {syncAllProcessing.isPending ? (
-            <Loader2 size={18} className="animate-spin" />
+            <Icon name="progress_activity" size={18} className="animate-spin" />
           ) : (
-            <RefreshCw size={18} />
+            <Icon name="refresh" size={18} />
           )}
-          Sync All with Paystack
+          Sync All with Hubtel
         </button>
       </div>
 
       {/* Revenue Highlight Card */}
-      <div className="bg-gradient-to-br from-[#006B3F] to-[#006B3F]/80 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+      <div className="card-v2 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/80 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#FCD116]/20 rounded-full translate-y-1/2 -translate-x-1/2"></div>
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-white/20 rounded-xl">
-              <TrendingUp size={24} className="text-[#FCD116]" />
+              <Icon name="trending_up" size={24} className="text-[#FCD116]" />
             </div>
             <span className="text-sm font-medium text-white/80">Total Revenue (Last 30 Days)</span>
           </div>
@@ -149,13 +162,13 @@ export function Transactions() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search transactions..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 text-sm bg-white border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors"
+            className="w-full pl-11 pr-4 py-3 text-sm bg-white border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200"
           />
         </div>
         <div className="flex gap-2">
@@ -170,10 +183,10 @@ export function Transactions() {
             <button
               key={option.value}
               onClick={() => setStatusFilter(option.value)}
-              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+              className={`tab-pill ${
                 statusFilter === option.value
-                  ? 'bg-[#1a1a2e] text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                  ? 'tab-pill-active'
+                  : 'tab-pill-inactive'
               }`}
             >
               {option.label}
@@ -185,11 +198,11 @@ export function Transactions() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {filteredTransactions.map((txn) => (
-          <div key={txn.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div key={txn.id} className="card-v2 p-4 border-l-4 border-l-transparent hover:border-l-[#006B3F]">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
-                  <CreditCard size={20} className="text-[#006B3F]" />
+                  <Icon name="credit_card" size={20} className="text-[#006B3F]" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">{txn.id.slice(0, 8)}...</p>
@@ -219,21 +232,21 @@ export function Transactions() {
             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
               <button 
                 onClick={() => openDetailModal(txn.id)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm"
+                className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium text-sm"
               >
-                <Eye size={16} />
+                <Icon name="visibility" size={16} />
                 View
               </button>
               {txn.status === 'PROCESSING' && (
                 <button 
                   onClick={() => handleSyncPayment(txn.id)}
                   disabled={syncPayment.isPending && syncPayment.variables === txn.id}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 disabled:opacity-50 transition-colors font-medium text-sm"
+                  className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 disabled:opacity-50 transition-colors font-medium text-sm"
                 >
                   {syncPayment.isPending && syncPayment.variables === txn.id ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Icon name="progress_activity" size={16} className="animate-spin" />
                   ) : (
-                    <RefreshCw size={16} />
+                    <Icon name="refresh" size={16} />
                   )}
                   Sync
                 </button>
@@ -242,9 +255,9 @@ export function Transactions() {
                 <button 
                   onClick={() => handleRefund(txn.id)}
                   disabled={refundTransaction.isPending}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#FCD116] text-[#1a1a2e] rounded-xl hover:bg-[#e6c014] disabled:opacity-50 transition-colors font-medium text-sm"
+                  className="btn-ripple flex items-center justify-center gap-2 py-2.5 px-4 bg-[#FCD116] text-[#1a1a2e] rounded-xl hover:bg-[#e6c014] disabled:opacity-50 transition-colors font-medium text-sm"
                 >
-                  <RefreshCcw size={16} />
+                  <Icon name="refresh" size={16} />
                   Refund
                 </button>
               )}
@@ -254,7 +267,7 @@ export function Transactions() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="hidden md:block card-v2 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -270,9 +283,9 @@ export function Transactions() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredTransactions.map((txn) => (
-                <tr key={txn.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr key={txn.id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-6 py-4">
-                    <span className="font-mono text-sm font-medium text-gray-800">{txn.id.slice(0, 8)}...</span>
+                    <span className="font-mono text-sm font-medium text-gray-800 group-hover:text-[#006B3F] transition-colors">{txn.id.slice(0, 8)}...</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-800">{txn.user.firstName || 'Unknown'} {txn.user.lastName || ''}</span>
@@ -291,21 +304,21 @@ export function Transactions() {
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => openDetailModal(txn.id)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="btn-ripple p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
-                        <Eye size={18} />
+                        <Icon name="visibility" size={18} />
                       </button>
                       {txn.status === 'PROCESSING' && (
                         <button 
                           onClick={() => handleSyncPayment(txn.id)}
                           disabled={syncPayment.isPending && syncPayment.variables === txn.id}
-                          className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors"
-                          title="Sync with Paystack"
+                          className="btn-ripple p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors"
+                          title="Sync with Hubtel"
                         >
                           {syncPayment.isPending && syncPayment.variables === txn.id ? (
-                            <Loader2 size={18} className="animate-spin" />
+                            <Icon name="progress_activity" size={18} className="animate-spin" />
                           ) : (
-                            <RefreshCw size={18} />
+                            <Icon name="refresh" size={18} />
                           )}
                         </button>
                       )}
@@ -313,10 +326,10 @@ export function Transactions() {
                         <button 
                           onClick={() => handleRefund(txn.id)}
                           disabled={refundTransaction.isPending}
-                          className="p-2 bg-[#FCD116] text-[#1a1a2e] rounded-lg hover:bg-[#e6c014] disabled:opacity-50 transition-colors" 
+                          className="btn-ripple p-2 bg-[#FCD116] text-[#1a1a2e] rounded-lg hover:bg-[#e6c014] disabled:opacity-50 transition-colors" 
                           title="Refund"
                         >
-                          <RefreshCcw size={18} />
+                          <Icon name="refresh" size={18} />
                         </button>
                       )}
                     </div>
@@ -331,20 +344,23 @@ export function Transactions() {
       {/* Transaction Detail Modal */}
       {showDetailModal && selectedTransactionId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="card-v2 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-800">Transaction Details</h2>
               <button 
                 onClick={() => { setShowDetailModal(false); setSelectedTransactionId(null); }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <Icon name="close" size={20} />
               </button>
             </div>
             
             {detailsLoading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="animate-spin text-[#006B3F]" size={32} />
+                <div className="space-y-3 text-center">
+                  <div className="skeleton-shimmer h-10 w-10 rounded-full mx-auto" />
+                  <div className="skeleton-shimmer h-4 w-32 mx-auto" />
+                </div>
               </div>
             ) : transactionDetails ? (
               <div className="p-6 space-y-6">
@@ -352,7 +368,7 @@ export function Transactions() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-gradient-to-br from-[#006B3F]/10 to-[#FCD116]/10 rounded-xl flex items-center justify-center">
-                      <CreditCard size={28} className="text-[#006B3F]" />
+                      <Icon name="credit_card" size={28} className="text-[#006B3F]" />
                     </div>
                     <div>
                       <p className="text-lg font-bold text-gray-800">{formatCurrency(transactionDetails.amount, transactionDetails.currency)}</p>
@@ -368,7 +384,7 @@ export function Transactions() {
                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Payment Information</h4>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <CreditCard size={18} className="text-gray-400" />
+                        <Icon name="credit_card" size={18} className="text-gray-400" />
                         <div>
                           <p className="text-xs text-gray-500">Provider</p>
                           <p className="text-gray-800 font-medium">{getProviderName(transactionDetails.provider)}</p>
@@ -386,14 +402,14 @@ export function Transactions() {
                         </div>
                       )}
                       <div className="flex items-center gap-3">
-                        <Calendar size={18} className="text-gray-400" />
+                        <Icon name="calendar_today" size={18} className="text-gray-400" />
                         <div>
                           <p className="text-xs text-gray-500">Created</p>
                           <p className="text-gray-800">{formatDate(transactionDetails.createdAt)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Clock size={18} className="text-gray-400" />
+                        <Icon name="schedule" size={18} className="text-gray-400" />
                         <div>
                           <p className="text-xs text-gray-500">Last Updated</p>
                           <p className="text-gray-800">{formatDate(transactionDetails.updatedAt)}</p>
@@ -406,7 +422,7 @@ export function Transactions() {
                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Customer Information</h4>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <User size={18} className="text-gray-400" />
+                        <Icon name="person" size={18} className="text-gray-400" />
                         <div>
                           <p className="text-xs text-gray-500">Name</p>
                           <p className="text-gray-800 font-medium">
@@ -416,7 +432,7 @@ export function Transactions() {
                       </div>
                       {transactionDetails.user.phoneNumber && (
                         <div className="flex items-center gap-3">
-                          <Phone size={18} className="text-gray-400" />
+                          <Icon name="call" size={18} className="text-gray-400" />
                           <div>
                             <p className="text-xs text-gray-500">Phone</p>
                             <p className="text-gray-800">{transactionDetails.user.phoneNumber}</p>
@@ -433,7 +449,7 @@ export function Transactions() {
                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Booking Details</h4>
                     <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                       <div className="flex items-center gap-3">
-                        <MapPin size={18} className="text-gray-400" />
+                        <Icon name="location_on" size={18} className="text-gray-400" />
                         <div>
                           <p className="text-xs text-gray-500">Salon</p>
                           <p className="text-gray-800 font-medium">{transactionDetails.booking.salon.businessName}</p>
@@ -441,7 +457,7 @@ export function Transactions() {
                       </div>
                       {transactionDetails.booking.service && (
                         <div className="flex items-center gap-3">
-                          <CreditCard size={18} className="text-gray-400" />
+                          <Icon name="credit_card" size={18} className="text-gray-400" />
                           <div>
                             <p className="text-xs text-gray-500">Service</p>
                             <p className="text-gray-800">{transactionDetails.booking.service.name}</p>
@@ -450,7 +466,7 @@ export function Transactions() {
                       )}
                       {(transactionDetails.booking as any).scheduledDate && (
                         <div className="flex items-center gap-3">
-                          <Calendar size={18} className="text-gray-400" />
+                          <Icon name="calendar_today" size={18} className="text-gray-400" />
                           <div>
                             <p className="text-xs text-gray-500">Scheduled Date</p>
                             <p className="text-gray-800">{(transactionDetails.booking as any).scheduledDate}</p>
@@ -459,7 +475,7 @@ export function Transactions() {
                       )}
                       {(transactionDetails.booking as any).scheduledTime && (
                         <div className="flex items-center gap-3">
-                          <Clock size={18} className="text-gray-400" />
+                          <Icon name="schedule" size={18} className="text-gray-400" />
                           <div>
                             <p className="text-xs text-gray-500">Scheduled Time</p>
                             <p className="text-gray-800">{(transactionDetails.booking as any).scheduledTime}</p>
@@ -468,7 +484,7 @@ export function Transactions() {
                       )}
                       {(transactionDetails.booking as any).worker && (
                         <div className="flex items-center gap-3">
-                          <User size={18} className="text-gray-400" />
+                          <Icon name="person" size={18} className="text-gray-400" />
                           <div>
                             <p className="text-xs text-gray-500">Worker</p>
                             <p className="text-gray-800">{(transactionDetails.booking as any).worker.name || 'Assigned'}</p>
@@ -493,14 +509,14 @@ export function Transactions() {
                         handleSyncPayment(transactionDetails.id);
                       }}
                       disabled={syncPayment.isPending}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors font-medium"
+                      className="btn-ripple flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors font-medium"
                     >
                       {syncPayment.isPending ? (
-                        <Loader2 size={18} className="animate-spin" />
+                        <Icon name="progress_activity" size={18} className="animate-spin" />
                       ) : (
-                        <RefreshCw size={18} />
+                        <Icon name="refresh" size={18} />
                       )}
-                      Sync with Paystack
+                      Sync with Hubtel
                     </button>
                   )}
                   {(transactionDetails.status === 'SUCCESS' || transactionDetails.status === 'COMPLETED') && (
@@ -510,9 +526,9 @@ export function Transactions() {
                         handleRefund(transactionDetails.id);
                       }}
                       disabled={refundTransaction.isPending}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#FCD116] text-[#1a1a2e] rounded-lg hover:bg-[#e6c014] disabled:opacity-50 transition-colors font-medium"
+                      className="btn-ripple flex items-center gap-2 px-4 py-2 bg-[#FCD116] text-[#1a1a2e] rounded-lg hover:bg-[#e6c014] disabled:opacity-50 transition-colors font-medium"
                     >
-                      <RefreshCcw size={18} />
+                      <Icon name="refresh" size={18} />
                       Refund
                     </button>
                   )}

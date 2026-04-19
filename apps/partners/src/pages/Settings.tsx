@@ -636,9 +636,11 @@ export default function Settings() {
   if (loading) {
     return (
       <Layout activeTab="settings">
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading settings...</p>
+        <div className="space-y-6 py-8 max-w-3xl mx-auto px-4">
+          <div className="skeleton-shimmer h-8 w-48"></div>
+          <div className="skeleton-shimmer h-64 w-full"></div>
+          <div className="skeleton-shimmer h-48 w-full"></div>
+          <div className="skeleton-shimmer h-48 w-full"></div>
         </div>
       </Layout>
     )
@@ -648,7 +650,7 @@ export default function Settings() {
     <Layout activeTab="settings">
       {isNewPartner ? (
         // New Partner Setup View
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto page-enter">
           {/* Welcome Header */}
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-ghana-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -679,7 +681,7 @@ export default function Settings() {
           </div>
 
           {/* Setup Form */}
-          <div className="card">
+          <div className="card-v2">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center">
                 <Store className="w-5 h-5 text-ghana-green" />
@@ -870,7 +872,7 @@ export default function Settings() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full btn-primary flex items-center justify-center gap-2 py-3 text-base"
+                  className="w-full btn-primary btn-ripple flex items-center justify-center gap-2 py-3 text-base"
                 >
                   {saving ? (
                     <>
@@ -895,21 +897,21 @@ export default function Settings() {
 
           {/* Tips */}
           <div className="mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="card p-4">
+            <div className="card-v2 p-4">
               <div className="w-10 h-10 bg-ghana-gold/10 rounded-lg flex items-center justify-center mb-3">
                 <Store className="w-5 h-5 text-ghana-gold" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">Step 1: Create Salon</h3>
               <p className="text-sm text-gray-600">Add your business name, location, and contact details.</p>
             </div>
-            <div className="card p-4">
+            <div className="card-v2 p-4">
               <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center mb-3">
                 <Scissors className="w-5 h-5 text-ghana-green" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">Step 2: Add Services</h3>
               <p className="text-sm text-gray-600">Define your services, prices, and duration.</p>
             </div>
-            <div className="card p-4">
+            <div className="card-v2 p-4">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
@@ -921,14 +923,14 @@ export default function Settings() {
       ) : (
         // Existing Partner Settings View
         <>
-          <div className="mb-6">
+          <div className="mb-6 page-enter">
             <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
             <p className="text-gray-500">Salon profile and preferences</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
         {/* Salon Profile Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center">
               <Store className="w-5 h-5 text-ghana-green" />
@@ -1003,7 +1005,7 @@ export default function Settings() {
         </div>
 
         {/* Images Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Image className="w-5 h-5 text-purple-600" />
@@ -1021,17 +1023,31 @@ export default function Settings() {
               <div className="flex items-start gap-4">
                 <div className="relative">
                   <div 
-                    className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                    className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors group"
                     onClick={() => logoInputRef.current?.click()}
                   >
                     {logoPreview || salon?.logo ? (
-                      <img 
-                        src={logoPreview || salon?.logo || ''} 
-                        alt="Logo" 
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img 
+                          src={logoPreview || salon?.logo || ''} 
+                          alt="Logo" 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                      </>
                     ) : (
-                      <Camera className="w-8 h-8 text-gray-400" />
+                      <>
+                        <img 
+                          src="https://groomlinkgh.com/api/uploads/assets/logo-icon.png" 
+                          alt="Default Logo" 
+                          className="w-16 h-16 object-contain opacity-50"
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                      </>
                     )}
                   </div>
                   {uploadingLogo && (
@@ -1056,7 +1072,7 @@ export default function Settings() {
                     <button
                       type="button"
                       onClick={() => logoInputRef.current?.click()}
-                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors btn-ripple"
                     >
                       Choose File
                     </button>
@@ -1065,7 +1081,7 @@ export default function Settings() {
                         type="button"
                         onClick={handleUploadLogo}
                         disabled={uploadingLogo}
-                        className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2 btn-ripple"
                       >
                         {uploadingLogo ? (
                           <>
@@ -1090,15 +1106,20 @@ export default function Settings() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Cover Image</label>
               <div className="space-y-3">
                 <div 
-                  className="relative h-40 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors"
+                  className="relative h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-ghana-green transition-colors group"
                   onClick={() => coverInputRef.current?.click()}
                 >
                   {coverPreview || salon?.coverImage ? (
-                    <img 
-                      src={coverPreview || salon?.coverImage || ''} 
-                      alt="Cover" 
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <img 
+                        src={coverPreview || salon?.coverImage || ''} 
+                        alt="Cover" 
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera className="w-8 h-8 text-white" />
+                      </div>
+                    </>
                   ) : (
                     <div className="text-center">
                       <Image className="w-10 h-10 text-gray-400 mx-auto mb-2" />
@@ -1129,7 +1150,7 @@ export default function Settings() {
                     <button
                       type="button"
                       onClick={() => coverInputRef.current?.click()}
-                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors btn-ripple"
                     >
                       Choose File
                     </button>
@@ -1138,7 +1159,7 @@ export default function Settings() {
                         type="button"
                         onClick={handleUploadCover}
                         disabled={uploadingCover}
-                        className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2 btn-ripple"
                       >
                         {uploadingCover ? (
                           <>
@@ -1171,8 +1192,9 @@ export default function Settings() {
               {(salon?.images && salon.images.length > 0) && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-3">
                   {salon.images.map((img, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group">
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group">
                       <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                       {deletingImage === img ? (
                         <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
                           <Loader2 className="w-6 h-6 animate-spin text-ghana-green" />
@@ -1195,7 +1217,7 @@ export default function Settings() {
               {galleryPreviews.length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-3">
                   {galleryPreviews.map((preview, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group border-2 border-ghana-green">
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group border-2 border-ghana-green">
                       <img src={preview} alt={`Pending ${idx + 1}`} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-ghana-green/10" />
                       <button
@@ -1223,7 +1245,7 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={() => galleryInputRef.current?.click()}
-                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 btn-ripple"
                 >
                   <Camera className="w-4 h-4" />
                   Add Photos
@@ -1233,7 +1255,7 @@ export default function Settings() {
                     type="button"
                     onClick={handleUploadGallery}
                     disabled={uploadingGallery}
-                    className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 text-sm bg-ghana-green text-white rounded-lg hover:bg-ghana-green/90 transition-colors disabled:opacity-50 flex items-center gap-2 btn-ripple"
                   >
                     {uploadingGallery ? (
                       <>
@@ -1254,7 +1276,7 @@ export default function Settings() {
         </div>
 
         {/* Business Hours Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-ghana-gold/10 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-amber-600" />
@@ -1305,7 +1327,7 @@ export default function Settings() {
         </div>
 
         {/* Facilities & Amenities Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-green-600" />
@@ -1317,7 +1339,7 @@ export default function Settings() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setFormData({ ...formData, hasWifi: !formData.hasWifi })}>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Wifi className="w-5 h-5 text-blue-600" />
               </div>
@@ -1325,15 +1347,16 @@ export default function Settings() {
                 <span className="font-medium text-gray-900">Free WiFi</span>
                 <p className="text-sm text-gray-500">Customers can connect to WiFi</p>
               </div>
-              <input
-                type="checkbox"
-                checked={formData.hasWifi}
-                onChange={(e) => setFormData({ ...formData, hasWifi: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
-              />
-            </label>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, hasWifi: !formData.hasWifi }) }}
+                className={`toggle-switch ${formData.hasWifi ? 'toggle-switch-on' : 'toggle-switch-off'} flex-shrink-0`}
+              >
+                <span className={`toggle-switch-dot ${formData.hasWifi ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
 
-            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setFormData({ ...formData, hasParking: !formData.hasParking })}>
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Car className="w-5 h-5 text-purple-600" />
               </div>
@@ -1341,15 +1364,16 @@ export default function Settings() {
                 <span className="font-medium text-gray-900">Parking Available</span>
                 <p className="text-sm text-gray-500">On-site parking for customers</p>
               </div>
-              <input
-                type="checkbox"
-                checked={formData.hasParking}
-                onChange={(e) => setFormData({ ...formData, hasParking: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
-              />
-            </label>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, hasParking: !formData.hasParking }) }}
+                className={`toggle-switch ${formData.hasParking ? 'toggle-switch-on' : 'toggle-switch-off'} flex-shrink-0`}
+              >
+                <span className={`toggle-switch-dot ${formData.hasParking ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
 
-            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setFormData({ ...formData, hasAC: !formData.hasAC })}>
               <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Wind className="w-5 h-5 text-cyan-600" />
               </div>
@@ -1357,15 +1381,16 @@ export default function Settings() {
                 <span className="font-medium text-gray-900">Air Conditioning</span>
                 <p className="text-sm text-gray-500">Climate controlled environment</p>
               </div>
-              <input
-                type="checkbox"
-                checked={formData.hasAC}
-                onChange={(e) => setFormData({ ...formData, hasAC: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
-              />
-            </label>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, hasAC: !formData.hasAC }) }}
+                className={`toggle-switch ${formData.hasAC ? 'toggle-switch-on' : 'toggle-switch-off'} flex-shrink-0`}
+              >
+                <span className={`toggle-switch-dot ${formData.hasAC ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
 
-            <label className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setFormData({ ...formData, acceptsWalkIns: !formData.acceptsWalkIns })}>
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Footprints className="w-5 h-5 text-orange-600" />
               </div>
@@ -1373,18 +1398,19 @@ export default function Settings() {
                 <span className="font-medium text-gray-900">Walk-ins Welcome</span>
                 <p className="text-sm text-gray-500">Accept customers without booking</p>
               </div>
-              <input
-                type="checkbox"
-                checked={formData.acceptsWalkIns}
-                onChange={(e) => setFormData({ ...formData, acceptsWalkIns: e.target.checked })}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green flex-shrink-0"
-              />
-            </label>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, acceptsWalkIns: !formData.acceptsWalkIns }) }}
+                className={`toggle-switch ${formData.acceptsWalkIns ? 'toggle-switch-on' : 'toggle-switch-off'} flex-shrink-0`}
+              >
+                <span className={`toggle-switch-dot ${formData.acceptsWalkIns ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Salon Capacity Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
               <Users className="w-5 h-5 text-indigo-600" />
@@ -1554,7 +1580,7 @@ export default function Settings() {
         </div>
 
         {/* Service Completion Settings Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-teal-600" />
@@ -1623,7 +1649,7 @@ export default function Settings() {
             </div>
 
             {/* Customer Confirmation Toggle */}
-            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setCompletionSettings(prev => ({ ...prev, requiresCustomerConfirmation: !prev.requiresCustomerConfirmation }))}>
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-purple-600" />
               </div>
@@ -1631,19 +1657,17 @@ export default function Settings() {
                 <span className="font-medium text-gray-900">Customer Confirmation</span>
                 <p className="text-sm text-gray-500">Require customer to confirm service completion before payment release</p>
               </div>
-              <input
-                type="checkbox"
-                checked={completionSettings.requiresCustomerConfirmation}
-                onChange={(e) => setCompletionSettings(prev => ({ 
-                  ...prev, 
-                  requiresCustomerConfirmation: e.target.checked 
-                }))}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
-              />
-            </label>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCompletionSettings(prev => ({ ...prev, requiresCustomerConfirmation: !prev.requiresCustomerConfirmation })) }}
+                className={`toggle-switch ${completionSettings.requiresCustomerConfirmation ? 'toggle-switch-on' : 'toggle-switch-off'}`}
+              >
+                <span className={`toggle-switch-dot ${completionSettings.requiresCustomerConfirmation ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
 
             {/* Completion Reminders Toggle */}
-            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setCompletionSettings(prev => ({ ...prev, completionReminderEnabled: !prev.completionReminderEnabled }))}>
               <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
                 <Bell className="w-5 h-5 text-amber-600" />
               </div>
@@ -1651,19 +1675,17 @@ export default function Settings() {
                 <span className="font-medium text-gray-900">Completion Reminders</span>
                 <p className="text-sm text-gray-500">Send SMS reminders to mark service complete</p>
               </div>
-              <input
-                type="checkbox"
-                checked={completionSettings.completionReminderEnabled}
-                onChange={(e) => setCompletionSettings(prev => ({ 
-                  ...prev, 
-                  completionReminderEnabled: e.target.checked 
-                }))}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
-              />
-            </label>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCompletionSettings(prev => ({ ...prev, completionReminderEnabled: !prev.completionReminderEnabled })) }}
+                className={`toggle-switch ${completionSettings.completionReminderEnabled ? 'toggle-switch-on' : 'toggle-switch-off'}`}
+              >
+                <span className={`toggle-switch-dot ${completionSettings.completionReminderEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
 
             {/* QR Check-in Toggle */}
-            <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setCompletionSettings(prev => ({ ...prev, qrCheckinEnabled: !prev.qrCheckinEnabled }))}>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <QrCode className="w-5 h-5 text-blue-600" />
               </div>
@@ -1671,16 +1693,14 @@ export default function Settings() {
                 <span className="font-medium text-gray-900">QR Check-in</span>
                 <p className="text-sm text-gray-500">Allow customers to check in with QR code</p>
               </div>
-              <input
-                type="checkbox"
-                checked={completionSettings.qrCheckinEnabled}
-                onChange={(e) => setCompletionSettings(prev => ({ 
-                  ...prev, 
-                  qrCheckinEnabled: e.target.checked 
-                }))}
-                className="w-5 h-5 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
-              />
-            </label>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCompletionSettings(prev => ({ ...prev, qrCheckinEnabled: !prev.qrCheckinEnabled })) }}
+                className={`toggle-switch ${completionSettings.qrCheckinEnabled ? 'toggle-switch-on' : 'toggle-switch-off'}`}
+              >
+                <span className={`toggle-switch-dot ${completionSettings.qrCheckinEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
 
             {/* Save Button */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 sm:gap-4 pt-4 border-t border-gray-100">
@@ -1694,7 +1714,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleSaveCompletionSettings}
                 disabled={savingCompletionSettings || loadingCompletionSettings}
-                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="btn-primary btn-ripple flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 {savingCompletionSettings ? (
                   <>
@@ -1713,7 +1733,7 @@ export default function Settings() {
         </div>
 
         {/* Payout Settings Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <Wallet className="w-5 h-5 text-green-600" />
@@ -1931,7 +1951,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleSavePayout}
                 disabled={savingPayout || loadingPayout}
-                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="btn-primary btn-ripple flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 {savingPayout ? (
                   <>
@@ -1950,7 +1970,7 @@ export default function Settings() {
         </div>
 
         {/* Contact Information Section */}
-        <div className="card">
+        <div className="card-v2">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Phone className="w-5 h-5 text-blue-600" />
@@ -2028,7 +2048,7 @@ export default function Settings() {
           <button
             type="submit"
             disabled={saving}
-            className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+            className="btn-primary btn-ripple flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             {saving ? (
               <>

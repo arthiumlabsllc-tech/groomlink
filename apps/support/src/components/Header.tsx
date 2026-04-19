@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Bell, Search } from 'lucide-react';
+import Icon from './Icon';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
+    <header className="h-16 bg-white/80 backdrop-blur-md shadow-card flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
       {/* Left: Search - add left margin on mobile for sidebar toggle */}
       <div className="flex items-center gap-4 flex-1 ml-12 md:ml-0">
         {/* Search */}
         <div className="flex-1 max-w-xl">
           <div className="relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Icon name="search" size={16} className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search users, salons..."
-              className="w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 bg-gray-50 border border-gray-200 rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-support-600 focus:border-support-600 focus:bg-white transition-all"
+              className="w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-support-600 focus:border-support-600 focus:bg-white transition-all"
             />
           </div>
         </div>
@@ -26,16 +26,16 @@ export default function Header() {
       {/* Right side */}
       <div className="flex items-center gap-3 md:gap-4 ml-4">
         {/* Notifications */}
-        <button className="relative p-2 sm:p-2.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-ghana-red rounded-full border-2 border-white"></span>
+        <button className="relative p-2 sm:p-2.5 text-gray-500 hover:bg-gray-100/80 rounded-full transition-all duration-200 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center">
+          <Icon name="notifications" size={20} />
+          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-ghana-red rounded-full border-2 border-white animate-pulse"></span>
         </button>
 
         {/* User menu */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-100/80 transition-all duration-200"
           >
             <div className="w-9 h-9 bg-gradient-to-br from-ghana-green to-support-700 rounded-full flex items-center justify-center shadow-md">
               <span className="text-white font-semibold text-sm">
@@ -56,7 +56,7 @@ export default function Header() {
                 className="fixed inset-0 z-10"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-md rounded-xl shadow-elevated border border-gray-100/60 py-2 z-20 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-semibold text-gray-900">{user?.firstName} {user?.lastName}</p>
                   <p className="text-xs text-gray-500">{user?.email || 'support@groomlinkgh.com'}</p>

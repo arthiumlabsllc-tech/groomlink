@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ProfileSetupGuard } from './components/ProfileSetupGuard';
 import Login from './pages/Login';
 import ProfileSetup from './pages/ProfileSetup';
+import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Explore from './pages/Explore';
 import Bookings from './pages/Bookings';
@@ -15,6 +16,7 @@ import SalonDetail from './pages/SalonDetail';
 import BookSalon from './pages/BookSalon';
 import PaymentCallback from './pages/PaymentCallback';
 import Notifications from './pages/Notifications';
+import Rewards from './pages/Rewards';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './store/auth';
 
@@ -78,6 +80,15 @@ function App() {
           </ProtectedRoute>
         } />
         
+        {/* Onboarding - Protected but outside Layout, wrapped by ProfileSetupGuard */}
+        <Route path="/onboarding" element={
+          <ProtectedRoute>
+            <ProfileSetupGuard>
+              <Onboarding />
+            </ProfileSetupGuard>
+          </ProtectedRoute>
+        } />
+        
         {/* Protected routes with ProfileSetupGuard */}
         <Route path="/" element={
           <ProtectedRoute>
@@ -92,6 +103,7 @@ function App() {
           <Route path="bookings" element={<Bookings />} />
           <Route path="favorites" element={<Favorites />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="rewards" element={<Rewards />} />
           <Route path="profile" element={<Profile />} />
         </Route>
         
@@ -114,8 +126,7 @@ function App() {
         } />
         
         {/* Payment Callback - Protected */}
-        {/* Both /payment/callback and /payment/verify routes point to PaymentCallback */}
-        {/* Paystack may redirect to /payment/verify with trxref and reference params */}
+        {/* Hubtel mobile money flow: polls for payment confirmation after USSD/STK prompt */}
         <Route path="/payment/callback" element={
           <ProtectedRoute>
             <ProfileSetupGuard>

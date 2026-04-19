@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, UserX, ChevronLeft, ChevronRight, Search, AlertCircle, X, CheckCircle, AlertTriangle, MessageSquare } from 'lucide-react';
+import Icon from '../components/Icon';
 import { useNoShows, useResolveNoShow } from '../hooks';
 import { formatDate } from '../lib/utils';
 import type { NoShowRecord } from '../api/admin';
@@ -74,7 +74,7 @@ export function NoShows() {
             ? 'bg-[#006B3F]/10 text-[#006B3F]' 
             : 'bg-[#CE1126]/10 text-[#CE1126]'
         }`}>
-          {noShow.upheld ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+          {noShow.upheld ? <Icon name="check_circle" size={14} /> : <Icon name="warning" size={14} />}
           Resolved ({noShow.upheld ? 'Upheld' : 'Overturned'})
         </span>
       );
@@ -82,7 +82,7 @@ export function NoShows() {
 
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-[#FCD116]/20 text-[#B8960F]">
-        <AlertTriangle size={14} />
+        <Icon name="warning" size={14} />
         Disputed - Pending Resolution
       </span>
     );
@@ -90,12 +90,10 @@ export function NoShows() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
-          </div>
+      <div className="page-enter space-y-6">
+        <div className="card-v2 p-6">
+          <div className="skeleton-shimmer h-8 w-48 mb-4" />
+          {[1,2,3,4,5].map(i => <div key={i} className="skeleton-shimmer h-14 w-full mb-3" />)}
         </div>
       </div>
     );
@@ -104,7 +102,7 @@ export function NoShows() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <AlertCircle size={48} className="text-[#CE1126]" />
+        <Icon name="error" size={48} className="text-[#CE1126]" />
         <p className="text-lg font-medium text-gray-600">Failed to load no-shows data</p>
         <p className="text-sm text-gray-500">Please try again later</p>
       </div>
@@ -112,15 +110,15 @@ export function NoShows() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">No-Show Records</h1>
           <p className="text-sm text-gray-500 mt-1">Track no-shows and resolve disputes</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
-          <UserX size={18} className="text-gray-400" />
+        <div className="flex items-center gap-2 px-4 py-2 card-v2">
+          <Icon name="person_remove" size={18} className="text-gray-400" />
           <span className="text-sm text-gray-500">Total:</span>
           <span className="text-lg font-bold text-gray-800">{pagination?.total || 0}</span>
         </div>
@@ -129,7 +127,7 @@ export function NoShows() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search by salon, customer, or ID..."
@@ -172,7 +170,7 @@ export function NoShows() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="hidden md:block card-v2 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -222,7 +220,7 @@ export function NoShows() {
                     ) : noShow.disputeReason ? (
                       <div className="max-w-xs">
                         <p className="text-sm text-[#B8960F] truncate" title={noShow.disputeReason}>
-                          <MessageSquare size={14} className="inline mr-1" />
+                          <Icon name="chat" size={14} className="inline mr-1" />
                           {noShow.disputeReason}
                         </p>
                       </div>
@@ -234,7 +232,7 @@ export function NoShows() {
                     {noShow.disputed && !noShow.resolution && (
                       <button
                         onClick={() => openResolveModal(noShow)}
-                        className="px-3 py-1.5 text-sm font-medium text-[#006B3F] border border-[#006B3F] rounded-lg hover:bg-[#006B3F]/10 transition-colors"
+                        className="btn-ripple px-3 py-1.5 text-sm font-medium text-[#006B3F] border border-[#006B3F] rounded-xl hover:bg-[#006B3F]/10 transition-colors"
                       >
                         Resolve
                       </button>
@@ -249,8 +247,8 @@ export function NoShows() {
 
       {/* Empty State */}
       {filteredNoShows.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-gray-100">
-          <UserX size={48} className="text-gray-300 mb-4" />
+        <div className="flex flex-col items-center justify-center py-12 card-v2">
+          <Icon name="person_remove" size={48} className="text-gray-300 mb-4" />
           <p className="text-lg font-medium text-gray-600">No no-shows found</p>
           <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filter criteria</p>
         </div>
@@ -258,7 +256,7 @@ export function NoShows() {
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
+        <div className="flex items-center justify-between card-v2 px-4 py-3">
           <p className="text-sm text-gray-600">
             Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, pagination.total)} of {pagination.total} records
           </p>
@@ -268,7 +266,7 @@ export function NoShows() {
               disabled={page === 1}
               className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronLeft size={20} />
+              <Icon name="chevron_left" size={20} />
             </button>
             <span className="text-sm font-medium text-gray-700">
               Page {page} of {pagination.totalPages}
@@ -278,7 +276,7 @@ export function NoShows() {
               disabled={page === pagination.totalPages}
               className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronRight size={20} />
+              <Icon name="chevron_right" size={20} />
             </button>
           </div>
         </div>
@@ -286,15 +284,15 @@ export function NoShows() {
 
       {/* Resolve Modal */}
       {showResolveModal && selectedNoShow && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated animate-slide-up w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-800">Resolve No-Show Dispute</h2>
               <button
                 onClick={() => setShowResolveModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <Icon name="close" size={20} />
               </button>
             </div>
 
@@ -362,16 +360,16 @@ export function NoShows() {
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => setShowResolveModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="btn-ripple px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleResolve}
                   disabled={!resolutionText.trim() || resolveNoShow.isPending}
-                  className="px-4 py-2 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-ripple px-4 py-2 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  {resolveNoShow.isPending && <Loader2 size={16} className="animate-spin" />}
+                  {resolveNoShow.isPending && <Icon name="progress_activity" size={16} className="animate-spin" />}
                   {upheld ? 'Uphold No-Show' : 'Overturn No-Show'}
                 </button>
               </div>
@@ -394,11 +392,11 @@ function NoShowCard({
   onResolve: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+    <div className="card-v2 p-4 border-l-4 border-l-red-500">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-[#CE1126]/10 to-[#CE1126]/20 rounded-xl flex items-center justify-center">
-            <UserX size={20} className="text-[#CE1126]" />
+            <Icon name="person_remove" size={20} className="text-[#CE1126]" />
           </div>
           <div>
             <p className="font-semibold text-gray-800">{noShow.booking.salon.businessName}</p>
@@ -444,7 +442,7 @@ function NoShowCard({
         <div className="mt-4 pt-3 border-t border-gray-100">
           <button
             onClick={onResolve}
-            className="w-full py-2.5 text-sm font-medium text-[#006B3F] border-2 border-[#006B3F] rounded-xl hover:bg-[#006B3F]/10 transition-colors"
+            className="btn-ripple w-full py-2.5 text-sm font-medium text-[#006B3F] border-2 border-[#006B3F] rounded-xl hover:bg-[#006B3F]/10 transition-colors"
           >
             Resolve Dispute
           </button>

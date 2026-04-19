@@ -18,6 +18,7 @@ import { SponsoredSalons } from './pages/SponsoredSalons';
 import { Login } from './pages/Login';
 import NotFound from './pages/NotFound';
 import { useAuth } from './hooks';
+import LoadingScreen from './components/LoadingScreen';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -39,10 +40,14 @@ function PermissionGuard({
   pageId?: string;
   requireSuperAdmin?: boolean;
 }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
 
   // Check if user is authenticated
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

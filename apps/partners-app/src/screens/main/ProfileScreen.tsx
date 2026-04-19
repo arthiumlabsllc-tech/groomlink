@@ -619,6 +619,15 @@ export default function ProfileScreen() {
         <Text style={styles.version}>
           GroomLink Partners v{APP_VERSION}
         </Text>
+
+        {/* Arthium Labs Footer */}
+        <TouchableOpacity 
+          style={styles.arthiumFooter}
+          onPress={() => {}}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.arthiumText}>An Arthium Labs Product</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -834,6 +843,17 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 24,
     fontSize: 12,
+  },
+  // Arthium Labs Footer
+  arthiumFooter: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 12,
+  },
+  arthiumText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    opacity: 0.7,
   },
   // Stepper styles
   stepperContainer: {

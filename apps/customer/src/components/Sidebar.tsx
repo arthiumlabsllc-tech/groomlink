@@ -1,13 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { 
-  Home, 
-  Search, 
-  Calendar, 
-  Heart, 
-  User,
-  Scissors,
-  X
-} from 'lucide-react'
+import Icon from './Icon'
 
 interface SidebarProps {
   isMobileMenuOpen?: boolean
@@ -15,11 +7,11 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { to: '/', icon: Home, label: 'Dashboard' },
-  { to: '/explore', icon: Search, label: 'Explore' },
-  { to: '/bookings', icon: Calendar, label: 'Bookings' },
-  { to: '/favorites', icon: Heart, label: 'Favorites' },
-  { to: '/profile', icon: User, label: 'Profile' },
+  { to: '/', icon: 'home', label: 'Dashboard' },
+  { to: '/explore', icon: 'search', label: 'Explore' },
+  { to: '/bookings', icon: 'calendar_today', label: 'Bookings' },
+  { to: '/favorites', icon: 'favorite', label: 'Favorites' },
+  { to: '/profile', icon: 'person', label: 'Profile' },
 ]
 
 export default function Sidebar({ isMobileMenuOpen = false, onCloseMobileMenu }: SidebarProps) {
@@ -43,7 +35,7 @@ export default function Sidebar({ isMobileMenuOpen = false, onCloseMobileMenu }:
         <div className="h-16 p-6 border-b border-gray-200 flex items-center justify-between">
           <a href="https://groomlinkgh.com" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gradient-to-br from-ghana-green via-ghana-gold to-ghana-red rounded-full flex items-center justify-center">
-              <Scissors className="w-5 h-5 text-white" />
+              <Icon name="content_cut" size={20} className="text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900">GroomLink</span>
           </a>
@@ -52,7 +44,7 @@ export default function Sidebar({ isMobileMenuOpen = false, onCloseMobileMenu }:
             onClick={onCloseMobileMenu}
             className="p-2 rounded-lg hover:bg-gray-100 md:hidden transition-colors"
           >
-            <X size={20} className="text-gray-600" />
+            <Icon name="close" size={20} className="text-gray-600" />
           </button>
         </div>
 
@@ -73,7 +65,7 @@ export default function Sidebar({ isMobileMenuOpen = false, onCloseMobileMenu }:
                     }`
                   }
                 >
-                  <item.icon className="w-5 h-5" />
+                  <Icon name={item.icon} size={20} />
                   <span className="font-medium">{item.label}</span>
                 </NavLink>
               </li>
@@ -85,7 +77,7 @@ export default function Sidebar({ isMobileMenuOpen = false, onCloseMobileMenu }:
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-primary-600" />
+              <Icon name="person" size={20} className="text-primary-600" />
             </div>
             <div>
               <p className="font-medium text-gray-900">Welcome back</p>

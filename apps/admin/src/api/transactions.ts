@@ -76,13 +76,13 @@ export const transactionsApi = {
     return response.data.data;
   },
 
-  // Sync a single payment status with Paystack
+  // Sync a single payment status with Hubtel
   syncPayment: async (paymentId: string) => {
     const response = await apiClient.post(`/admin/payments/${paymentId}/sync`);
     return response.data.data;
   },
 
-  // Bulk sync all PROCESSING payments with Paystack
+  // Bulk sync all PROCESSING payments with Hubtel
   syncAllProcessingPayments: async () => {
     const response = await apiClient.post('/admin/payments/sync-all');
     return response.data.data;

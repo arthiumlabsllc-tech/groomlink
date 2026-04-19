@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Clock, CheckCircle, AlertCircle, Send, X, ChevronLeft, MessageCircle } from 'lucide-react';
+import Icon from '../components/Icon';
 import { api } from '../api';
 import { formatDateTime, getStatusColor, cn } from '../lib';
 
@@ -101,7 +101,7 @@ export default function Tickets() {
           onClick={handleBackToList}
           className="md:hidden flex items-center gap-2 text-gray-600 hover:text-gray-900"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <Icon name="chevron_left" size={20} />
           Back to tickets
         </button>
 
@@ -126,7 +126,7 @@ export default function Tickets() {
                 onClick={() => setShowDetailView(false)}
                 className="hidden md:block p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <Icon name="close" size={20} />
               </button>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function Tickets() {
             {/* Original message */}
             <div className="flex gap-3">
               <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 text-gray-500" />
+                <Icon name="person" size={16} className="text-gray-500" />
               </div>
               <div className="flex-1">
                 <div className="bg-gray-100 rounded-2xl rounded-tl-none p-4">
@@ -196,23 +196,23 @@ export default function Tickets() {
                 placeholder="Type your reply..."
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all"
               />
-              <button className="bg-ghana-green text-white px-5 py-3 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all flex items-center gap-2 shadow-md shadow-ghana-green/20">
-                <Send className="w-4 h-4" />
+              <button className="bg-ghana-green text-white px-5 py-3 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all flex items-center gap-2 shadow-md shadow-ghana-green/20 btn-ripple">
+                <Icon name="send" size={16} />
                 <span className="hidden sm:inline">Send</span>
               </button>
             </div>
             
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 bg-ghana-green text-white rounded-lg font-medium hover:bg-support-700 transition-all text-sm">
-                <CheckCircle className="w-4 h-4" />
+              <button className="flex items-center gap-2 px-4 py-2 bg-ghana-green text-white rounded-lg font-medium hover:bg-support-700 transition-all text-sm btn-ripple">
+                <Icon name="check_circle" size={16} />
                 Resolve
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-ghana-yellow text-ghana-dark rounded-lg font-semibold hover:bg-yellow-400 transition-all text-sm">
-                <AlertCircle className="w-4 h-4" />
+              <button className="flex items-center gap-2 px-4 py-2 bg-ghana-yellow text-ghana-dark rounded-lg font-semibold hover:bg-yellow-400 transition-all text-sm btn-ripple">
+                <Icon name="error" size={16} />
                 Escalate
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all text-sm">
+              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all text-sm btn-ripple">
                 Close Ticket
               </button>
             </div>
@@ -223,7 +223,7 @@ export default function Tickets() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-enter">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 font-heading">Support Tickets</h1>
@@ -231,17 +231,15 @@ export default function Tickets() {
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2">
+      <div className="card-v2 p-2">
         <div className="flex flex-wrap gap-1">
           {statusTabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setSelectedStatus(tab.value)}
               className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                selectedStatus === tab.value
-                  ? "bg-ghana-green text-white shadow-md shadow-ghana-green/20"
-                  : "text-gray-600 hover:bg-gray-100"
+                "tab-pill",
+                selectedStatus === tab.value ? "tab-pill-active" : "tab-pill-inactive"
               )}
             >
               {tab.label}
@@ -252,30 +250,52 @@ export default function Tickets() {
 
       {/* Tickets List */}
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ghana-green"></div>
+        <div className="card-v2 divide-y divide-gray-100 overflow-hidden">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="p-5">
+              <div className="flex items-start gap-4">
+                <div className="w-3 h-3 rounded-full skeleton-shimmer mt-1"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-1/2 rounded skeleton-shimmer"></div>
+                  <div className="h-4 w-full rounded skeleton-shimmer"></div>
+                  <div className="h-4 w-2/3 rounded skeleton-shimmer"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : tickets.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <MessageCircle className="w-8 h-8 text-gray-400" />
+            <Icon name="chat" size={32} className="text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-1">No tickets found</h3>
           <p className="text-gray-500">There are no support tickets matching your criteria.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100 overflow-hidden">
-          {tickets.map((ticket) => (
+        <div className="card-v2 divide-y divide-gray-100 overflow-hidden">
+          {tickets.map((ticket) => {
+            const priorityBorderClass = ticket.priority === 'HIGH' 
+              ? 'border-l-4 border-l-red-500' 
+              : ticket.priority === 'MEDIUM' 
+                ? 'border-l-4 border-l-yellow-400' 
+                : ticket.priority === 'LOW' 
+                  ? 'border-l-4 border-l-emerald-500' 
+                  : '';
+            const isActive = ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS';
+            return (
             <div
               key={ticket.id}
-              className="p-5 hover:bg-gray-50 cursor-pointer transition-colors"
+              className={cn("p-5 hover:bg-gray-50 cursor-pointer transition-colors", priorityBorderClass)}
               onClick={() => handleTicketClick(ticket)}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 flex-1">
-                  {/* Priority dot */}
+                  {/* Priority dot with pulse for active tickets */}
                   <div className="flex flex-col items-center gap-1 pt-1">
-                    <div className={cn('w-3 h-3 rounded-full', getPriorityDot(ticket.priority))}></div>
+                    <div className={cn('w-3 h-3 rounded-full relative', getPriorityDot(ticket.priority))}>
+                      {isActive && <span className="absolute inset-0 rounded-full animate-ping opacity-30 bg-current"></span>}
+                    </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
@@ -297,7 +317,7 @@ export default function Tickets() {
                       </div>
                       <span className="text-gray-300">•</span>
                       <div className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
+                        <Icon name="schedule" size={14} />
                         <span>{formatDateTime(ticket.createdAt)}</span>
                       </div>
                     </div>
@@ -311,7 +331,7 @@ export default function Tickets() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 

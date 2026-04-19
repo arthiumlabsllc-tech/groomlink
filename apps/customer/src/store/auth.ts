@@ -9,6 +9,8 @@ interface User {
   phoneNumber: string | null;
   role: string;
   avatar: string | null;
+  onboardingComplete?: boolean;
+  preferredCategories?: string[];
 }
 
 interface AuthState {

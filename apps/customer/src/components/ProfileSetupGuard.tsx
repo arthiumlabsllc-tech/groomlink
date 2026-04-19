@@ -1,13 +1,14 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
+import LoadingScreen from './LoadingScreen';
 
 /**
- * ProfileSetupGuard - Forces new customers with incomplete profiles to the profile setup page
+ * ProfileSetupGuard - Forces new customers with incomplete profiles or onboarding to the correct page
  * 
  * This wrapper ensures that:
  * 1. If user has incomplete profile (missing firstName or phoneNumber), they can ONLY access /profile/setup
- * 2. All other routes redirect to /profile/setup for completion
- * 3. Once profile is complete, normal navigation is allowed
+ * 2. If user has complete profile but hasn't finished onboarding (onboardingComplete === false), redirect to /onboarding
+ * 3. Once both profile and onboarding are complete, normal navigation is allowed
  */
 export function ProfileSetupGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated } = useAuthStore();
@@ -15,14 +16,7 @@ export function ProfileSetupGuard({ children }: { children: React.ReactNode }) {
 
   // While loading, show spinner
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-[#006B3F] border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // If not authenticated, don't handle here - let ProtectedRoute handle it
@@ -43,6 +37,18 @@ export function ProfileSetupGuard({ children }: { children: React.ReactNode }) {
     return <Navigate to="/profile/setup" replace />;
   }
 
-  // User has a complete profile - allow normal access
+  // Profile is complete — check onboarding
+  const needsOnboarding = user?.onboardingComplete === false;
+
+  if (needsOnboarding) {
+    // Allow access to onboarding page
+    if (location.pathname === '/onboarding') {
+      return <>{children}</>;
+    }
+    // Redirect to onboarding
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // User has a complete profile and finished onboarding — allow normal access
   return <>{children}</>;
 }

@@ -49,6 +49,8 @@ export async function getProfile(req: AuthenticatedRequest, res: Response): Prom
         address: true,
         city: true,
         region: true,
+        preferredCategories: true,
+        onboardingComplete: true,
         createdAt: true,
       },
     });
@@ -1073,6 +1075,181 @@ export async function getSupportStaff(req: AuthenticatedRequest, res: Response):
     paginatedResponse(res, users, page, limit, total);
   } catch (error) {
     logger.error('Failed to fetch support staff', { error });
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+const updatePreferencesSchema = z.object({
+  categories: z.array(z.string()).min(1, 'Select at least one category').max(5, 'You can select up to 5 categories'),
+});
+
+export async function updatePreferences(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const data = updatePreferencesSchema.parse(req.body);
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { preferredCategories: data.categories },
+      select: {
+        id: true,
+        preferredCategories: true,
+      },
+    });
+
+    successResponse(res, user);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function completeOnboarding(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { onboardingComplete: true },
+      select: {
+        id: true,
+        onboardingComplete: true,
+        preferredCategories: true,
+      },
+    });
+
+    successResponse(res, user);
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+export async function getRecommendedSalons(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    // Get user with preferences and location
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        preferredCategories: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    if (!user || user.preferredCategories.length === 0) {
+      successResponse(res, []);
+      return;
+    }
+
+    // Build OR filters for case-insensitive partial match on service name
+    const categoryFilters = user.preferredCategories.map(category => ({
+      name: { contains: category, mode: 'insensitive' as const },
+    }));
+
+    // Find matching services to get their salon IDs
+    const matchingServices = await prisma.service.findMany({
+      where: {
+        OR: categoryFilters,
+        isActive: true,
+        salon: { status: 'APPROVED' },
+      },
+      select: { salonId: true },
+    });
+
+    const salonIds = [...new Set(matchingServices.map(s => s.salonId))];
+
+    if (salonIds.length === 0) {
+      successResponse(res, []);
+      return;
+    }
+
+    // Fetch salons with their matching services
+    const salons = await prisma.salon.findMany({
+      where: {
+        id: { in: salonIds },
+        status: 'APPROVED',
+      },
+      select: {
+        id: true,
+        businessName: true,
+        coverImage: true,
+        city: true,
+        rating: true,
+        reviewCount: true,
+        latitude: true,
+        longitude: true,
+        services: {
+          where: {
+            OR: categoryFilters,
+            isActive: true,
+          },
+          select: {
+            name: true,
+            price: true,
+          },
+        },
+      },
+    });
+
+    // Sort by distance if user has location, otherwise by rating
+    if (user.latitude != null && user.longitude != null) {
+      const userLat = user.latitude;
+      const userLng = user.longitude;
+
+      const salonsWithDistance = salons.map(salon => {
+        let distance: number | null = null;
+        if (salon.latitude != null && salon.longitude != null) {
+          // Haversine formula
+          const R = 6371; // Earth radius in km
+          const dLat = ((salon.latitude - userLat) * Math.PI) / 180;
+          const dLng = ((salon.longitude - userLng) * Math.PI) / 180;
+          const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((userLat * Math.PI) / 180) *
+              Math.cos((salon.latitude * Math.PI) / 180) *
+              Math.sin(dLng / 2) *
+              Math.sin(dLng / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          distance = R * c;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { latitude, longitude, ...salonData } = salon;
+        return { ...salonData, distance };
+      });
+
+      salonsWithDistance.sort((a, b) => {
+        if (a.distance === null && b.distance === null) return 0;
+        if (a.distance === null) return 1;
+        if (b.distance === null) return -1;
+        return a.distance - b.distance;
+      });
+
+      successResponse(res, salonsWithDistance.slice(0, 20));
+    } else {
+      // No user location: sort by rating descending
+      const sorted = salons
+        .map(({ latitude, longitude, ...salonData }) => salonData)
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 20);
+      successResponse(res, sorted);
+    }
+  } catch (error) {
+    logger.error('Failed to get recommended salons', { error, userId: req.user?.id });
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }

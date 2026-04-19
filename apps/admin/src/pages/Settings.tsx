@@ -1,34 +1,7 @@
 import { useState, useEffect } from 'react';
-import {
-  Settings as SettingsIcon,
-  Globe,
-  Mail,
-  Phone,
-  MapPin,
-  Image as ImageIcon,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  Power,
-  Server,
-  Database,
-  HardDrive,
-  Clock,
-  Users,
-  Store,
-  Calendar,
-  Activity,
-  ShieldAlert,
-  RefreshCw,
-  Save,
-  CreditCard,
-  Eye,
-  EyeOff,
-  Copy,
-  Check,
-  AlertTriangle,
-} from 'lucide-react';
+import Icon from '../components/Icon';
 import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings } from '../hooks';
+import LoadingScreen from '../components/LoadingScreen';
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
@@ -68,9 +41,10 @@ export function Settings() {
 
   // Payment settings state
   const [paymentFormData, setPaymentFormData] = useState({
-    paymentGateway: 'paystack',
-    paystackPublicKey: '',
-    paystackSecretKey: '',
+    paymentGateway: 'hubtel',
+    hubtelApiId: '',
+    hubtelApiSecret: '',
+    hubtelMerchantAccountId: '',
     isPaymentTestMode: true,
     transactionFeePercent: 1.95,
   });
@@ -80,6 +54,7 @@ export function Settings() {
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
   const [showLiveConfirmDialog, setShowLiveConfirmDialog] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [settingsTab, setSettingsTab] = useState<'general' | 'maintenance' | 'payment' | 'health'>('general');
 
   // Initialize form data when settings load
   useEffect(() => {
@@ -106,9 +81,10 @@ export function Settings() {
   useEffect(() => {
     if (paymentSettings) {
       setPaymentFormData({
-        paymentGateway: paymentSettings.paymentGateway || 'paystack',
-        paystackPublicKey: paymentSettings.paystackPublicKey || '',
-        paystackSecretKey: paymentSettings.paystackSecretKey || '',
+        paymentGateway: paymentSettings.paymentGateway || 'hubtel',
+        hubtelApiId: paymentSettings.hubtelApiId || '',
+        hubtelApiSecret: paymentSettings.hubtelApiSecret || '',
+        hubtelMerchantAccountId: paymentSettings.hubtelMerchantAccountId || '',
         isPaymentTestMode: paymentSettings.isPaymentTestMode ?? true,
         transactionFeePercent: paymentSettings.transactionFeePercent ?? 1.95,
       });
@@ -185,8 +161,9 @@ export function Settings() {
     try {
       await updatePaymentSettings.mutateAsync({
         paymentGateway: paymentFormData.paymentGateway,
-        paystackPublicKey: paymentFormData.paystackPublicKey || null,
-        paystackSecretKey: paymentFormData.paystackSecretKey || null,
+        hubtelApiId: paymentFormData.hubtelApiId || null,
+        hubtelApiSecret: paymentFormData.hubtelApiSecret || null,
+        hubtelMerchantAccountId: paymentFormData.hubtelMerchantAccountId || null,
         isPaymentTestMode: paymentFormData.isPaymentTestMode,
         transactionFeePercent: paymentFormData.transactionFeePercent,
       });
@@ -212,11 +189,28 @@ export function Settings() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="relative">
-          <Loader2 className="animate-spin text-[#006B3F]" size={48} />
-          <div className="absolute inset-0 animate-ping">
-            <Loader2 className="text-[#FCD116] opacity-20" size={48} />
+      <div className="page-enter space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="skeleton-shimmer h-8 w-48 mb-2" />
+            <div className="skeleton-shimmer h-4 w-64" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            {[1,2,3].map(i => <div key={i} className="card-v2 p-6 space-y-4">
+              <div className="skeleton-shimmer h-6 w-40" />
+              <div className="space-y-3">
+                {[1,2,3,4].map(j => <div key={j} className="skeleton-shimmer h-12 rounded-xl" />)}
+              </div>
+            </div>)}
+          </div>
+          <div className="card-v2 p-6 space-y-4">
+            <div className="skeleton-shimmer h-6 w-32" />
+            <div className="grid grid-cols-2 gap-4">
+              {[1,2,3,4].map(i => <div key={i} className="skeleton-shimmer h-20 rounded-xl" />)}
+            </div>
+            <div className="skeleton-shimmer h-24 rounded-xl" />
           </div>
         </div>
       </div>
@@ -224,7 +218,7 @@ export function Settings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -233,14 +227,35 @@ export function Settings() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {[
+          { key: 'general', label: 'General', icon: 'public' },
+          { key: 'maintenance', label: 'Maintenance', icon: 'power_settings_new' },
+          { key: 'payment', label: 'Payment', icon: 'credit_card' },
+          { key: 'health', label: 'System Health', icon: 'monitoring' },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSettingsTab(tab.key as any)}
+            className={`tab-pill whitespace-nowrap flex items-center gap-2 ${
+              settingsTab === tab.key ? 'tab-pill-active' : 'tab-pill-inactive'
+            }`}
+          >
+            <Icon name={tab.icon} size={16} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Left Column - Settings */}
         <div className="space-y-4 sm:space-y-6">
           {/* General Info Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className={`card-v2 overflow-hidden ${settingsTab !== 'general' ? 'hidden' : ''}`}>
             <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
               <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
-                <Globe size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
+                <Icon name="public" size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 General Information
               </h2>
             </div>
@@ -248,14 +263,14 @@ export function Settings() {
             <form onSubmit={handleGeneralSave} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {generalError && (
                 <div className="p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
-                  <AlertCircle size={16} />
+                  <Icon name="error" size={16} />
                   {generalError}
                 </div>
               )}
 
               {generalSuccess && (
                 <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
-                  <CheckCircle size={16} />
+                  <Icon name="check_circle" size={16} />
                   Settings saved successfully!
                 </div>
               )}
@@ -266,63 +281,63 @@ export function Settings() {
                   type="text"
                   value={formData.siteName}
                   onChange={(e) => setFormData({ ...formData, siteName: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
                   placeholder="GroomLink"
                 />
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
-                  <Mail size={14} className="text-gray-400" />
+                  <Icon name="mail" size={14} className="text-gray-400" />
                   Contact Email
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
                   placeholder="support@groomlinkgh.com"
                 />
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
-                  <Phone size={14} className="text-gray-400" />
+                  <Icon name="call" size={14} className="text-gray-400" />
                   Phone Number
                 </label>
                 <input
                   type="tel"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
                   placeholder="+233 XX XXX XXXX"
                 />
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
-                  <MapPin size={14} className="text-gray-400" />
+                  <Icon name="location_on" size={14} className="text-gray-400" />
                   Address
                 </label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
                   placeholder="Accra, Ghana"
                 />
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
-                  <ImageIcon size={14} className="text-gray-400" />
+                  <Icon name="image" size={14} className="text-gray-400" />
                   Logo URL
                 </label>
                 <input
                   type="url"
                   value={formData.logoUrl}
                   onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
                   placeholder="https://example.com/logo.png"
                 />
                 {formData.logoUrl && (
@@ -343,16 +358,16 @@ export function Settings() {
               <button
                 type="submit"
                 disabled={updateSettings.isPending}
-                className="w-full px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base min-h-[48px]"
+                className="btn-ripple w-full px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base min-h-[48px]"
               >
                 {updateSettings.isPending ? (
                   <>
-                    <Loader2 className="animate-spin" size={18} />
+                    <Icon name="progress_activity" className="animate-spin" size={18} />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={18} />
+                    <Icon name="save" size={18} />
                     Save Changes
                   </>
                 )}
@@ -361,10 +376,10 @@ export function Settings() {
           </div>
 
           {/* Maintenance Mode Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className={`card-v2 overflow-hidden ${settingsTab !== 'maintenance' ? 'hidden' : ''}`}>
             <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
               <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
-                <Power size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
+                <Icon name="power_settings_new" size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 Maintenance Mode
               </h2>
             </div>
@@ -372,7 +387,7 @@ export function Settings() {
             <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {maintenanceSuccess && (
                 <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
-                  <CheckCircle size={16} />
+                  <Icon name="check_circle" size={16} />
                   Maintenance mode updated!
                 </div>
               )}
@@ -396,13 +411,13 @@ export function Settings() {
                 <button
                   onClick={handleMaintenanceToggle}
                   disabled={toggleMaintenance.isPending}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                    maintenanceEnabled ? 'bg-[#CE1126]' : 'bg-[#006B3F]'
+                  className={`toggle-switch ${
+                    maintenanceEnabled ? 'toggle-switch-on' : 'toggle-switch-off'
                   } disabled:opacity-50`}
                 >
                   <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                      maintenanceEnabled ? 'translate-x-6' : 'translate-x-1'
+                    className={`toggle-switch-dot ${
+                      maintenanceEnabled ? 'translate-x-5' : 'translate-x-1'
                     }`}
                   />
                 </button>
@@ -416,7 +431,7 @@ export function Settings() {
                   value={maintenanceMessage}
                   onChange={(e) => setMaintenanceMessage(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors resize-none"
+                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 resize-none"
                   placeholder="We're currently performing maintenance. Please check back soon."
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -427,10 +442,10 @@ export function Settings() {
           </div>
 
           {/* Payment Gateway Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className={`card-v2 overflow-hidden ${settingsTab !== 'payment' ? 'hidden' : ''}`}>
             <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
               <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
-                <CreditCard size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
+                <Icon name="credit_card" size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 Payment Gateway
               </h2>
             </div>
@@ -438,21 +453,21 @@ export function Settings() {
             <form onSubmit={handlePaymentSave} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {paymentError && (
                 <div className="p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
-                  <AlertCircle size={16} />
+                  <Icon name="error" size={16} />
                   {paymentError}
                 </div>
               )}
 
               {paymentSuccess && (
                 <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
-                  <CheckCircle size={16} />
+                  <Icon name="check_circle" size={16} />
                   Payment settings saved successfully!
                 </div>
               )}
 
               {testConnectionSuccess && (
                 <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
-                  <CheckCircle size={16} />
+                  <Icon name="check_circle" size={16} />
                   Connection verified! Keys are configured correctly.
                 </div>
               )}
@@ -480,13 +495,13 @@ export function Settings() {
                   <button
                     type="button"
                     onClick={handleTestModeToggle}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                      paymentFormData.isPaymentTestMode ? 'bg-green-500' : 'bg-[#CE1126]'
+                    className={`toggle-switch ${
+                      paymentFormData.isPaymentTestMode ? 'toggle-switch-off' : 'toggle-switch-on'
                     }`}
                   >
                     <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                        paymentFormData.isPaymentTestMode ? 'translate-x-1' : 'translate-x-6'
+                      className={`toggle-switch-dot ${
+                        paymentFormData.isPaymentTestMode ? 'translate-x-1' : 'translate-x-5'
                       }`}
                     />
                   </button>
@@ -496,12 +511,12 @@ export function Settings() {
                 <div className="mt-3">
                   {paymentFormData.isPaymentTestMode ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                      <CheckCircle size={12} />
+                      <Icon name="check_circle" size={12} />
                       TEST MODE — No real charges
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#CE1126]/10 text-[#CE1126]">
-                      <AlertTriangle size={12} />
+                      <Icon name="warning" size={12} />
                       LIVE MODE — Real payments will be processed
                     </span>
                   )}
@@ -511,7 +526,7 @@ export function Settings() {
               {/* Warning banner when in LIVE mode */}
               {!paymentFormData.isPaymentTestMode && (
                 <div className="p-3 bg-[#FCD116]/20 text-yellow-800 rounded-xl text-sm flex items-start gap-2">
-                  <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+                  <Icon name="warning" size={16} className="mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium">Live Mode Active</p>
                     <p className="text-yellow-700">All transactions will process real payments. Ensure your API keys are correct.</p>
@@ -527,88 +542,117 @@ export function Settings() {
                 <select
                   value={paymentFormData.paymentGateway}
                   onChange={(e) => setPaymentFormData({ ...paymentFormData, paymentGateway: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors bg-white"
+                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 bg-white"
                 >
-                  <option value="paystack">Paystack</option>
+                  <option value="hubtel">Hubtel</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   More payment gateways will be available in future updates
                 </p>
               </div>
 
-              {/* API Keys Section */}
+              {/* API Credentials Section */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  API Keys
+                  API Credentials
                 </h3>
 
-                {/* Public Key */}
+                {/* Hubtel Client ID */}
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Public Key
+                    Hubtel Client ID
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={paymentFormData.paystackPublicKey || ''}
-                      onChange={(e) => setPaymentFormData({ ...paymentFormData, paystackPublicKey: e.target.value })}
-                      className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors font-mono text-sm"
-                      placeholder="pk_test_xxxxxxxxxxxxxxxxxxxxxxxx"
+                      value={paymentFormData.hubtelApiId || ''}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, hubtelApiId: e.target.value })}
+                      className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                      placeholder="your-hubtel-client-id"
                     />
                     <button
                       type="button"
-                      onClick={() => copyToClipboard(paymentFormData.paystackPublicKey || '', 'publicKey')}
-                      disabled={!paymentFormData.paystackPublicKey}
+                      onClick={() => copyToClipboard(paymentFormData.hubtelApiId || '', 'hubtelApiId')}
+                      disabled={!paymentFormData.hubtelApiId}
                       className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
                       title="Copy to clipboard"
                     >
-                      {copiedField === 'publicKey' ? (
-                        <Check size={18} className="text-green-500" />
+                      {copiedField === 'hubtelApiId' ? (
+                        <Icon name="check" size={18} className="text-green-500" />
                       ) : (
-                        <Copy size={18} className="text-gray-400" />
+                        <Icon name="content_copy" size={18} className="text-gray-400" />
                       )}
                     </button>
                   </div>
                 </div>
 
-                {/* Secret Key */}
+                {/* Hubtel Client Secret */}
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Secret Key
+                    Hubtel Client Secret
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <input
                         type={showSecretKey ? 'text' : 'password'}
-                        value={paymentFormData.paystackSecretKey || ''}
-                        onChange={(e) => setPaymentFormData({ ...paymentFormData, paystackSecretKey: e.target.value })}
-                        className="w-full px-4 py-3 pr-10 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-0 transition-colors font-mono text-sm"
-                        placeholder="sk_test_xxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={paymentFormData.hubtelApiSecret || ''}
+                        onChange={(e) => setPaymentFormData({ ...paymentFormData, hubtelApiSecret: e.target.value })}
+                        className="w-full px-4 py-3 pr-10 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                        placeholder="your-hubtel-client-secret"
                       />
                       <button
                         type="button"
                         onClick={() => setShowSecretKey(!showSecretKey)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showSecretKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showSecretKey ? <Icon name="visibility_off" size={18} /> : <Icon name="visibility" size={18} />}
                       </button>
                     </div>
                     <button
                       type="button"
-                      onClick={() => copyToClipboard(paymentFormData.paystackSecretKey || '', 'secretKey')}
-                      disabled={!paymentFormData.paystackSecretKey}
+                      onClick={() => copyToClipboard(paymentFormData.hubtelApiSecret || '', 'hubtelApiSecret')}
+                      disabled={!paymentFormData.hubtelApiSecret}
                       className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
                       title="Copy to clipboard"
                     >
-                      {copiedField === 'secretKey' ? (
-                        <Check size={18} className="text-green-500" />
+                      {copiedField === 'hubtelApiSecret' ? (
+                        <Icon name="check" size={18} className="text-green-500" />
                       ) : (
-                        <Copy size={18} className="text-gray-400" />
+                        <Icon name="content_copy" size={18} className="text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Hubtel Merchant Account Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">
+                    Hubtel Merchant Account Number
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={paymentFormData.hubtelMerchantAccountId || ''}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, hubtelMerchantAccountId: e.target.value })}
+                      className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                      placeholder="your-merchant-account-number"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(paymentFormData.hubtelMerchantAccountId || '', 'hubtelMerchantAccountId')}
+                      disabled={!paymentFormData.hubtelMerchantAccountId}
+                      className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copiedField === 'hubtelMerchantAccountId' ? (
+                        <Icon name="check" size={18} className="text-green-500" />
+                      ) : (
+                        <Icon name="content_copy" size={18} className="text-gray-400" />
                       )}
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Secret key is masked in the database. If you see "****", the existing key is preserved.
+                    The Hubtel merchant account number for receiving payments.
                   </p>
                 </div>
               </div>
@@ -630,7 +674,7 @@ export function Settings() {
                           ...paymentFormData, 
                           transactionFeePercent: parseFloat(e.target.value) || 0 
                         })}
-                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#006B3F] focus:border-transparent outline-none text-lg font-semibold"
+                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#006B3F]/30 focus:border-transparent outline-none transition-all duration-200 text-lg font-semibold"
                       />
                       <span className="text-lg font-semibold text-gray-700">%</span>
                     </div>
@@ -644,16 +688,16 @@ export function Settings() {
                 <button
                   type="submit"
                   disabled={updatePaymentSettings.isPending}
-                  className="flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                  className="btn-ripple flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005a35] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   {updatePaymentSettings.isPending ? (
                     <>
-                      <Loader2 className="animate-spin" size={18} />
+                      <Icon name="progress_activity" className="animate-spin" size={18} />
                       Saving...
                     </>
                   ) : (
                     <>
-                      <Save size={18} />
+                      <Icon name="save" size={18} />
                       Save Settings
                     </>
                   )}
@@ -661,10 +705,10 @@ export function Settings() {
                 <button
                   type="button"
                   onClick={handleTestConnection}
-                  disabled={updatePaymentSettings.isPending || !paymentFormData.paystackPublicKey}
-                  className="px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                  disabled={updatePaymentSettings.isPending || !paymentFormData.hubtelApiId}
+                  className="btn-ripple px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
-                  <RefreshCw size={18} />
+                  <Icon name="refresh" size={18} />
                   Test Connection
                 </button>
               </div>
@@ -673,15 +717,15 @@ export function Settings() {
         </div>
 
         {/* Right Column - System Health */}
-        <div className="space-y-4 sm:space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className={`space-y-4 sm:space-y-6 ${settingsTab !== 'health' ? 'hidden xl:block' : ''}`}>
+          <div className="card-v2 overflow-hidden">
             <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
               <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
-                <Activity size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
+                <Icon name="monitoring" size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
                 System Health
               </h2>
               <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500">
-                <RefreshCw size={12} className="animate-spin" />
+                <Icon name="refresh" size={12} className="animate-spin" />
                 Auto-refresh: 30s
               </div>
             </div>
@@ -692,7 +736,7 @@ export function Settings() {
                 {/* API Status */}
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <Server size={16} className="text-gray-400" />
+                    <Icon name="dns" size={16} className="text-gray-400" />
                     <span className="text-sm font-medium text-gray-600">API Status</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -726,7 +770,7 @@ export function Settings() {
                 {/* Database Status */}
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <Database size={16} className="text-gray-400" />
+                    <Icon name="storage" size={16} className="text-gray-400" />
                     <span className="text-sm font-medium text-gray-600">Database</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -753,7 +797,7 @@ export function Settings() {
                 {/* Redis Status */}
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <HardDrive size={16} className="text-gray-400" />
+                    <Icon name="memory" size={16} className="text-gray-400" />
                     <span className="text-sm font-medium text-gray-600">Redis</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -780,7 +824,7 @@ export function Settings() {
                 {/* Uptime */}
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <Clock size={16} className="text-gray-400" />
+                    <Icon name="schedule" size={16} className="text-gray-400" />
                     <span className="text-sm font-medium text-gray-600">Uptime</span>
                   </div>
                   <p className="text-lg font-semibold text-gray-800">
@@ -793,7 +837,7 @@ export function Settings() {
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <HardDrive size={16} className="text-gray-400" />
+                    <Icon name="memory" size={16} className="text-gray-400" />
                     <span className="text-sm font-medium text-gray-600">Memory Usage</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-800">
@@ -823,7 +867,7 @@ export function Settings() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-blue-50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <Users size={16} className="text-blue-500" />
+                    <Icon name="group" size={16} className="text-blue-500" />
                     <span className="text-sm font-medium text-blue-700">Active Sessions</span>
                   </div>
                   <p className="text-2xl font-bold text-blue-800">
@@ -834,7 +878,7 @@ export function Settings() {
 
                 <div className="p-4 bg-red-50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <ShieldAlert size={16} className="text-red-500" />
+                    <Icon name="security" size={16} className="text-red-500" />
                     <span className="text-sm font-medium text-red-700">Suspicious Activity</span>
                   </div>
                   <p className="text-2xl font-bold text-red-800">
@@ -849,21 +893,21 @@ export function Settings() {
                 <h3 className="text-sm font-medium text-gray-600 mb-3">Platform Statistics</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-gray-50 rounded-xl">
-                    <Users size={20} className="text-[#006B3F] mx-auto mb-1" />
+                    <Icon name="group" size={20} className="text-[#006B3F] mx-auto mb-1" />
                     <p className="text-xl font-bold text-gray-800">
                       {health?.counts?.users?.toLocaleString() || '0'}
                     </p>
                     <p className="text-xs text-gray-500">Users</p>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-xl">
-                    <Store size={20} className="text-[#FCD116] mx-auto mb-1" />
+                    <Icon name="storefront" size={20} className="text-[#FCD116] mx-auto mb-1" />
                     <p className="text-xl font-bold text-gray-800">
                       {health?.counts?.salons?.toLocaleString() || '0'}
                     </p>
                     <p className="text-xs text-gray-500">Salons</p>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-xl">
-                    <Calendar size={20} className="text-blue-500 mx-auto mb-1" />
+                    <Icon name="calendar_today" size={20} className="text-blue-500 mx-auto mb-1" />
                     <p className="text-xl font-bold text-gray-800">
                       {health?.counts?.bookings?.toLocaleString() || '0'}
                     </p>
@@ -883,7 +927,7 @@ export function Settings() {
           <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-[#CE1126]/10 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="text-[#CE1126]" size={20} />
+                <Icon name="warning" className="text-[#CE1126]" size={20} />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Switch to Live Mode?</h3>
@@ -897,19 +941,19 @@ export function Settings() {
               <ul className="text-xs sm:text-sm text-yellow-700 mt-2 space-y-1 list-disc list-inside">
                 <li>Tested thoroughly in test mode</li>
                 <li>Added correct live API keys</li>
-                <li>Verified your Paystack account is live</li>
+                <li>Verified your Hubtel account is live</li>
               </ul>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowLiveConfirmDialog(false)}
-                className="flex-1 px-4 py-3 sm:py-2 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors text-sm min-h-[48px] sm:min-h-0"
+                className="btn-ripple flex-1 px-4 py-3 sm:py-2 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors text-sm min-h-[48px] sm:min-h-0"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmSwitchToLive}
-                className="flex-1 px-4 py-3 sm:py-2 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1e] font-medium transition-colors text-sm min-h-[48px] sm:min-h-0"
+                className="btn-ripple flex-1 px-4 py-3 sm:py-2 bg-[#CE1126] text-white rounded-xl hover:bg-[#a50e1e] font-medium transition-colors text-sm min-h-[48px] sm:min-h-0"
               >
                 Yes, Switch to Live
               </button>

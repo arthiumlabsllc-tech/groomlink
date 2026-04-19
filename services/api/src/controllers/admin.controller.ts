@@ -11,7 +11,7 @@ import * as noshowService from '../services/noshow.service';
 import * as completionService from '../services/completion.service';
 import logger from '../config/logger';
 import axios from 'axios';
-import { verifyPaymentWithPaystack } from '../services/payment.service';
+import { verifyPaymentWithHubtel } from '../services/payment.service';
 import * as escrowService from '../services/escrow.service';
 import * as notificationService from '../services/notification.service';
 
@@ -723,9 +723,10 @@ const siteSettingsSchema = z.object({
 
 // Payment Settings Schema
 const paymentSettingsSchema = z.object({
-  paymentGateway: z.string().default('paystack'),
-  paystackPublicKey: z.string().max(500).optional().nullable(),
-  paystackSecretKey: z.string().max(500).optional().nullable(),
+  paymentGateway: z.string().default('hubtel'),
+  hubtelApiId: z.string().max(500).optional().nullable(),
+  hubtelApiSecret: z.string().max(500).optional().nullable(),
+  hubtelMerchantAccountId: z.string().max(500).optional().nullable(),
   isPaymentTestMode: z.boolean().optional(),
   transactionFeePercent: z.preprocess(
     (val) => {
@@ -741,8 +742,9 @@ const paymentSettingsSchema = z.object({
 }).transform((data) => ({
   ...data,
   // Convert empty strings to null
-  paystackPublicKey: data.paystackPublicKey === '' ? null : data.paystackPublicKey,
-  paystackSecretKey: data.paystackSecretKey === '' ? null : data.paystackSecretKey,
+  hubtelApiId: data.hubtelApiId === '' ? null : data.hubtelApiId,
+  hubtelApiSecret: data.hubtelApiSecret === '' ? null : data.hubtelApiSecret,
+  hubtelMerchantAccountId: data.hubtelMerchantAccountId === '' ? null : data.hubtelMerchantAccountId,
 }));
 
 export async function getSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -805,15 +807,16 @@ export async function getPaymentSettings(req: AuthenticatedRequest, res: Respons
       });
     }
 
-    // Mask the secret key - show only last 4 characters
-    const maskedSecretKey = settings.paystackSecretKey
-      ? `****${settings.paystackSecretKey.slice(-4)}`
+    // Mask the API secret - show only last 4 characters
+    const maskedApiSecret = (settings as any)?.hubtelApiSecret
+      ? `****${(settings as any).hubtelApiSecret.slice(-4)}`
       : null;
 
     successResponse(res, {
       paymentGateway: settings.paymentGateway,
-      paystackPublicKey: settings.paystackPublicKey,
-      paystackSecretKey: maskedSecretKey,
+      hubtelApiId: (settings as any)?.hubtelApiId || null,
+      hubtelApiSecret: maskedApiSecret,
+      hubtelMerchantAccountId: (settings as any)?.hubtelMerchantAccountId || null,
       isPaymentTestMode: settings.isPaymentTestMode,
       transactionFeePercent: settings.transactionFeePercent,
     });
@@ -843,14 +846,18 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
       updatedBy: req.user!.id,
     };
 
-    if (data.paystackPublicKey !== undefined) {
-      updateData.paystackPublicKey = data.paystackPublicKey || null;
+    if (data.hubtelApiId !== undefined) {
+      updateData.hubtelApiId = data.hubtelApiId || null;
     }
 
-    if (data.paystackSecretKey !== undefined && data.paystackSecretKey !== null && !data.paystackSecretKey.includes('****')) {
-      updateData.paystackSecretKey = data.paystackSecretKey || null;
+    if (data.hubtelApiSecret !== undefined && data.hubtelApiSecret !== null && !data.hubtelApiSecret.includes('****')) {
+      updateData.hubtelApiSecret = data.hubtelApiSecret || null;
     }
-    // If secret key contains '****', don't update it
+    // If API secret contains '****', don't update it
+
+    if (data.hubtelMerchantAccountId !== undefined) {
+      updateData.hubtelMerchantAccountId = data.hubtelMerchantAccountId || null;
+    }
 
     if (data.isPaymentTestMode !== undefined) {
       updateData.isPaymentTestMode = data.isPaymentTestMode;
@@ -865,15 +872,16 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
       data: updateData,
     });
 
-    // Return with masked secret key
-    const maskedSecretKey = settings.paystackSecretKey
-      ? `****${settings.paystackSecretKey.slice(-4)}`
+    // Return with masked API secret
+    const maskedApiSecret = (settings as any)?.hubtelApiSecret
+      ? `****${(settings as any).hubtelApiSecret.slice(-4)}`
       : null;
 
     successResponse(res, {
       paymentGateway: settings.paymentGateway,
-      paystackPublicKey: settings.paystackPublicKey,
-      paystackSecretKey: maskedSecretKey,
+      hubtelApiId: (settings as any)?.hubtelApiId || null,
+      hubtelApiSecret: maskedApiSecret,
+      hubtelMerchantAccountId: (settings as any)?.hubtelMerchantAccountId || null,
       isPaymentTestMode: settings.isPaymentTestMode,
       transactionFeePercent: settings.transactionFeePercent,
     });
@@ -1652,70 +1660,83 @@ export async function getRevenueStats(req: AuthenticatedRequest, res: Response):
 }
 
 // ===========================================
-// PAYSTACK BALANCE
+// HUBTEL ACCOUNT BALANCE
 // ===========================================
 
-const PAYSTACK_BASE_URL = 'https://api.paystack.co';
-
 /**
- * Get Paystack account balance
- * GET /admin/paystack-balance
+ * Get Hubtel account balance
+ * GET /admin/hubtel-balance
+ *
+ * Hubtel does not expose a dedicated "balance" endpoint like Paystack.
+ * We fetch the merchant account balance via the Hubtel merchant
+ * account API when available, otherwise return a placeholder.
  */
-export async function getPaystackBalanceHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function getHubtelBalanceHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    // Get Paystack keys from SiteSettings or environment
+    // Get Hubtel credentials from SiteSettings or environment
     const settings = await prisma.siteSettings.findUnique({
       where: { id: 'default' }
     });
-    
-    const secretKey = settings?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
-    const keySource = settings?.paystackSecretKey ? 'database' : 'environment';
-    
-    logger.info('Paystack balance request', {
+
+    const apiId = (settings as any)?.hubtelApiId || process.env.HUBTEL_API_ID;
+    const apiSecret = (settings as any)?.hubtelApiSecret || process.env.HUBTEL_API_SECRET;
+    const keySource = (settings as any)?.hubtelApiId ? 'database' : 'environment';
+
+    logger.info('Hubtel balance request', {
       keySource,
-      hasSecretKey: !!secretKey,
-      dbKeyExists: !!settings?.paystackSecretKey,
-      envKeyExists: !!process.env.PAYSTACK_SECRET_KEY,
+      hasApiId: !!apiId,
+      hasApiSecret: !!apiSecret,
+      dbApiIdExists: !!(settings as any)?.hubtelApiId,
+      envApiIdExists: !!process.env.HUBTEL_API_ID,
     });
-    
-    if (!secretKey) {
-      errorResponse(res, 'NOT_CONFIGURED', 'Paystack secret key not configured. Please set up Paystack keys in Settings.', 400);
+
+    if (!apiId || !apiSecret) {
+      errorResponse(res, 'NOT_CONFIGURED', 'Hubtel API credentials not configured. Please set up Hubtel keys in Settings.', 400);
       return;
     }
 
-    // Call Paystack API to get balance
-    const response = await axios.get(`${PAYSTACK_BASE_URL}/balance`, {
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Hubtel merchant account balance endpoint
+    const encoded = Buffer.from(`${apiId}:${apiSecret}`).toString('base64');
 
-    // Paystack returns balance in pesewas (smallest currency unit)
-    // Convert to GHS (divide by 100)
-    const balanceData = response.data.data;
-    const formattedBalance = balanceData.map((item: { currency: string; balance: number }) => ({
-      currency: item.currency,
-      balance: item.balance / 100, // Convert from pesewas to GHS
-      rawBalance: item.balance,
-    }));
+    try {
+      const response = await axios.get('https://api.hubtel.com/v1/merchantaccount/balance', {
+        headers: {
+          Authorization: `Basic ${encoded}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      });
 
-    logger.info('Paystack balance fetched successfully', {
-      currencies: formattedBalance.map((b: { currency: string }) => b.currency),
-      ghsBalance: formattedBalance.find((b: { currency: string }) => b.currency === 'GHS')?.balance,
-    });
+      const data = response.data;
 
-    successResponse(res, {
-      balances: formattedBalance,
-      fetchedAt: new Date().toISOString(),
-    });
+      logger.info('Hubtel balance fetched successfully', {
+        responseCode: data.ResponseCode,
+      });
+
+      successResponse(res, {
+        balances: data.Data || data,
+        fetchedAt: new Date().toISOString(),
+        provider: 'hubtel',
+      });
+    } catch (apiError: any) {
+      // If the balance endpoint is unavailable or not supported, return a graceful response
+      logger.warn('Hubtel balance endpoint unavailable or not supported', {
+        status: apiError.response?.status,
+        message: apiError.message,
+      });
+
+      successResponse(res, {
+        balances: [],
+        fetchedAt: new Date().toISOString(),
+        provider: 'hubtel',
+        note: 'Hubtel balance API unavailable. Check your Hubtel dashboard for account balance.',
+      });
+    }
   } catch (error) {
-    logger.error('Failed to fetch Paystack balance', { 
+    logger.error('Failed to fetch Hubtel balance', {
       error: (error as Error).message,
-      responseData: (error as any).response?.data,
-      statusCode: (error as any).response?.status,
     });
-    errorResponse(res, 'FETCH_FAILED', 'Failed to fetch Paystack balance', 500);
+    errorResponse(res, 'FETCH_FAILED', 'Failed to fetch Hubtel balance', 500);
   }
 }
 
@@ -2132,11 +2153,11 @@ export async function resolveCompletionDisputeHandler(req: AuthenticatedRequest,
 }
 
 // ===========================================
-// PAYMENT SYNC WITH PAYSTACK
+// PAYMENT SYNC WITH HUBTEL
 // ===========================================
 
 /**
- * Sync a single payment status with Paystack
+ * Sync a single payment status with Hubtel
  * POST /admin/payments/:paymentId/sync
  */
 export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -2209,8 +2230,8 @@ export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response
       return;
     }
 
-    // Call Paystack to verify the payment
-    const verification = await verifyPaymentWithPaystack(payment.providerRef);
+    // Call Hubtel to verify the payment
+    const verification = await verifyPaymentWithHubtel(payment.providerRef);
 
     if (verification.error) {
       errorResponse(res, 'SYNC_FAILED', verification.error, 500);
@@ -2220,7 +2241,7 @@ export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response
     let updated = false;
     let newStatus: PaymentStatus = payment.status;
 
-    // If Paystack says it's successful, update the payment and booking
+    // If Hubtel says it's successful, update the payment and booking
     if (verification.success && verification.status === 'success') {
       const completedAt = new Date();
 
@@ -2299,11 +2320,11 @@ export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response
       newStatus = PaymentStatus.SUCCESS;
 
       logger.info(`Payment synced to SUCCESS via admin: ${paymentId}`, {
-        paystackRef: payment.providerRef,
+        hubtelRef: payment.providerRef,
         adminUserId: req.user?.id,
       });
     } else if (verification.status === 'failed' || verification.status === 'abandoned') {
-      // If Paystack says it failed, update to FAILED
+      // If Hubtel says it failed, update to FAILED
       await prisma.payment.update({
         where: { id: paymentId },
         data: {
@@ -2316,15 +2337,15 @@ export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response
       newStatus = PaymentStatus.FAILED;
 
       logger.info(`Payment synced to FAILED via admin: ${paymentId}`, {
-        paystackRef: payment.providerRef,
-        paystackStatus: verification.status,
+        hubtelRef: payment.providerRef,
+        hubtelStatus: verification.status,
         adminUserId: req.user?.id,
       });
     } else {
-      // Still pending or processing on Paystack side
-      logger.info(`Payment still pending on Paystack: ${paymentId}`, {
-        paystackRef: payment.providerRef,
-        paystackStatus: verification.status,
+      // Still pending or processing on Hubtel side
+      logger.info(`Payment still pending on Hubtel: ${paymentId}`, {
+        hubtelRef: payment.providerRef,
+        hubtelStatus: verification.status,
       });
     }
 
@@ -2333,9 +2354,9 @@ export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response
       paymentId: payment.id,
       previousStatus: payment.status,
       newStatus,
-      paystackStatus: verification.status,
-      paystackAmount: verification.amount,
-      paystackCurrency: verification.currency,
+      hubtelStatus: verification.status,
+      hubtelAmount: verification.amount,
+      hubtelCurrency: verification.currency,
       synced: updated,
     });
   } catch (error) {
@@ -2345,7 +2366,7 @@ export async function syncPaymentStatus(req: AuthenticatedRequest, res: Response
 }
 
 /**
- * Bulk sync all PROCESSING payments with Paystack
+ * Bulk sync all PROCESSING payments with Hubtel
  * POST /admin/payments/sync-all
  */
 export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -2413,7 +2434,7 @@ export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: 
         reference: string;
         previousStatus: string;
         newStatus: string;
-        paystackStatus: string;
+        hubtelStatus: string;
         error?: string;
       }>,
     };
@@ -2428,14 +2449,14 @@ export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: 
             reference: '',
             previousStatus: payment.status,
             newStatus: payment.status,
-            paystackStatus: 'error',
+            hubtelStatus: 'error',
             error: 'No provider reference',
           });
           continue;
         }
 
-        // Call Paystack to verify
-        const verification = await verifyPaymentWithPaystack(payment.providerRef);
+        // Call Hubtel to verify
+        const verification = await verifyPaymentWithHubtel(payment.providerRef);
 
         if (verification.error) {
           results.errors++;
@@ -2444,13 +2465,13 @@ export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: 
             reference: payment.providerRef,
             previousStatus: payment.status,
             newStatus: payment.status,
-            paystackStatus: 'error',
+            hubtelStatus: 'error',
             error: verification.error,
           });
           continue;
         }
 
-        // If Paystack says it's successful, update the payment and booking
+        // If Hubtel says it's successful, update the payment and booking
         if (verification.success && verification.status === 'success') {
           const completedAt = new Date();
 
@@ -2530,10 +2551,10 @@ export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: 
             reference: payment.providerRef,
             previousStatus: payment.status,
             newStatus: PaymentStatus.SUCCESS,
-            paystackStatus: verification.status,
+            hubtelStatus: verification.status,
           });
         } else if (verification.status === 'failed' || verification.status === 'abandoned') {
-          // If Paystack says it failed, update to FAILED
+          // If Hubtel says it failed, update to FAILED
           await prisma.payment.update({
             where: { id: payment.id },
             data: {
@@ -2548,17 +2569,17 @@ export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: 
             reference: payment.providerRef,
             previousStatus: payment.status,
             newStatus: PaymentStatus.FAILED,
-            paystackStatus: verification.status,
+            hubtelStatus: verification.status,
           });
         } else {
-          // Still pending or processing on Paystack side
+          // Still pending or processing on Hubtel side
           results.unchanged++;
           results.details.push({
             paymentId: payment.id,
             reference: payment.providerRef,
             previousStatus: payment.status,
             newStatus: payment.status,
-            paystackStatus: verification.status,
+            hubtelStatus: verification.status,
           });
         }
       } catch (paymentError) {
@@ -2572,7 +2593,7 @@ export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: 
           reference: payment.providerRef || '',
           previousStatus: payment.status,
           newStatus: payment.status,
-          paystackStatus: 'error',
+          hubtelStatus: 'error',
           error: (paymentError as Error).message,
         });
       }

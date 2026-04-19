@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, User, Store, LogIn, Users as UsersIcon, X } from 'lucide-react';
+import Icon from '../components/Icon';
 import { useImpersonation } from '../hooks/useImpersonation';
 import { api } from '../api';
 import { formatPhoneNumber, getStatusColor, cn } from '../lib';
@@ -17,9 +17,9 @@ interface UserResult {
 }
 
 const roleFilters = [
-  { value: '', label: 'All', icon: UsersIcon },
-  { value: 'CUSTOMER', label: 'Customers', icon: User },
-  { value: 'SALON_OWNER', label: 'Salon Owners', icon: Store },
+  { value: '', label: 'All', icon: 'group' },
+  { value: 'CUSTOMER', label: 'Customers', icon: 'person' },
+  { value: 'SALON_OWNER', label: 'Salon Owners', icon: 'store' },
 ];
 
 const getRoleBadge = (role: string) => {
@@ -75,7 +75,7 @@ export default function Users() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-enter">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 font-heading">User Search</h1>
@@ -83,10 +83,10 @@ export default function Users() {
       </div>
 
       {/* Search Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="card-v2 p-6">
         {/* Prominent Search Bar */}
         <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Icon name="search" size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={searchQuery}
@@ -101,20 +101,17 @@ export default function Users() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-gray-500 mr-2">Filter by role:</span>
           {roleFilters.map((role) => {
-            const Icon = role.icon;
             const isActive = selectedRole === role.value;
             return (
               <button
                 key={role.value}
                 onClick={() => setSelectedRole(role.value)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-ghana-green text-white shadow-md shadow-ghana-green/20"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  "tab-pill",
+                  isActive ? "tab-pill-active" : "tab-pill-inactive"
                 )}
               >
-                <Icon className="w-4 h-4" />
+                <Icon name={role.icon} size={16} />
                 {role.label}
               </button>
             );
@@ -122,12 +119,12 @@ export default function Users() {
           <button
             onClick={handleSearch}
             disabled={isSearching}
-            className="ml-auto bg-ghana-green text-white px-6 py-2.5 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all duration-200 disabled:opacity-50 flex items-center gap-2 shadow-md shadow-ghana-green/20"
+            className="ml-auto bg-ghana-green text-white px-6 py-2.5 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all duration-200 disabled:opacity-50 flex items-center gap-2 shadow-md shadow-ghana-green/20 btn-ripple"
           >
             {isSearching ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Search className="w-5 h-5" />
+              <Icon name="search" size={20} />
             )}
             Search
           </button>
@@ -143,12 +140,27 @@ export default function Users() {
             </h2>
           </div>
           
-          {results.length > 0 ? (
+          {isSearching ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="card-v2 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 rounded-full skeleton-shimmer flex-shrink-0"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 w-1/2 rounded skeleton-shimmer"></div>
+                      <div className="h-4 w-2/3 rounded skeleton-shimmer"></div>
+                      <div className="h-4 w-1/3 rounded skeleton-shimmer"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : results.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {results.map((user) => (
                 <div 
                   key={user.id} 
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-200"
+                  className="card-v2 p-5 hover:shadow-md transition-all duration-200"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
@@ -171,7 +183,7 @@ export default function Users() {
                         )}
                         {user.salons && user.salons.length > 0 && (
                           <div className="flex items-center gap-2 mt-2">
-                            <Store className="w-4 h-4 text-ghana-green" />
+                            <Icon name="store" size={16} className="text-ghana-green" />
                             <span className="text-sm text-gray-600">
                               {user.salons.map(s => s.businessName).join(', ')}
                             </span>
@@ -195,10 +207,10 @@ export default function Users() {
                         setSelectedUser(user);
                         setShowImpersonateModal(true);
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-ghana-yellow text-ghana-dark rounded-lg font-medium hover:bg-yellow-400 active:bg-yellow-500 transition-all duration-200"
+                      className="flex items-center gap-2 px-4 py-2 bg-ghana-yellow text-ghana-dark rounded-lg font-medium hover:bg-yellow-400 active:bg-yellow-500 transition-all duration-200 btn-ripple"
                       title="Impersonate user"
                     >
-                      <LogIn className="w-4 h-4" />
+                      <Icon name="login" size={16} />
                       Impersonate
                     </button>
                   </div>
@@ -208,7 +220,7 @@ export default function Users() {
           ) : (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
+                <Icon name="search" size={32} className="text-gray-400" />
               </div>
               <p className="text-gray-500 text-lg">No users found matching your search criteria.</p>
             </div>
@@ -218,8 +230,8 @@ export default function Users() {
 
       {/* Impersonation Modal */}
       {showImpersonateModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-elevated max-w-md w-full p-6 animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 font-heading">Impersonate User</h3>
               <button 
@@ -229,7 +241,7 @@ export default function Users() {
                 }}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <Icon name="close" size={20} />
               </button>
             </div>
             
@@ -237,7 +249,7 @@ export default function Users() {
             <div className="bg-ghana-yellow/15 border border-ghana-yellow/30 rounded-xl p-4 mb-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-ghana-yellow to-yellow-400 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User className="w-5 h-5 text-ghana-dark" />
+                  <Icon name="person" size={20} className="text-ghana-dark" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">

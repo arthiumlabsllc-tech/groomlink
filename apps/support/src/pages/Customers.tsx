@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Mail, User as UserIcon, Phone, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import Icon from '../components/Icon';
 import { api, User } from '../api';
 import { formatPhoneNumber, formatDate, cn } from '../lib';
 
@@ -131,7 +131,7 @@ export default function Customers() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 page-enter">
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-heading">Customer Registration</h1>
@@ -140,10 +140,10 @@ export default function Customers() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Registration Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="card-v2 p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <div className="w-10 h-10 bg-ghana-green/10 rounded-xl flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-ghana-green" />
+              <Icon name="person_add" size={20} className="text-ghana-green" />
             </div>
             <div>
               <h2 className="font-semibold text-gray-900 font-heading text-sm sm:text-base">Register New Customer</h2>
@@ -153,9 +153,9 @@ export default function Customers() {
 
           {/* Success Message */}
           {createdCustomer && (
-            <div className="mb-6 bg-ghana-green/10 border border-ghana-green/20 rounded-xl p-4">
+            <div className="mb-6 bg-ghana-green/10 border border-ghana-green/20 rounded-xl p-4 animate-slide-up">
               <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-ghana-green flex-shrink-0 mt-0.5" />
+                <Icon name="check_circle" size={20} className="text-ghana-green flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-ghana-green">Customer Created Successfully!</p>
                   <div className="mt-2 text-sm text-gray-600 space-y-1">
@@ -172,9 +172,9 @@ export default function Customers() {
 
           {/* Error Message */}
           {submitError && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 animate-slide-up">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500" />
+                <Icon name="error" size={20} className="text-red-500" />
                 <p className="text-sm text-red-700">{submitError}</p>
               </div>
             </div>
@@ -187,14 +187,14 @@ export default function Customers() {
                 Email Address <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Icon name="mail" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="customer@example.com"
                   className={cn(
-                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all",
+                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
                     errors.email ? "border-red-300 bg-red-50" : "border-gray-300"
                   )}
                 />
@@ -209,14 +209,14 @@ export default function Customers() {
                   First Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Icon name="person" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     placeholder="John"
                     className={cn(
-                      "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all",
+                      "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
                       errors.firstName ? "border-red-300 bg-red-50" : "border-gray-300"
                     )}
                   />
@@ -234,7 +234,7 @@ export default function Customers() {
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   placeholder="Doe"
                   className={cn(
-                    "w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all",
+                    "w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
                     errors.lastName ? "border-red-300 bg-red-50" : "border-gray-300"
                   )}
                 />
@@ -248,14 +248,14 @@ export default function Customers() {
                 Phone Number <span className="text-gray-400 text-xs">(optional)</span>
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Icon name="call" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="tel"
                   value={formData.phoneNumber}
                   onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                   placeholder="+233 XX XXX XXXX or 0XX XXX XXXX"
                   className={cn(
-                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all",
+                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
                     errors.phoneNumber ? "border-red-300 bg-red-50" : "border-gray-300"
                   )}
                 />
@@ -268,16 +268,16 @@ export default function Customers() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-ghana-green text-white py-3 px-4 rounded-xl font-semibold hover:bg-support-700 active:bg-support-800 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-ghana-green/20"
+              className="w-full bg-ghana-green text-white py-3 px-4 rounded-xl font-semibold hover:bg-support-700 active:bg-support-800 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-ghana-green/20 btn-ripple"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Icon name="progress_activity" size={20} className="animate-spin" />
                   Creating Customer...
                 </>
               ) : (
                 <>
-                  <UserPlus className="w-5 h-5" />
+                  <Icon name="person_add" size={20} />
                   Register Customer
                 </>
               )}
@@ -286,7 +286,7 @@ export default function Customers() {
         </div>
 
         {/* Recent Customers */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card-v2 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50/50">
             <h2 className="font-semibold text-gray-900 font-heading">Recently Created Customers</h2>
             <p className="text-sm text-gray-500">Latest customers in the system</p>
@@ -294,8 +294,17 @@ export default function Customers() {
           
           <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
             {isLoadingRecent ? (
-              <div className="flex items-center justify-center h-40">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ghana-green"></div>
+              <div className="p-4 space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full skeleton-shimmer"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-1/3 rounded skeleton-shimmer"></div>
+                      <div className="h-3 w-1/2 rounded skeleton-shimmer"></div>
+                    </div>
+                    <div className="h-3 w-16 rounded skeleton-shimmer"></div>
+                  </div>
+                ))}
               </div>
             ) : recentCustomers.length > 0 ? (
               recentCustomers.map((customer) => (
@@ -324,7 +333,7 @@ export default function Customers() {
             ) : (
               <div className="p-8 text-center">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <UserIcon className="w-6 h-6 text-gray-400" />
+                  <Icon name="person" size={24} className="text-gray-400" />
                 </div>
                 <p className="text-gray-500">No customers found</p>
               </div>

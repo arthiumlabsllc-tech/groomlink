@@ -1,35 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Calendar, 
-  Clock, 
-  TrendingUp, 
-  Star,
-  ChevronRight,
-  MapPin,
-  Loader2,
-  AlertCircle,
-  Scissors
-} from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import Icon from '../components/Icon'
 import apiClient from '../lib/api'
+import { bookingApi } from '../lib/api'
 import { useAuthStore } from '../store/auth'
+import SalonCard from '../components/SalonCard'
+import LiveBookingCounter from '../components/LiveBookingCounter'
+import CityDiscovery from '../components/CityDiscovery'
 
 // Types
-interface Booking {
-  id: string
-  status: string
-  date: string
-  startTime: string
-  discountAmount: number | null
-  service: {
-    name: string
-  }
-  salon: {
-    businessName: string
-    logo: string | null
-  }
-}
-
 interface Salon {
   id: string
   businessName: string
@@ -40,372 +20,442 @@ interface Salon {
   logo: string | null
   images: string[]
   isSponsored?: boolean
+  priceFrom?: number
+  nextAvailable?: string
 }
 
-interface BookingsResponse {
-  data: Booking[]
+interface SalonsResponse {
+  success: boolean
+  data: Salon[]
   meta?: {
     total: number
   }
 }
 
-interface SalonsResponse {
-  data: Salon[]
+// Categories data — distinct soft pastel backgrounds with Material Symbols
+const CATEGORIES = [
+  { name: 'Haircut', icon: 'content_cut', bg: 'bg-blue-50', iconColor: 'text-blue-500', ring: 'ring-blue-100' },
+  { name: 'Beard Trim', icon: 'auto_fix_high', bg: 'bg-amber-50', iconColor: 'text-amber-500', ring: 'ring-amber-100' },
+  { name: 'Pedicure', icon: 'footprint', bg: 'bg-pink-50', iconColor: 'text-pink-500', ring: 'ring-pink-100' },
+  { name: 'Braiding', icon: 'brush', bg: 'bg-purple-50', iconColor: 'text-purple-500', ring: 'ring-purple-100' },
+  { name: 'Dreadlocks', icon: 'favorite', bg: 'bg-emerald-50', iconColor: 'text-emerald-500', ring: 'ring-emerald-100' },
+  { name: 'Makeup', icon: 'face_retouching_natural', bg: 'bg-rose-50', iconColor: 'text-rose-500', ring: 'ring-rose-100' },
+  { name: 'Massage', icon: 'spa', bg: 'bg-teal-50', iconColor: 'text-teal-500', ring: 'ring-teal-100' },
+  { name: 'Nails', icon: 'palette', bg: 'bg-indigo-50', iconColor: 'text-indigo-500', ring: 'ring-indigo-100' },
+]
+
+// API functions
+async function fetchRecommendedSalons(): Promise<Salon[]> {
+  const response = await apiClient.get<SalonsResponse>('/salons/recommended')
+  return response.data.data || []
 }
 
-// Loading Skeleton Component
-function StatsSkeleton() {
+async function fetchPopularSalons(): Promise<Salon[]> {
+  const response = await apiClient.get<SalonsResponse>('/salons?limit=10&status=APPROVED&sort=rating')
+  return response.data.data || []
+}
+
+async function fetchNewSalons(): Promise<Salon[]> {
+  const response = await apiClient.get<SalonsResponse>('/discover/new-salons')
+  return response.data.data || []
+}
+
+// Time-of-day greeting helper
+function getGreeting(): { text: string; emoji: string } {
+  const hour = new Date().getHours()
+  if (hour < 12) return { text: 'Good morning', emoji: '👋' }
+  if (hour < 17) return { text: 'Good afternoon', emoji: '👋' }
+  return { text: 'Good evening', emoji: '👋' }
+}
+
+function formatDate(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+// ─── Continue Booking Section ───────────────────────────────────────
+function ContinueBookingSection() {
+  const navigate = useNavigate()
+  const { data: bookings, isLoading } = useQuery({
+    queryKey: ['dashboard-upcoming-bookings'],
+    queryFn: () => bookingApi.getMyBookings(),
+    staleTime: 60_000,
+  })
+
+  // Find the next upcoming or pending booking
+  const upcoming = bookings?.find(
+    (b) => b.status === 'CONFIRMED' || b.status === 'PENDING' || b.status === 'IN_PROGRESS'
+  )
+
+  if (isLoading) {
+    return (
+      <div className="skeleton-shimmer h-20 rounded-2xl" />
+    )
+  }
+
+  if (!upcoming) return null
+
+  const bookingDate = new Date(upcoming.date)
+  const dateStr = bookingDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="card animate-pulse">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-            <div className="space-y-2">
-              <div className="h-4 w-24 bg-gray-200 rounded" />
-              <div className="h-6 w-12 bg-gray-200 rounded" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+    <button
+      onClick={() => navigate('/bookings')}
+      className="w-full card-v2 p-4 flex items-center gap-4 text-left animate-fade-in-up"
+    >
+      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <Icon name="calendar_clock" size={24} className="text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-gray-900 truncate">{upcoming.salon?.businessName}</p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {dateStr} · {upcoming.startTime}
+          {upcoming.service ? ` · ${upcoming.service.name}` : ''}
+        </p>
+      </div>
+      <span className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-white shadow-sm">
+        Continue
+        <Icon name="arrow_forward" size={14} />
+      </span>
+    </button>
   )
 }
 
-function BookingSkeleton() {
-  return (
-    <div className="space-y-4">
-      {[1, 2].map((i) => (
-        <div key={i} className="card flex items-center gap-4 animate-pulse">
-          <div className="w-16 h-16 bg-gray-200 rounded-lg" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-32 bg-gray-200 rounded" />
-            <div className="h-3 w-24 bg-gray-200 rounded" />
-            <div className="h-3 w-20 bg-gray-200 rounded" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
+// ─── Hero Section Component ────────────────────────────────────────
+function HeroSection() {
+  const navigate = useNavigate()
 
-function SalonSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="card animate-pulse">
-          <div className="w-full h-32 bg-gray-200 rounded-lg mb-4" />
-          <div className="h-4 w-32 bg-gray-200 rounded mb-2" />
-          <div className="h-3 w-20 bg-gray-200 rounded mb-2" />
-          <div className="h-3 w-16 bg-gray-200 rounded" />
-        </div>
-      ))}
-    </div>
-  )
-}
+    <div className="relative bg-gradient-to-br from-[#CE1126] via-[#a80e1f] to-[#7a0a17] rounded-2xl p-6 text-white overflow-hidden">
+      {/* Subtle pattern overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '20px 20px',
+        }}
+      />
+      {/* Decorative blobs */}
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+      <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full blur-xl" />
 
-// Empty State Component
-function EmptyState({ message, icon: Icon }: { message: string; icon: React.ElementType }) {
-  return (
-    <div className="card py-12 text-center">
-      <Icon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-      <p className="text-gray-500">{message}</p>
-    </div>
-  )
-}
+      <div className="relative z-10">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1.5">
+          Find Your Perfect Cut
+        </h1>
+        <p className="text-white/80 text-sm sm:text-base mb-5 leading-relaxed">
+          Discover barbershops and salons across Ghana
+        </p>
 
-// Error State Component
-function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="card py-8 text-center border-red-200 bg-red-50">
-      <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-      <p className="text-red-600 text-sm mb-3">{message}</p>
-      {onRetry && (
         <button
-          onClick={onRetry}
-          className="text-sm text-red-600 underline hover:text-red-700"
+          onClick={() => navigate('/explore')}
+          className="inline-flex items-center gap-2 bg-white text-[#a80e1f] px-5 py-2.5 rounded-xl font-semibold text-sm shadow-elevated hover:scale-[1.02] active:scale-[0.98] transition-transform"
         >
-          Try again
+          <Icon name="location_on" size={18} />
+          <span>Set your location</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Category Grid Component ───────────────────────────────────────
+function CategoryGrid() {
+  const navigate = useNavigate()
+
+  const handleCategoryClick = (category: string) => {
+    navigate(`/explore?service=${encodeURIComponent(category)}`)
+  }
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-gradient text-lg font-bold">What's on your radar?</h2>
+      <div className="grid grid-cols-4 gap-3">
+        {CATEGORIES.map((category) => (
+          <button
+            key={category.name}
+            onClick={() => handleCategoryClick(category.name)}
+            className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white border border-gray-100/80 hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 group"
+          >
+            <div
+              className={`w-12 h-12 rounded-2xl ${category.bg} ring-1 ${category.ring} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
+            >
+              <Icon name={category.icon} size={22} className={category.iconColor} />
+            </div>
+            <span className="text-[11px] font-medium text-gray-600 text-center leading-tight">
+              {category.name}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Section Header Component ──────────────────────────────────────
+function SectionHeader({
+  title,
+  actionText = 'See all',
+  onAction,
+}: {
+  title: string
+  actionText?: string
+  onAction?: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+      {onAction && (
+        <button
+          onClick={onAction}
+          className="text-sm font-medium text-primary hover:text-primary-dark flex items-center gap-0.5 group"
+        >
+          {actionText}
+          <Icon name="arrow_forward" size={16} className="group-hover:translate-x-0.5 transition-transform" />
         </button>
       )}
     </div>
   )
 }
 
-// Helper function to format date
-function formatDate(dateStr: string, startTime: string): string {
-  const date = new Date(dateStr)
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  const isToday = date.toDateString() === today.toDateString()
-  const isTomorrow = date.toDateString() === tomorrow.toDateString()
-
-  const timeStr = startTime || ''
-
-  if (isToday) return `Today, ${timeStr}`
-  if (isTomorrow) return `Tomorrow, ${timeStr}`
-
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric' 
-  }) + `, ${timeStr}`
+// ─── Horizontal Scroll Container ───────────────────────────────────
+function HorizontalScroll({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex gap-3 scroll-smooth-x pb-2 -mx-4 px-4">
+      {children}
+    </div>
+  )
 }
 
-export default function Dashboard() {
+// ─── Loading Skeleton for Salon Cards ──────────────────────────────
+function SalonCardSkeleton() {
+  return (
+    <div className="min-w-[260px] flex-shrink-0 snap-start card-v2 overflow-hidden">
+      <div className="h-36 skeleton-shimmer rounded-none" />
+      <div className="p-3 space-y-2">
+        <div className="h-4 skeleton-shimmer w-3/4" />
+        <div className="h-3 skeleton-shimmer w-1/2" />
+        <div className="h-3 skeleton-shimmer w-2/3" />
+      </div>
+    </div>
+  )
+}
+
+function HorizontalCardSkeleton() {
+  return (
+    <div className="flex gap-3 card-v2 p-3">
+      <div className="w-24 h-24 skeleton-shimmer rounded-xl flex-shrink-0" />
+      <div className="flex-1 space-y-2 py-1">
+        <div className="h-4 skeleton-shimmer w-3/4" />
+        <div className="h-3 skeleton-shimmer w-1/2" />
+        <div className="h-3 skeleton-shimmer w-2/3" />
+      </div>
+    </div>
+  )
+}
+
+// ─── New Salons Section ────────────────────────────────────────────
+function NewSalonsSection() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { data: salons, isLoading } = useQuery({
+    queryKey: ['new-salons'],
+    queryFn: fetchNewSalons,
+    staleTime: 5 * 60 * 1000,
+  })
 
-  // Stats state
-  const [upcomingCount, setUpcomingCount] = useState<number>(0)
-  const [completedCount, setCompletedCount] = useState<number>(0)
-  const [totalSavings, setTotalSavings] = useState<number>(0)
-  const [statsLoading, setStatsLoading] = useState(true)
-  const [statsError, setStatsError] = useState<string | null>(null)
-
-  // Bookings state
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [bookingsLoading, setBookingsLoading] = useState(true)
-  const [bookingsError, setBookingsError] = useState<string | null>(null)
-
-  // Salons state
-  const [salons, setSalons] = useState<Salon[]>([])
-  const [salonsLoading, setSalonsLoading] = useState(true)
-  const [salonsError, setSalonsError] = useState<string | null>(null)
-
-  // Fetch stats
-  const fetchStats = async () => {
-    setStatsLoading(true)
-    setStatsError(null)
-    try {
-      const [pendingRes, upcomingRes, completedRes] = await Promise.all([
-        apiClient.get<BookingsResponse>('/bookings/my?status=PENDING'),
-        apiClient.get<BookingsResponse>('/bookings/my?status=CONFIRMED'),
-        apiClient.get<BookingsResponse>('/bookings/my?status=COMPLETED')
-      ])
-      const pendingCount = pendingRes.data.meta?.total || pendingRes.data.data?.length || 0
-      const confirmedCount = upcomingRes.data.meta?.total || upcomingRes.data.data?.length || 0
-      setUpcomingCount(pendingCount + confirmedCount)
-      setCompletedCount(completedRes.data.meta?.total || completedRes.data.data?.length || 0)
-      
-      // Calculate total savings from discountAmount
-      const completedBookings = completedRes.data.data || []
-      const savings = completedBookings.reduce((total, booking) => {
-        return total + (booking.discountAmount || 0)
-      }, 0)
-      setTotalSavings(savings)
-    } catch (error) {
-      console.error('Failed to fetch stats:', error)
-      setStatsError('Failed to load statistics')
-    } finally {
-      setStatsLoading(false)
-    }
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <SectionHeader title="Discover new salons" onAction={() => navigate('/explore')} />
+        <HorizontalScroll>
+          {[1, 2, 3].map((i) => (
+            <SalonCardSkeleton key={i} />
+          ))}
+        </HorizontalScroll>
+      </div>
+    )
   }
 
-  // Fetch upcoming bookings
-  const fetchBookings = async () => {
-    setBookingsLoading(true)
-    setBookingsError(null)
-    try {
-      const [pendingRes, confirmedRes] = await Promise.all([
-        apiClient.get<BookingsResponse>('/bookings/my?status=PENDING&limit=3'),
-        apiClient.get<BookingsResponse>('/bookings/my?status=CONFIRMED&limit=3')
-      ])
-      const pending = pendingRes.data.data || []
-      const confirmed = confirmedRes.data.data || []
-      // Combine and sort by date
-      const combined = [...pending, ...confirmed]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 3)
-      setBookings(combined)
-    } catch (error) {
-      console.error('Failed to fetch bookings:', error)
-      setBookingsError('Failed to load upcoming appointments')
-    } finally {
-      setBookingsLoading(false)
-    }
-  }
-
-  // Fetch nearby salons
-  const fetchSalons = async () => {
-    setSalonsLoading(true)
-    setSalonsError(null)
-    try {
-      const response = await apiClient.get<SalonsResponse>('/salons?limit=4&status=APPROVED')
-      setSalons(response.data.data || [])
-    } catch (error) {
-      console.error('Failed to fetch salons:', error)
-      setSalonsError('Failed to load nearby salons')
-    } finally {
-      setSalonsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchStats()
-    fetchBookings()
-    fetchSalons()
-  }, [])
-
-  // Get user's first name with null guard
-  const firstName = user?.firstName
-  const welcomeMessage = firstName ? `Welcome back, ${firstName}! 👋` : 'Welcome back! 👋'
+  if (!salons || salons.length === 0) return null
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">Ready to book your next appointment?</p>
+    <div className="space-y-3">
+      <SectionHeader title="Discover new salons" onAction={() => navigate('/explore')} />
+      <HorizontalScroll>
+        {salons.map((salon) => (
+          <div key={salon.id} className="min-w-[260px] flex-shrink-0 snap-start card-v2 overflow-hidden img-zoom">
+            <SalonCard {...salon} variant="vertical" />
+          </div>
+        ))}
+      </HorizontalScroll>
+    </div>
+  )
+}
+
+// ─── Recommended Salons Section ────────────────────────────────────
+function RecommendedSection() {
+  const navigate = useNavigate()
+  const { data: salons, isLoading } = useQuery({
+    queryKey: ['recommended-salons'],
+    queryFn: fetchRecommendedSalons,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <SectionHeader title="Recommended for you" onAction={() => navigate('/explore')} />
+        <HorizontalScroll>
+          {[1, 2, 3].map((i) => (
+            <SalonCardSkeleton key={i} />
+          ))}
+        </HorizontalScroll>
+      </div>
+    )
+  }
+
+  if (!salons || salons.length === 0) return null
+
+  return (
+    <div className="space-y-3">
+      <SectionHeader title="Recommended for you" onAction={() => navigate('/explore')} />
+      <HorizontalScroll>
+        {salons.map((salon) => (
+          <div key={salon.id} className="min-w-[260px] flex-shrink-0 snap-start card-v2 overflow-hidden img-zoom">
+            <SalonCard {...salon} variant="vertical" />
+          </div>
+        ))}
+      </HorizontalScroll>
+    </div>
+  )
+}
+
+// ─── Popular Near You Section ──────────────────────────────────────
+function PopularNearYouSection() {
+  const navigate = useNavigate()
+  const { data: salons, isLoading } = useQuery({
+    queryKey: ['popular-salons'],
+    queryFn: fetchPopularSalons,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <SectionHeader title="Popular near you" onAction={() => navigate('/explore')} />
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <HorizontalCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!salons || salons.length === 0) return null
+
+  return (
+    <div className="space-y-3">
+      <SectionHeader title="Popular near you" onAction={() => navigate('/explore')} />
+      <div className="space-y-3">
+        {salons.slice(0, 5).map((salon) => (
+          <SalonCard key={salon.id} {...salon} variant="horizontal" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Search Bar Component ──────────────────────────────────────────
+function SearchBar() {
+  const navigate = useNavigate()
+
+  return (
+    <div
+      onClick={() => navigate('/explore')}
+      className="flex items-center gap-3 bg-white rounded-2xl px-5 py-3.5 shadow-card hover:shadow-card-hover cursor-pointer transition-all duration-300 group"
+    >
+      <Icon name="search" size={20} className="text-gray-400 group-hover:text-primary group-hover:scale-110 transition-all duration-300" />
+      <span className="text-gray-400 text-sm">Search salons, services...</span>
+    </div>
+  )
+}
+
+// ─── Main Dashboard Component ──────────────────────────────────────
+export default function Dashboard() {
+  const { user } = useAuthStore()
+  const firstName = user?.firstName
+  const { text: greetingText, emoji: greetingEmoji } = getGreeting()
+
+  // Fade-in on scroll via IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) e.target.classList.add('visible')
+      }),
+      { threshold: 0.1 }
+    )
+    document.querySelectorAll('.fade-section').forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div className="space-y-6 pb-4 animate-fade-in">
+      {/* Personalized Greeting */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">
+            {firstName ? `${greetingText}, ${firstName} ${greetingEmoji}` : `Welcome! ${greetingEmoji}`}
+          </h1>
+          <p className="text-sm text-gray-400 mt-0.5">{formatDate()}</p>
+        </div>
+        <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shadow-card">
+          <Icon name="content_cut" size={22} className="text-primary" />
+        </div>
       </div>
 
-      {/* Stats */}
-      {statsLoading ? (
-        <StatsSkeleton />
-      ) : statsError ? (
-        <ErrorState message={statsError} onRetry={fetchStats} />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="card">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-primary-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Upcoming Bookings</p>
-                <p className="text-2xl font-bold text-gray-900">{upcomingCount}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="card">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Visits</p>
-                <p className="text-2xl font-bold text-gray-900">{completedCount}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="card">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Money Saved</p>
-                <p className="text-2xl font-bold text-gray-900">GH₵ {totalSavings.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Search Bar */}
+      <SearchBar />
 
-      {/* Upcoming Bookings */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Upcoming Appointments</h2>
-          <a href="/bookings" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-            View all
-          </a>
-        </div>
-        {bookingsLoading ? (
-          <BookingSkeleton />
-        ) : bookingsError ? (
-          <ErrorState message={bookingsError} onRetry={fetchBookings} />
-        ) : bookings.length === 0 ? (
-          <EmptyState message="No upcoming bookings" icon={Calendar} />
-        ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {bookings.map((booking) => (
-              <div key={booking.id} className="card flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
-                <img
-                  src={booking.salon?.logo || 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=100&h=100&fit=crop'}
-                  alt={booking.salon?.businessName || 'Salon'}
-                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                    {booking.salon?.businessName || 'Unknown Salon'}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">
-                    {booking.service?.name || 'Unknown Service'}
-                  </p>
-                  <p className="text-xs sm:text-sm text-primary-600 font-medium">
-                    {formatDate(booking.date, booking.startTime)}
-                  </p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Continue Booking (if any) */}
+      <ContinueBookingSection />
+
+      {/* Hero Section */}
+      <div className="fade-section">
+        <HeroSection />
       </div>
 
-      {/* Nearby Salons */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Nearby Salons</h2>
-          <a href="/explore" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-            Explore all
-          </a>
-        </div>
-        {salonsLoading ? (
-          <SalonSkeleton />
-        ) : salonsError ? (
-          <ErrorState message={salonsError} onRetry={fetchSalons} />
-        ) : salons.length === 0 ? (
-          <EmptyState message="No nearby salons found" icon={Scissors} />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {salons.map((salon) => (
-              <div 
-                key={salon.id} 
-                onClick={() => navigate(`/salon/${salon.id}`)}
-                className="card hover:shadow-md transition-shadow cursor-pointer p-3 sm:p-4"
-              >
-                <div className="relative">
-                  <img
-                    src={salon.logo || salon.images?.[0] || 'https://images.unsplash.com/photo-1585747860715-2d3b4c7e3a23?w=300&h=200&fit=crop'}
-                    alt={salon.businessName || 'Salon'}
-                    className="w-full h-28 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
-                  />
-                  {salon.isSponsored && (
-                    <span className="absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded bg-amber-100 text-amber-700 border border-amber-300 flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-current" />
-                      Sponsored
-                    </span>
-                  )}
-                </div>
-                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
-                  {salon.businessName || 'Unnamed Salon'}
-                </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm font-medium">
-                    {salon.rating?.toFixed(1) || '0.0'}
-                  </span>
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    ({salon.reviewCount || 0} reviews)
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 mt-2 text-xs sm:text-sm text-gray-500">
-                  <MapPin className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">{salon.city || 'Unknown location'}</span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-3">
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                    {salon.type || 'Salon'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* City Discovery Chips */}
+      <div className="fade-section">
+        <CityDiscovery variant="chips" />
+      </div>
+
+      {/* Category Grid */}
+      <div className="fade-section">
+        <CategoryGrid />
+      </div>
+
+      {/* Live Booking Counter */}
+      <div className="fade-section">
+        <LiveBookingCounter />
+      </div>
+
+      {/* Recommended Salons */}
+      <div className="fade-section">
+        <RecommendedSection />
+      </div>
+
+      {/* Popular Near You */}
+      <div className="fade-section">
+        <PopularNearYouSection />
+      </div>
+
+      {/* New Salons Discovery */}
+      <div className="fade-section">
+        <NewSalonsSection />
       </div>
     </div>
   )

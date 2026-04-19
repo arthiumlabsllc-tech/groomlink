@@ -44,73 +44,87 @@ export async function sendEmailOTP(email: string, otpCode: string): Promise<bool
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GroomLink Verification Code</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your verification code is ready</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
           <!-- Header -->
           <tr>
-            <td style="background-color: ${BRAND_GREEN}; padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
+            <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
+              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
-          
+          <!-- Gold Divider -->
+          <tr>
+            <td style="background-color: ${BRAND_GOLD}; height: 3px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 20px 40px;">
-              <h2 style="margin: 0 0 20px 0; color: #333; font-size: 22px; font-weight: 500;">Verify Your Email</h2>
-              <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
+            <td style="padding: 40px 48px 20px 48px;">
+              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GREEN}; padding-left: 14px;">Verify Your Email</h2>
+              <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
                 You're almost there! Please use the following code to verify your email address:
               </p>
             </td>
           </tr>
-          
+
           <!-- OTP Code -->
           <tr>
-            <td align="center" style="padding: 0 40px 30px 40px;">
+            <td align="center" style="padding: 0 48px 30px 48px;">
               <table role="presentation" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td style="background-color: #f8f9fa; border: 2px dashed ${BRAND_GREEN}; border-radius: 8px; padding: 20px 50px;">
-                    <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: ${BRAND_GREEN};">${otpCode}</span>
+                  <td style="background: #006B3F; color: #ffffff; font-size: 32px; padding: 16px 20px; border-radius: 10px; letter-spacing: 12px; font-weight: 800; box-shadow: 0 4px 20px rgba(0,107,63,0.3), 0 2px 8px rgba(0,107,63,0.15);">
+                    ${otpCode}
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
-          
+
           <!-- Expiry Notice -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <p style="margin: 0; color: #888; font-size: 14px; text-align: center;">
-                <span style="color: ${BRAND_GOLD};">⏱</span> This code expires in <strong>5 minutes</strong>
+            <td style="padding: 0 48px 30px 48px;">
+              <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+                &#9201; This code expires in <strong style="color: #1a1a1a;">5 minutes</strong>
               </p>
             </td>
           </tr>
-          
+
           <!-- Security Notice -->
           <tr>
-            <td style="padding: 0 40px 40px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e1; border-radius: 6px;">
+            <td style="padding: 0 48px 40px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
-                  <td style="padding: 15px 20px;">
-                    <p style="margin: 0; color: #666; font-size: 13px;">
-                      <strong style="color: #333;">Security tip:</strong> Never share this code with anyone. GroomLink will never ask for your verification code via phone or email.
+                  <td style="padding: 16px 22px;">
+                    <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
+                      <strong style="color: #1a1a1a;">&#128274; Security tip:</strong> Never share this code with anyone. GroomLink will never ask for your verification code via phone or email.
                     </p>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
-          
+
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
-              <p style="margin: 0 0 10px 0; color: #999; font-size: 13px; text-align: center;">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+              <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
+                <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
+                &nbsp;&nbsp;&#124;&nbsp;&nbsp;
+                <a href="mailto:support@groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 If you didn't request this code, you can safely ignore this email.
               </p>
-              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
-                © ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
+              <p style="margin: 0 0 6px 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                Trusted by salons across Ghana
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                &#169; ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
               </p>
             </td>
           </tr>
@@ -178,26 +192,32 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to GroomLink Support Team</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Welcome to the GroomLink team</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
           <!-- Header -->
           <tr>
-            <td style="background-color: ${BRAND_GREEN}; padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
+            <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
+              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
+          </tr>
+          <!-- Gold Divider -->
+          <tr>
+            <td style="background-color: ${BRAND_GOLD}; height: 3px; font-size: 0; line-height: 0;">&nbsp;</td>
           </tr>
 
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 20px 40px;">
-              <h2 style="margin: 0 0 20px 0; color: #333; font-size: 22px; font-weight: 500;">Welcome to the Team!</h2>
-              <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+            <td style="padding: 40px 48px 20px 48px;">
+              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GREEN}; padding-left: 14px;">Welcome to the Team!</h2>
+              <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
                 Hi ${firstName},
               </p>
-              <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+              <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
                 You have been added as a support team member at <strong style="color: ${BRAND_GREEN};">GroomLink</strong>. We're excited to have you on board!
               </p>
             </td>
@@ -205,20 +225,25 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
 
           <!-- Login Instructions -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid ${BRAND_GREEN};">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 600;">How to Access Your Dashboard</h3>
-                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px; line-height: 1.6;">
-                      <strong>Dashboard URL:</strong> <a href="https://support.groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">support.groomlinkgh.com</a>
-                    </p>
-                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px; line-height: 1.6;">
-                      <strong>Email:</strong> ${email}
-                    </p>
-                    <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">
-                      <strong>Login Method:</strong> OTP verification via email
-                    </p>
+                    <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">How to Access Your Dashboard</h3>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; width: 40%;">Dashboard URL</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;"><a href="https://support.groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">support.groomlinkgh.com</a></td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Email</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${email}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Login Method</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">OTP verification via email</td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
@@ -227,11 +252,11 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
 
           <!-- Steps -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <p style="margin: 0 0 15px 0; color: #666; font-size: 14px; line-height: 1.6;">To log in:</p>
-              <ol style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+            <td style="padding: 0 48px 30px 48px;">
+              <p style="margin: 0 0 15px 0; color: #4a5568; font-size: 14px; line-height: 1.7;">To log in:</p>
+              <ol style="margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 2;">
                 <li>Visit <a href="https://support.groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">support.groomlinkgh.com</a></li>
-                <li>Enter your email address: <strong>${email}</strong></li>
+                <li>Enter your email address: <strong style="color: #1a1a1a;">${email}</strong></li>
                 <li>Request an OTP code</li>
                 <li>Check your email for the verification code</li>
                 <li>Enter the code to access your dashboard</li>
@@ -241,24 +266,32 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
 
           <!-- Welcome Message -->
           <tr>
-            <td style="padding: 0 40px 40px 40px;">
-              <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+            <td style="padding: 0 48px 40px 48px;">
+              <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
                 Welcome aboard! If you have any questions, please reach out to your administrator.
               </p>
-              <p style="margin: 0; color: #888; font-size: 14px;">
-                — <strong style="color: ${BRAND_GREEN};">The GroomLink Team</strong>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                &#8212; <strong style="color: ${BRAND_GREEN};">The GroomLink Team</strong>
               </p>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
-              <p style="margin: 0 0 10px 0; color: #999; font-size: 13px; text-align: center;">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+              <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
+                <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
+                &nbsp;&nbsp;&#124;&nbsp;&nbsp;
+                <a href="mailto:support@groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 If you believe you received this email in error, please contact your administrator.
               </p>
-              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
-                © ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
+              <p style="margin: 0 0 6px 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                Trusted by salons across Ghana
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                &#169; ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
               </p>
             </td>
           </tr>
@@ -317,28 +350,28 @@ export async function sendBookingConfirmationEmail(
     ? `
           <!-- Group Booking Details -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e1; border-radius: 8px; border-left: 4px solid ${BRAND_GOLD};">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #fef9e7 0%, #fdf3d7 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Group Booking (${data.totalPeople || data.guests.length} people)</h3>
+                    <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Group Booking (${data.totalPeople || data.guests.length} people)</h3>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
                       <thead>
-                        <tr style="border-bottom: 1px solid #ddd;">
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Name</th>
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Service</th>
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Staff</th>
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Age Group</th>
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Name</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Service</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Staff</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Age Group</th>
                         </tr>
                       </thead>
                       <tbody>
                         ${data.guests.map(guest => `
-                        <tr style="border-bottom: 1px solid #eee;">
-                          <td style="padding: 10px 8px; color: #333; font-size: 14px;">${guest.guestName}</td>
-                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.service}</td>
-                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.staff || 'Any available'}</td>
-                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.isChild ? 'Child' : 'Adult'}</td>
+                        <tr style="border-bottom: 1px solid #f3f4f6;">
+                          <td style="padding: 10px 8px; color: #1a1a1a; font-weight: 500; font-size: 14px;">${guest.guestName}</td>
+                          <td style="padding: 10px 8px; color: #4a5568; font-size: 14px;">${guest.service}</td>
+                          <td style="padding: 10px 8px; color: #4a5568; font-size: 14px;">${guest.staff || 'Any available'}</td>
+                          <td style="padding: 10px 8px; color: #4a5568; font-size: 14px;">${guest.isChild ? 'Child' : 'Adult'}</td>
                         </tr>
                         `).join('')}
                       </tbody>
@@ -346,7 +379,7 @@ export async function sendBookingConfirmationEmail(
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 15px; border-top: 2px solid ${BRAND_GOLD};">
                       <tr>
-                        <td style="padding: 15px 8px 0 8px; color: #333; font-size: 14px; font-weight: 600;">Total Group Amount:</td>
+                        <td style="padding: 15px 8px 0 8px; color: #1a1a1a; font-size: 14px; font-weight: 700;">Total Group Amount:</td>
                         <td style="padding: 15px 8px 0 8px; color: ${BRAND_GREEN}; font-size: 16px; font-weight: 700; text-align: right;">GHS ${data.finalAmount.toFixed(2)}</td>
                       </tr>
                     </table>
@@ -366,23 +399,42 @@ export async function sendBookingConfirmationEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Booking Confirmation</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your appointment is confirmed</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
           <!-- Header -->
           <tr>
-            <td style="background-color: ${BRAND_GREEN}; padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
+            <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
+              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
+            </td>
+          </tr>
+          <!-- Gold Divider -->
+          <tr>
+            <td style="background-color: ${BRAND_GOLD}; height: 3px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
+          <!-- Confirmed Badge -->
+          <tr>
+            <td align="center" style="padding: 30px 48px 10px 48px;">
+              <table role="presentation" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 50px; padding: 8px 24px;">
+                    <span style="color: ${BRAND_GREEN}; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">&#10003; CONFIRMED</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 20px 40px;">
-              <h2 style="margin: 0 0 10px 0; color: #333; font-size: 22px; font-weight: 500;">Booking Confirmed!</h2>
-              <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
+            <td style="padding: 20px 48px 30px 48px;">
+              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GREEN}; padding-left: 14px;">Booking Confirmed!</h2>
+              <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
                 Hi ${data.customerName}, your ${data.isGroupBooking ? 'group booking' : 'appointment'} has been booked successfully.
               </p>
             </td>
@@ -390,61 +442,61 @@ export async function sendBookingConfirmationEmail(
 
           <!-- Booking Details -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid ${BRAND_GREEN};">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Booking Details</h3>
+                    <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Booking Details</h3>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px; width: 40%;"><strong>Reference:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.bookingReference}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; width: 40%;">Reference</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.bookingReference}</td>
                       </tr>
                       ${data.isGroupBooking ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Booking Type:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">Group Booking (${data.totalPeople || data.guests?.length || 1} people)</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Booking Type</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">Group Booking (${data.totalPeople || data.guests?.length || 1} people)</td>
                       </tr>
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Salon:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.salonName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Salon</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.salonName}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Address:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.salonAddress}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Address</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.salonAddress}</td>
                       </tr>
                       ${data.salonPhone ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Phone:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.salonPhone}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Phone</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.salonPhone}</td>
                       </tr>
                       ` : ''}
                       ${!data.isGroupBooking ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Service:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.serviceName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Service</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.serviceName}</td>
                       </tr>
                       ${data.workerName ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Staff:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.workerName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Staff</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.workerName}</td>
                       </tr>
                       ` : ''}
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Date:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${formattedDate}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Date</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${formattedDate}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Time:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.startTime} - ${data.endTime}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Time</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.startTime} - ${data.endTime}</td>
                       </tr>
                       ${!data.isGroupBooking ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Total:</strong></td>
-                        <td style="padding: 8px 0; color: ${BRAND_GREEN}; font-size: 14px; font-weight: 600;">GHS ${data.finalAmount.toFixed(2)}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Total</td>
+                        <td style="padding: 8px 0; color: ${BRAND_GREEN}; font-size: 14px; font-weight: 700;">GHS ${data.finalAmount.toFixed(2)}</td>
                       </tr>
                       ` : ''}
                     </table>
@@ -459,12 +511,12 @@ export async function sendBookingConfirmationEmail(
           ${data.customerNotes ? `
           <!-- Customer Notes -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e1; border-radius: 6px;">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
-                  <td style="padding: 15px 20px;">
-                    <p style="margin: 0; color: #666; font-size: 13px;">
-                      <strong style="color: #333;">Your Notes:</strong> ${data.customerNotes}
+                  <td style="padding: 16px 22px;">
+                    <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
+                      <strong style="color: #1a1a1a;">&#9998; Your Notes:</strong> ${data.customerNotes}
                     </p>
                   </td>
                 </tr>
@@ -475,12 +527,12 @@ export async function sendBookingConfirmationEmail(
 
           <!-- Important Note -->
           <tr>
-            <td style="padding: 0 40px 40px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e8f5e9; border-radius: 6px;">
+            <td style="padding: 0 48px 40px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e8f5e9; border-radius: 10px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
-                  <td style="padding: 15px 20px;">
-                    <p style="margin: 0; color: #666; font-size: 13px;">
-                      <strong style="color: ${BRAND_GREEN};">📌 Important:</strong> Please arrive 5-10 minutes before your appointment time. Bring this booking reference with you.
+                  <td style="padding: 16px 22px;">
+                    <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
+                      <strong style="color: ${BRAND_GREEN};">&#128203; Important:</strong> Please arrive 5-10 minutes before your appointment time. Bring this booking reference with you.
                     </p>
                   </td>
                 </tr>
@@ -490,12 +542,20 @@ export async function sendBookingConfirmationEmail(
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
-              <p style="margin: 0 0 10px 0; color: #999; font-size: 13px; text-align: center;">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+              <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
+                <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
+                &nbsp;&nbsp;&#124;&nbsp;&nbsp;
+                <a href="mailto:support@groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 Thank you for using GroomLink!
               </p>
-              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
-                © ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
+              <p style="margin: 0 0 6px 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                Trusted by salons across Ghana
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                &#169; ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
               </p>
             </td>
           </tr>
@@ -551,28 +611,28 @@ export async function sendNewBookingNotificationEmail(
     ? `
           <!-- Group Booking Details -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e8f5e9; border-radius: 8px; border-left: 4px solid ${BRAND_GREEN};">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #e8f5e9 0%, #d4edda 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Group Members (${data.totalPeople || data.guests.length} people)</h3>
+                    <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Group Members (${data.totalPeople || data.guests.length} people)</h3>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
                       <thead>
-                        <tr style="border-bottom: 1px solid #ddd;">
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Name</th>
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Service</th>
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Assigned Staff</th>
-                          <th style="padding: 10px 8px; text-align: left; color: #333; font-size: 13px; font-weight: 600;">Age</th>
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Name</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Service</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Assigned Staff</th>
+                          <th style="padding: 10px 8px; text-align: left; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Age</th>
                         </tr>
                       </thead>
                       <tbody>
                         ${data.guests.map(guest => `
-                        <tr style="border-bottom: 1px solid #eee;">
-                          <td style="padding: 10px 8px; color: #333; font-size: 14px;">${guest.guestName}</td>
-                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.service}</td>
-                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.staff || 'Unassigned'}</td>
-                          <td style="padding: 10px 8px; color: #666; font-size: 14px;">${guest.isChild ? 'Child' : 'Adult'}</td>
+                        <tr style="border-bottom: 1px solid #f3f4f6;">
+                          <td style="padding: 10px 8px; color: #1a1a1a; font-weight: 500; font-size: 14px;">${guest.guestName}</td>
+                          <td style="padding: 10px 8px; color: #4a5568; font-size: 14px;">${guest.service}</td>
+                          <td style="padding: 10px 8px; color: #4a5568; font-size: 14px;">${guest.staff || 'Unassigned'}</td>
+                          <td style="padding: 10px 8px; color: #4a5568; font-size: 14px;">${guest.isChild ? 'Child' : 'Adult'}</td>
                         </tr>
                         `).join('')}
                       </tbody>
@@ -593,23 +653,42 @@ export async function sendNewBookingNotificationEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Booking</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">New booking at your salon</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
           <!-- Header -->
           <tr>
-            <td style="background-color: ${BRAND_GREEN}; padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
+            <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
+              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
+            </td>
+          </tr>
+          <!-- Gold Divider -->
+          <tr>
+            <td style="background-color: ${BRAND_GOLD}; height: 3px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
+          <!-- New Booking Badge -->
+          <tr>
+            <td align="center" style="padding: 30px 48px 10px 48px;">
+              <table role="presentation" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #fef9e7 0%, #fdf3d7 100%); border-radius: 50px; padding: 8px 24px;">
+                    <span style="color: #92700c; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">&#9733; NEW BOOKING</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 20px 40px;">
-              <h2 style="margin: 0 0 10px 0; color: #333; font-size: 22px; font-weight: 500;">New Booking Received!</h2>
-              <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
+            <td style="padding: 20px 48px 30px 48px;">
+              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GOLD}; padding-left: 14px;">New Booking Received!</h2>
+              <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
                 A new ${data.isGroupBooking ? 'group booking' : 'booking'} has been made at your salon.
               </p>
             </td>
@@ -617,56 +696,56 @@ export async function sendNewBookingNotificationEmail(
 
           <!-- Booking Details -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid ${BRAND_GOLD};">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Booking Details</h3>
+                    <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Booking Details</h3>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px; width: 40%;"><strong>Reference:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.bookingReference}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; width: 40%;">Reference</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.bookingReference}</td>
                       </tr>
                       ${data.isGroupBooking ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Booking Type:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">Group Booking (${data.totalPeople || data.guests?.length || 1} people)</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Booking Type</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">Group Booking (${data.totalPeople || data.guests?.length || 1} people)</td>
                       </tr>
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Customer:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.customerName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Customer</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.customerName}</td>
                       </tr>
                       ${data.customerPhone ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Phone:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.customerPhone}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Phone</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.customerPhone}</td>
                       </tr>
                       ` : ''}
                       ${!data.isGroupBooking ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Service:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.serviceName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Service</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.serviceName}</td>
                       </tr>
                       ${data.workerName ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Staff:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.workerName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Staff</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.workerName}</td>
                       </tr>
                       ` : ''}
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Date:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${formattedDate}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Date</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${formattedDate}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Time:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.startTime} - ${data.endTime}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Time</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.startTime} - ${data.endTime}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Amount:</strong></td>
-                        <td style="padding: 8px 0; color: ${BRAND_GREEN}; font-size: 14px; font-weight: 600;">GHS ${data.finalAmount.toFixed(2)}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Amount</td>
+                        <td style="padding: 8px 0; color: ${BRAND_GREEN}; font-size: 14px; font-weight: 700;">GHS ${data.finalAmount.toFixed(2)}</td>
                       </tr>
                     </table>
                   </td>
@@ -680,12 +759,12 @@ export async function sendNewBookingNotificationEmail(
           ${data.customerNotes ? `
           <!-- Customer Notes -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e1; border-radius: 6px;">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
-                  <td style="padding: 15px 20px;">
-                    <p style="margin: 0; color: #666; font-size: 13px;">
-                      <strong style="color: #333;">Customer Notes:</strong> ${data.customerNotes}
+                  <td style="padding: 16px 22px;">
+                    <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
+                      <strong style="color: #1a1a1a;">&#9998; Customer Notes:</strong> ${data.customerNotes}
                     </p>
                   </td>
                 </tr>
@@ -696,12 +775,20 @@ export async function sendNewBookingNotificationEmail(
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
-              <p style="margin: 0 0 10px 0; color: #999; font-size: 13px; text-align: center;">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+              <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
+                <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
+                &nbsp;&nbsp;&#124;&nbsp;&nbsp;
+                <a href="mailto:support@groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 Manage your bookings on the GroomLink Partner Dashboard.
               </p>
-              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
-                © ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
+              <p style="margin: 0 0 6px 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                Trusted by salons across Ghana
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                &#169; ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
               </p>
             </td>
           </tr>
@@ -760,82 +847,93 @@ export async function sendPaymentReceiptEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Receipt</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Payment confirmed - receipt inside</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
           <!-- Header -->
           <tr>
-            <td style="background-color: ${BRAND_GREEN}; padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
-              <p style="margin: 10px 0 0 0; color: ${BRAND_GOLD}; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Payment Receipt</p>
+            <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
+              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
-          
+          <!-- Gold Divider -->
+          <tr>
+            <td style="background-color: ${BRAND_GOLD}; height: 3px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
           <!-- Success Badge -->
           <tr>
-            <td align="center" style="padding: 30px 40px 20px 40px;">
+            <td align="center" style="padding: 30px 48px 20px 48px;">
               <table role="presentation" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td style="background-color: #e8f5e9; border-radius: 50px; padding: 10px 25px;">
-                    <span style="color: ${BRAND_GREEN}; font-size: 14px; font-weight: 600;">✓ Payment Successful</span>
+                  <td style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 50px; padding: 8px 24px;">
+                    <span style="color: ${BRAND_GREEN}; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">&#10003; PAYMENT SUCCESSFUL</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
-          
+
           <!-- Amount -->
           <tr>
-            <td align="center" style="padding: 0 40px 30px 40px;">
-              <p style="margin: 0; color: #666; font-size: 14px;">Amount Paid</p>
-              <p style="margin: 5px 0 0 0; color: #333; font-size: 36px; font-weight: 700;">${data.currency} ${data.amount.toFixed(2)}</p>
+            <td align="center" style="padding: 0 48px 30px 48px;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Amount Paid</p>
+              <p style="margin: 6px 0 0 0; color: #1a1a1a; font-size: 42px; font-weight: 700;">${data.amount.toFixed(2)}</p>
+              <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: 500;">${data.currency}</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin-top: 12px;">
+                <tr>
+                  <td style="background-color: ${BRAND_GOLD}; height: 3px; width: 80px; font-size: 0; line-height: 0;">&nbsp;</td>
+                </tr>
+              </table>
             </td>
           </tr>
-          
+
           <!-- Receipt Details -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid ${BRAND_GREEN};">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Receipt Details</h3>
-                    
+                    <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Receipt Details</h3>
+
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px; width: 40%;"><strong>Receipt To:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.customerName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; width: 40%;">Receipt To</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.customerName}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Booking Ref:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.bookingReference}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Booking Ref</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.bookingReference}</td>
                       </tr>
                       ${data.paymentReference ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Payment Ref:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.paymentReference}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Payment Ref</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.paymentReference}</td>
                       </tr>
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Salon:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.salonName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Salon</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.salonName}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Service:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.serviceName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Service</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.serviceName}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Appointment:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${formattedDate} at ${data.startTime}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Appointment</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${formattedDate} at ${data.startTime}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Payment Method:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.paymentMethod}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Payment Method</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.paymentMethod}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Paid On:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${formattedPaidAt}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Paid On</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${formattedPaidAt}</td>
                       </tr>
                     </table>
                   </td>
@@ -843,24 +941,32 @@ export async function sendPaymentReceiptEmail(
               </table>
             </td>
           </tr>
-          
+
           <!-- Thank You -->
           <tr>
-            <td style="padding: 0 40px 40px 40px;">
-              <p style="margin: 0; color: #666; font-size: 14px; text-align: center; line-height: 1.6;">
+            <td style="padding: 0 48px 40px 48px;">
+              <p style="margin: 0; color: #4a5568; font-size: 14px; text-align: center; line-height: 1.7;">
                 Thank you for your payment! Please keep this receipt for your records.
               </p>
             </td>
           </tr>
-          
+
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
-              <p style="margin: 0 0 10px 0; color: #999; font-size: 13px; text-align: center;">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+              <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
+                <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
+                &nbsp;&nbsp;&#124;&nbsp;&nbsp;
+                <a href="mailto:support@groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 This is an automated receipt from GroomLink.
               </p>
-              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
-                © ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
+              <p style="margin: 0 0 6px 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                Trusted by salons across Ghana
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                &#169; ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
               </p>
             </td>
           </tr>
@@ -918,75 +1024,86 @@ export async function sendPaymentReceivedNotificationEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Received</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Payment received at your salon</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
           <!-- Header -->
           <tr>
-            <td style="background-color: ${BRAND_GREEN}; padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">GroomLink</h1>
-              <p style="margin: 10px 0 0 0; color: ${BRAND_GOLD}; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Payment Notification</p>
+            <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
+              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
-          
+          <!-- Gold Divider -->
+          <tr>
+            <td style="background-color: ${BRAND_GOLD}; height: 3px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 20px 40px;">
-              <h2 style="margin: 0 0 10px 0; color: #333; font-size: 22px; font-weight: 500;">Payment Received!</h2>
-              <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
+            <td style="padding: 40px 48px 20px 48px;">
+              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GOLD}; padding-left: 14px;">Payment Received!</h2>
+              <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
                 A payment has been received for a booking at your salon.
               </p>
             </td>
           </tr>
-          
+
           <!-- Amount -->
           <tr>
-            <td align="center" style="padding: 0 40px 30px 40px;">
-              <p style="margin: 0; color: #666; font-size: 14px;">Amount Received</p>
-              <p style="margin: 5px 0 0 0; color: ${BRAND_GREEN}; font-size: 32px; font-weight: 700;">${data.currency} ${data.amount.toFixed(2)}</p>
+            <td align="center" style="padding: 0 48px 30px 48px;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Amount Received</p>
+              <p style="margin: 6px 0 0 0; color: ${BRAND_GREEN}; font-size: 42px; font-weight: 700;">${data.amount.toFixed(2)}</p>
+              <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: 500;">${data.currency}</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin-top: 12px;">
+                <tr>
+                  <td style="background-color: ${BRAND_GOLD}; height: 3px; width: 80px; font-size: 0; line-height: 0;">&nbsp;</td>
+                </tr>
+              </table>
             </td>
           </tr>
           
           <!-- Payment Details -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid ${BRAND_GOLD};">
+            <td style="padding: 0 48px 30px 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px; font-weight: 600;">Payment Details</h3>
-                    
+                    <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Payment Details</h3>
+
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px; width: 40%;"><strong>Customer:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.customerName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; width: 40%;">Customer</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.customerName}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Booking Ref:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.bookingReference}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Booking Ref</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.bookingReference}</td>
                       </tr>
                       ${data.paymentReference ? `
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Payment Ref:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.paymentReference}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Payment Ref</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.paymentReference}</td>
                       </tr>
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Service:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.serviceName}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Service</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.serviceName}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Appointment:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${formattedDate} at ${data.startTime}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Appointment</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${formattedDate} at ${data.startTime}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Payment Method:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${data.paymentMethod}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Payment Method</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${data.paymentMethod}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Paid On:</strong></td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${formattedPaidAt}</td>
+                        <td style="padding: 8px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Paid On</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${formattedPaidAt}</td>
                       </tr>
                     </table>
                   </td>
@@ -994,15 +1111,23 @@ export async function sendPaymentReceivedNotificationEmail(
               </table>
             </td>
           </tr>
-          
+
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 40px; border-top: 1px solid #eee;">
-              <p style="margin: 0 0 10px 0; color: #999; font-size: 13px; text-align: center;">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+              <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
+                <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
+                &nbsp;&nbsp;&#124;&nbsp;&nbsp;
+                <a href="mailto:support@groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 Manage your bookings on the GroomLink Partner Dashboard.
               </p>
-              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
-                © ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
+              <p style="margin: 0 0 6px 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                Trusted by salons across Ghana
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                &#169; ${new Date().getFullYear()} GroomLink Ghana. All rights reserved.
               </p>
             </td>
           </tr>
