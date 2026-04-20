@@ -26,7 +26,10 @@
     },
     "production": {
       "autoIncrement": true,
-      "node": "18.19.0"
+      "node": "18.19.0",
+      "cache": {
+        "key": "v2-hoisted"
+      }
     }
   },
   "submit": {
