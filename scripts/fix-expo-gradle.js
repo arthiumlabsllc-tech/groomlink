@@ -1,174 +1,171 @@
+#!/usr/bin/env node
 /**
  * fix-expo-gradle.js
  * 
- * Patches ALL expo module android/build.gradle files to replace undefined
- * Gradle helper methods with explicit configurations.
+ * Brute-force patches ALL build.gradle files in node_modules that contain
+ * Expo's undefined Gradle helper methods. Searches recursively.
  * 
- * In Expo SDK 52 with pnpm workspaces, the Expo Gradle plugin that provides
- * these helper methods (useDefaultAndroidSdkVersions, useExpoPublishing,
- * useCoreDependencies) doesn't load properly. This script patches all
- * affected build.gradle files after pnpm install.
- * 
- * Runs as a postinstall script at the monorepo root level.
+ * Methods patched:
+ * - useDefaultAndroidSdkVersions() -> explicit compileSdkVersion 35
+ * - useExpoPublishing() -> commented out
+ * - useCoreDependencies() -> explicit compileSdkVersion 35
  */
 const fs = require('fs');
 const path = require('path');
 
-// Methods to patch and their replacements
-const PATCHES = [
-  {
-    // Main expo package - sets SDK versions
-    search: /useDefaultAndroidSdkVersions\(\)/g,
-    replacement: `android {
-    compileSdkVersion 35
-    namespace 'expo.core'
-  }`,
-  },
-  {
-    // Main expo package - publishing config
-    search: /useExpoPublishing\(\)/g,
-    replacement: '// useExpoPublishing() - removed (not available in this Gradle plugin version)',
-  },
-  {
-    // Individual expo modules - sets up core dependencies and SDK
-    search: /useCoreDependencies\(\)/g,
-    replacement: `android {
-    compileSdkVersion 35
-  }`,
-  },
-];
+console.log('=== [fix-expo-gradle] Starting ===');
+console.log('[fix-expo-gradle] __dirname:', __dirname);
+console.log('[fix-expo-gradle] cwd:', process.cwd());
 
-/**
- * Recursively find all build.gradle files in expo-related packages
- */
-function findAllExpoGradleFiles(rootDir) {
-  const files = new Set();
+// Find the monorepo root by searching upward for pnpm-workspace.yaml or node_modules/.pnpm
+function findMonorepoRoot() {
+  const candidates = [
+    path.resolve(__dirname, '..'),          // scripts/ -> root
+    process.cwd(),                          // current working directory
+    path.resolve(process.cwd(), '../..'),   // apps/customer-app -> root
+    path.resolve(process.cwd(), '..'),      // one level up
+  ];
   
-  // Search in root node_modules (direct symlinks)
-  const rootNodeModules = path.join(rootDir, 'node_modules');
-  findExpoGradlesIn(rootNodeModules, files);
-  
-  // Search in .pnpm store (real files)
-  const pnpmDir = path.join(rootNodeModules, '.pnpm');
-  if (fs.existsSync(pnpmDir)) {
-    try {
-      const entries = fs.readdirSync(pnpmDir);
-      for (const entry of entries) {
-        if (entry.startsWith('expo') || entry.includes('expo')) {
-          const nestedModules = path.join(pnpmDir, entry, 'node_modules');
-          if (fs.existsSync(nestedModules)) {
-            findExpoGradlesIn(nestedModules, files);
-          }
-        }
-      }
-    } catch (e) {
-      console.log('[fix-expo-gradle] Error scanning pnpm dir:', e.message);
+  for (const candidate of candidates) {
+    const pnpmDir = path.join(candidate, 'node_modules', '.pnpm');
+    if (fs.existsSync(pnpmDir)) {
+      console.log('[fix-expo-gradle] Found monorepo root:', candidate);
+      return candidate;
     }
   }
   
-  // Search in app-level node_modules
-  const appsDir = path.join(rootDir, 'apps');
-  if (fs.existsSync(appsDir)) {
-    try {
-      const apps = fs.readdirSync(appsDir);
-      for (const app of apps) {
-        const appNodeModules = path.join(appsDir, app, 'node_modules');
-        findExpoGradlesIn(appNodeModules, files);
-      }
-    } catch (e) {
-      // ignore
+  // Last resort: search upward from cwd
+  let dir = process.cwd();
+  for (let i = 0; i < 10; i++) {
+    const pnpmDir = path.join(dir, 'node_modules', '.pnpm');
+    if (fs.existsSync(pnpmDir)) {
+      console.log('[fix-expo-gradle] Found monorepo root (upward search):', dir);
+      return dir;
     }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
   }
   
-  return files;
+  console.error('[fix-expo-gradle] ERROR: Could not find monorepo root!');
+  return null;
 }
 
 /**
- * Find build.gradle files in expo-* packages within a node_modules directory
+ * Recursively find all build.gradle files in a directory (max depth limited)
  */
-function findExpoGradlesIn(nodeModulesDir, files) {
-  if (!fs.existsSync(nodeModulesDir)) return;
+function findGradleFiles(dir, maxDepth, currentDepth = 0) {
+  const results = [];
+  if (currentDepth > maxDepth) return results;
   
   try {
-    const entries = fs.readdirSync(nodeModulesDir);
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry === 'expo' || entry.startsWith('expo-') || entry === '@expo') {
-        if (entry === '@expo') {
-          // Scan @expo/* packages
-          const scopedDir = path.join(nodeModulesDir, entry);
-          try {
-            const scopedEntries = fs.readdirSync(scopedDir);
-            for (const scopedEntry of scopedEntries) {
-              const gradlePath = path.join(scopedDir, scopedEntry, 'android', 'build.gradle');
-              addRealPath(gradlePath, files);
-            }
-          } catch (e) { /* ignore */ }
-        } else {
-          const gradlePath = path.join(nodeModulesDir, entry, 'android', 'build.gradle');
-          addRealPath(gradlePath, files);
-        }
+      const fullPath = path.join(dir, entry.name);
+      
+      if (entry.isFile() && entry.name === 'build.gradle') {
+        results.push(fullPath);
+      } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'build' && entry.name !== 'gradle') {
+        results.push(...findGradleFiles(fullPath, maxDepth, currentDepth + 1));
+      } else if (entry.isSymbolicLink()) {
+        // Follow symlinks for directories
+        try {
+          const stat = fs.statSync(fullPath);
+          if (stat.isDirectory()) {
+            results.push(...findGradleFiles(fullPath, maxDepth, currentDepth + 1));
+          }
+        } catch (e) { /* broken symlink */ }
       }
     }
   } catch (e) {
-    // Directory doesn't exist or can't be read
+    // Permission error or other issue
   }
-}
-
-function addRealPath(filePath, files) {
-  try {
-    const realPath = fs.realpathSync(filePath);
-    if (fs.existsSync(realPath)) {
-      files.add(realPath);
-    }
-  } catch (e) {
-    // File doesn't exist
-  }
+  
+  return results;
 }
 
 /**
- * Apply all patches to a single build.gradle file
+ * Patch a single build.gradle file
  */
 function patchFile(filePath) {
   try {
     let content = fs.readFileSync(filePath, 'utf8');
     let modified = false;
-
-    for (const { search, replacement } of PATCHES) {
-      if (search.test ? search.test(content) : content.includes(search)) {
-        // Reset regex lastIndex
-        if (search.lastIndex !== undefined) search.lastIndex = 0;
-        content = content.replace(search, replacement);
-        modified = true;
-      }
+    
+    if (content.includes('useDefaultAndroidSdkVersions()')) {
+      content = content.replace(/useDefaultAndroidSdkVersions\(\)/g, 
+        `android {\n    compileSdkVersion 35\n    namespace 'expo.core'\n  }`);
+      modified = true;
     }
-
+    
+    if (content.includes('useExpoPublishing()')) {
+      content = content.replace(/useExpoPublishing\(\)/g,
+        '// useExpoPublishing() - patched out');
+      modified = true;
+    }
+    
+    if (content.includes('useCoreDependencies()')) {
+      content = content.replace(/useCoreDependencies\(\)/g,
+        `android {\n    compileSdkVersion 35\n  }`);
+      modified = true;
+    }
+    
     if (modified) {
       fs.writeFileSync(filePath, content, 'utf8');
+      console.log('[fix-expo-gradle] ✓ PATCHED:', filePath);
       return true;
     }
   } catch (e) {
-    console.log(`[fix-expo-gradle] Error patching ${filePath}:`, e.message);
+    console.log('[fix-expo-gradle] Error reading/writing:', filePath, e.message);
   }
   return false;
 }
 
-// Main execution
-const rootDir = path.resolve(__dirname, '..');
-console.log('[fix-expo-gradle] Searching for expo build.gradle files from:', rootDir);
+// Main
+const rootDir = findMonorepoRoot();
+if (!rootDir) {
+  console.error('[fix-expo-gradle] FATAL: Cannot find node_modules/.pnpm directory');
+  process.exit(0); // Don't fail the build, just warn
+}
 
-const gradleFiles = findAllExpoGradleFiles(rootDir);
-console.log(`[fix-expo-gradle] Found ${gradleFiles.size} expo build.gradle file(s)`);
+const pnpmDir = path.join(rootDir, 'node_modules', '.pnpm');
+console.log('[fix-expo-gradle] Scanning .pnpm directory:', pnpmDir);
 
+// Get all expo-related directories in .pnpm
 let patchedCount = 0;
-for (const file of gradleFiles) {
-  if (patchFile(file)) {
-    console.log(`[fix-expo-gradle] ✓ Patched: ${file}`);
-    patchedCount++;
+try {
+  const pnpmEntries = fs.readdirSync(pnpmDir);
+  const expoEntries = pnpmEntries.filter(e => e.includes('expo'));
+  console.log(`[fix-expo-gradle] Found ${expoEntries.length} expo-related entries in .pnpm`);
+  
+  for (const entry of expoEntries) {
+    const entryPath = path.join(pnpmDir, entry);
+    // Search for build.gradle files (limit depth to 5 to avoid infinite recursion)
+    const gradleFiles = findGradleFiles(entryPath, 5);
+    
+    for (const gradleFile of gradleFiles) {
+      if (patchFile(gradleFile)) {
+        patchedCount++;
+      }
+    }
   }
+} catch (e) {
+  console.error('[fix-expo-gradle] Error scanning pnpm directory:', e.message);
 }
 
-if (patchedCount > 0) {
-  console.log(`[fix-expo-gradle] Done! Patched ${patchedCount} file(s).`);
-} else {
-  console.log('[fix-expo-gradle] No files needed patching.');
-}
+// Also check direct node_modules symlinks
+const directModules = path.join(rootDir, 'node_modules');
+try {
+  const entries = fs.readdirSync(directModules);
+  for (const entry of entries) {
+    if (entry === 'expo' || entry.startsWith('expo-')) {
+      const gradlePath = path.join(directModules, entry, 'android', 'build.gradle');
+      try {
+        const realPath = fs.realpathSync(gradlePath);
+        if (patchFile(realPath)) patchedCount++;
+      } catch (e) { /* doesn't exist */ }
+    }
+  }
+} catch (e) { /* ignore */ }
+
+console.log(`\n=== [fix-expo-gradle] Complete: ${patchedCount} file(s) patched ===`);
