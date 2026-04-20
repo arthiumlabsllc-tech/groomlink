@@ -57,6 +57,7 @@
       }
     },
     "plugins": [
+      "./plugins/expo-sdk-fix",
           [
             "expo-build-properties",
             {
