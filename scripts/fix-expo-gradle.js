@@ -10,11 +10,19 @@
 const fs = require('fs');
 const path = require('path');
 
-const SEARCH = 'useDefaultAndroidSdkVersions()';
-const REPLACEMENT = `android {
+const PATCHES = [
+  {
+    search: 'useDefaultAndroidSdkVersions()',
+    replacement: `android {
     compileSdkVersion 35
     namespace 'expo.core'
-  }`;
+  }`,
+  },
+  {
+    search: 'useExpoPublishing()',
+    replacement: '// useExpoPublishing() removed - not available in this Gradle plugin version',
+  },
+];
 
 function findAndPatchExpoGradle(rootDir) {
   let patched = 0;
@@ -69,14 +77,20 @@ function patchFile(filePath) {
 
     if (!fs.existsSync(realPath)) return false;
 
-    const content = fs.readFileSync(realPath, 'utf8');
-    if (content.includes(SEARCH)) {
-      const newContent = content.replace(SEARCH, REPLACEMENT);
-      fs.writeFileSync(realPath, newContent, 'utf8');
-      console.log(`[fix-expo-gradle] ✓ Patched: ${realPath}`);
+    let content = fs.readFileSync(realPath, 'utf8');
+    let modified = false;
+
+    for (const { search, replacement } of PATCHES) {
+      if (content.includes(search)) {
+        content = content.replace(search, replacement);
+        modified = true;
+        console.log(`[fix-expo-gradle] ✓ Replaced "${search}" in: ${realPath}`);
+      }
+    }
+
+    if (modified) {
+      fs.writeFileSync(realPath, content, 'utf8');
       return true;
-    } else if (content.includes('compileSdkVersion 35')) {
-      console.log(`[fix-expo-gradle] Already patched: ${realPath}`);
     }
   } catch (e) {
     // File doesn't exist or can't be read
