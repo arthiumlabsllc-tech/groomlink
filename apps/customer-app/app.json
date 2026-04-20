@@ -34,13 +34,17 @@
         "backgroundColor": "#CE1126"
       },
       "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
+        "POST_NOTIFICATIONS",
+        "FOREGROUND_SERVICE",
         "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ],
       "config": {
         "googleMaps": {
@@ -79,7 +83,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "GroomLink needs your location to find nearby salons and barbershops."
         }
-      ]
+      ],
+      "./plugins/android-manifest-fixes"
     ],
     "owner": "gr3enink"
   }
