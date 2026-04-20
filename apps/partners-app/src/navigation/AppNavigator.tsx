@@ -14,7 +14,7 @@ export default function AppNavigator() {
     return (
       <View style={styles.loadingContainer}>
         <Image
-          source={require('../../assets/logo-full-black.png')}
+          source={require('../../../assets/logo-full-black.png')}
           style={styles.loadingLogo}
           resizeMode="contain"
         />
