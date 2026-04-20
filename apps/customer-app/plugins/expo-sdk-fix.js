@@ -2,62 +2,78 @@ const { withDangerousMod } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
+function findExpoBuildGradle(projectRoot) {
+  // Strategy 1: Use require.resolve to find expo's actual location (follows symlinks)
+  try {
+    const expoPackageJson = require.resolve('expo/package.json', {
+      paths: [projectRoot],
+    });
+    const expoDir = path.dirname(expoPackageJson);
+    const gradlePath = path.join(expoDir, 'android', 'build.gradle');
+    if (fs.existsSync(gradlePath)) return gradlePath;
+  } catch (e) {
+    console.log('[expo-sdk-fix] require.resolve failed:', e.message);
+  }
+
+  // Strategy 2: Direct path in app's node_modules
+  const directPath = path.join(projectRoot, 'node_modules', 'expo', 'android', 'build.gradle');
+  if (fs.existsSync(directPath)) return directPath;
+
+  // Strategy 3: Search monorepo root node_modules/.pnpm (go up from app dir)
+  let currentDir = projectRoot;
+  for (let i = 0; i < 5; i++) {
+    const pnpmDir = path.join(currentDir, 'node_modules', '.pnpm');
+    if (fs.existsSync(pnpmDir)) {
+      try {
+        const entries = fs.readdirSync(pnpmDir);
+        for (const entry of entries) {
+          if (entry.startsWith('expo@') || entry.startsWith('expo+')) {
+            const gradlePath = path.join(pnpmDir, entry, 'node_modules', 'expo', 'android', 'build.gradle');
+            if (fs.existsSync(gradlePath)) return gradlePath;
+          }
+        }
+      } catch (e) {
+        // Continue searching up
+      }
+    }
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) break;
+    currentDir = parentDir;
+  }
+
+  return null;
+}
+
+function patchBuildGradle(filePath) {
+  let content = fs.readFileSync(filePath, 'utf8');
+  if (content.includes('useDefaultAndroidSdkVersions()')) {
+    content = content.replace(
+      'useDefaultAndroidSdkVersions()',
+      "android {\n    compileSdkVersion 35\n    namespace 'expo.core'\n  }"
+    );
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log('[expo-sdk-fix] Successfully patched:', filePath);
+    return true;
+  }
+  console.log('[expo-sdk-fix] No patch needed (already patched or different format):', filePath);
+  return false;
+}
+
 function withExpoSdkFix(config) {
   return withDangerousMod(config, [
     'android',
     async (config) => {
-      // Find the expo module's build.gradle
-      const buildGradlePath = path.join(
-        config.modRequest.projectRoot,
-        'node_modules',
-        'expo',
-        'android',
-        'build.gradle'
-      );
+      const projectRoot = config.modRequest.projectRoot;
+      console.log('[expo-sdk-fix] Searching for expo build.gradle from:', projectRoot);
 
-      if (fs.existsSync(buildGradlePath)) {
-        let content = fs.readFileSync(buildGradlePath, 'utf8');
-        
-        // Replace useDefaultAndroidSdkVersions() with explicit SDK versions
-        if (content.includes('useDefaultAndroidSdkVersions()')) {
-          content = content.replace(
-            'useDefaultAndroidSdkVersions()',
-            "android {\n    compileSdkVersion 35\n    namespace 'expo.core'\n  }"
-          );
-          fs.writeFileSync(buildGradlePath, content, 'utf8');
-          console.log('[expo-sdk-fix] Patched expo/android/build.gradle with explicit SDK versions');
-        }
+      const gradlePath = findExpoBuildGradle(projectRoot);
+
+      if (gradlePath) {
+        console.log('[expo-sdk-fix] Found expo build.gradle at:', gradlePath);
+        patchBuildGradle(gradlePath);
       } else {
-        // Try pnpm hoisted path
-        const nodeModulesDir = path.join(config.modRequest.projectRoot, 'node_modules');
-        const pnpmDir = path.join(nodeModulesDir, '.pnpm');
-        
-        if (fs.existsSync(pnpmDir)) {
-          // Search for expo's build.gradle in pnpm store
-          const findExpoGradle = (dir) => {
-            const entries = fs.readdirSync(dir);
-            for (const entry of entries) {
-              if (entry.startsWith('expo@') || entry.startsWith('expo+')) {
-                const gradlePath = path.join(dir, entry, 'node_modules', 'expo', 'android', 'build.gradle');
-                if (fs.existsSync(gradlePath)) return gradlePath;
-              }
-            }
-            return null;
-          };
-          
-          const pnpmGradlePath = findExpoGradle(pnpmDir);
-          if (pnpmGradlePath) {
-            let content = fs.readFileSync(pnpmGradlePath, 'utf8');
-            if (content.includes('useDefaultAndroidSdkVersions()')) {
-              content = content.replace(
-                'useDefaultAndroidSdkVersions()',
-                "android {\n    compileSdkVersion 35\n    namespace 'expo.core'\n  }"
-              );
-              fs.writeFileSync(pnpmGradlePath, content, 'utf8');
-              console.log('[expo-sdk-fix] Patched expo/android/build.gradle (pnpm) with explicit SDK versions');
-            }
-          }
-        }
+        console.error('[expo-sdk-fix] ERROR: Could not find expo/android/build.gradle anywhere!');
+        console.error('[expo-sdk-fix] Searched from:', projectRoot);
       }
 
       return config;
