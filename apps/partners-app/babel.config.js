@@ -12,7 +12,6 @@ module.exports = function(api) {
           },
         },
       ],
-      '@babel/plugin-transform-private-methods',
       'react-native-reanimated/plugin',
     ],
   };
