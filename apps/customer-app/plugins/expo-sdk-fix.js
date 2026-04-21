@@ -44,7 +44,13 @@ function patchBuildGradle(filePath) {
   if (content.includes('useDefaultAndroidSdkVersions()')) {
     content = content.replace(
       /useDefaultAndroidSdkVersions\(\)/g,
-      '// useDefaultAndroidSdkVersions() - handled by expo-build-properties'
+      `android {
+    compileSdkVersion 35
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 35
+    }
+  }`
     );
     modified = true;
   }

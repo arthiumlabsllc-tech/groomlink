@@ -93,8 +93,16 @@ function patchFile(filePath) {
     let modified = false;
     
     if (content.includes('useDefaultAndroidSdkVersions()')) {
-      content = content.replace(/useDefaultAndroidSdkVersions\(\)/g, 
-        '// useDefaultAndroidSdkVersions() - handled by expo-build-properties');
+      content = content.replace(
+        /useDefaultAndroidSdkVersions\(\)/g,
+        `android {
+    compileSdkVersion 35
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 35
+    }
+  }`
+      );
       modified = true;
     }
     
