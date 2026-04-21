@@ -59,12 +59,33 @@ function patchBuildGradle(filePath) {
   return false;
 }
 
+function patchGradleProperties(projectRoot) {
+  const gradlePropsPath = path.join(projectRoot, 'android', 'gradle.properties');
+  const ndkSuppressLine = 'android.ndk.suppressMinSdkVersionError=21';
+
+  if (fs.existsSync(gradlePropsPath)) {
+    let content = fs.readFileSync(gradlePropsPath, 'utf8');
+    if (!content.includes('suppressMinSdkVersionError')) {
+      content += '\n# Suppress NDK minSdk error for expo-modules-core\n' + ndkSuppressLine + '\n';
+      fs.writeFileSync(gradlePropsPath, content, 'utf8');
+      console.log('[expo-sdk-fix] Added NDK suppress to gradle.properties');
+    } else {
+      console.log('[expo-sdk-fix] gradle.properties already has NDK suppress');
+    }
+  } else {
+    console.log('[expo-sdk-fix] gradle.properties not found at:', gradlePropsPath, '- will be created at prebuild');
+  }
+}
+
 function withExpoSdkFix(config) {
   return withDangerousMod(config, [
     'android',
     async (config) => {
       const projectRoot = config.modRequest.projectRoot;
       console.log('[expo-sdk-fix] Searching for expo build.gradle from:', projectRoot);
+
+      // Patch gradle.properties to suppress NDK minSdk error
+      patchGradleProperties(projectRoot);
 
       const gradlePath = findExpoBuildGradle(projectRoot);
 
