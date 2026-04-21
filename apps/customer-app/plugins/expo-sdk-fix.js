@@ -40,11 +40,29 @@ function findExpoBuildGradle(projectRoot) {
 
 function patchBuildGradle(filePath) {
   let content = fs.readFileSync(filePath, 'utf8');
+  let modified = false;
   if (content.includes('useDefaultAndroidSdkVersions()')) {
     content = content.replace(
-      'useDefaultAndroidSdkVersions()',
-      "android {\n    compileSdkVersion 35\n    namespace 'expo.core'\n  }"
+      /useDefaultAndroidSdkVersions\(\)/g,
+      '// useDefaultAndroidSdkVersions() - handled by expo-build-properties'
     );
+    modified = true;
+  }
+  if (content.includes('useCoreDependencies()')) {
+    content = content.replace(
+      /useCoreDependencies\(\)/g,
+      '// useCoreDependencies() - handled by expo-build-properties'
+    );
+    modified = true;
+  }
+  if (content.includes('useExpoPublishing()')) {
+    content = content.replace(
+      /useExpoPublishing\(\)/g,
+      '// useExpoPublishing() - not needed'
+    );
+    modified = true;
+  }
+  if (modified) {
     fs.writeFileSync(filePath, content, 'utf8');
     console.log('[expo-sdk-fix] Successfully patched:', filePath);
     return true;

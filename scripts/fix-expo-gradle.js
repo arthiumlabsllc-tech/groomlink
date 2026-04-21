@@ -5,10 +5,10 @@
  * Brute-force patches ALL build.gradle files in node_modules that contain
  * Expo's undefined Gradle helper methods. Searches recursively.
  * 
- * Methods patched:
- * - useDefaultAndroidSdkVersions() -> explicit compileSdkVersion 35
+ * Methods patched (commented out - expo-build-properties handles SDK config):
+ * - useDefaultAndroidSdkVersions() -> commented out
  * - useExpoPublishing() -> commented out
- * - useCoreDependencies() -> explicit compileSdkVersion 35
+ * - useCoreDependencies() -> commented out
  */
 const fs = require('fs');
 const path = require('path');
@@ -94,19 +94,19 @@ function patchFile(filePath) {
     
     if (content.includes('useDefaultAndroidSdkVersions()')) {
       content = content.replace(/useDefaultAndroidSdkVersions\(\)/g, 
-        `android {\n    compileSdkVersion 35\n    namespace 'expo.core'\n  }`);
+        '// useDefaultAndroidSdkVersions() - handled by expo-build-properties');
       modified = true;
     }
     
     if (content.includes('useExpoPublishing()')) {
       content = content.replace(/useExpoPublishing\(\)/g,
-        '// useExpoPublishing() - patched out');
+        '// useExpoPublishing() - not needed');
       modified = true;
     }
     
     if (content.includes('useCoreDependencies()')) {
       content = content.replace(/useCoreDependencies\(\)/g,
-        `android {\n    compileSdkVersion 35\n  }`);
+        '// useCoreDependencies() - handled by expo-build-properties');
       modified = true;
     }
     
