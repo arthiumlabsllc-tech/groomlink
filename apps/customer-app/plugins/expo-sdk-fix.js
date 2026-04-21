@@ -2,77 +2,17 @@ const { withDangerousMod } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
-function findExpoBuildGradle(projectRoot) {
-  try {
-    const expoPackageJson = require.resolve('expo/package.json', {
-      paths: [projectRoot],
-    });
-    const expoDir = path.dirname(expoPackageJson);
-    const gradlePath = path.join(expoDir, 'android', 'build.gradle');
-    if (fs.existsSync(gradlePath)) return gradlePath;
-  } catch (e) {
-    console.log('[expo-sdk-fix] require.resolve failed:', e.message);
-  }
-
-  const directPath = path.join(projectRoot, 'node_modules', 'expo', 'android', 'build.gradle');
-  if (fs.existsSync(directPath)) return directPath;
-
-  let currentDir = projectRoot;
-  for (let i = 0; i < 5; i++) {
-    const pnpmDir = path.join(currentDir, 'node_modules', '.pnpm');
-    if (fs.existsSync(pnpmDir)) {
-      try {
-        const entries = fs.readdirSync(pnpmDir);
-        for (const entry of entries) {
-          if (entry.startsWith('expo@') || entry.startsWith('expo+')) {
-            const gradlePath = path.join(pnpmDir, entry, 'node_modules', 'expo', 'android', 'build.gradle');
-            if (fs.existsSync(gradlePath)) return gradlePath;
-          }
-        }
-      } catch (e) {}
-    }
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) break;
-    currentDir = parentDir;
-  }
+// DEPRECATED: No longer needed. expo-build-properties plugin in app.json
+// handles SDK version configuration, and ExpoModulesCorePlugin.gradle defines
+// helper functions using safeExtGet(). Patching build.gradle files was causing
+// duplicate android{} blocks and Kotlin compilation errors.
+function findExpoBuildGradle() {
   return null;
 }
 
+// DEPRECATED: No-op. Build.gradle patching is no longer needed.
+// eslint-disable-next-line no-unused-vars
 function patchBuildGradle(filePath) {
-  let content = fs.readFileSync(filePath, 'utf8');
-  let modified = false;
-  if (content.includes('useDefaultAndroidSdkVersions()')) {
-    content = content.replace(
-      /useDefaultAndroidSdkVersions\(\)/g,
-      `android {
-    compileSdkVersion 35
-    defaultConfig {
-        minSdkVersion 24
-        targetSdkVersion 35
-    }
-  }`
-    );
-    modified = true;
-  }
-  if (content.includes('useCoreDependencies()')) {
-    content = content.replace(
-      /useCoreDependencies\(\)/g,
-      '// useCoreDependencies() - handled by expo-build-properties'
-    );
-    modified = true;
-  }
-  if (content.includes('useExpoPublishing()')) {
-    content = content.replace(
-      /useExpoPublishing\(\)/g,
-      '// useExpoPublishing() - not needed'
-    );
-    modified = true;
-  }
-  if (modified) {
-    fs.writeFileSync(filePath, content, 'utf8');
-    console.log('[expo-sdk-fix] Successfully patched:', filePath);
-    return true;
-  }
   return false;
 }
 
@@ -125,12 +65,7 @@ function withExpoSdkFix(config) {
       // 2. Patch root build.gradle with allprojects block
       patchRootBuildGradle(projectRoot);
 
-      // 3. Patch expo's build.gradle if needed
-      const gradlePath = findExpoBuildGradle(projectRoot);
-      if (gradlePath) {
-        console.log('[expo-sdk-fix] Found expo build.gradle at:', gradlePath);
-        patchBuildGradle(gradlePath);
-      }
+      // 3. Build.gradle patching REMOVED - handled by expo-build-properties plugin
 
       // 4. Log gradle.properties for debugging
       const propsPath = path.join(projectRoot, 'android', 'gradle.properties');
