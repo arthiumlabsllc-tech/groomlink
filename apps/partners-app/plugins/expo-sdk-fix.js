@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 
 function findExpoBuildGradle(projectRoot) {
-  // Strategy 1: Use require.resolve to find expo's actual location (follows symlinks)
   try {
     const expoPackageJson = require.resolve('expo/package.json', {
       paths: [projectRoot],
@@ -15,11 +14,9 @@ function findExpoBuildGradle(projectRoot) {
     console.log('[expo-sdk-fix] require.resolve failed:', e.message);
   }
 
-  // Strategy 2: Direct path in app's node_modules
   const directPath = path.join(projectRoot, 'node_modules', 'expo', 'android', 'build.gradle');
   if (fs.existsSync(directPath)) return directPath;
 
-  // Strategy 3: Search monorepo root node_modules/.pnpm (go up from app dir)
   let currentDir = projectRoot;
   for (let i = 0; i < 5; i++) {
     const pnpmDir = path.join(currentDir, 'node_modules', '.pnpm');
@@ -32,15 +29,12 @@ function findExpoBuildGradle(projectRoot) {
             if (fs.existsSync(gradlePath)) return gradlePath;
           }
         }
-      } catch (e) {
-        // Continue searching up
-      }
+      } catch (e) {}
     }
     const parentDir = path.dirname(currentDir);
     if (parentDir === currentDir) break;
     currentDir = parentDir;
   }
-
   return null;
 }
 
@@ -55,7 +49,6 @@ function patchBuildGradle(filePath) {
     console.log('[expo-sdk-fix] Successfully patched:', filePath);
     return true;
   }
-  console.log('[expo-sdk-fix] No patch needed (already patched or different format):', filePath);
   return false;
 }
 
@@ -63,17 +56,49 @@ function patchGradleProperties(projectRoot) {
   const gradlePropsPath = path.join(projectRoot, 'android', 'gradle.properties');
   const ndkSuppressLine = 'android.ndk.suppressMinSdkVersionError=21';
 
+  // Create android/ dir if it doesn't exist yet
+  const androidDir = path.join(projectRoot, 'android');
+  if (!fs.existsSync(androidDir)) {
+    fs.mkdirSync(androidDir, { recursive: true });
+    console.log('[expo-sdk-fix] Created android/ directory');
+  }
+
   if (fs.existsSync(gradlePropsPath)) {
     let content = fs.readFileSync(gradlePropsPath, 'utf8');
     if (!content.includes('suppressMinSdkVersionError')) {
       content += '\n# Suppress NDK minSdk error for expo-modules-core\n' + ndkSuppressLine + '\n';
       fs.writeFileSync(gradlePropsPath, content, 'utf8');
-      console.log('[expo-sdk-fix] Added NDK suppress to gradle.properties');
-    } else {
-      console.log('[expo-sdk-fix] gradle.properties already has NDK suppress');
+      console.log('[expo-sdk-fix] Appended NDK suppress to existing gradle.properties');
     }
   } else {
-    console.log('[expo-sdk-fix] gradle.properties not found at:', gradlePropsPath, '- will be created at prebuild');
+    // Create the file - it will be merged with Expo's generated one
+    fs.writeFileSync(gradlePropsPath, '# NDK compatibility\n' + ndkSuppressLine + '\n', 'utf8');
+    console.log('[expo-sdk-fix] Created gradle.properties with NDK suppress');
+  }
+}
+
+function patchRootBuildGradle(projectRoot) {
+  const buildGradlePath = path.join(projectRoot, 'android', 'build.gradle');
+  if (!fs.existsSync(buildGradlePath)) {
+    console.log('[expo-sdk-fix] Root build.gradle not found yet');
+    return;
+  }
+
+  let content = fs.readFileSync(buildGradlePath, 'utf8');
+  const suppressBlock = `
+// Suppress NDK minSdk version error for all subprojects
+allprojects {
+    afterEvaluate { project ->
+        project.extensions.findByName("android")?.with {
+            it.experimentalProperties["android.ndk.suppressMinSdkVersionError"] = 21
+        }
+    }
+}`;
+
+  if (!content.includes('suppressMinSdkVersionError')) {
+    content += suppressBlock;
+    fs.writeFileSync(buildGradlePath, content, 'utf8');
+    console.log('[expo-sdk-fix] Added NDK suppress to root build.gradle allprojects');
   }
 }
 
@@ -82,19 +107,27 @@ function withExpoSdkFix(config) {
     'android',
     async (config) => {
       const projectRoot = config.modRequest.projectRoot;
-      console.log('[expo-sdk-fix] Searching for expo build.gradle from:', projectRoot);
+      console.log('[expo-sdk-fix] Project root:', projectRoot);
 
-      // Patch gradle.properties to suppress NDK minSdk error
+      // 1. Patch gradle.properties (create if needed)
       patchGradleProperties(projectRoot);
 
-      const gradlePath = findExpoBuildGradle(projectRoot);
+      // 2. Patch root build.gradle with allprojects block
+      patchRootBuildGradle(projectRoot);
 
+      // 3. Patch expo's build.gradle if needed
+      const gradlePath = findExpoBuildGradle(projectRoot);
       if (gradlePath) {
         console.log('[expo-sdk-fix] Found expo build.gradle at:', gradlePath);
         patchBuildGradle(gradlePath);
-      } else {
-        console.error('[expo-sdk-fix] ERROR: Could not find expo/android/build.gradle anywhere!');
-        console.error('[expo-sdk-fix] Searched from:', projectRoot);
+      }
+
+      // 4. Log gradle.properties for debugging
+      const propsPath = path.join(projectRoot, 'android', 'gradle.properties');
+      if (fs.existsSync(propsPath)) {
+        const propsContent = fs.readFileSync(propsPath, 'utf8');
+        const hasSuppress = propsContent.includes('suppressMinSdkVersionError');
+        console.log('[expo-sdk-fix] gradle.properties has NDK suppress:', hasSuppress);
       }
 
       return config;
