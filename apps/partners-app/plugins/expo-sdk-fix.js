@@ -19,6 +19,8 @@ function patchBuildGradle(filePath) {
 function patchGradleProperties(projectRoot) {
   const gradlePropsPath = path.join(projectRoot, 'android', 'gradle.properties');
   const ndkSuppressLine = 'android.ndk.suppressMinSdkVersionError=21';
+  const kotlinJvmTargetLine = 'kotlin.jvm.target.validation.mode=warning';
+  const gradleJvmArgsLine = 'org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m';
 
   // Create android/ dir if it doesn't exist yet
   const androidDir = path.join(projectRoot, 'android');
@@ -29,15 +31,39 @@ function patchGradleProperties(projectRoot) {
 
   if (fs.existsSync(gradlePropsPath)) {
     let content = fs.readFileSync(gradlePropsPath, 'utf8');
+    let modified = false;
+
     if (!content.includes('suppressMinSdkVersionError')) {
       content += '\n# Suppress NDK minSdk error for expo-modules-core\n' + ndkSuppressLine + '\n';
-      fs.writeFileSync(gradlePropsPath, content, 'utf8');
+      modified = true;
       console.log('[expo-sdk-fix] Appended NDK suppress to existing gradle.properties');
     }
+
+    if (!content.includes('kotlin.jvm.target.validation.mode')) {
+      content += '\n# Allow JVM target mismatch between Java and Kotlin (e.g. expo-file-system)\n' + kotlinJvmTargetLine + '\n';
+      modified = true;
+      console.log('[expo-sdk-fix] Appended kotlin.jvm.target.validation.mode=warning to gradle.properties');
+    }
+
+    if (!content.includes('org.gradle.jvmargs')) {
+      content += '\n# Increase Gradle daemon memory for large builds\n' + gradleJvmArgsLine + '\n';
+      modified = true;
+      console.log('[expo-sdk-fix] Appended org.gradle.jvmargs to gradle.properties');
+    }
+
+    if (modified) {
+      fs.writeFileSync(gradlePropsPath, content, 'utf8');
+    }
   } else {
-    // Create the file - it will be merged with Expo's generated one
-    fs.writeFileSync(gradlePropsPath, '# NDK compatibility\n' + ndkSuppressLine + '\n', 'utf8');
-    console.log('[expo-sdk-fix] Created gradle.properties with NDK suppress');
+    // Create the file with all required properties
+    fs.writeFileSync(
+      gradlePropsPath,
+      '# NDK compatibility\n' + ndkSuppressLine + '\n' +
+      '\n# Allow JVM target mismatch between Java and Kotlin\n' + kotlinJvmTargetLine + '\n' +
+      '\n# Increase Gradle daemon memory for large builds\n' + gradleJvmArgsLine + '\n',
+      'utf8'
+    );
+    console.log('[expo-sdk-fix] Created gradle.properties with NDK suppress, JVM target validation, and memory settings');
   }
 }
 
