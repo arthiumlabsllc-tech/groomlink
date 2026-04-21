@@ -59,4 +59,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Start command
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

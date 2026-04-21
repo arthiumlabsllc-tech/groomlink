@@ -240,7 +240,7 @@ export default function SalonSetupScreen() {
       setUser(profile);
     } catch (err: any) {
       const apiError = err.response?.data?.error;
-      const fieldErrors = apiError?.details?.map((d: any) => d.message).join(', ');
+      const fieldErrors = apiError?.details?.map?.((d: any) => d.message)?.join(', ') || apiError?.message;
       setError(fieldErrors || apiError?.message || err.response?.data?.message || 'Failed to create salon. Please try again.');
     } finally {
       setLoading(false);

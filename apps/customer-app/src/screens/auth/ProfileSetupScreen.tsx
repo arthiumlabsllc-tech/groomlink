@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -227,6 +227,15 @@ export default function ProfileSetupScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../../assets/logo-full-black.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+
           {/* Progress Indicator */}
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
@@ -334,6 +343,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoImage: {
+    width: 180,
+    height: 48,
   },
   progressContainer: {
     marginBottom: 32,

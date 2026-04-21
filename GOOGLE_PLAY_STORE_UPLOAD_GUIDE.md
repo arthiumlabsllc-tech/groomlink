@@ -9,7 +9,7 @@
 ### **1. GroomLink (Customer App)**
 - **Package**: `com.arthiumlabs.groomlink` ✅
 - **App Name**: GroomLink
-- **Purpose**: Customers book pet grooming services
+- **Purpose**: Customers book beauty & grooming services
 - **Current Status**: Build in progress on EAS ✅
 - **Color Theme**: Red (#CE1126)
 
@@ -96,7 +96,7 @@ eas build --platform android --profile production
 #### **🎨 Feature Graphic** (Create)
 - Size: 1024x500 pixels
 - Brand colors: #CE1126 (red), #FCD116 (gold)
-- Text: "Book Trusted Pet Grooming"
+- Text: "Book Trusted Beauty & Grooming"
 
 ---
 
@@ -116,7 +116,7 @@ eas build --platform android --profile production
 #### **🎨 Feature Graphic** (Create)
 - Size: 1024x500 pixels
 - Brand colors: #006B3F (green), #FCD116 (gold)
-- Text: "Manage Your Pet Grooming Business"
+- Text: "Manage Your Grooming Business"
 
 ---
 
@@ -139,23 +139,23 @@ eas build --platform android --profile production
 3. **Store Listing**
    ```
    Short Description (80 chars):
-   Book trusted pet grooming salons in Ghana
+   Book trusted barbershops & beauty salons in Ghana
    
    Full Description (4000 chars):
-   GroomLink is Ghana's premier pet grooming booking platform. 
-   Find trusted salons, book appointments, and pay securely - 
+   GroomLink is Ghana's premier beauty & grooming booking platform connecting you to the best barbershops, hair salons, and beauty services.
+   Find trusted salons, book appointments, and pay securely -
    all in one app.
    
    Features:
-   • Discover nearby pet grooming salons
+   • Discover nearby barbershops & salons
    • View services, pricing & reviews
    • Book appointments instantly
    • Secure payments via Mobile Money & cards
    • Real-time booking notifications
    • Salon queue management
-   • Pet grooming history tracking
+   • Grooming history tracking
    
-   Perfect for dog and cat owners in Accra, Kumasi, and beyond!
+   Find the best barbershops, hair salons, and beauty services in Accra, Kumasi, and beyond!
    ```
 
 4. **Category**
@@ -181,11 +181,11 @@ eas build --platform android --profile production
 3. **Store Listing**
    ```
    Short Description (80 chars):
-   Manage your pet grooming salon business
+   Manage your beauty & grooming salon business
    
    Full Description (4000 chars):
-   GroomLink Partners is the companion app for pet grooming 
-   salon owners. Manage your business, accept bookings, and 
+   GroomLink Partners is the companion app for barbershop & beauty
+   salon owners. Manage your business, accept bookings, and
    grow your client base.
    
    Features:
@@ -198,7 +198,7 @@ eas build --platform android --profile production
    • Business hours configuration
    • Payment tracking & payouts
    
-   Empowering pet grooming businesses across Ghana!
+   Empowering grooming businesses across Ghana!
    ```
 
 4. **Category**
@@ -223,7 +223,7 @@ eas build --platform android --profile production
    ```
    What's new:
    • Initial release of GroomLink
-   • Browse and book pet grooming salons
+   • Browse and book barbershops & beauty salons
    • Secure payments via Mobile Money
    • Real-time notifications
    • Salon reviews and ratings

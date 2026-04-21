@@ -127,7 +127,7 @@ export default function OTPScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../../assets/logo-black.png')}
+            source={require('../../../assets/logo-full-black.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logoImage: {
-    width: 48,
+    width: 180,
     height: 48,
   },
   title: {

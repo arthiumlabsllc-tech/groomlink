@@ -144,7 +144,7 @@ export default function EditSalonScreen() {
       setAddress(salon.address || '');
       setCity(salon.city || '');
       setRegion(''); // Region field not in Salon type
-      setPhoneNumber(salon.phone || '');
+      setPhoneNumber(salon?.phone || (salon as any)?.phoneNumber || '');
       setEmail(salon.email || '');
       setDescription(salon.description || '');
       setType('SALON'); // Default to SALON (type field not in Salon type)
@@ -391,6 +391,7 @@ export default function EditSalonScreen() {
 
   // Format time for display
   const formatTimeDisplay = (time: string): string => {
+    if (!time || typeof time !== 'string' || !time.includes(':')) return time || '';
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const displayHour = hour % 12 || 12;

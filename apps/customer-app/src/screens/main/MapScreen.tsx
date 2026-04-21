@@ -97,6 +97,13 @@ export default function MapScreen() {
       }
     } catch (error) {
       console.error('Error getting location:', error);
+      setRegion(DEFAULT_LOCATION);
+      setLocationPermission(false);
+      Alert.alert(
+        'Location Unavailable',
+        'Unable to determine your location. Using default location instead.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -116,7 +123,7 @@ export default function MapScreen() {
       const hasMatchingService = salon.services?.some((service) =>
         service.category?.toUpperCase().includes(selectedType)
       );
-      return hasMatchingService;
+      return !!hasMatchingService;
     });
   }, [salons, selectedType]);
 
@@ -127,11 +134,13 @@ export default function MapScreen() {
     const currentDay = dayNames[now.getDay()] as keyof Salon['openingHours'];
     const hours = salon.openingHours?.[currentDay];
     
-    if (!hours || !hours.isOpen) return false;
-    
-    const currentTime = now.getHours() * 60 + now.getMinutes();
+    if (!hours?.open || !hours?.close) return false;
     const [openHour, openMin] = hours.open.split(':').map(Number);
+    if (isNaN(openHour) || isNaN(openMin)) return false;
     const [closeHour, closeMin] = hours.close.split(':').map(Number);
+    if (isNaN(closeHour) || isNaN(closeMin)) return false;
+
+    const currentTime = now.getHours() * 60 + now.getMinutes();
     const openTime = openHour * 60 + openMin;
     const closeTime = closeHour * 60 + closeMin;
     

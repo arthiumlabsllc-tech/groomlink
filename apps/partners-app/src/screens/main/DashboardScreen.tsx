@@ -114,6 +114,7 @@ export default function DashboardScreen() {
   };
 
   const formatTime = (time: string) => {
+    if (!time || typeof time !== 'string' || !time.includes(':')) return time || '';
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';

@@ -49,12 +49,12 @@
 **Customer App**:
 - Size: 1024x500 pixels
 - Colors: Red (#CE1126), Gold (#FCD116)
-- Text suggestion: "Book Trusted Pet Grooming"
+- Text suggestion: "Book Trusted Beauty & Grooming"
 
 **Partners App**:
 - Size: 1024x500 pixels
 - Colors: Green (#006B3F), Gold (#FCD116)
-- Text suggestion: "Manage Your Pet Grooming Business"
+- Text suggestion: "Manage Your Grooming Business"
 
 ### **3. Prepare Store Descriptions**
 

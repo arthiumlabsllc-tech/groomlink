@@ -97,7 +97,7 @@ eas build:download --platform android
 5. Add release notes:
    ```
    Initial release of GroomLink
-   - Book trusted pet grooming salons
+   - Book trusted barbershops & beauty salons
    - Secure payments via Mobile Money
    - Real-time notifications
    ```

@@ -128,7 +128,8 @@ export default function OTPScreen() {
 
   const maskEmail = (email: string) => {
     // Mask email for privacy: s***@example.com
-    const [localPart, domain] = email.split('@');
+    const [localPart, domain] = (email || '').split('@');
+    if (!localPart || !domain) return email || '';
     if (localPart.length <= 2) {
       return email;
     }

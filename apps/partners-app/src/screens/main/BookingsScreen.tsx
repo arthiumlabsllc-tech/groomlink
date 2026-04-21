@@ -95,6 +95,7 @@ export default function BookingsScreen() {
   };
 
   const formatTime = (time: string) => {
+    if (!time || typeof time !== 'string' || !time.includes(':')) return time || '';
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -128,7 +129,7 @@ export default function BookingsScreen() {
             <View style={styles.customerSection}>
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarText}>
-                  {item.customer.firstName[0]}{item.customer.lastName[0]}
+                  {(item.customer?.firstName?.[0] ?? 'U')}{(item.customer?.lastName?.[0] ?? '')}
                 </Text>
               </View>
               <View style={styles.customerInfo}>

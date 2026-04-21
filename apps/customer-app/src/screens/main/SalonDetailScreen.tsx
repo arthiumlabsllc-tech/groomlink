@@ -152,7 +152,9 @@ export default function SalonDetailScreen() {
   };
 
   const formatTime = (time: string) => {
+    if (!time || typeof time !== 'string') return '--:--';
     const [hours, minutes] = time.split(':');
+    if (!hours || !minutes || isNaN(parseInt(hours))) return time;
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
@@ -229,7 +231,7 @@ export default function SalonDetailScreen() {
         </View>
       </View>
       <Text variant="titleMedium" style={styles.servicePrice}>
-        GH₵ {item.price.toFixed(2)}
+        GH₵ {item?.price?.toFixed(2) ?? '0.00'}
       </Text>
     </View>
   ), []);
@@ -240,13 +242,13 @@ export default function SalonDetailScreen() {
         <View style={styles.reviewHeader}>
           <Avatar.Text
             size={44}
-            label={`${item.user.firstName?.[0] || ''}${item.user.lastName?.[0] || ''}`}
+            label={`${item.user?.firstName?.[0] || ''}${item.user?.lastName?.[0] || ''}`}
             style={styles.reviewAvatar}
             labelStyle={styles.reviewAvatarLabel}
           />
           <View style={styles.reviewUserInfo}>
             <Text variant="titleSmall" style={styles.reviewUserName}>
-              {item.user.firstName} {item.user.lastName}
+              {item.user?.firstName ?? ''} {item.user?.lastName ?? ''}
             </Text>
             <View style={styles.reviewRating}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -414,7 +416,7 @@ export default function SalonDetailScreen() {
 
           {/* Salon Name Overlay */}
           <View style={styles.heroOverlay}>
-            <Text variant="headlineMedium" style={styles.heroTitle}>{salon.businessName}</Text>
+            <Text variant="headlineMedium" style={styles.heroTitle}>{salon?.businessName ?? 'Unnamed Salon'}</Text>
           </View>
         </View>
 
@@ -424,18 +426,18 @@ export default function SalonDetailScreen() {
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={18} color={COLORS.accentGold} />
               <Text variant="titleMedium" style={styles.ratingText}>
-                {salon.rating.toFixed(1)}
+                {salon?.rating?.toFixed(1) ?? 'N/A'}
               </Text>
             </View>
             <Text variant="bodyMedium" style={styles.reviewCount}>
-              ({salon.reviewCount} reviews)
+              ({salon?.reviewCount ?? 0} reviews)
             </Text>
           </View>
           
           <View style={styles.addressContainer}>
             <Ionicons name="location-outline" size={20} color={COLORS.primaryGreen} />
             <Text variant="bodyMedium" style={styles.address}>
-              {salon.address}, {salon.city}
+              {salon?.address ?? 'No address'}, {salon?.city ?? ''}
             </Text>
           </View>
           
@@ -483,7 +485,7 @@ export default function SalonDetailScreen() {
         )}
 
         {/* Queue Section */}
-        {salon.acceptsWalkIns && (
+        {salon?.acceptsWalkIns && (
           <View style={styles.queueSection}>
             <View style={styles.queueHeader}>
               <Text variant="titleMedium" style={styles.sectionTitle}>Live Queue</Text>
@@ -584,7 +586,7 @@ export default function SalonDetailScreen() {
         </View>
 
         {/* Opening Hours Section */}
-        {salon.openingHours && renderOpeningHours(salon)}
+        {salon?.openingHours && renderOpeningHours(salon)}
 
         {/* Reviews Section */}
         <View style={styles.section}>
@@ -665,7 +667,7 @@ export default function SalonDetailScreen() {
                             {service.name}
                           </Text>
                           <Text style={styles.serviceOptionPrice}>
-                            GH₵ {service.price.toFixed(2)}
+                            GH₵ {service?.price?.toFixed(2) ?? '0.00'}
                           </Text>
                         </View>
                         {selectedServiceId === service.id && (
@@ -735,7 +737,7 @@ export default function SalonDetailScreen() {
               showsHorizontalScrollIndicator={false}
               contentOffset={{ x: viewerInitialIndex * SCREEN_WIDTH, y: 0 }}
             >
-              {salon.images.map((image, index) => (
+              {salon?.images?.map((image, index) => (
                 <View key={index} style={styles.imageViewerSlide}>
                   <Image source={{ uri: image }} style={styles.imageViewerImage} resizeMode="contain" />
                 </View>
@@ -744,7 +746,7 @@ export default function SalonDetailScreen() {
             {/* Image Counter */}
             <View style={styles.imageCounter}>
               <Text style={styles.imageCounterText}>
-                {viewerInitialIndex + 1} / {salon.images.length}
+                {viewerInitialIndex + 1} / {salon?.images?.length ?? 0}
               </Text>
             </View>
           </View>
