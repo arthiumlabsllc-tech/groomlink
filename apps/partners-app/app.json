@@ -58,18 +58,17 @@
       }
     },
     "plugins": [
-      "./plugins/expo-sdk-fix",
-          [
-            "expo-build-properties",
-            {
-              "android": {
-                "compileSdkVersion": 35,
-                "targetSdkVersion": 35,
-                "minSdkVersion": 24,
-                "ndkVersion": "26.1.10909125"
-              }
-            }
-          ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "ndkVersion": "26.1.10909125"
+          }
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -83,7 +82,8 @@
           "locationAlwaysAndWhenInUsePermission": "GroomLink Partners needs your location to set your salon's position on the map."
         }
       ],
-      "./plugins/android-manifest-fixes"
+      "./plugins/android-manifest-fixes",
+      "./plugins/expo-sdk-fix"
     ],
     "owner": "gr3enink"
   }
