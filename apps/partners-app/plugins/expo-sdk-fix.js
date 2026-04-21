@@ -78,28 +78,14 @@ function patchGradleProperties(projectRoot) {
 }
 
 function patchRootBuildGradle(projectRoot) {
-  const buildGradlePath = path.join(projectRoot, 'android', 'build.gradle');
-  if (!fs.existsSync(buildGradlePath)) {
-    console.log('[expo-sdk-fix] Root build.gradle not found yet');
-    return;
-  }
-
-  let content = fs.readFileSync(buildGradlePath, 'utf8');
-  const suppressBlock = `
-// Suppress NDK minSdk version error for all subprojects
-allprojects {
-    afterEvaluate { project ->
-        project.extensions.findByName("android")?.with {
-            it.experimentalProperties["android.ndk.suppressMinSdkVersionError"] = 21
-        }
-    }
-}`;
-
-  if (!content.includes('suppressMinSdkVersionError')) {
-    content += suppressBlock;
-    fs.writeFileSync(buildGradlePath, content, 'utf8');
-    console.log('[expo-sdk-fix] Added NDK suppress to root build.gradle allprojects');
-  }
+  // NO-OP: NDK minSdk suppression is already handled correctly via
+  // gradle.properties by patchGradleProperties(). Injecting an
+  // afterEvaluate block here causes "Cannot run Project.afterEvaluate(Closure)
+  // when the project is already evaluated" because the project has already
+  // been evaluated by the time this config plugin runs.
+  // eslint-disable-next-line no-unused-vars
+  void projectRoot;
+  return;
 }
 
 function withExpoSdkFix(config) {
