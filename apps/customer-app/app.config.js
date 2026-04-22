@@ -94,7 +94,7 @@ export default {
           locationAlwaysAndWhenInUsePermission: "GroomLink needs your location to find nearby salons and barbershops."
         }
       ],
-      // Custom plugin that injects Google Maps API Key + Android 16 fixes
+      // Android 16 compatibility fixes
       "./plugins/android-manifest-fixes",
       "./plugins/expo-sdk-fix"
     ],
