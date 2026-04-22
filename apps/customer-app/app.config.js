@@ -93,10 +93,7 @@ export default {
         {
           locationAlwaysAndWhenInUsePermission: "GroomLink needs your location to find nearby salons and barbershops."
         }
-      ],
-      // Android 16 compatibility fixes
-      "./plugins/android-manifest-fixes",
-      "./plugins/expo-sdk-fix"
+      ]
     ],
     owner: "gr3enink"
   }
