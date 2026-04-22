@@ -94,14 +94,8 @@ export default {
           locationAlwaysAndWhenInUsePermission: "GroomLink needs your location to find nearby salons and barbershops."
         }
       ],
-      // react-native-maps plugin - API key injected from env var at build time
-      [
-        "react-native-maps",
-        {
-          androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
-          iosGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY_IOS || ""
-        }
-      ],
+      // Custom plugin to inject Google Maps API Key
+      "./plugins/withGoogleMapsApiKey",
       "./plugins/android-manifest-fixes",
       "./plugins/expo-sdk-fix"
     ],
