@@ -77,7 +77,14 @@ export default function SalonDetailScreen() {
   const { data: salon, isLoading: salonLoading, error: salonError, refetch: refetchSalon } = useQuery({
     queryKey: ['salon', salonId],
     queryFn: () => salonApi.getSalonById(salonId),
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // Log errors when they occur
+  if (salonError) {
+    console.error('[SalonDetail] Error loading salon:', salonError);
+  }
 
   const { data: reviews, refetch: refetchReviews } = useQuery({
     queryKey: ['salon-reviews', salonId],

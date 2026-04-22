@@ -51,8 +51,25 @@ export const salonApi = {
 
   // Get salon by ID
   getSalonById: async (id: string): Promise<Salon> => {
-    const response = await apiClient.get(`/salons/${id}`);
-    return response.data.data;
+    try {
+      const response = await apiClient.get(`/salons/${id}`);
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      
+      const salonData = response.data.data || response.data;
+      
+      if (!salonData) {
+        throw new Error('Salon not found');
+      }
+      
+      return salonData;
+    } catch (error: any) {
+      console.error('[SalonAPI] Error fetching salon:', error);
+      console.error('[SalonAPI] Error response:', error.response?.data);
+      throw error;
+    }
   },
 
   // Get salon staff
