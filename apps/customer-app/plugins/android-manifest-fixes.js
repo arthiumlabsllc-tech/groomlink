@@ -10,13 +10,48 @@ const { withAndroidManifest } = require('@expo/config-plugins');
  * 2. Adds a <property> element inside <application>:
  *    android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY = true
  *    to prevent forced resize on large screens (600dp+) for Android 16+.
+ * 
+ * 3. Adds Google Maps API Key meta-data to <application>
  */
-function withAndroid16Compat(config) {
+function withAndroidManifestFixes(config) {
   return withAndroidManifest(config, (config) => {
     const manifest = config.modResults;
     const application = manifest.manifest.application[0];
 
-    // Add PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY to <application>
+    // ============================================
+    // 1. Add Google Maps API Key
+    // ============================================
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
+    
+    if (apiKey && !application['meta-data']) {
+      application['meta-data'] = [];
+    }
+
+    if (apiKey) {
+      // Check if Google Maps API key already exists
+      const existingKeyIndex = application['meta-data'].findIndex(
+        (meta) => meta.$?.['android:name'] === 'com.google.android.geo.API_KEY'
+      );
+
+      const googleMapsMetaData = {
+        $: {
+          'android:name': 'com.google.android.geo.API_KEY',
+          'android:value': apiKey,
+        },
+      };
+
+      if (existingKeyIndex >= 0) {
+        // Update existing entry
+        application['meta-data'][existingKeyIndex] = googleMapsMetaData;
+      } else {
+        // Add new entry
+        application['meta-data'].push(googleMapsMetaData);
+      }
+    }
+
+    // ============================================
+    // 2. Add PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY to <application>
+    // ============================================
     if (!application['property']) {
       application['property'] = [];
     }
@@ -38,7 +73,9 @@ function withAndroid16Compat(config) {
       });
     }
 
-    // Add enableOnBackInvokedCallback="false" to .MainActivity
+    // ============================================
+    // 3. Add enableOnBackInvokedCallback="false" to .MainActivity
+    // ============================================
     const mainActivity = application.activity.find(
       (a) => a.$['android:name'] === '.MainActivity'
     );
@@ -51,4 +88,4 @@ function withAndroid16Compat(config) {
   });
 }
 
-module.exports = withAndroid16Compat;
+module.exports = withAndroidManifestFixes;
