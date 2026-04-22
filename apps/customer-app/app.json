@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.arthiumlabs.groomlink",
+      "bundleIdentifier": "com.arthiumlabsllc.groomlink",
       "buildNumber": "1.0.0",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "GroomLink uses your location to find nearby barbershops.",
@@ -26,7 +26,7 @@
       }
     },
     "android": {
-      "package": "com.arthiumlabs.groomlink",
+      "package": "com.arthiumlabsllc.groomlink",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo-white.png",
