@@ -29,9 +29,6 @@
       "node": "18.19.0",
       "cache": {
         "key": "v4-clean-manifest-build"
-      },
-      "env": {
-        "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
       }
     }
   },
