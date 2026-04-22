@@ -224,6 +224,12 @@ export default function PrivacyPolicy() {
 
               <h3 className="text-xl font-medium text-gray-800 mb-3">6.3 Deletion (Right to be Forgotten)</h3>
               <p className="text-gray-700 mb-4">You can request complete deletion of your account and associated data. Some data may be retained for legitimate business or legal purposes (e.g., completed bookings for dispute resolution) as outlined in Section 7.</p>
+              <p className="text-gray-700 mb-4">
+                <Link to="/delete-account" className="inline-flex items-center text-blue-600 hover:text-blue-700 underline font-medium">
+                  <Icon name="delete" size={18} className="mr-1" />
+                  Request Account Deletion
+                </Link>
+              </p>
 
               <h3 className="text-xl font-medium text-gray-800 mb-3">6.4 Withdraw Consent</h3>
               <p className="text-gray-700 mb-4">You can withdraw consent for data processing at any time by:</p>

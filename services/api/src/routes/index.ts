@@ -1,6 +1,7 @@
 import { Router, Router as RouterType } from 'express';
 import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
+import userDeletionRoutes from './userDeletion';
 import salonRoutes from './salon.routes';
 import salonOwnerRoutes from './salon-owner.routes';
 import staffRoutes from './staff.routes';
@@ -31,6 +32,7 @@ router.get('/health', (req, res) => {
 // API routes
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/users', userDeletionRoutes);
 router.use('/salons', salonRoutes);
 router.use('/salon-owner', salonOwnerRoutes);
 router.use('/staff', staffRoutes);

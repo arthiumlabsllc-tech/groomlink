@@ -11,6 +11,7 @@ import Footer from './components/Footer'
 import MobileHome from './components/MobileHome'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
+import DataDeletion from './pages/DataDeletion'
 import Register from './pages/Register'
 import SalonDetail from './pages/SalonDetail'
 import Explore from './pages/Explore'
@@ -68,6 +69,7 @@ function App() {
         <Route path="/salon/:id" element={<SalonDetail />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/delete-account" element={<DataDeletion />} />
         <Route path="/register" element={<Register />} />
         <Route path="/partners" element={<PartnerWithUs />} />
         <Route path="/for-salon-owners" element={<PartnerWithUs />} />

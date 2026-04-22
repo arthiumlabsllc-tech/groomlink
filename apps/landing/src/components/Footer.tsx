@@ -34,6 +34,7 @@ const footerLinks = {
     { name: 'Contact Us', href: '#' },
     { name: 'Privacy Policy', href: '/privacy' },
     { name: 'Terms of Service', href: '/terms' },
+    { name: 'Delete My Account', href: '/delete-account' },
   ],
 }
 
