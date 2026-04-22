@@ -223,25 +223,35 @@ export default function SalonDetailScreen() {
     return day.charAt(0).toUpperCase() + day.slice(1);
   };
 
-  const renderServiceItem = useCallback((item: Service) => (
-    <View key={item.id} style={styles.serviceItem}>
-      <View style={styles.serviceInfo}>
-        <Text variant="titleSmall" style={styles.serviceName}>{item.name}</Text>
-        {item.description && (
-          <Text variant="bodySmall" style={styles.serviceDescription}>{item.description}</Text>
-        )}
-        <View style={styles.serviceDuration}>
-          <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-          <Text variant="bodySmall" style={styles.serviceDurationText}>
-            {formatDuration(item.duration)}
-          </Text>
+  const renderServiceItem = useCallback((item: Service) => {
+    // Add defensive checks for required fields
+    if (!item || !item.id) {
+      console.warn('[SalonDetail] Invalid service item:', item);
+      return null;
+    }
+
+    return (
+      <View key={item.id} style={styles.serviceItem}>
+        <View style={styles.serviceInfo}>
+          <Text variant="titleSmall" style={styles.serviceName}>{item.name || 'Unnamed Service'}</Text>
+          {item.description && (
+            <Text variant="bodySmall" style={styles.serviceDescription}>{item.description}</Text>
+          )}
+          {item.duration && (
+            <View style={styles.serviceDuration}>
+              <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+              <Text variant="bodySmall" style={styles.serviceDurationText}>
+                {formatDuration(item.duration)}
+              </Text>
+            </View>
+          )}
         </View>
+        <Text variant="titleMedium" style={styles.servicePrice}>
+          GH₵ {(item?.price ?? 0).toFixed(2)}
+        </Text>
       </View>
-      <Text variant="titleMedium" style={styles.servicePrice}>
-        GH₵ {item?.price?.toFixed(2) ?? '0.00'}
-      </Text>
-    </View>
-  ), []);
+    );
+  }, []);
 
   const renderReviewItem = useCallback((item: Review) => (
     <Card key={item.id} style={styles.reviewCard}>
@@ -584,8 +594,10 @@ export default function SalonDetailScreen() {
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>Services</Text>
           <View style={styles.servicesCard}>
-            {salon.services?.length > 0 ? (
-              salon.services.map((service) => renderServiceItem(service))
+            {salon.services && salon.services.length > 0 ? (
+              salon.services
+                .filter(service => service && service.id) // Filter out invalid services
+                .map((service) => renderServiceItem(service))
             ) : (
               <Text variant="bodyMedium" style={styles.emptyText}>No services available</Text>
             )}
@@ -657,31 +669,33 @@ export default function SalonDetailScreen() {
                         <Ionicons name="checkmark-circle" size={20} color={COLORS.primaryGreen} />
                       )}
                     </TouchableOpacity>
-                    {salon.services.map((service) => (
-                      <TouchableOpacity
-                        key={service.id}
-                        style={[
-                          styles.serviceOption,
-                          selectedServiceId === service.id && styles.serviceOptionSelected
-                        ]}
-                        onPress={() => setSelectedServiceId(service.id)}
-                      >
-                        <View style={styles.serviceOptionContent}>
-                          <Text style={[
-                            styles.serviceOptionText,
-                            selectedServiceId === service.id && styles.serviceOptionTextSelected
-                          ]}>
-                            {service.name}
-                          </Text>
-                          <Text style={styles.serviceOptionPrice}>
-                            GH₵ {service?.price?.toFixed(2) ?? '0.00'}
-                          </Text>
-                        </View>
-                        {selectedServiceId === service.id && (
-                          <Ionicons name="checkmark-circle" size={20} color={COLORS.primaryGreen} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
+                    {salon.services && salon.services.length > 0 && salon.services
+                      .filter(service => service && service.id) // Filter out invalid services
+                      .map((service) => (
+                        <TouchableOpacity
+                          key={service.id}
+                          style={[
+                            styles.serviceOption,
+                            selectedServiceId === service.id && styles.serviceOptionSelected
+                          ]}
+                          onPress={() => setSelectedServiceId(service.id)}
+                        >
+                          <View style={styles.serviceOptionContent}>
+                            <Text style={[
+                              styles.serviceOptionText,
+                              selectedServiceId === service.id && styles.serviceOptionTextSelected
+                            ]}>
+                              {service.name || 'Unnamed Service'}
+                            </Text>
+                            <Text style={styles.serviceOptionPrice}>
+                              GH₵ {(service?.price ?? 0).toFixed(2)}
+                            </Text>
+                          </View>
+                          {selectedServiceId === service.id && (
+                            <Ionicons name="checkmark-circle" size={20} color={COLORS.primaryGreen} />
+                          )}
+                        </TouchableOpacity>
+                      ))}
                   </ScrollView>
                 </View>
               )}
