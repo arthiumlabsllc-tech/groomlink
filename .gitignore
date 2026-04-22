@@ -51,6 +51,8 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 *.orig.*
+google-play-key.json
+service-account-key.json
 android/
 ios/
 
