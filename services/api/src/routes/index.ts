@@ -21,6 +21,7 @@ import discoveryRoutes from './discovery.routes';
 import insightsRoutes from './insights.routes';
 import subscriptionRoutes from './subscription.routes';
 import platformRoutes from './platformFeedback';
+import configRoutes from './config';
 
 const router: RouterType = Router();
 
@@ -28,6 +29,9 @@ const router: RouterType = Router();
 router.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Public config endpoint (no auth required)
+router.use('/config', configRoutes);
 
 // API routes
 router.use('/auth', authRoutes);

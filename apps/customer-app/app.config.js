@@ -1,0 +1,110 @@
+/**
+ * Dynamic Expo Configuration
+ * This file allows us to use environment variables securely
+ * 
+ * IMPORTANT: API keys are injected at BUILD TIME, not stored in code
+ */
+
+export default {
+  expo: {
+    name: "GroomLink",
+    slug: "groomlink-customer",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "light",
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#CE1126"
+    },
+    assetBundlePatterns: [
+      "**/*"
+    ],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.arthiumlabsllc.groomlink",
+      buildNumber: "1.0.0",
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription: "GroomLink uses your location to find nearby barbershops.",
+        NSCameraUsageDescription: "GroomLink needs camera access to upload profile photos.",
+        NSPhotoLibraryUsageDescription: "GroomLink needs photo library access to upload profile photos.",
+        ITSAppUsesNonExemptEncryption: false
+      }
+    },
+    android: {
+      package: "com.arthiumlabsllc.groomlink",
+      versionCode: 1,
+      adaptiveIcon: {
+        foregroundImage: "./assets/logo-white.png",
+        backgroundColor: "#CE1126"
+      },
+      permissions: [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "FOREGROUND_SERVICE",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      config: {
+        googleMaps: {
+          // API key is injected at build time from environment variable
+          apiKey: process.env.GOOGLE_MAPS_API_KEY || ""
+        }
+      }
+    },
+    web: {
+      favicon: "./assets/favicon.png"
+    },
+    extra: {
+      eas: {
+        projectId: "81417e23-6df9-4792-bf49-7829dd1d130e"
+      }
+    },
+    plugins: [
+      [
+        "expo-build-properties",
+        {
+          android: {
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            minSdkVersion: 24,
+            ndkVersion: "26.1.10909125",
+            kotlinVersion: "1.9.25",
+            javaVersion: "17"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/notification-icon.png",
+          color: "#CE1126"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission: "GroomLink needs your location to find nearby salons and barbershops."
+        }
+      ],
+      // react-native-maps plugin - API key injected from env var at build time
+      [
+        "react-native-maps",
+        {
+          androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
+          iosGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY_IOS || ""
+        }
+      ],
+      "./plugins/android-manifest-fixes",
+      "./plugins/expo-sdk-fix"
+    ],
+    owner: "gr3enink"
+  }
+};
