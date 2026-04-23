@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   Dimensions,
+  type DimensionValue,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -45,8 +46,8 @@ function FloatingIcon({
   floatDelay,
 }: {
   icon: string;
-  left: string;
-  top: string;
+  left: DimensionValue;
+  top: DimensionValue;
   size: number;
   opacity: number;
   floatDelay: number;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
@@ -28,6 +28,7 @@ type ProfileSetupRouteProp = RouteProp<AuthStackParamList, 'ProfileSetup'>;
 type LocationStatus = 'pending' | 'granted' | 'denied' | 'detecting';
 
 export default function ProfileSetupScreen() {
+  const navigation = useNavigation<any>();
   const route = useRoute<ProfileSetupRouteProp>();
   const email = route.params?.email || '';
   
@@ -151,7 +152,8 @@ export default function ProfileSetupScreen() {
         // Clear the isNewUser flag since registration is complete
         await SecureStore.deleteItemAsync('isNewUser');
         setUser(response.data.user);
-        // AppNavigator will automatically redirect to MainNavigator
+        // Dismiss the auth modal so the user returns to the main tabs
+        navigation.goBack();
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to complete registration');

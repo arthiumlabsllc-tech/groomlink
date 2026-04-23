@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -17,18 +17,21 @@ import QRScannerScreen from '../screens/main/QRScannerScreen';
 import PricingScreen from '../screens/main/PricingScreen';
 import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
+import { AppTheme } from '../theme/colors';
+import { useAppTheme } from '../theme/ThemeContext';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
 function DashboardStack() {
+  const { theme } = useAppTheme();
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.background,
         },
-        headerTintColor: '#111827',
+        headerTintColor: theme.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
@@ -53,13 +56,14 @@ function DashboardStack() {
 }
 
 function QueueStack() {
+  const { theme } = useAppTheme();
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.background,
         },
-        headerTintColor: '#111827',
+        headerTintColor: theme.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
@@ -73,13 +77,14 @@ function QueueStack() {
 }
 
 function BookingsStack() {
+  const { theme } = useAppTheme();
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.background,
         },
-        headerTintColor: '#111827',
+        headerTintColor: theme.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
@@ -102,13 +107,14 @@ function BookingsStack() {
 }
 
 function ServicesStack() {
+  const { theme } = useAppTheme();
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.background,
         },
-        headerTintColor: '#111827',
+        headerTintColor: theme.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
@@ -129,13 +135,14 @@ function ServicesStack() {
 }
 
 function StaffStack() {
+  const { theme } = useAppTheme();
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.background,
         },
-        headerTintColor: '#111827',
+        headerTintColor: theme.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
@@ -156,13 +163,14 @@ function StaffStack() {
 }
 
 function ProfileStack() {
+  const { theme } = useAppTheme();
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.background,
         },
-        headerTintColor: '#111827',
+        headerTintColor: theme.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
@@ -181,6 +189,9 @@ function ProfileStack() {
 }
 
 export default function MainNavigator() {
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -206,14 +217,14 @@ export default function MainNavigator() {
               <Ionicons 
                 name={iconName as any} 
                 size={22} 
-                color={focused ? '#006B3F' : '#9CA3AF'} 
+                color={focused ? theme.tabActive : theme.tabInactive} 
               />
               {focused && <View style={styles.activeIndicator} />}
             </View>
           );
         },
-        tabBarActiveTintColor: '#006B3F',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: theme.tabActive,
+        tabBarInactiveTintColor: theme.tabInactive,
         headerShown: false,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
@@ -266,11 +277,11 @@ export default function MainNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   tabBar: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.tabBar,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: theme.tabBarBorder,
     height: Platform.OS === 'ios' ? 88 : 64,
     paddingTop: 8,
     paddingBottom: Platform.OS === 'ios' ? 24 : 8,
@@ -299,6 +310,6 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.tabActive,
   },
 });

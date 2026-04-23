@@ -11,6 +11,7 @@ export interface SearchFilters {
   radius?: number;
   page?: number;
   limit?: number;
+  featured?: boolean;
 }
 
 export interface SalonSearchParams {
@@ -31,6 +32,7 @@ export const salonApi = {
     if (filters.radius) params.append('radius', filters.radius.toString());
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.featured !== undefined) params.append('featured', filters.featured.toString());
 
     const response = await apiClient.get(`/salons?${params.toString()}`);
     return {
@@ -83,6 +85,9 @@ export const salonApi = {
     const response = await apiClient.get(`/salons/${salonId}/services`);
     return response.data.data.services;
   },
+
+  // Get featured salons
+  getFeaturedSalons: (limit?: number) => salonApi.searchSalons({ featured: true, limit: limit || 10 }),
 
   // Get salons for map view
   getSalonsForMap: async (lat?: number, lng?: number, radius?: number): Promise<Salon[]> => {

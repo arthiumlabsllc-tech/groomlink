@@ -71,7 +71,7 @@ export default function HomeScreen() {
 
   const { data: featuredSalons, isLoading: featuredLoading, error: featuredError, refetch: refetchFeatured } = useQuery({
     queryKey: ['featured-salons'],
-    queryFn: () => salonApi.searchSalons({ limit: 10 }),
+    queryFn: () => salonApi.searchSalons({ featured: true, limit: 10 }),
   });
 
   // Extract salons array from the response
@@ -137,6 +137,12 @@ export default function HomeScreen() {
           <Ionicons name="star" size={12} color={COLORS.accentGold} />
           <Text style={styles.ratingBadgeText}>{salon.rating.toFixed(1)}</Text>
         </View>
+        {isHorizontal && salon.isFeatured && (
+          <View style={styles.featuredBadge}>
+            <Ionicons name="star" size={10} color={COLORS.primaryGreen} />
+            <Text style={styles.featuredBadgeText}>Featured</Text>
+          </View>
+        )}
       </View>
       <Card.Content style={styles.cardContent}>
         <Text variant="titleSmall" numberOfLines={1} style={styles.salonName}>
@@ -230,6 +236,11 @@ export default function HomeScreen() {
             <View style={styles.horizontalLoading}>{renderLoading()}</View>
           ) : featuredError ? (
             <View style={styles.horizontalLoading}>{renderError()}</View>
+          ) : featuredSalonsList.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="star-outline" size={48} color={COLORS.border} />
+              <Text variant="bodyMedium" style={styles.emptyText}>No featured salons yet</Text>
+            </View>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
               {featuredSalonsList.map((salon) => renderSalonCard(salon, true))}
@@ -395,6 +406,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.textPrimary,
+  },
+  featuredBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.accentGold,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  featuredBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.dark,
   },
   cardContent: {
     padding: 12,

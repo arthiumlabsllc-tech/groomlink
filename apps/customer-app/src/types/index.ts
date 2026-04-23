@@ -31,6 +31,7 @@ export interface Salon {
   workers: Worker[];
   distance?: number;
   acceptsWalkIns?: boolean;
+  isFeatured?: boolean;
 }
 
 export interface OpeningHours {
@@ -124,7 +125,7 @@ export interface Booking {
 export interface Review {
   id: string;
   rating: number;
-  comment: string;
+  comment?: string | null;
   user: User;
   createdAt: string;
 }

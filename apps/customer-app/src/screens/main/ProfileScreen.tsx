@@ -47,7 +47,7 @@ const APP_VERSION = Constants.expoConfig?.version || Constants.manifest?.version
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
-  const { user, setUser, logout } = useAuthStore();
+  const { user, setUser, logout, isAuthenticated } = useAuthStore();
 
   const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -234,6 +234,33 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
+  // Unauthenticated state - show login prompt
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loginPromptContainer}>
+          <View style={styles.loginPromptIconContainer}>
+            <Ionicons name="person-outline" size={80} color={COLORS.primaryGreen} />
+          </View>
+          <Text variant="headlineSmall" style={styles.loginPromptTitle}>
+            Login to Your Profile
+          </Text>
+          <Text variant="bodyMedium" style={styles.loginPromptSubtitle}>
+            Sign in to manage your account, preferences, and settings
+          </Text>
+          <Button
+            mode="contained"
+            onPress={() => navigation.getParent()?.navigate('Auth')}
+            style={styles.loginPromptButton}
+            buttonColor={COLORS.primaryGreen}
+          >
+            Login
+          </Button>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -699,5 +726,37 @@ const styles = StyleSheet.create({
   },
   dialogText: {
     color: COLORS.textSecondary,
+  },
+  // Login Prompt (unauthenticated)
+  loginPromptContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  loginPromptIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  loginPromptTitle: {
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  loginPromptSubtitle: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  loginPromptButton: {
+    borderRadius: 12,
+    paddingHorizontal: 32,
   },
 });

@@ -62,6 +62,7 @@ export async function getSalons(req: Request, res: Response): Promise<void> {
       longitude: req.query.lng ? parseFloat(req.query.lng as string) : undefined,
       radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
       search: req.query.search as string,
+      isFeatured: req.query.featured === 'true' ? true : undefined,
     };
 
     const { salons, total } = await salonService.getSalons(filters, page, limit);
@@ -342,6 +343,7 @@ export async function getSalonsForMap(req: Request, res: Response): Promise<void
         rating: true, reviewCount: true,
         openingTime: true, closingTime: true, workingDays: true,
         city: true, address: true, phoneNumber: true,
+        isFeatured: true,
       }
     });
 

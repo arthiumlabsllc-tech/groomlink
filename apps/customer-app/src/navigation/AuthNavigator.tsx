@@ -3,8 +3,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EmailScreen from '../screens/auth/EmailScreen';
 import OTPScreen from '../screens/auth/OTPScreen';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
+import { AuthStackParamList } from '../types/navigation';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function AuthNavigator() {
   return (

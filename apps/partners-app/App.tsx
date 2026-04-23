@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
-import { PaperProvider } from 'react-native-paper';
+import { PaperProvider, DefaultTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
-import { Platform, Alert } from 'react-native';
+import { Platform, Alert, View } from 'react-native';
 import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
+import LoadingScreen from './src/components/LoadingScreen';
 import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
 import { salonApi } from './src/api/salon';
 import { useSocket } from './src/hooks/useSocket';
+import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -72,19 +74,75 @@ const queryClient = new QueryClient({
   },
 });
 
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppInner />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function AppInner() {
+  const { theme, isDark } = useAppTheme();
+
+  const paperTheme = {
+    ...DefaultTheme,
+    dark: isDark,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: theme.primary,
+      background: theme.background,
+      surface: theme.surface,
+      text: theme.text,
+      onSurface: theme.text,
+    },
+  };
+
+  const navigationTheme = {
+    dark: isDark,
+    colors: {
+      primary: theme.primary,
+      background: theme.background,
+      card: theme.surface,
+      text: theme.text,
+      border: theme.border,
+      notification: theme.notificationBadge,
+    },
+  };
+
+  return (
+    <PaperProvider theme={paperTheme}>
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer theme={navigationTheme}>
+          <View style={{ flex: 1, backgroundColor: theme.background }}>
+            <AppContent />
+            <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={theme.statusBar} />
+          </View>
+        </NavigationContainer>
+      </QueryClientProvider>
+    </PaperProvider>
+  );
+}
+
 function AppContent() {
-  const { setUser, clearAuth, isAuthenticated } = useAuthStore();
+  const { setUser, clearAuth, isAuthenticated, isLoading } = useAuthStore();
   const [salonId, setSalonId] = useState<string | null>(null);
+  const [salonReady, setSalonReady] = useState(false);
 
   useEffect(() => {
     checkAuth();
     registerForPushNotificationsAsync();
   }, []);
 
-  // Fetch salon when authenticated
+  // Fetch salon when authenticated, reset on logout
   useEffect(() => {
     if (isAuthenticated) {
       fetchSalon();
+    } else {
+      setSalonReady(false);
+      setSalonId(null);
     }
   }, [isAuthenticated]);
 
@@ -98,6 +156,13 @@ function AppContent() {
         // Verify token is still valid by fetching profile
         try {
           const profile = await authApi.getProfile();
+          // Fetch salon before setting user to prevent dashboard from rendering without salon data
+          try {
+            await fetchSalon();
+          } catch (salonError) {
+            console.error('Failed to fetch salon during auth check:', salonError);
+          }
+          setSalonReady(true);
           setUser(profile);
         } catch (profileError) {
           // Token is invalid or expired - clear everything and show login
@@ -129,6 +194,8 @@ function AppContent() {
       }
     } catch (error) {
       console.error('Failed to fetch salon:', error);
+    } finally {
+      setSalonReady(true);
     }
   };
 
@@ -137,26 +204,29 @@ function AppContent() {
     salonId,
     enabled: isAuthenticated && !!salonId,
     onBookingNew: (data) => {
-      const customerName = `${data.booking.customer.firstName} ${data.booking.customer.lastName}`;
+      if (!data?.booking?.customer || !data?.booking?.service) return;
+      const customerName = `${data.booking.customer.firstName || ''} ${data.booking.customer.lastName || ''}`.trim();
       Alert.alert(
         'New Booking!',
-        `${customerName} booked ${data.booking.service.name}`,
+        `${customerName || 'A customer'} booked ${data.booking.service.name || 'a service'}`,
         [{ text: 'OK' }],
         { cancelable: true }
       );
     },
     onBookingCheckin: (data) => {
+      if (!data?.customerName || !data?.serviceName) return;
       Alert.alert(
         'Customer Checked In',
-        `${data.customerName} checked in for ${data.serviceName}. Queue position: ${data.queuePosition}`,
+        `${data.customerName} checked in for ${data.serviceName}. Queue position: ${data.queuePosition || '-'}`,
         [{ text: 'OK' }],
         { cancelable: true }
       );
     },
     onBookingCompleted: (data) => {
+      if (!data?.customerName || !data?.serviceName) return;
       Alert.alert(
         'Service Completed',
-        `${data.customerName} - ${data.serviceName} completed. Amount: GHS ${data.totalAmount}`,
+        `${data.customerName} - ${data.serviceName} completed. Amount: GHS ${data.totalAmount || 0}`,
         [{ text: 'OK' }],
         { cancelable: true }
       );
@@ -167,20 +237,11 @@ function AppContent() {
     },
   });
 
+  if (isLoading || (isAuthenticated && !salonReady)) {
+    return <LoadingScreen />;
+  }
+
   return <AppNavigator />;
 }
 
-export default function App() {
-  return (
-    <SafeAreaProvider>
-      <PaperProvider>
-        <QueryClientProvider client={queryClient}>
-          <NavigationContainer>
-            <AppContent />
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </QueryClientProvider>
-      </PaperProvider>
-    </SafeAreaProvider>
-  );
-}
+

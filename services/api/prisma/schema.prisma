@@ -206,6 +206,7 @@ model Salon {
   hasWifi        Boolean @default(false) @map("has_wifi")
   hasAC          Boolean @default(false) @map("has_ac")
   acceptsWalkIns Boolean @default(true) @map("accepts_walk_ins")
+  isFeatured     Boolean @default(false) @map("is_featured")
 
   // Capacity Management
   maxConcurrentClients Int    @default(1) @map("max_concurrent_clients")

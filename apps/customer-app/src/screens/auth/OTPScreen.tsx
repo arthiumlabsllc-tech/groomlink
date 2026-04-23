@@ -90,7 +90,8 @@ export default function OTPScreen() {
           // Existing user - tokens are already stored in SecureStore by authApi
           // Set user in store which updates isAuthenticated to true
           setUser(user);
-          // AppNavigator will automatically redirect to MainNavigator
+          // Dismiss the auth modal so the user returns to the main tabs
+          navigation.goBack();
         }
       }
     } catch (err: any) {

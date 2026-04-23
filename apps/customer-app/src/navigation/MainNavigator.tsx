@@ -9,12 +9,14 @@ import MapScreen from '../screens/main/MapScreen';
 import BookingsScreen from '../screens/main/BookingsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
-import BookingScreen from '../screens/main/BookingScreen';
-import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen';
-import BookingDetailScreen from '../screens/main/BookingDetailScreen';
-import BookingQRCodeScreen from '../screens/main/BookingQRCodeScreen';
-import RateBookingScreen from '../screens/main/RateBookingScreen';
-import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
+import {
+  HomeStackParamList,
+  SearchStackParamList,
+  MapStackParamList,
+  BookingsStackParamList,
+  ProfileStackParamList,
+  TabParamList,
+} from '../types/navigation';
 
 // Design System Colors
 const COLORS = {
@@ -27,95 +29,53 @@ const COLORS = {
   border: '#E5E7EB',
 };
 
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
+const HomeStackNav = createNativeStackNavigator<HomeStackParamList>();
+const SearchStackNav = createNativeStackNavigator<SearchStackParamList>();
+const MapStackNav = createNativeStackNavigator<MapStackParamList>();
+const BookingsStackNav = createNativeStackNavigator<BookingsStackParamList>();
+const ProfileStackNav = createNativeStackNavigator<ProfileStackParamList>();
 
 function HomeStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
-      <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
-      <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
-      <Stack.Screen name="BookingQRCode" component={BookingQRCodeScreen} options={{ title: 'Check-in Code' }} />
-    </Stack.Navigator>
+    <HomeStackNav.Navigator>
+      <HomeStackNav.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
+      <HomeStackNav.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
+    </HomeStackNav.Navigator>
   );
 }
 
 function SearchStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="SearchMain" component={SearchScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
-      <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
-    </Stack.Navigator>
+    <SearchStackNav.Navigator>
+      <SearchStackNav.Screen name="SearchMain" component={SearchScreen} options={{ headerShown: false }} />
+      <SearchStackNav.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
+    </SearchStackNav.Navigator>
   );
 }
 
 function MapStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="MapMain" component={MapScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
-      <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
-    </Stack.Navigator>
+    <MapStackNav.Navigator>
+      <MapStackNav.Screen name="MapMain" component={MapScreen} options={{ headerShown: false }} />
+      <MapStackNav.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
+    </MapStackNav.Navigator>
   );
 }
 
 function BookingsStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="BookingsMain" component={BookingsScreen} />
-      <Stack.Screen 
-        name="BookingDetail" 
-        component={BookingDetailScreen} 
-        options={{ 
-          title: 'Booking Details',
-          headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
-        }} 
-      />
-      <Stack.Screen 
-        name="BookingQRCode" 
-        component={BookingQRCodeScreen} 
-        options={{ 
-          title: 'Check-in Code',
-          headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
-        }} 
-      />
-      <Stack.Screen 
-        name="RateBooking" 
-        component={RateBookingScreen} 
-        options={{ 
-          title: 'Rate Booking',
-          headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
-        }} 
-      />
-    </Stack.Navigator>
+    <BookingsStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <BookingsStackNav.Screen name="BookingsMain" component={BookingsScreen} />
+    </BookingsStackNav.Navigator>
   );
 }
 
 function ProfileStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
-      <Stack.Screen
-        name="PlatformFeedback"
-        component={PlatformFeedbackScreen}
-        options={{
-          title: 'Rate GroomLink',
-          headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
-        }}
-      />
-    </Stack.Navigator>
+    <ProfileStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStackNav.Screen name="ProfileMain" component={ProfileScreen} />
+    </ProfileStackNav.Navigator>
   );
 }
 

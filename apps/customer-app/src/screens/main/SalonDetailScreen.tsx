@@ -28,6 +28,7 @@ import { reviewApi } from '../../api/review';
 import { queueApi, QueueStatus, MyQueuePosition } from '../../api/queue';
 import { Salon, Review, Service } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
+import { useAuthStore } from '../../store/authStore';
 
 // Design System Colors
 const COLORS = {
@@ -56,6 +57,7 @@ export default function SalonDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<SalonDetailRouteProp>();
   const { salonId } = route.params;
+  const { isAuthenticated, setPendingBooking } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
 
   // Queue state
@@ -155,7 +157,12 @@ export default function SalonDetailScreen() {
   };
 
   const handleBookNow = () => {
-    navigation.navigate('Booking', { salonId });
+    if (isAuthenticated) {
+      navigation.navigate('Booking', { salonId });
+    } else {
+      setPendingBooking({ salonId, salonName: salon?.businessName ?? '' });
+      navigation.navigate('Auth');
+    }
   };
 
   const formatTime = (time: string) => {
@@ -178,17 +185,19 @@ export default function SalonDetailScreen() {
   // Get hero images array for carousel (coverImage first, then gallery images)
   const getHeroImages = (salonData: Salon): string[] => {
     const images: string[] = [];
-    if (salonData.coverImage) {
+
+    if (salonData.coverImage && typeof salonData.coverImage === 'string' && salonData.coverImage.trim()) {
       images.push(salonData.coverImage);
     }
-    if (salonData.images && salonData.images.length > 0) {
-      // Add gallery images except the cover if it's already included
+
+    if (salonData.images && Array.isArray(salonData.images) && salonData.images.length > 0) {
       salonData.images.forEach((img) => {
-        if (img !== salonData.coverImage) {
+        if (img && typeof img === 'string' && img.trim() && img !== salonData.coverImage) {
           images.push(img);
         }
       });
     }
+
     return images;
   };
 
@@ -253,7 +262,12 @@ export default function SalonDetailScreen() {
     );
   }, []);
 
-  const renderReviewItem = useCallback((item: Review) => (
+  const renderReviewItem = useCallback((item: Review) => {
+    if (!item || !item.id) {
+      return null;
+    }
+
+    return (
     <Card key={item.id} style={styles.reviewCard}>
       <Card.Content style={styles.reviewContent}>
         <View style={styles.reviewHeader}>
@@ -271,7 +285,7 @@ export default function SalonDetailScreen() {
               {[1, 2, 3, 4, 5].map((star) => (
                 <Ionicons
                   key={star}
-                  name={star <= item.rating ? 'star' : 'star-outline'}
+                  name={star <= (item.rating ?? 0) ? 'star' : 'star-outline'}
                   size={14}
                   color={COLORS.accentGold}
                 />
@@ -284,7 +298,8 @@ export default function SalonDetailScreen() {
         )}
       </Card.Content>
     </Card>
-  ), []);
+    );
+  }, []);
 
   const renderOpeningHours = (salonData: Salon) => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
@@ -383,9 +398,9 @@ export default function SalonDetailScreen() {
                     scrollEventThrottle={16}
                     style={styles.galleryScroll}
                   >
-                    {heroImages.map((image, index) => (
+                    {heroImages.filter(img => img && img.trim()).map((image, index) => (
                       <View key={index} style={styles.gallerySlide}>
-                        <Image source={{ uri: image }} style={styles.heroImage} />
+                        <Image source={{ uri: image }} style={styles.heroImage} onError={() => console.warn('[SalonDetail] Hero image failed to load:', image)} />
                       </View>
                     ))}
                   </ScrollView>
@@ -475,7 +490,7 @@ export default function SalonDetailScreen() {
           <View style={styles.section}>
             <Text variant="titleMedium" style={styles.sectionTitle}>Gallery</Text>
             <View style={styles.galleryGrid}>
-              {salon.images.slice(0, 6).map((image, index) => (
+              {salon.images.filter(img => img && typeof img === 'string' && img.trim()).slice(0, 6).map((image, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.galleryThumbnail}
@@ -758,7 +773,7 @@ export default function SalonDetailScreen() {
               showsHorizontalScrollIndicator={false}
               contentOffset={{ x: viewerInitialIndex * SCREEN_WIDTH, y: 0 }}
             >
-              {salon?.images?.map((image, index) => (
+              {salon?.images?.filter(img => img && typeof img === 'string' && img.trim()).map((image, index) => (
                 <View key={index} style={styles.imageViewerSlide}>
                   <Image source={{ uri: image }} style={styles.imageViewerImage} resizeMode="contain" />
                 </View>

@@ -271,6 +271,33 @@ export default function BookingsScreen() {
     );
   };
 
+  // Unauthenticated state - show login prompt
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loginPromptContainer}>
+          <View style={styles.loginPromptIconContainer}>
+            <Ionicons name="calendar-outline" size={80} color={COLORS.primaryGreen} />
+          </View>
+          <Text variant="headlineSmall" style={styles.loginPromptTitle}>
+            Login to View Bookings
+          </Text>
+          <Text variant="bodyMedium" style={styles.loginPromptSubtitle}>
+            Sign in to manage your appointments and booking history
+          </Text>
+          <Button
+            mode="contained"
+            onPress={() => navigation.getParent()?.navigate('Auth')}
+            style={styles.loginPromptButton}
+            buttonColor={COLORS.primaryGreen}
+          >
+            Login
+          </Button>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   if (error && !isAuthError && !bookings) {
     return (
       <SafeAreaView style={styles.container}>
@@ -588,5 +615,37 @@ const styles = StyleSheet.create({
   retryButton: {
     backgroundColor: COLORS.primaryGreen,
     borderRadius: 12,
+  },
+  // Login Prompt (unauthenticated)
+  loginPromptContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  loginPromptIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  loginPromptTitle: {
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  loginPromptSubtitle: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  loginPromptButton: {
+    borderRadius: 12,
+    paddingHorizontal: 32,
   },
 });

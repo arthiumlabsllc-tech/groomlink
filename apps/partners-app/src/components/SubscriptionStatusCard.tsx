@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,58 +8,68 @@ import { useQuery } from '@tanstack/react-query';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { subscriptionApi, SubscriptionStatus } from '../api/subscription';
 import { MainStackParamList } from '../types';
+import { AppTheme } from '../theme/colors';
+import { useAppTheme } from '../theme/ThemeContext';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
-const COLORS = {
-  green: '#006B3F',
-  red: '#CE1126',
-  gold: '#FCD116',
-  white: '#FFFFFF',
-  black: '#111827',
-  gray: '#6B7280',
-  lightGray: '#F3F4F6',
-  border: '#E5E7EB',
-};
-
-const getPlanColor = (planSlug: string): string => {
+const getPlanColor = (planSlug: string, theme: AppTheme): string => {
   switch (planSlug.toLowerCase()) {
     case 'free':
     case 'starter':
-      return '#9CA3AF';
+      return theme.textSecondary;
     case 'basic':
     case 'professional':
     case 'pro':
-      return COLORS.green;
+      return theme.primary;
     case 'premium':
     case 'enterprise':
-      return COLORS.gold;
+      return theme.accent;
     default:
-      return COLORS.green;
+      return theme.primary;
   }
 };
 
-const getStatusColor = (status: string): string => {
+const getStatusColor = (status: string, theme: AppTheme): string => {
   switch (status) {
     case 'ACTIVE':
-      return COLORS.green;
+      return theme.success;
     case 'CANCELLED':
-      return COLORS.red;
+      return theme.danger;
     case 'EXPIRED':
-      return COLORS.gray;
+      return theme.textTertiary;
     case 'PENDING':
-      return COLORS.gold;
+      return theme.accentLight;
     default:
-      return COLORS.gray;
+      return theme.textTertiary;
+  }
+};
+
+const getStatusBgColor = (status: string, theme: AppTheme): string => {
+  switch (status) {
+    case 'ACTIVE':
+      return theme.successBg;
+    case 'CANCELLED':
+      return theme.dangerBg;
+    case 'EXPIRED':
+      return theme.surfaceVariant;
+    case 'PENDING':
+      return theme.accentBg;
+    default:
+      return theme.surfaceVariant;
   }
 };
 
 export default function SubscriptionStatusCard() {
   const navigation = useNavigation<NavigationProp>();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const { data: subscription, isLoading } = useQuery({
+  const { data: subscription, isLoading, isError } = useQuery({
     queryKey: ['currentSubscription'],
     queryFn: subscriptionApi.getCurrentPlan,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
 
   const handleManage = () => {
@@ -74,56 +84,67 @@ export default function SubscriptionStatusCard() {
     );
   }
 
+  if (isError) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.loadingText}>Unable to load subscription info</Text>
+      </View>
+    );
+  }
+
   if (!subscription) {
     return (
       <TouchableOpacity style={styles.container} onPress={handleManage} activeOpacity={0.8}>
+        <View style={styles.goldAccent} />
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Ionicons name="card-outline" size={20} color={COLORS.gray} />
+              <Ionicons name="trophy" size={22} color={theme.accent} />
             </View>
             <View style={styles.textContainer}>
               <Text style={styles.planName}>No Active Plan</Text>
               <Text style={styles.expiryText}>Upgrade to unlock features</Text>
             </View>
           </View>
-          <View style={styles.manageButton}>
+          <TouchableOpacity style={styles.manageButton} onPress={handleManage}>
             <Text style={styles.manageButtonText}>Upgrade</Text>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.green} />
-          </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.background} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
   }
 
-  const planColor = getPlanColor(subscription.plan.slug);
-  const statusColor = getStatusColor(subscription.status);
-  const expiryDate = new Date(subscription.currentPeriodEnd);
-  const isExpiringSoon = isAfter(new Date(), addDays(expiryDate, -7)) && 
+  const planColor = getPlanColor(subscription.plan?.slug || '', theme);
+  const statusColor = getStatusColor(subscription.status || '', theme);
+  const statusBgColor = getStatusBgColor(subscription.status || '', theme);
+  const expiryDate = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : new Date();
+  const isExpiringSoon = subscription.currentPeriodEnd && isAfter(new Date(), addDays(expiryDate, -7)) &&
                          isBefore(new Date(), expiryDate);
 
   return (
     <TouchableOpacity style={styles.container} onPress={handleManage} activeOpacity={0.8}>
+      <View style={styles.goldAccent} />
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: `${planColor}15` }]}>
-            <Ionicons name="card" size={20} color={planColor} />
+          <View style={[styles.iconContainer, { backgroundColor: theme.accentBg }]}>
+            <Ionicons name="trophy" size={22} color={theme.accent} />
           </View>
           <View style={styles.textContainer}>
             <View style={styles.planRow}>
-              <Text style={[styles.planName, { color: planColor }]}>
-                {subscription.plan.name}
+              <Text style={styles.planName}>
+                {subscription.plan?.name || 'Unknown Plan'}
               </Text>
               <Chip
-                style={[styles.statusChip, { backgroundColor: `${statusColor}20` }]}
+                style={[styles.statusChip, { backgroundColor: statusBgColor }]}
                 textStyle={[styles.statusText, { color: statusColor }]}
               >
-                {subscription.status}
+                {subscription.status || 'UNKNOWN'}
               </Chip>
             </View>
             <Text style={[
               styles.expiryText,
-              isExpiringSoon && { color: COLORS.red }
+              isExpiringSoon && { color: theme.danger }
             ]}>
               {subscription.cancelAtPeriodEnd 
                 ? 'Cancels on '
@@ -135,28 +156,28 @@ export default function SubscriptionStatusCard() {
             </Text>
           </View>
         </View>
-        <View style={styles.manageButton}>
+        <TouchableOpacity style={styles.manageButton} onPress={handleManage}>
           <Text style={styles.manageButtonText}>Manage</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.green} />
-        </View>
+          <Ionicons name="chevron-forward" size={16} color={theme.background} />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
+    backgroundColor: theme.surfaceVariant,
+    borderRadius: 16,
     marginHorizontal: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    borderColor: theme.border,
+    overflow: 'hidden',
+  },
+  goldAccent: {
+    height: 3,
+    backgroundColor: theme.accent,
   },
   loadingContainer: {
     padding: 16,
@@ -164,10 +185,10 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: COLORS.gray,
+    color: theme.textSecondary,
   },
   content: {
-    padding: 14,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -178,10 +199,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: COLORS.lightGray,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: theme.accentBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -197,7 +218,7 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: theme.text,
     marginRight: 8,
   },
   statusChip: {
@@ -210,17 +231,20 @@ const styles = StyleSheet.create({
   },
   expiryText: {
     fontSize: 12,
-    color: COLORS.gray,
+    color: theme.textSecondary,
   },
   manageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 12,
+    backgroundColor: theme.accent,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   manageButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.green,
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.background,
     marginRight: 2,
   },
 });

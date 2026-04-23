@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,14 +6,11 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  ScrollView,
 } from 'react-native';
 import {
   Text,
-  Card,
-  Button,
   Chip,
-  Surface,
-  Divider,
   ActivityIndicator,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +24,8 @@ import { useAuthStore } from '../../store/authStore';
 import { Booking, MainStackParamList } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SubscriptionStatusCard from '../../components/SubscriptionStatusCard';
+import { AppTheme } from '../../theme/colors';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -34,6 +33,8 @@ export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const { theme, isDark } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Fetch salon data
   const { data: salon, isLoading: salonLoading } = useQuery({
@@ -77,7 +78,7 @@ export default function DashboardScreen() {
         b.status === 'COMPLETED'
       );
     })
-    .reduce((sum: number, b: Booking) => sum + b.finalAmount, 0);
+    .reduce((sum: number, b: Booking) => sum + (b.finalAmount || 0), 0);
 
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['mySalon'] });
@@ -89,27 +90,33 @@ export default function DashboardScreen() {
     navigation.navigate('BookingDetail', { bookingId });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBgColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return '#FCD116';
+        return theme.pendingBg;
       case 'CONFIRMED':
-        return '#006B3F';
+        return theme.successBg;
       case 'COMPLETED':
-        return '#10B981';
+        return theme.successBg;
       case 'CANCELLED':
-        return '#EF4444';
+        return theme.dangerBg;
       default:
-        return '#9CA3AF';
+        return theme.surfaceVariant;
     }
   };
 
   const getStatusTextColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return '#111827';
+        return theme.pending;
+      case 'CONFIRMED':
+        return theme.success;
+      case 'COMPLETED':
+        return theme.success;
+      case 'CANCELLED':
+        return theme.danger;
       default:
-        return '#FFFFFF';
+        return theme.textSecondary;
     }
   };
 
@@ -129,43 +136,51 @@ export default function DashboardScreen() {
     return 'Good evening';
   };
 
-  const renderBookingItem = ({ item }: { item: Booking }) => (
-    <TouchableOpacity onPress={() => navigateToBooking(item.id)} activeOpacity={0.7}>
-      <Surface style={styles.bookingCard} elevation={0}>
-        <View style={styles.bookingTimeColumn}>
-          <Text style={styles.bookingTime}>{formatTime(item.startTime)}</Text>
-          <Text style={styles.bookingDuration}>{item.service.duration}min</Text>
-        </View>
-        <View style={styles.bookingDivider} />
-        <View style={styles.bookingContent}>
-          <View style={styles.bookingHeader}>
-            <View style={styles.customerInfo}>
-              <Text style={styles.customerName}>
-                {item.customer.firstName} {item.customer.lastName}
-              </Text>
-              <Text style={styles.serviceName}>{item.service.name}</Text>
+  const renderBookingItem = ({ item }: { item: Booking }) => {
+    if (!item || !item.id) return null;
+
+    const customerName = `${item.customer?.firstName || ''} ${item.customer?.lastName || ''}`.trim();
+    const serviceName = item.service?.name || 'Service';
+    const serviceDuration = item.service?.duration || 0;
+
+    return (
+      <TouchableOpacity onPress={() => navigateToBooking(item.id)} activeOpacity={0.7}>
+        <View style={styles.bookingCard}>
+          <View style={styles.bookingTimeColumn}>
+            <Text style={styles.bookingTime}>{formatTime(item.startTime)}</Text>
+            <Text style={styles.bookingDuration}>{serviceDuration}min</Text>
+          </View>
+          <View style={styles.bookingDivider} />
+          <View style={styles.bookingContent}>
+            <View style={styles.bookingHeader}>
+              <View style={styles.customerInfo}>
+                <Text style={styles.customerName}>
+                  {customerName || 'Unknown Customer'}
+                </Text>
+                <Text style={styles.serviceName}>{serviceName}</Text>
+              </View>
+              <Chip
+                mode="flat"
+                style={[styles.statusChip, { backgroundColor: getStatusBgColor(item.status) }]}
+                textStyle={[styles.statusText, { color: getStatusTextColor(item.status) }]}
+              >
+                {item.status}
+              </Chip>
             </View>
-            <Chip
-              mode="flat"
-              style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
-              textStyle={[styles.statusText, { color: getStatusTextColor(item.status) }]}
-            >
-              {item.status}
-            </Chip>
-          </View>
-          <View style={styles.bookingFooter}>
-            <Text style={styles.bookingPrice}>GH₵{item.finalAmount.toLocaleString()}</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <View style={styles.bookingFooter}>
+              <Text style={styles.bookingPrice}>GH₵{(item.finalAmount || 0).toLocaleString()}</Text>
+              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+            </View>
           </View>
         </View>
-      </Surface>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIcon}>
-        <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+        <Ionicons name="calendar-outline" size={48} color={theme.textTertiary} />
       </View>
       <Text variant="titleMedium" style={styles.emptyTitle}>
         No Appointments Today
@@ -179,7 +194,7 @@ export default function DashboardScreen() {
   if (salonLoading && !salon) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#006B3F" />
+        <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
   }
@@ -187,16 +202,16 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        data={todayBookings.sort((a: Booking, b: Booking) => a.startTime.localeCompare(b.startTime))}
+        data={todayBookings.sort((a: Booking, b: Booking) => (a.startTime || '').localeCompare(b.startTime || ''))}
         keyExtractor={(item) => item.id}
         renderItem={renderBookingItem}
         ListHeaderComponent={
           <>
-            {/* Header */}
+            {/* Header — like MTN's "Y'ello Isaac!" */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <Image
-                  source={require('../../../assets/logo-black.png')}
+                  source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
                   style={styles.headerLogo}
                   resizeMode="contain"
                 />
@@ -209,11 +224,11 @@ export default function DashboardScreen() {
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.notificationButton}
                 onPress={() => {}}
               >
-                <Ionicons name="notifications-outline" size={24} color="#111827" />
+                <Ionicons name="notifications-outline" size={24} color={theme.text} />
                 {pendingBookings.length > 0 && (
                   <View style={styles.notificationBadge}>
                     <Text style={styles.notificationBadgeText}>{pendingBookings.length}</Text>
@@ -222,111 +237,151 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Stats Cards - 2x2 Grid */}
+            {/* Subscription Card — like MTN's "Loyalty Points" */}
+            <SubscriptionStatusCard />
+
+            {/* Overview Section Header */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Overview</Text>
+              <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
+                <Ionicons name="refresh" size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Stats Grid — like MTN's "Balances" Airtime/Data cards */}
             <View style={styles.statsGrid}>
               {/* Today's Bookings */}
-              <View style={[styles.statsCard, { borderLeftColor: '#006B3F' }]}>
-                <View style={[styles.statsIcon, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="calendar-today" size={20} color="#006B3F" />
+              <View style={styles.statsCard}>
+                <View style={styles.statsCardTop}>
+                  <View style={[styles.statsIconCircle, { backgroundColor: theme.successBg }]}>
+                    <Ionicons name="calendar-today" size={18} color={theme.success} />
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
                 </View>
-                <Text variant="labelSmall" style={styles.statsLabel}>
-                  Today's Bookings
-                </Text>
-                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#006B3F' }]}>
-                  {todayBookings.length}
-                </Text>
+                <Text style={styles.statsValue}>{todayBookings.length}</Text>
+                <Text style={styles.statsLabel}>Today's Bookings</Text>
               </View>
 
-              {/* Revenue */}
-              <View style={[styles.statsCard, { borderLeftColor: '#FCD116' }]}>
-                <View style={[styles.statsIcon, { backgroundColor: '#FEF9E7' }]}>
-                  <Ionicons name="cash" size={20} color="#D4A017" />
+              {/* Weekly Revenue */}
+              <View style={styles.statsCard}>
+                <View style={styles.statsCardTop}>
+                  <View style={[styles.statsIconCircle, { backgroundColor: theme.accentBg }]}>
+                    <Ionicons name="cash" size={18} color={theme.accent} />
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
                 </View>
-                <Text variant="labelSmall" style={styles.statsLabel}>
-                  Weekly Revenue
-                </Text>
-                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#D4A017' }]}>
-                  GH₵{weeklyRevenue.toLocaleString()}
-                </Text>
+                <Text style={styles.statsValue}>GH₵{weeklyRevenue.toLocaleString()}</Text>
+                <Text style={styles.statsLabel}>Weekly Revenue</Text>
               </View>
 
               {/* Pending */}
-              <View style={[styles.statsCard, { borderLeftColor: '#CE1126' }]}>
-                <View style={[styles.statsIcon, { backgroundColor: '#FEF2F2' }]}>
-                  <Ionicons name="time" size={20} color="#CE1126" />
+              <View style={styles.statsCard}>
+                <View style={styles.statsCardTop}>
+                  <View style={[styles.statsIconCircle, { backgroundColor: theme.pendingBg }]}>
+                    <Ionicons name="time" size={18} color={theme.pending} />
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
                 </View>
-                <Text variant="labelSmall" style={styles.statsLabel}>
-                  Pending
-                </Text>
-                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#CE1126' }]}>
-                  {pendingBookings.length}
-                </Text>
+                <Text style={styles.statsValue}>{pendingBookings.length}</Text>
+                <Text style={styles.statsLabel}>Pending</Text>
               </View>
 
               {/* Rating */}
-              <View style={[styles.statsCard, { borderLeftColor: '#3B82F6' }]}>
-                <View style={[styles.statsIcon, { backgroundColor: '#EFF6FF' }]}>
-                  <Ionicons name="star" size={20} color="#3B82F6" />
+              <View style={styles.statsCard}>
+                <View style={styles.statsCardTop}>
+                  <View style={[styles.statsIconCircle, { backgroundColor: theme.infoBg }]}>
+                    <Ionicons name="star" size={18} color={theme.info} />
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
                 </View>
-                <Text variant="labelSmall" style={styles.statsLabel}>
-                  Rating
-                </Text>
-                <Text variant="headlineSmall" style={[styles.statsValue, { color: '#3B82F6' }]}>
+                <Text style={styles.statsValue}>
                   {stats?.averageRating ? stats.averageRating.toFixed(1) : '-'}
                 </Text>
+                <Text style={styles.statsLabel}>Rating</Text>
               </View>
             </View>
 
-            {/* Subscription Status Card */}
-            <SubscriptionStatusCard />
-
-            {/* Quick Actions */}
-            <View style={styles.quickActions}>
-              <TouchableOpacity 
-                style={styles.actionButton}
+            {/* Quick Actions — like MTN's "Digital Services" horizontal scroll */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.quickActionsScroll}
+            >
+              <TouchableOpacity
+                style={styles.quickActionCard}
                 onPress={() => navigation.getParent()?.navigate('Bookings')}
                 activeOpacity={0.7}
               >
-                <View style={[styles.actionButtonIcon, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="list" size={22} color="#006B3F" />
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.successBg }]}>
+                  <Ionicons name="calendar" size={22} color={theme.success} />
                 </View>
-                <Text style={styles.actionButtonText}>All Bookings</Text>
+                <Text style={styles.quickActionLabel}>View Bookings</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.actionButton}
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
                 onPress={() => navigation.getParent()?.navigate('Services')}
                 activeOpacity={0.7}
               >
-                <View style={[styles.actionButtonIcon, { backgroundColor: '#FEF9E7' }]}>
-                  <Ionicons name="add-circle" size={22} color="#D4A017" />
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.accentBg }]}>
+                  <Ionicons name="add-circle" size={22} color={theme.accent} />
                 </View>
-                <Text style={styles.actionButtonText}>Add Service</Text>
+                <Text style={styles.quickActionLabel}>Add Service</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.actionButton}
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
                 onPress={() => navigation.getParent()?.navigate('Staff')}
                 activeOpacity={0.7}
               >
-                <View style={[styles.actionButtonIcon, { backgroundColor: '#EFF6FF' }]}>
-                  <Ionicons name="people" size={22} color="#3B82F6" />
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.infoBg }]}>
+                  <Ionicons name="people" size={22} color={theme.info} />
                 </View>
-                <Text style={styles.actionButtonText}>Manage Staff</Text>
+                <Text style={styles.quickActionLabel}>Manage Staff</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
               </TouchableOpacity>
-            </View>
 
-            {/* Today's Appointments Header */}
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate('EditSalon')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.warningBg }]}>
+                  <Ionicons name="create" size={22} color={theme.warning} />
+                </View>
+                <Text style={styles.quickActionLabel}>Edit Salon</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate('QRScanner')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.dangerBg }]}>
+                  <Ionicons name="qr-code" size={22} color={theme.danger} />
+                </View>
+                <Text style={styles.quickActionLabel}>Scan QR</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
+              </TouchableOpacity>
+            </ScrollView>
+
+            {/* Today's Schedule Header */}
             <View style={styles.sectionHeader}>
               <View>
-                <Text variant="titleLarge" style={styles.sectionTitle}>
-                  Today's Appointments
-                </Text>
-                <Text variant="bodyMedium" style={styles.dateText}>
+                <Text style={styles.sectionTitle}>Today's Schedule</Text>
+                <Text style={styles.dateText}>
                   {format(new Date(), 'EEEE, MMMM d')}
                 </Text>
               </View>
               {todayBookings.length > 0 && (
                 <TouchableOpacity onPress={() => navigation.getParent()?.navigate('Bookings')}>
-                  <Text style={styles.seeAllText}>See All</Text>
+                  <Text style={styles.seeAllText}>See All →</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -338,8 +393,8 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={onRefresh}
-            colors={['#006B3F']}
-            tintColor="#006B3F"
+            colors={[theme.accent]}
+            tintColor={theme.text}
           />
         }
       />
@@ -347,24 +402,25 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
+  // ─── Header ───
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -376,24 +432,19 @@ const styles = StyleSheet.create({
     height: 36,
   },
   greeting: {
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   salonName: {
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: theme.accent,
   },
   notificationButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   notificationBadge: {
     position: 'absolute',
@@ -402,7 +453,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#CE1126',
+    backgroundColor: theme.notificationBadge,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -411,91 +462,110 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+  // ─── Section Headers ───
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontWeight: 'bold',
+    color: theme.text,
+    fontSize: 18,
+  },
+  refreshButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.surfaceVariant,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dateText: {
+    color: theme.textSecondary,
+    marginTop: 2,
+    fontSize: 13,
+  },
+  seeAllText: {
+    color: theme.accent,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  // ─── Stats Grid ───
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    paddingVertical: 12,
     gap: 12,
   },
   statsCard: {
     width: '47%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: theme.surfaceVariant,
+    borderRadius: 12,
     padding: 14,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
-  statsIcon: {
+  statsCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  statsIconCircle: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  statsLabel: {
-    color: '#6B7280',
-    marginBottom: 2,
   },
   statsValue: {
     fontWeight: 'bold',
+    color: theme.text,
+    fontSize: 22,
+    marginBottom: 2,
   },
-  quickActions: {
-    flexDirection: 'row',
+  statsLabel: {
+    color: theme.textSecondary,
+    fontSize: 12,
+  },
+  // ─── Quick Actions ───
+  quickActionsScroll: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 12,
+    gap: 10,
+    paddingBottom: 4,
   },
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  quickActionCard: {
+    width: 100,
+    backgroundColor: theme.surfaceVariant,
     borderRadius: 12,
     paddingVertical: 14,
+    paddingHorizontal: 10,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
-  actionButtonIcon: {
+  quickActionIconCircle: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
-  actionButtonText: {
-    fontSize: 12,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  sectionTitle: {
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  dateText: {
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  seeAllText: {
-    color: '#006B3F',
+  quickActionLabel: {
+    fontSize: 11,
+    color: theme.text,
     fontWeight: '600',
-    fontSize: 14,
+    textAlign: 'center',
   },
+  quickActionArrow: {
+    marginTop: 4,
+  },
+  // ─── Booking Cards ───
   listContent: {
     paddingBottom: 24,
   },
@@ -504,13 +574,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   bookingTimeColumn: {
     width: 60,
@@ -520,16 +587,16 @@ const styles = StyleSheet.create({
   bookingTime: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#006B3F',
+    color: theme.accent,
   },
   bookingDuration: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     marginTop: 2,
   },
   bookingDivider: {
     width: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.border,
     marginHorizontal: 12,
   },
   bookingContent: {
@@ -548,11 +615,11 @@ const styles = StyleSheet.create({
   customerName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   serviceName: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   statusChip: {
@@ -573,8 +640,9 @@ const styles = StyleSheet.create({
   bookingPrice: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#006B3F',
+    color: theme.text,
   },
+  // ─── Empty State ───
   emptyState: {
     padding: 40,
     alignItems: 'center',
@@ -583,18 +651,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   emptyTitle: {
-    color: '#111827',
+    color: theme.text,
     marginBottom: 8,
     fontWeight: '600',
   },
   emptySubtitle: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },

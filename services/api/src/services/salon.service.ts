@@ -40,6 +40,7 @@ export interface SalonFilters {
   longitude?: number;
   radius?: number;
   search?: string;
+  isFeatured?: boolean;
 }
 
 export async function createSalon(ownerId: string, data: CreateSalonData) {
@@ -158,6 +159,10 @@ export async function getSalons(filters: SalonFilters, page: number = 1, limit: 
     ];
   }
 
+  if (filters.isFeatured) {
+    where.isFeatured = true;
+  }
+
   // Geolocation filter
   if (filters.latitude && filters.longitude && filters.radius) {
     // Using raw query for PostGIS distance calculation
@@ -181,6 +186,7 @@ export async function getSalons(filters: SalonFilters, page: number = 1, limit: 
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [
+        { isFeatured: 'desc' },
         { isSponsored: 'desc' },
         { sponsorshipPriority: 'desc' },
         { rating: 'desc' },
@@ -362,6 +368,7 @@ export async function getNearbySalons(lat: number, lng: number, radius: number, 
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [
+        { isFeatured: 'desc' },
         { isSponsored: 'desc' },
         { sponsorshipPriority: 'desc' },
         { rating: 'desc' },
