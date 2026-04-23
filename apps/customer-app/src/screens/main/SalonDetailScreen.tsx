@@ -256,7 +256,7 @@ export default function SalonDetailScreen() {
           )}
         </View>
         <Text variant="titleMedium" style={styles.servicePrice}>
-          GH₵ {(item?.price ?? 0).toFixed(2)}
+          GH₵ {parseFloat(String(item?.price ?? 0)).toFixed(2)}
         </Text>
       </View>
     );
@@ -303,24 +303,49 @@ export default function SalonDetailScreen() {
 
   const renderOpeningHours = (salonData: Salon) => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    
+
     return (
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>Opening Hours</Text>
         <View style={styles.hoursContainer}>
           {DAYS.map((day) => {
-            const hours = salonData.openingHours?.[day as keyof typeof salonData.openingHours];
+            let isOpen = false;
+            let displayText = 'Closed';
+
+            try {
+              const rawHours = salonData.openingHours?.[day as keyof typeof salonData.openingHours];
+
+              if (typeof rawHours === 'string') {
+                // API format: "09:00 - 18:00" or "Closed"
+                if (rawHours && rawHours.toLowerCase() !== 'closed') {
+                  isOpen = true;
+                  displayText = rawHours;
+                }
+              } else if (rawHours && typeof rawHours === 'object') {
+                // Legacy format: { isOpen: true, open: "09:00", close: "18:00" }
+                isOpen = rawHours.isOpen ?? false;
+                if (isOpen && rawHours.open && rawHours.close) {
+                  displayText = `${formatTime(rawHours.open)} - ${formatTime(rawHours.close)}`;
+                }
+              }
+            } catch (err) {
+              console.warn(`[SalonDetail] Error parsing hours for ${day}:`, err);
+              isOpen = false;
+              displayText = 'Closed';
+            }
+
             const isToday = day === today;
+
             return (
-              <View 
-                key={day} 
+              <View
+                key={day}
                 style={[
                   styles.hoursRow,
                   isToday && styles.hoursRowToday
                 ]}
               >
-                <Text 
-                  variant="bodyMedium" 
+                <Text
+                  variant="bodyMedium"
                   style={[
                     styles.dayName,
                     isToday && styles.dayNameToday
@@ -328,16 +353,14 @@ export default function SalonDetailScreen() {
                 >
                   {getDayName(day)}
                 </Text>
-                <Text 
-                  variant="bodyMedium" 
+                <Text
+                  variant="bodyMedium"
                   style={[
                     styles.dayHours,
                     isToday && styles.dayHoursToday
                   ]}
                 >
-                  {hours?.isOpen
-                    ? `${formatTime(hours.open)} - ${formatTime(hours.close)}`
-                    : 'Closed'}
+                  {displayText}
                 </Text>
               </View>
             );
@@ -703,7 +726,7 @@ export default function SalonDetailScreen() {
                               {service.name || 'Unnamed Service'}
                             </Text>
                             <Text style={styles.serviceOptionPrice}>
-                              GH₵ {(service?.price ?? 0).toFixed(2)}
+                              GH₵ {parseFloat(String(service?.price ?? 0)).toFixed(2)}
                             </Text>
                           </View>
                           {selectedServiceId === service.id && (

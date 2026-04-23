@@ -19,21 +19,11 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { bookingsApi } from '../../api/bookings';
 import { MainStackParamList } from '../../types';
 
-// Try to import expo-barcode-scanner, fallback to null if not installed
-let BarCodeScanner: any = null;
-let BarCodeScannerConstants: any = null;
-try {
-  const barcodeScanner = require('expo-barcode-scanner');
-  BarCodeScanner = barcodeScanner.BarCodeScanner;
-  BarCodeScannerConstants = barcodeScanner;
-} catch (e) {
-  // expo-barcode-scanner not installed
-}
-
-interface BarCodeScannerResult {
+interface BarcodeScanResult {
   type: string;
   data: string;
 }
@@ -51,24 +41,19 @@ export default function QRScannerScreen() {
   const route = useRoute<QRScannerRouteProp>();
   const queryClient = useQueryClient();
   const { bookingId } = route.params || {};
-  
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [manualCodeVisible, setManualCodeVisible] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Request camera permission on mount
+  // Request camera permission on mount if not already determined
   useEffect(() => {
-    (async () => {
-      if (!BarCodeScanner) {
-        setHasPermission(false);
-        return;
-      }
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
+    if (permission && !permission.granted && permission.canAskAgain) {
+      requestPermission();
+    }
+  }, [permission]);
 
   // Check-in mutation
   const checkinMutation = useMutation({
@@ -102,7 +87,7 @@ export default function QRScannerScreen() {
     },
   });
 
-  const handleBarCodeScanned = useCallback((result: BarCodeScannerResult) => {
+  const handleBarcodeScanned = useCallback((result: BarcodeScanResult) => {
     if (scanned || isProcessing) return;
     
     setScanned(true);
@@ -150,16 +135,27 @@ export default function QRScannerScreen() {
     setScanned(false);
   };
 
-  // BarCodeScanner not installed
-  if (!BarCodeScanner) {
+  // Permission loading
+  if (!permission) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionContainer}>
-          <Ionicons name="qr-code-outline" size={64} color="#9CA3AF" />
-          <Text style={styles.permissionTitle}>QR Scanner Not Available</Text>
+          <ActivityIndicator size="large" color="#006B3F" />
+          <Text style={styles.permissionText}>Requesting camera permission...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Permission denied
+  if (!permission.granted) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.permissionContainer}>
+          <Ionicons name="camera-off" size={64} color="#9CA3AF" />
+          <Text style={styles.permissionTitle}>Camera Access Denied</Text>
           <Text style={styles.permissionText}>
-            Please install expo-barcode-scanner to use the QR scanning feature.{'\n\n'}
-            Run: expo install expo-barcode-scanner
+            Please grant camera permission in your device settings to scan QR codes.
           </Text>
           <Button
             mode="contained"
@@ -169,7 +165,7 @@ export default function QRScannerScreen() {
           >
             Go Back
           </Button>
-          
+
           {/* Manual entry is still available */}
           <Button
             mode="outlined"
@@ -181,7 +177,7 @@ export default function QRScannerScreen() {
             Enter Code Manually
           </Button>
         </View>
-        
+
         {/* Manual Entry Dialog */}
         <Portal>
           <Dialog
@@ -228,40 +224,6 @@ export default function QRScannerScreen() {
     );
   }
 
-  // Permission handling
-  if (hasPermission === null) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.permissionContainer}>
-          <ActivityIndicator size="large" color="#006B3F" />
-          <Text style={styles.permissionText}>Requesting camera permission...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.permissionContainer}>
-          <Ionicons name="camera-off" size={64} color="#9CA3AF" />
-          <Text style={styles.permissionTitle}>Camera Access Denied</Text>
-          <Text style={styles.permissionText}>
-            Please grant camera permission in your device settings to scan QR codes.
-          </Text>
-          <Button
-            mode="contained"
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            buttonColor="#006B3F"
-          >
-            Go Back
-          </Button>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -273,10 +235,10 @@ export default function QRScannerScreen() {
       </View>
 
       <View style={styles.cameraContainer}>
-        <BarCodeScanner
-          onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+        <CameraView
           style={StyleSheet.absoluteFillObject}
-          barCodeTypes={[BarCodeScannerConstants?.Constants?.BarCodeType?.qr || 'qr']}
+          onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         />
         
         {/* Scan overlay */}

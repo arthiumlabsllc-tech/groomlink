@@ -190,7 +190,7 @@ export default function RateBookingScreen() {
                 <View style={styles.workerRow}>
                   <Ionicons name="person-outline" size={18} color={COLORS.textSecondary} />
                   <Text variant="bodyMedium" style={styles.workerText}>
-                    Served by {booking.worker.name}
+                    Served by {booking.worker.fullName}
                   </Text>
                 </View>
               )}

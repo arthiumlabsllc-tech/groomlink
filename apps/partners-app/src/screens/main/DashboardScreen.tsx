@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { salonApi } from '../../api/salon';
 import { bookingsApi } from '../../api/bookings';
 import { useAuthStore } from '../../store/authStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { Booking, MainStackParamList } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SubscriptionStatusCard from '../../components/SubscriptionStatusCard';
@@ -32,6 +33,7 @@ type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { unreadCount } = useNotificationStore();
   const queryClient = useQueryClient();
   const { theme, isDark } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -226,12 +228,12 @@ export default function DashboardScreen() {
               </View>
               <TouchableOpacity
                 style={styles.notificationButton}
-                onPress={() => {}}
+                onPress={() => navigation.navigate('Notifications')}
               >
                 <Ionicons name="notifications-outline" size={24} color={theme.text} />
-                {pendingBookings.length > 0 && (
+                {unreadCount > 0 && (
                   <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>{pendingBookings.length}</Text>
+                    <Text style={styles.notificationBadgeText}>{unreadCount}</Text>
                   </View>
                 )}
               </TouchableOpacity>

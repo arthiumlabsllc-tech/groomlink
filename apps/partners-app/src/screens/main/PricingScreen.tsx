@@ -36,12 +36,12 @@ export default function PricingScreen() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('MONTHLY');
   const queryClient = useQueryClient();
 
-  const { data: plans, isLoading: plansLoading } = useQuery({
+  const { data: plans, isLoading: plansLoading, isError: plansError } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: subscriptionApi.getPlans,
   });
 
-  const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
+  const { data: currentSubscription, isLoading: subscriptionLoading, isError: subscriptionError } = useQuery({
     queryKey: ['currentSubscription'],
     queryFn: subscriptionApi.getCurrentPlan,
   });
@@ -65,6 +65,7 @@ export default function PricingScreen() {
   const isLoading = plansLoading || subscriptionLoading;
 
   const handleUpgrade = (plan: Plan) => {
+    if (!plan || !plan.slug) return;
     if (isCurrentPlan(plan, currentSubscription, billingPeriod)) {
       return;
     }
@@ -76,7 +77,7 @@ export default function PricingScreen() {
     subscription: SubscriptionStatus | null | undefined,
     period: BillingPeriod
   ): boolean => {
-    if (!subscription) return false;
+    if (!subscription || !subscription.plan) return false;
     return subscription.plan.slug === plan.slug && subscription.billingPeriod === period;
   };
 
@@ -116,21 +117,22 @@ export default function PricingScreen() {
   );
 
   const renderPlanCard = (plan: Plan) => {
+    if (!plan) return null;
     const current = isCurrentPlan(plan, currentSubscription, billingPeriod);
-    const planColor = getPlanColor(plan.slug);
-    const price = billingPeriod === 'MONTHLY' ? plan.monthlyPrice : plan.yearlyPrice;
+    const planColor = getPlanColor(plan?.slug || '');
+    const price = billingPeriod === 'MONTHLY' ? (plan?.monthlyPrice ?? 0) : (plan?.yearlyPrice ?? 0);
     const periodLabel = billingPeriod === 'MONTHLY' ? '/month' : '/year';
 
     return (
       <Card
-        key={plan.id}
+        key={plan?.id || 'unknown'}
         style={[
           styles.planCard,
           current && { borderColor: planColor, borderWidth: 2 },
-          plan.isPopular && !current && { borderColor: COLORS.gold, borderWidth: 2 },
+          plan?.isPopular && !current && { borderColor: COLORS.gold, borderWidth: 2 },
         ]}
       >
-        {plan.isPopular && !current && (
+        {plan?.isPopular && !current && (
           <View style={styles.popularBadge}>
             <Text style={styles.popularBadgeText}>Most Popular</Text>
           </View>
@@ -144,9 +146,9 @@ export default function PricingScreen() {
         <Card.Content style={styles.planContent}>
           <View style={styles.planHeader}>
             <Text style={[styles.planName, { color: planColor }]}>
-              {plan.name}
+              {plan?.name || 'Unknown Plan'}
             </Text>
-            {plan.description && (
+            {plan?.description && (
               <Text style={styles.planDescription}>{plan.description}</Text>
             )}
           </View>
@@ -160,19 +162,19 @@ export default function PricingScreen() {
             <View style={styles.limitItem}>
               <Ionicons name="people-outline" size={16} color={COLORS.gray} />
               <Text style={styles.limitText}>
-                Up to {plan.maxStaff} staff members
+                Up to {plan?.maxStaff ?? 0} staff members
               </Text>
             </View>
             <View style={styles.limitItem}>
               <Ionicons name="location-outline" size={16} color={COLORS.gray} />
               <Text style={styles.limitText}>
-                Up to {plan.maxLocations} location{plan.maxLocations > 1 ? 's' : ''}
+                Up to {plan?.maxLocations ?? 0} location{(plan?.maxLocations ?? 0) > 1 ? 's' : ''}
               </Text>
             </View>
           </View>
 
           <View style={styles.featuresContainer}>
-            {plan.features.map((feature) => renderFeatureItem(feature, true))}
+            {(plan?.features || []).map((feature) => renderFeatureItem(feature, true))}
           </View>
 
           <Button
@@ -199,6 +201,24 @@ export default function PricingScreen() {
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>Loading plans...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (plansError || subscriptionError) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color={COLORS.red} />
+        <Text style={styles.loadingText}>Failed to load plans. Please try again.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!plans || plans.length === 0) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Ionicons name="pricetag-outline" size={48} color={COLORS.gray} />
+        <Text style={styles.loadingText}>No plans available</Text>
       </SafeAreaView>
     );
   }

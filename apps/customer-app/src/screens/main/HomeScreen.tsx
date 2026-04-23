@@ -4,11 +4,13 @@ import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar } from 'react-
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { Salon } from '../../types';
 import { salonApi } from '../../api/salon';
 import { useAuthStore } from '../../store/authStore';
+import { useNotificationStore } from '../../store/notificationStore';
 
 // Design System Colors
 const COLORS = {
@@ -34,6 +36,7 @@ interface LocationState {
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { unreadCount } = useNotificationStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<LocationState>({
@@ -205,14 +208,24 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.avatarButton}>
-              <Avatar.Text
-                size={44}
-                label={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`}
-                style={styles.userAvatar}
-                labelStyle={styles.userAvatarLabel}
-              />
-            </TouchableOpacity>
+            <View style={styles.headerRight}>
+              <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.bellContainer}>
+                <MaterialCommunityIcons name="bell-outline" size={24} color={COLORS.textPrimary} />
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.avatarButton}>
+                <Avatar.Text
+                  size={44}
+                  label={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`}
+                  style={styles.userAvatar}
+                  labelStyle={styles.userAvatarLabel}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           
           <Searchbar
@@ -311,6 +324,33 @@ const styles = StyleSheet.create({
   greetingName: {
     fontWeight: 'bold',
     color: COLORS.textPrimary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bellContainer: {
+    position: 'relative',
+    padding: 4,
+    marginRight: 4,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.accentRed,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   avatarButton: {
     borderRadius: 22,

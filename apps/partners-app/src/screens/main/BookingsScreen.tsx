@@ -353,16 +353,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterTab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     borderRadius: 20,
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     marginRight: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   filterTabText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -392,6 +394,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     padding: 14,
+    paddingRight: 16,
   },
   bookingHeader: {
     flexDirection: 'row',
@@ -425,6 +428,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#111827',
+    flexShrink: 1,
   },
   phoneRow: {
     flexDirection: 'row',
@@ -449,6 +453,8 @@ const styles = StyleSheet.create({
   headerRight: {
     alignItems: 'flex-end',
     gap: 4,
+    marginLeft: 8,
+    flexShrink: 0,
   },
   groupChip: {
     height: 24,
@@ -498,11 +504,15 @@ const styles = StyleSheet.create({
   tapHint: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 44,
+    paddingLeft: 12,
+    paddingRight: 4,
+    paddingVertical: 4,
   },
   tapHintText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#006B3F',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   emptyState: {
     padding: 40,

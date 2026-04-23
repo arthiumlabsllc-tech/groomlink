@@ -104,8 +104,16 @@ export default function AddStaffScreen() {
       queryClient.invalidateQueries({ queryKey: ['staff', salonId] });
       navigation.goBack();
     },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to create staff member: ${error.message}`);
+    onError: (error: any) => {
+      const apiMessage = error.response?.data?.message || error.message || 'Unknown error';
+      const errorCode = error.response?.data?.error;
+      const isLimitReached = errorCode === 'STAFF_LIMIT_REACHED';
+      Alert.alert(
+        isLimitReached ? 'Staff Limit Reached' : 'Error',
+        isLimitReached
+          ? `${apiMessage}\n\nYou can upgrade your subscription to add more staff.`
+          : `Failed to create staff member: ${apiMessage}`
+      );
     },
   });
 
@@ -135,8 +143,9 @@ export default function AddStaffScreen() {
       queryClient.invalidateQueries({ queryKey: ['staff', salonId] });
       navigation.goBack();
     },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to update staff member: ${error.message}`);
+    onError: (error: any) => {
+      const apiMessage = error.response?.data?.message || error.message || 'Unknown error';
+      Alert.alert('Error', `Failed to update staff member: ${apiMessage}`);
     },
   });
 
@@ -147,8 +156,9 @@ export default function AddStaffScreen() {
       queryClient.invalidateQueries({ queryKey: ['staff', salonId] });
       navigation.goBack();
     },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to delete staff member: ${error.message}`);
+    onError: (error: any) => {
+      const apiMessage = error.response?.data?.message || error.message || 'Unknown error';
+      Alert.alert('Error', `Failed to delete staff member: ${apiMessage}`);
     },
   });
 

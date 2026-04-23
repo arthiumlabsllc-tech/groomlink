@@ -134,7 +134,7 @@ export default function MapScreen() {
     const currentDay = dayNames[now.getDay()] as keyof Salon['openingHours'];
     const hours = salon.openingHours?.[currentDay];
     
-    if (!hours?.open || !hours?.close) return false;
+    if (typeof hours !== 'object' || !hours || !hours.open || !hours.close) return false;
     const [openHour, openMin] = hours.open.split(':').map(Number);
     if (isNaN(openHour) || isNaN(openMin)) return false;
     const [closeHour, closeMin] = hours.close.split(':').map(Number);

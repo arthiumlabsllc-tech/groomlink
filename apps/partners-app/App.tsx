@@ -14,6 +14,7 @@ import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
 import { salonApi } from './src/api/salon';
 import { useSocket } from './src/hooks/useSocket';
+import { useNotificationStore } from './src/store/notificationStore';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
 
 // Configure notification handler
@@ -203,30 +204,97 @@ function AppContent() {
   useSocket({
     salonId,
     enabled: isAuthenticated && !!salonId,
-    onBookingNew: (data) => {
+    onBookingNew: async (data) => {
       if (!data?.booking?.customer || !data?.booking?.service) return;
       const customerName = `${data.booking.customer.firstName || ''} ${data.booking.customer.lastName || ''}`.trim();
+      const serviceName = data.booking.service.name || 'a service';
+      const bookingId = data.booking.id;
+
+      // Persist to notification store
+      useNotificationStore.getState().addNotification({
+        type: 'booking_new',
+        title: 'New Booking!',
+        message: `${customerName || 'A customer'} booked ${serviceName}`,
+        data: { bookingId, customerName, serviceName },
+      });
+
+      // Fire system notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'New Booking!',
+          body: `${customerName || 'A customer'} booked ${serviceName}`,
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.MAX,
+          data: { bookingId },
+        },
+        trigger: null,
+      });
+
       Alert.alert(
         'New Booking!',
-        `${customerName || 'A customer'} booked ${data.booking.service.name || 'a service'}`,
+        `${customerName || 'A customer'} booked ${serviceName}`,
         [{ text: 'OK' }],
         { cancelable: true }
       );
     },
-    onBookingCheckin: (data) => {
+    onBookingCheckin: async (data) => {
       if (!data?.customerName || !data?.serviceName) return;
+      const { customerName, serviceName, queuePosition, bookingId } = data;
+
+      // Persist to notification store
+      useNotificationStore.getState().addNotification({
+        type: 'booking_checkin',
+        title: 'Customer Checked In',
+        message: `${customerName} has checked in - Queue position: ${queuePosition || '-'}`,
+        data: { bookingId, customerName, serviceName },
+      });
+
+      // Fire system notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Customer Checked In',
+          body: `${customerName} has checked in - Queue position: ${queuePosition || '-'}`,
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.MAX,
+          data: { bookingId },
+        },
+        trigger: null,
+      });
+
       Alert.alert(
         'Customer Checked In',
-        `${data.customerName} checked in for ${data.serviceName}. Queue position: ${data.queuePosition || '-'}`,
+        `${customerName} checked in for ${serviceName}. Queue position: ${queuePosition || '-'}`,
         [{ text: 'OK' }],
         { cancelable: true }
       );
     },
-    onBookingCompleted: (data) => {
+    onBookingCompleted: async (data) => {
       if (!data?.customerName || !data?.serviceName) return;
+      const { customerName, serviceName, totalAmount, bookingId } = data;
+
+      // Persist to notification store
+      useNotificationStore.getState().addNotification({
+        type: 'booking_completed',
+        title: 'Service Completed',
+        message: `${customerName}'s ${serviceName} completed - GH₵${totalAmount || 0}`,
+        data: { bookingId, customerName, serviceName, amount: parseFloat(totalAmount || '0') },
+      });
+
+      // Fire system notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Service Completed',
+          body: `${customerName}'s ${serviceName} completed - GH₵${totalAmount || 0}`,
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.MAX,
+          data: { bookingId },
+        },
+        trigger: null,
+      });
+
       Alert.alert(
         'Service Completed',
-        `${data.customerName} - ${data.serviceName} completed. Amount: GHS ${data.totalAmount || 0}`,
+        `${customerName} - ${serviceName} completed. Amount: GHS ${totalAmount || 0}`,
         [{ text: 'OK' }],
         { cancelable: true }
       );

@@ -94,8 +94,14 @@ export default function AddServiceScreen() {
       queryClient.invalidateQueries({ queryKey: ['services', salonId] });
       navigation.goBack();
     },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to create service: ${error.message}`);
+    onError: (error: any) => {
+      const apiMessage = error.response?.data?.message || error.message || 'Unknown error';
+      const errorCode = error.response?.data?.error;
+      const isValidationError = errorCode === 'VALIDATION_ERROR';
+      Alert.alert(
+        isValidationError ? 'Validation Error' : 'Error',
+        `Failed to create service: ${apiMessage}`
+      );
     },
   });
 
@@ -107,8 +113,9 @@ export default function AddServiceScreen() {
       queryClient.invalidateQueries({ queryKey: ['services', salonId] });
       navigation.goBack();
     },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to update service: ${error.message}`);
+    onError: (error: any) => {
+      const apiMessage = error.response?.data?.message || error.message || 'Unknown error';
+      Alert.alert('Error', `Failed to update service: ${apiMessage}`);
     },
   });
 
@@ -119,8 +126,9 @@ export default function AddServiceScreen() {
       queryClient.invalidateQueries({ queryKey: ['services', salonId] });
       navigation.goBack();
     },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to delete service: ${error.message}`);
+    onError: (error: any) => {
+      const apiMessage = error.response?.data?.message || error.message || 'Unknown error';
+      Alert.alert('Error', `Failed to delete service: ${apiMessage}`);
     },
   });
 

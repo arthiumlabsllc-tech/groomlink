@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import AddStaffScreen from '../screens/main/AddStaffScreen';
 import QRScannerScreen from '../screens/main/QRScannerScreen';
 import PricingScreen from '../screens/main/PricingScreen';
 import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
+import NotificationsListScreen from '../screens/main/NotificationsListScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 import { AppTheme } from '../theme/colors';
 import { useAppTheme } from '../theme/ThemeContext';
@@ -43,6 +45,7 @@ function DashboardStack() {
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
       <Stack.Screen name="EditSalon" component={EditSalonScreen} options={{ title: 'Edit Salon' }} />
       <Stack.Screen name="Pricing" component={PricingScreen} options={{ title: 'Subscription Plans' }} />
+      <Stack.Screen name="Notifications" component={NotificationsListScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen 
         name="QRScanner" 
         component={QRScannerScreen} 
@@ -190,7 +193,8 @@ function ProfileStack() {
 
 export default function MainNavigator() {
   const { theme } = useAppTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
 
   return (
     <Tab.Navigator
@@ -226,7 +230,12 @@ export default function MainNavigator() {
         tabBarActiveTintColor: theme.tabActive,
         tabBarInactiveTintColor: theme.tabInactive,
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          ...styles.tabBar,
+          paddingBottom: Platform.OS === 'ios' ? 24 + insets.bottom : Math.max(insets.bottom, 8),
+          height: Platform.OS === 'ios' ? 88 + insets.bottom : 64 + Math.max(insets.bottom, 8),
+          paddingTop: 8,
+        },
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarItemStyle: styles.tabBarItem,
       })}
@@ -277,7 +286,7 @@ export default function MainNavigator() {
   );
 }
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
+const createStyles = (theme: AppTheme, _insets: { bottom: number }) => StyleSheet.create({
   tabBar: {
     backgroundColor: theme.tabBar,
     borderTopWidth: 1,

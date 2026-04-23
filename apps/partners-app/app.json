@@ -20,7 +20,7 @@
       "buildNumber": "1.0.0",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "GroomLink Partners uses your location for your salon address.",
-        "NSCameraUsageDescription": "GroomLink Partners needs camera access to upload salon photos.",
+        "NSCameraUsageDescription": "GroomLink Partners needs camera access to scan QR codes and upload salon photos.",
         "NSPhotoLibraryUsageDescription": "GroomLink Partners needs photo library access to upload salon photos.",
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -45,7 +45,12 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "READ_MEDIA_IMAGES"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBMVYRP-l1YqjsRV-S6V1WG6fPH3caSphI"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -83,9 +88,9 @@
         }
       ],
       [
-        "react-native-maps",
+        "expo-camera",
         {
-          "androidGoogleMapsApiKey": "AIzaSyBMVYRP-l1YqjsRV-S6V1WG6fPH3caSphI"
+          "cameraPermission": "GroomLink Partners needs camera access to scan QR codes and upload salon photos."
         }
       ],
       "./plugins/android-manifest-fixes",

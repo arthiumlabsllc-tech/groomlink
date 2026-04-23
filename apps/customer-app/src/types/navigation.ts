@@ -13,6 +13,7 @@ export type AuthStackParamList = {
 export type HomeStackParamList = {
   HomeMain: undefined;
   SalonDetail: { salonId: string };
+  Notifications: undefined;
 };
 
 export type SearchStackParamList = {

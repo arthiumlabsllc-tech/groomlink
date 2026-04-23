@@ -610,7 +610,7 @@ export default function BookingDetailScreen() {
                   <View style={styles.detailContent}>
                     <Text variant="bodySmall" style={styles.detailLabel}>Stylist</Text>
                     <Text variant="bodyLarge" style={styles.detailValue}>
-                      {booking.worker.name}
+                      {booking.worker.fullName}
                     </Text>
                   </View>
                 </View>

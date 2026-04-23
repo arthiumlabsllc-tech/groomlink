@@ -3,12 +3,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/main/HomeScreen';
 import SearchScreen from '../screens/main/SearchScreen';
 import MapScreen from '../screens/main/MapScreen';
 import BookingsScreen from '../screens/main/BookingsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
+import NotificationsScreen from '../screens/main/NotificationsScreen';
 import {
   HomeStackParamList,
   SearchStackParamList,
@@ -41,6 +43,7 @@ function HomeStack() {
     <HomeStackNav.Navigator>
       <HomeStackNav.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
       <HomeStackNav.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
+      <HomeStackNav.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
     </HomeStackNav.Navigator>
   );
 }
@@ -80,6 +83,8 @@ function ProfileStack() {
 }
 
 export default function MainNavigator() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -107,7 +112,12 @@ export default function MainNavigator() {
         },
         tabBarActiveTintColor: COLORS.primaryGreen,
         tabBarInactiveTintColor: COLORS.textSecondary,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          ...styles.tabBar,
+          paddingBottom: Math.max(insets.bottom, 12),
+          height: 60 + Math.max(insets.bottom, 12),
+          paddingTop: 8,
+        },
         tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
       })}

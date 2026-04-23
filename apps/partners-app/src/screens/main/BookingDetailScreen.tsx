@@ -37,7 +37,25 @@ export default function BookingDetailScreen() {
   // Fetch booking details
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
-    queryFn: () => bookingsApi.getBookingById(bookingId),
+    queryFn: async () => {
+      console.log('[BookingDetail] Fetching booking:', bookingId);
+      try {
+        const result = await bookingsApi.getBookingById(bookingId);
+        console.log('[BookingDetail] Booking loaded successfully:', result?.id);
+        return result;
+      } catch (err: any) {
+        const apiError = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message;
+        const statusCode = err?.response?.status;
+        console.warn('[BookingDetail] Failed to load booking:', {
+          bookingId,
+          statusCode,
+          apiError,
+          fullError: err?.response?.data,
+        });
+        throw err;
+      }
+    },
+    enabled: !!bookingId,
   });
 
   // Confirm booking mutation
@@ -49,7 +67,8 @@ export default function BookingDetailScreen() {
       Alert.alert('Success', 'Booking has been confirmed.');
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to confirm booking.');
+      const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to confirm booking.';
+      Alert.alert('Error', msg);
     },
   });
 
@@ -62,7 +81,8 @@ export default function BookingDetailScreen() {
       Alert.alert('Success', 'Booking has been marked as completed.');
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to complete booking.');
+      const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to complete booking.';
+      Alert.alert('Error', msg);
     },
   });
 
@@ -77,7 +97,8 @@ export default function BookingDetailScreen() {
       Alert.alert('Success', 'Booking has been cancelled.');
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to cancel booking.');
+      const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to cancel booking.';
+      Alert.alert('Error', msg);
     },
   });
 
@@ -353,20 +374,35 @@ export default function BookingDetailScreen() {
   }
 
   if (error || !booking) {
+    const errorMessage = error
+      ? (error as any)?.response?.data?.error?.message || (error as any)?.response?.data?.message || (error as any)?.message || 'Failed to load booking details.'
+      : !bookingId ? 'No booking ID provided.' : 'Booking not found.';
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
         <Text variant="titleMedium" style={styles.errorText}>
-          Failed to load booking details.
+          {errorMessage}
         </Text>
-        <Button
-          mode="outlined"
-          onPress={() => navigation.goBack()}
-          textColor="#006B3F"
-          theme={{ roundness: 10 }}
-        >
-          Go Back
-        </Button>
+        <View style={styles.errorButtons}>
+          <Button
+            mode="contained"
+            onPress={() => queryClient.invalidateQueries({ queryKey: ['booking', bookingId] })}
+            textColor="#FFFFFF"
+            buttonColor="#006B3F"
+            theme={{ roundness: 10 }}
+            style={styles.retryButton}
+          >
+            Retry
+          </Button>
+          <Button
+            mode="outlined"
+            onPress={() => navigation.goBack()}
+            textColor="#006B3F"
+            theme={{ roundness: 10 }}
+          >
+            Go Back
+          </Button>
+        </View>
       </View>
     );
   }
@@ -756,10 +792,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     padding: 24,
   },
+  errorButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  retryButton: {
+    minWidth: 100,
+  },
   errorText: {
     color: '#6B7280',
     marginBottom: 16,
     marginTop: 12,
+    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 20,
   },
   scrollContent: {
     padding: 16,

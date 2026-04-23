@@ -548,11 +548,11 @@ export default function BookingScreen() {
                   >
                     <View style={[styles.staffAvatar, selectedWorker === worker.id && styles.staffAvatarSelected]}>
                       <Text style={styles.staffInitials}>
-                        {worker.name.split(' ').map(n => n[0]).join('')}
+                        {worker.fullName.split(' ').map(n => n[0]).join('')}
                       </Text>
                     </View>
                     <Text variant="bodySmall" style={[styles.staffName, selectedWorker === worker.id && styles.staffNameSelected]}>
-                      {worker.name}
+                      {worker.fullName}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -762,7 +762,7 @@ export default function BookingScreen() {
                   slots={timeSlotData}
                   selectedTime={selectedTime || undefined}
                   onTimeSelect={handleTimeSelect}
-                  closingTime={salonHours?.close}
+                  closingTime={typeof salonHours === 'object' && salonHours !== null ? salonHours.close : undefined}
                   lastAvailableSlot={lastAvailableSlot}
                   totalPeople={totalPeople}
                 />

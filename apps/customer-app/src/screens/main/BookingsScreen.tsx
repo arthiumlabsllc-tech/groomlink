@@ -201,7 +201,7 @@ export default function BookingsScreen() {
             <View style={styles.workerRow}>
               <Ionicons name="person-outline" size={14} color={COLORS.textSecondary} />
               <Text variant="bodySmall" style={styles.workerText}>
-                {item.worker.name}
+                {item.worker.fullName}
               </Text>
             </View>
           )}

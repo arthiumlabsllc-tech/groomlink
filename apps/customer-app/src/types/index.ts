@@ -35,13 +35,13 @@ export interface Salon {
 }
 
 export interface OpeningHours {
-  monday: { open: string; close: string; isOpen: boolean };
-  tuesday: { open: string; close: string; isOpen: boolean };
-  wednesday: { open: string; close: string; isOpen: boolean };
-  thursday: { open: string; close: string; isOpen: boolean };
-  friday: { open: string; close: string; isOpen: boolean };
-  saturday: { open: string; close: string; isOpen: boolean };
-  sunday: { open: string; close: string; isOpen: boolean };
+  monday: { open: string; close: string; isOpen: boolean } | string;
+  tuesday: { open: string; close: string; isOpen: boolean } | string;
+  wednesday: { open: string; close: string; isOpen: boolean } | string;
+  thursday: { open: string; close: string; isOpen: boolean } | string;
+  friday: { open: string; close: string; isOpen: boolean } | string;
+  saturday: { open: string; close: string; isOpen: boolean } | string;
+  sunday: { open: string; close: string; isOpen: boolean } | string;
 }
 
 export interface Service {
@@ -55,11 +55,11 @@ export interface Service {
 
 export interface Worker {
   id: string;
-  name: string;
+  fullName: string;
   avatar: string | null;
-  specialty: string | null;
+  specialties: string[];
   rating: number;
-  services: Service[];
+  reviewCount?: number;
 }
 
 export interface Booking {
