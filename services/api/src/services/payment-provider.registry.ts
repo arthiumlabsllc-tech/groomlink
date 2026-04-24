@@ -25,6 +25,16 @@ class PaymentProviderRegistry {
   private initialized = false;
 
   /**
+   * Reset the registry so it re-initializes on next use
+   * Call this after payment settings are updated in the admin dashboard
+   */
+  reset(): void {
+    this.providers.clear();
+    this.initialized = false;
+    logger.info('Payment provider registry reset - will reinitialize on next use');
+  }
+
+  /**
    * Initialize the registry by loading provider configurations from database
    */
   async initialize(): Promise<void> {

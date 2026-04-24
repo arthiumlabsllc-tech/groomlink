@@ -563,9 +563,12 @@ export function Settings() {
               {/* API Credentials Section */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  API Credentials
+                  {paymentFormData.paymentGateway === 'hubtel' ? 'Hubtel' : 'Paystack'} API Credentials
                 </h3>
 
+                {/* Hubtel Configuration Section */}
+                {paymentFormData.paymentGateway === 'hubtel' && (
+                  <div className="space-y-4">
                 {/* Hubtel Client ID */}
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-2">
@@ -665,9 +668,26 @@ export function Settings() {
                   </p>
                 </div>
 
+                    {/* Hubtel Info Box */}
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <Icon name="info" size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-amber-800">
+                          <p className="font-medium mb-1">Hubtel Setup Tips:</p>
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            <li>Get credentials from your Hubtel Merchant Dashboard</li>
+                            <li>Enable Mobile Money collections for your account</li>
+                            <li>Use test credentials for development before going live</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Paystack Configuration Section */}
                 {paymentFormData.paymentGateway === 'paystack' && (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div>
                     <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-4">
                       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M5.004 14.622L10.68 2.496c.198-.422.714-.592 1.12-.378.406.214.572.714.374 1.136L6.498 14.622H5.004zm2.61 2.756L13.29 3.246c.198-.422.714-.592 1.12-.378.406.214.572.714.374 1.136L9.108 17.378H7.614zm2.61 2.756L15.9 6.002c.198-.422.714-.592 1.12-.378.406.214.572.714.374 1.136l-5.676 13.372h-1.494z"/>
@@ -815,7 +835,7 @@ export function Settings() {
                 <button
                   type="button"
                   onClick={handleTestConnection}
-                  disabled={updatePaymentSettings.isPending || !paymentFormData.hubtelApiId}
+                  disabled={updatePaymentSettings.isPending}
                   className="btn-ripple px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <Icon name="refresh" size={18} />

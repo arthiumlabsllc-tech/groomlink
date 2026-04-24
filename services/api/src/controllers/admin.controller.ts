@@ -13,6 +13,7 @@ import logger from '../config/logger';
 import axios from 'axios';
 import { verifyPaymentWithHubtel } from '../services/payment.service';
 import * as escrowService from '../services/escrow.service';
+import { paymentProviderRegistry } from '../services/payment-provider.registry';
 import * as notificationService from '../services/notification.service';
 
 const couponSchema = z.object({
@@ -891,16 +892,25 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
       data: updateData,
     });
 
-    // Return with masked API secret
-    const maskedApiSecret = (settings as any)?.hubtelApiSecret
+    // Reset the payment provider registry so it reinitializes with new gateway settings
+    paymentProviderRegistry.reset();
+
+    // Return with masked secrets
+    const maskedHubtelSecret = (settings as any)?.hubtelApiSecret
       ? `****${(settings as any).hubtelApiSecret.slice(-4)}`
+      : null;
+    
+    const maskedPaystackSecret = (settings as any)?.paystackSecretKey
+      ? `****${(settings as any).paystackSecretKey.slice(-4)}`
       : null;
 
     successResponse(res, {
       paymentGateway: settings.paymentGateway,
       hubtelApiId: (settings as any)?.hubtelApiId || null,
-      hubtelApiSecret: maskedApiSecret,
+      hubtelApiSecret: maskedHubtelSecret,
       hubtelMerchantAccountId: (settings as any)?.hubtelMerchantAccountId || null,
+      paystackPublicKey: (settings as any)?.paystackPublicKey || null,
+      paystackSecretKey: maskedPaystackSecret,
       isPaymentTestMode: settings.isPaymentTestMode,
       transactionFeePercent: settings.transactionFeePercent,
     });
