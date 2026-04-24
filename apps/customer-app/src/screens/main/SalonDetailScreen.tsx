@@ -273,13 +273,13 @@ export default function SalonDetailScreen() {
         <View style={styles.reviewHeader}>
           <Avatar.Text
             size={44}
-            label={`${item.user?.firstName?.[0] || ''}${item.user?.lastName?.[0] || ''}`}
+            label={`${(item as any).customer?.firstName?.[0] || item.user?.firstName?.[0] || ''}${(item as any).customer?.lastName?.[0] || item.user?.lastName?.[0] || ''}`}
             style={styles.reviewAvatar}
             labelStyle={styles.reviewAvatarLabel}
           />
           <View style={styles.reviewUserInfo}>
             <Text variant="titleSmall" style={styles.reviewUserName}>
-              {item.user?.firstName ?? ''} {item.user?.lastName ?? ''}
+              {(item as any).customer?.firstName ?? item.user?.firstName ?? ''} {(item as any).customer?.lastName ?? item.user?.lastName ?? ''}
             </Text>
             <View style={styles.reviewRating}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -313,19 +313,29 @@ export default function SalonDetailScreen() {
             let displayText = 'Closed';
 
             try {
-              const rawHours = salonData.openingHours?.[day as keyof typeof salonData.openingHours];
+              // Check operatingHours first (server field), then fallback to openingTime/closingTime
+              const rawHours = salonData.operatingHours?.[day as string];
 
-              if (typeof rawHours === 'string') {
-                // API format: "09:00 - 18:00" or "Closed"
-                if (rawHours && rawHours.toLowerCase() !== 'closed') {
-                  isOpen = true;
-                  displayText = rawHours;
+              if (rawHours) {
+                if (typeof rawHours === 'string') {
+                  // API format: "09:00 - 18:00" or "Closed"
+                  if (rawHours.toLowerCase() !== 'closed') {
+                    isOpen = true;
+                    displayText = rawHours;
+                  }
+                } else if (typeof rawHours === 'object') {
+                  // Object format: { isOpen: true, open: "09:00", close: "18:00" }
+                  isOpen = (rawHours as any).isOpen ?? false;
+                  if (isOpen && (rawHours as any).open && (rawHours as any).close) {
+                    displayText = `${formatTime((rawHours as any).open)} - ${formatTime((rawHours as any).close)}`;
+                  }
                 }
-              } else if (rawHours && typeof rawHours === 'object') {
-                // Legacy format: { isOpen: true, open: "09:00", close: "18:00" }
-                isOpen = rawHours.isOpen ?? false;
-                if (isOpen && rawHours.open && rawHours.close) {
-                  displayText = `${formatTime(rawHours.open)} - ${formatTime(rawHours.close)}`;
+              } else if (salonData.openingTime && salonData.closingTime) {
+                // Fallback: use openingTime/closingTime with workingDays
+                const dayUpper = day.toUpperCase();
+                if (salonData.workingDays?.includes(dayUpper)) {
+                  isOpen = true;
+                  displayText = `${formatTime(salonData.openingTime)} - ${formatTime(salonData.closingTime)}`;
                 }
               }
             } catch (err) {
@@ -496,10 +506,10 @@ export default function SalonDetailScreen() {
             </Text>
           </View>
           
-          {salon.phone && (
+          {salon?.phoneNumber && (
             <View style={styles.phoneContainer}>
               <Ionicons name="call-outline" size={20} color={COLORS.primaryGreen} />
-              <Text variant="bodyMedium" style={styles.phone}>{salon.phone}</Text>
+              <Text variant="bodyMedium" style={styles.phone}>{salon.phoneNumber}</Text>
             </View>
           )}
           
@@ -643,7 +653,7 @@ export default function SalonDetailScreen() {
         </View>
 
         {/* Opening Hours Section */}
-        {salon?.openingHours && renderOpeningHours(salon)}
+        {(salon?.operatingHours || salon?.openingTime) && renderOpeningHours(salon)}
 
         {/* Reviews Section */}
         <View style={styles.section}>

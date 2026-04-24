@@ -256,14 +256,14 @@ export default function BookingScreen() {
     // Primary customer services
     let total = salon.services
       .filter(s => selectedServices.includes(s.id))
-      .reduce((sum, s) => sum + s.price, 0);
+      .reduce((sum, s) => sum + parseFloat(String(s.price)), 0);
     
     // Add guest services for group bookings
     if (isGroupBooking && guests.length > 0) {
       guests.forEach(guest => {
         const guestService = salon.services.find(s => s.id === guest.serviceId);
         if (guestService) {
-          total += guestService.price;
+          total += parseFloat(String(guestService.price));
         }
       });
     }
@@ -349,14 +349,28 @@ export default function BookingScreen() {
 
   // Get salon closing time info
   const salonHours = useMemo(() => {
-    if (!salon?.openingHours || !selectedDate) return null;
+    if (!selectedDate) return null;
     
     const date = new Date(selectedDate);
     const dayOfWeek = getDayOfWeek(date);
-    const hours = salon.openingHours[dayOfWeek];
     
-    return hours;
-  }, [salon?.openingHours, selectedDate]);
+    // Try operatingHours first
+    if (salon?.operatingHours) {
+      const hours = (salon.operatingHours as any)?.[dayOfWeek];
+      return hours ?? null;
+    }
+    
+    // Fallback to openingTime/closingTime with workingDays
+    if (salon?.openingTime && salon?.closingTime) {
+      const dayUpper = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1).toUpperCase();
+      if (salon.workingDays?.includes(dayUpper)) {
+        return { open: salon.openingTime, close: salon.closingTime, isOpen: true };
+      }
+      return null;
+    }
+    
+    return null;
+  }, [salon?.operatingHours, salon?.openingTime, salon?.closingTime, salon?.workingDays, selectedDate]);
 
   // Get last available slot
   const lastAvailableSlot = useMemo(() => {
@@ -515,7 +529,7 @@ export default function BookingScreen() {
                     </View>
                   </View>
                   <Text variant="titleMedium" style={styles.servicePrice}>
-                    GH₵ {service.price.toFixed(2)}
+                    GH₵ {parseFloat(String(service.price)).toFixed(2)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -700,7 +714,7 @@ export default function BookingScreen() {
                               styles.guestServiceChipPrice,
                               guest.serviceId === service.id && styles.guestServiceChipTextSelected,
                             ]}>
-                              GH₵{service.price.toFixed(0)}
+                              GH₵{parseFloat(String(service.price)).toFixed(0)}
                             </Text>
                           </TouchableOpacity>
                         ))}

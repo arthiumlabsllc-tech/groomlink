@@ -131,20 +131,33 @@ export default function MapScreen() {
   const isSalonOpen = useCallback((salon: Salon): boolean => {
     const now = new Date();
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const currentDay = dayNames[now.getDay()] as keyof Salon['openingHours'];
-    const hours = salon.openingHours?.[currentDay];
+    const currentDay = dayNames[now.getDay()];
     
-    if (typeof hours !== 'object' || !hours || !hours.open || !hours.close) return false;
-    const [openHour, openMin] = hours.open.split(':').map(Number);
-    if (isNaN(openHour) || isNaN(openMin)) return false;
-    const [closeHour, closeMin] = hours.close.split(':').map(Number);
-    if (isNaN(closeHour) || isNaN(closeMin)) return false;
-
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    const openTime = openHour * 60 + openMin;
-    const closeTime = closeHour * 60 + closeMin;
+    // Try operatingHours first (per-day hours from server)
+    const hours = salon.operatingHours?.[currentDay];
     
-    return currentTime >= openTime && currentTime <= closeTime;
+    if (hours && typeof hours === 'object' && (hours as any).open && (hours as any).close) {
+      const [openHour, openMin] = (hours as any).open.split(':').map(Number);
+      if (isNaN(openHour) || isNaN(openMin)) return false;
+      const [closeHour, closeMin] = (hours as any).close.split(':').map(Number);
+      if (isNaN(closeHour) || isNaN(closeMin)) return false;
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      return currentTime >= (openHour * 60 + openMin) && currentTime <= (closeHour * 60 + closeMin);
+    }
+    
+    // Fallback to openingTime/closingTime with workingDays
+    if (salon.openingTime && salon.closingTime && salon.workingDays) {
+      const dayUpper = currentDay.toUpperCase();
+      if (!salon.workingDays.includes(dayUpper)) return false;
+      const [openHour, openMin] = salon.openingTime.split(':').map(Number);
+      if (isNaN(openHour) || isNaN(openMin)) return false;
+      const [closeHour, closeMin] = salon.closingTime.split(':').map(Number);
+      if (isNaN(closeHour) || isNaN(closeMin)) return false;
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      return currentTime >= (openHour * 60 + openMin) && currentTime <= (closeHour * 60 + closeMin);
+    }
+    
+    return false;
   }, []);
 
   // Get marker color based on salon status
@@ -175,6 +188,7 @@ export default function MapScreen() {
   }, [refetch]);
 
   const renderMarker = (salon: Salon) => {
+    if (!salon.latitude || !salon.longitude) return null;
     const markerColor = getMarkerColor(salon);
     const isOpen = isSalonOpen(salon);
 

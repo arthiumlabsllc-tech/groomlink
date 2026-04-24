@@ -14,24 +14,44 @@ export interface Salon {
   businessName: string;
   address: string;
   city: string;
-  phone: string;
+  region?: string;
+  phoneNumber: string;
   email: string | null;
   description: string | null;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   rating: number;
   reviewCount: number;
   images: string[];
   coverImage: string | null;
   logo: string | null;
-  openingHours: OpeningHours;
+  // Business hours - server sends these fields
+  openingTime?: string;
+  closingTime?: string;
+  workingDays?: string[];
+  operatingHours?: Record<string, { open: string; close: string; isOpen: boolean } | string> | null;
   status: 'PENDING' | 'APPROVED' | 'SUSPENDED';
-  owner: User;
+  type?: string;
+  owner: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string | null;
+  };
   services: Service[];
   workers: Worker[];
   distance?: number;
   acceptsWalkIns?: boolean;
   isFeatured?: boolean;
+  _count?: { reviews: number };
+  // Additional server fields
+  hasParking?: boolean;
+  hasWifi?: boolean;
+  hasAC?: boolean;
+  maxConcurrentClients?: number;
+  totalChairs?: number;
+  operatingModel?: string;
+  subscriptionStatus?: string;
 }
 
 export interface OpeningHours {
@@ -48,9 +68,13 @@ export interface Service {
   id: string;
   name: string;
   description: string | null;
-  price: number;
+  price: number | string; // API returns Decimal as string
   duration: number;
   category: string;
+  discountPrice?: number | string | null;
+  promoLabel?: string | null;
+  image?: string | null;
+  isActive?: boolean;
 }
 
 export interface Worker {
@@ -126,8 +150,12 @@ export interface Review {
   id: string;
   rating: number;
   comment?: string | null;
-  user: User;
+  // Server returns 'customer', but we also support 'user' for backwards compatibility
+  user?: { firstName: string; lastName: string; avatar?: string | null };
+  customer?: { firstName: string; lastName: string; avatar?: string | null };
   createdAt: string;
+  salonReply?: string | null;
+  salonRepliedAt?: string | null;
 }
 
 export interface AuthResponse {

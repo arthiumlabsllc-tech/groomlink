@@ -485,7 +485,7 @@ export default function BookingDetailScreen() {
                       {service.name}
                     </Text>
                     <Text variant="bodyMedium" style={styles.servicePrice}>
-                      GH₵ {service.price.toFixed(2)}
+                      GH₵ {parseFloat(String(service.price)).toFixed(2)}
                     </Text>
                   </View>
                 ))}

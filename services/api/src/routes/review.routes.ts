@@ -5,6 +5,7 @@ const router = Router();
 
 // Public endpoint for fetching salon reviews (mobile app compatibility)
 // This is an alias to /salons/:id/reviews
-router.get('/salon/:salonId', salonController.getSalonReviews);
+// Note: Use :id to match the controller's req.params.id expectation
+router.get('/salon/:id', salonController.getSalonReviews);
 
 export default router;
