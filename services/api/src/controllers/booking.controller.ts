@@ -34,7 +34,10 @@ const createBookingSchema = z.object({
   salonId: z.string().uuid(),
   workerId: z.string().uuid().optional(),
   serviceId: z.string().uuid(),
-  date: z.string().datetime(),
+  date: z.string().refine((val) => {
+    // Accept both YYYY-MM-DD and full ISO datetime
+    return /^\d{4}-\d{2}-\d{2}(T.*)?$/.test(val) && !isNaN(Date.parse(val));
+  }, 'Invalid date format'),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
   customerNotes: z.string().optional(),
   // Group booking fields

@@ -322,7 +322,7 @@ export default function BookingScreen() {
     
     createBookingMutation.mutate({
       serviceId: primaryService,
-      date: selectedDate,
+      date: `${selectedDate}T00:00:00.000Z`,
       startTime: selectedTime,
       workerId: selectedWorker || undefined,
       notes: notes || undefined,

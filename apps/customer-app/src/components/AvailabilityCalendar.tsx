@@ -51,6 +51,14 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+// Timezone-safe date formatting (avoids toISOString UTC shift)
+const formatDateStr = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 export default function AvailabilityCalendar({
   salonId,
   workerId,
@@ -115,7 +123,7 @@ export default function AvailabilityCalendar({
       
       for (let d = 1; d <= lastDay.getDate(); d++) {
         const date = new Date(year, month, d);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = formatDateStr(date);
         
         // Skip past dates and dates beyond booking window
         if (date < today || date > maxBookingDate) {
@@ -154,11 +162,12 @@ export default function AvailabilityCalendar({
             };
           })
           .catch(() => {
+            // On network error, mark as unknown (not closed) so user can still try
             results[dateStr] = {
               date: dateStr,
-              hasSlots: false,
+              hasSlots: true,
               isFullyBooked: false,
-              isClosed: true,
+              isClosed: false,
               isLoading: false,
             };
           });
@@ -189,8 +198,10 @@ export default function AvailabilityCalendar({
     const prevMonth = new Date(currentMonth);
     prevMonth.setMonth(prevMonth.getMonth() - 1);
     
-    // Don't allow going to past months
-    if (prevMonth.getMonth() >= today.getMonth() || prevMonth.getFullYear() > today.getFullYear()) {
+    // Don't allow going before current month
+    const todayMonth = today.getFullYear() * 12 + today.getMonth();
+    const prevMonthVal = prevMonth.getFullYear() * 12 + prevMonth.getMonth();
+    if (prevMonthVal >= todayMonth) {
       setCurrentMonth(prevMonth);
     }
   }, [currentMonth, today]);
@@ -202,11 +213,11 @@ export default function AvailabilityCalendar({
   }, [currentMonth]);
 
   const handleDatePress = useCallback((date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateStr(date);
     const availability = availabilityMap[dateStr];
     
-    // Only allow selecting if not past, within window, and has slots
-    if (date >= today && date <= maxBookingDate && availability?.hasSlots) {
+    // Allow selecting if not past, within window, and has slots (or availability unknown)
+    if (date >= today && date <= maxBookingDate && (availability?.hasSlots || !availability)) {
       onDateSelect(dateStr);
     }
   }, [availabilityMap, today, maxBookingDate, onDateSelect]);
@@ -214,7 +225,7 @@ export default function AvailabilityCalendar({
   const getDateStyle = useCallback((date: Date | null) => {
     if (!date) return null;
     
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateStr(date);
     const availability = availabilityMap[dateStr];
     const isPast = date < today;
     const isBeyondWindow = date > maxBookingDate;
@@ -272,7 +283,7 @@ export default function AvailabilityCalendar({
     
     return (
       <TouchableOpacity
-        key={date.toISOString()}
+        key={formatDateStr(date)}
         style={[
           styles.dayCell,
           { backgroundColor, borderColor },
@@ -294,7 +305,9 @@ export default function AvailabilityCalendar({
   };
 
   const monthYear = `${MONTHS[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
-  const canGoPrev = currentMonth.getMonth() > today.getMonth() || currentMonth.getFullYear() > today.getFullYear();
+  const currentMonthVal = currentMonth.getFullYear() * 12 + currentMonth.getMonth();
+  const todayMonthVal = today.getFullYear() * 12 + today.getMonth();
+  const canGoPrev = currentMonthVal > todayMonthVal;
 
   return (
     <View style={styles.container}>
