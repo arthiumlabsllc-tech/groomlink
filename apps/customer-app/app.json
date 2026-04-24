@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.arthiumlabsllc.groomlink",
-      "versionCode": 1,
+      "versionCode": 13,
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo-white.png",
         "backgroundColor": "#CE1126"
