@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.arthiumlabsllc.partners",
-      "versionCode": 1,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo-white.png",
         "backgroundColor": "#006B3F"
