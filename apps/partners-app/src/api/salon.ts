@@ -4,6 +4,7 @@ import { Salon, DashboardStats, CompletionSettings } from '../types';
 export interface CreateSalonData {
   businessName: string;
   type: string;
+  providerCategory?: string;
   phoneNumber: string;
   email?: string;
   address: string;

@@ -27,6 +27,8 @@ const addServiceSchema = z.object({
   discountPrice: z.number().min(0).optional().nullable(),
   promoLabel: z.string().max(50).optional().nullable(),
   image: z.string().url().optional(),
+  offersHomeService: z.boolean().optional(),
+  homeServiceFee: z.number().min(0).optional().nullable(),
 });
 
 const updateServiceSchema = addServiceSchema.partial();

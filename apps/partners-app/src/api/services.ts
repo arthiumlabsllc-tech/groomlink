@@ -8,6 +8,8 @@ export interface Service {
   duration: number;
   category: string;
   isActive: boolean;
+  offersHomeService?: boolean;
+  homeServiceFee?: number | null;
   discountPrice?: number | null;
   promoLabel?: string | null;
   image?: string | null;
@@ -30,6 +32,8 @@ export interface CreateServiceData {
   discountPrice?: number | null;
   promoLabel?: string | null;
   image?: string;
+  offersHomeService?: boolean;
+  homeServiceFee?: number | null;
 }
 
 export interface UpdateServiceData extends Partial<CreateServiceData> {

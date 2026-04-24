@@ -4,6 +4,7 @@ import { Salon, Service, Worker } from '../types';
 export interface SearchFilters {
   search?: string;
   type?: string;
+  providerCategory?: string;
   city?: string;
   minRating?: number;
   lat?: number;
@@ -25,6 +26,7 @@ export const salonApi = {
     
     if (filters.search) params.append('search', filters.search);
     if (filters.type) params.append('type', filters.type);
+    if (filters.providerCategory) params.append('providerCategory', filters.providerCategory);
     if (filters.city) params.append('city', filters.city);
     if (filters.minRating) params.append('minRating', filters.minRating.toString());
     if (filters.lat) params.append('lat', filters.lat.toString());

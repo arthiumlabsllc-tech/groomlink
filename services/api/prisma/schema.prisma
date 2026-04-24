@@ -21,6 +21,11 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum ProviderCategory {
+  BUSINESS    // Salon/Barbershop company
+  FREELANCER  // Individual barber/hairdresser
+}
+
 enum SalonType {
   BARBERSHOP
   HAIR_SALON
@@ -171,8 +176,9 @@ model Salon {
   id           String      @id @default(uuid())
   businessName String      @map("business_name")
   description  String?
-  type         SalonType
-  status       SalonStatus @default(PENDING)
+  type             SalonType
+  providerCategory ProviderCategory @default(BUSINESS) @map("provider_category")
+  status           SalonStatus @default(PENDING)
 
   // Registration
   registrationNumber String? @map("registration_number")
@@ -276,6 +282,7 @@ model Salon {
 
   @@index([ownerId])
   @@index([type])
+  @@index([providerCategory])
   @@index([status])
   @@index([city])
   @@index([latitude, longitude])
@@ -348,7 +355,9 @@ model Service {
   discountPrice Decimal? @map("discount_price") @db.Decimal(10, 2)
   promoLabel    String?  @map("promo_label") // e.g., "20% OFF", "Summer Special"
   image         String?
-  isActive      Boolean  @default(true) @map("is_active")
+  isActive          Boolean  @default(true) @map("is_active")
+  offersHomeService  Boolean  @default(false) @map("offers_home_service")
+  homeServiceFee     Decimal? @map("home_service_fee") @db.Decimal(10, 2)
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")

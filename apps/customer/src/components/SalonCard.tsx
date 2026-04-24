@@ -11,6 +11,7 @@ interface SalonCardProps {
   logo: string | null
   images: string[]
   isSponsored?: boolean
+  providerCategory?: string
   priceFrom?: number
   nextAvailable?: string
   variant?: 'horizontal' | 'vertical'
@@ -26,6 +27,7 @@ export default function SalonCard({
   logo,
   images,
   isSponsored = false,
+  providerCategory,
   priceFrom,
   nextAvailable,
   variant = 'vertical'
@@ -64,6 +66,12 @@ export default function SalonCard({
             <h3 className="font-semibold text-gray-900 text-sm truncate">
               {businessName}
             </h3>
+            {providerCategory === 'FREELANCER' && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Icon name="person" size={12} className="text-indigo-500" />
+                <span className="text-[10px] font-medium text-indigo-500">Freelancer</span>
+              </div>
+            )}
             <div className="flex items-center gap-1 mt-0.5">
               <Icon name="star" size={14} filled className="text-yellow-400" />
               <span className="text-xs font-medium">{rating?.toFixed(1) || '0.0'}</span>
@@ -119,6 +127,12 @@ export default function SalonCard({
         <h3 className="font-semibold text-gray-900 text-sm truncate">
           {businessName}
         </h3>
+        {providerCategory === 'FREELANCER' && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <Icon name="person" size={12} className="text-indigo-500" />
+            <span className="text-[10px] font-medium text-indigo-500">Freelancer</span>
+          </div>
+        )}
         
         <div className="flex items-center gap-2 mt-1">
           <div className="flex items-center gap-0.5">

@@ -78,6 +78,7 @@ export default function Settings() {
     businessName: '',
     description: '',
     type: 'BARBERSHOP',
+    providerCategory: 'BUSINESS',
     address: '',
     city: '',
     region: '',
@@ -188,6 +189,7 @@ export default function Settings() {
             businessName: salonData.businessName || '',
             description: salonData.description || '',
             type: salonData.type || 'BARBERSHOP',
+            providerCategory: (salonData as any).providerCategory || 'BUSINESS',
             address: salonData.address || '',
             city: salonData.city || '',
             region: salonData.region || '',
@@ -327,6 +329,7 @@ export default function Settings() {
           businessName: formData.businessName,
           description: formData.description,
           type: formData.type,
+          providerCategory: formData.providerCategory,
           address: formData.address,
           city: formData.city,
           region: formData.region,
@@ -699,15 +702,54 @@ export default function Settings() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Provider Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Provider Category <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, providerCategory: 'BUSINESS' })}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      formData.providerCategory === 'BUSINESS'
+                        ? 'border-ghana-green bg-ghana-green/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🏪</span>
+                      <span className="font-medium text-sm text-gray-900">Business</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Salon, barbershop, or beauty company</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, providerCategory: 'FREELANCER' })}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      formData.providerCategory === 'FREELANCER'
+                        ? 'border-ghana-green bg-ghana-green/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">✂️</span>
+                      <span className="font-medium text-sm text-gray-900">Freelancer</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Independent barber or hairdresser</p>
+                  </button>
+                </div>
+              </div>
+
               {/* Business Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Business Name <span className="text-red-500">*</span>
+                  {formData.providerCategory === 'FREELANCER' ? 'Your Name / Brand' : 'Business Name'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   className="input-field"
-                  placeholder="e.g., Kofi's Barbershop"
+                  placeholder={formData.providerCategory === 'FREELANCER' ? 'e.g., Kwame the Barber' : 'e.g., Kofi\'s Barbershop'}
                   value={formData.businessName}
                   onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                   required

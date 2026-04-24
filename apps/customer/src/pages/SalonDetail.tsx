@@ -14,6 +14,8 @@ interface ServiceLocal {
   discountPrice?: string | null
   promoLabel?: string | null
   isActive: boolean
+  offersHomeService?: boolean
+  homeServiceFee?: string | null
 }
 
 interface Worker {
@@ -975,6 +977,12 @@ export default function SalonDetail() {
                                 {service.category}
                               </span>
                             )}
+                            {service.offersHomeService && (
+                              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs flex items-center gap-1">
+                                <Icon name="home" size={12} />
+                                Home Service
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="text-right pl-4 flex-shrink-0">
@@ -985,6 +993,9 @@ export default function SalonDetail() {
                             </div>
                           ) : (
                             <p className="font-bold text-[#CE1126]">{formatPrice(service.price)}</p>
+                          )}
+                          {service.offersHomeService && service.homeServiceFee && parseFloat(service.homeServiceFee) > 0 && (
+                            <p className="text-[10px] text-gray-400 mt-1">+{formatPrice(service.homeServiceFee)} home fee</p>
                           )}
                         </div>
                       </div>

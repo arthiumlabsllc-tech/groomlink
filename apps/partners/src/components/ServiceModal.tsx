@@ -31,6 +31,8 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
     discountPrice: '',
     promoLabel: '',
     description: '',
+    offersHomeService: false,
+    homeServiceFee: '',
   })
 
   const isEditMode = !!service
@@ -46,6 +48,8 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
         discountPrice: service.discountPrice || '',
         promoLabel: service.promoLabel || '',
         description: service.description || '',
+        offersHomeService: (service as any).offersHomeService || false,
+        homeServiceFee: (service as any).homeServiceFee?.toString() || '',
       })
     } else {
       // Reset form for add mode
@@ -57,6 +61,8 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
         discountPrice: '',
         promoLabel: '',
         description: '',
+        offersHomeService: false,
+        homeServiceFee: '',
       })
     }
     setError(null)
@@ -122,6 +128,8 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
         discountPrice: discountPriceNum,
         promoLabel: formData.promoLabel.trim() || null,
         description: formData.description.trim() || undefined,
+        offersHomeService: formData.offersHomeService,
+        homeServiceFee: formData.offersHomeService && formData.homeServiceFee ? parseFloat(formData.homeServiceFee) : null,
       }
 
       if (isEditMode && service) {
@@ -303,6 +311,50 @@ export default function ServiceModal({ isOpen, onClose, onSuccess, service }: Se
                   <span className="text-red-500">Discount must be less than regular price</span>
                 )}
               </p>
+            )}
+          </div>
+
+          {/* Home Service Section */}
+          <div className="pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Icon name="home" size={16} className="text-blue-500" />
+              <p className="text-sm font-medium text-gray-700">Home Service</p>
+              <span className="text-xs text-gray-400">(Optional)</span>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={formData.offersHomeService}
+                  onChange={(e) => setFormData(prev => ({ ...prev, offersHomeService: e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-ghana-green transition-colors" />
+                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-5 transition-transform" />
+              </div>
+              <span className="text-sm text-gray-700">This service is available at customer's location</span>
+            </label>
+            {formData.offersHomeService && (
+              <div className="mt-3">
+                <label htmlFor="homeServiceFee" className="block text-sm text-gray-600 mb-1.5">
+                  Travel / Home Service Fee (GHS)
+                </label>
+                <input
+                  type="number"
+                  id="homeServiceFee"
+                  name="homeServiceFee"
+                  value={formData.homeServiceFee}
+                  onChange={handleChange}
+                  placeholder="e.g., 20.00"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green/30 focus:border-ghana-green transition-all duration-200 bg-gray-50/50 focus:bg-white"
+                />
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <Icon name="info" size={12} className="text-gray-400" />
+                  Extra fee charged when customer requests home service
+                </p>
+              </div>
             )}
           </div>
 

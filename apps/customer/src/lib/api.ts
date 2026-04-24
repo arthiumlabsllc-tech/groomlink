@@ -132,6 +132,8 @@ export interface Service {
   discountPrice?: string | null;
   promoLabel?: string | null;
   isActive: boolean;
+  offersHomeService?: boolean;
+  homeServiceFee?: string | null;
 }
 
 export interface Worker {
@@ -218,6 +220,7 @@ export interface NearbySalon {
   updatedAt: string;
   distance: number; // Distance in km from the search location
   isSponsored?: boolean; // Sponsored salon flag
+  providerCategory?: string;
 }
 
 export interface NearbySalonsResponse {

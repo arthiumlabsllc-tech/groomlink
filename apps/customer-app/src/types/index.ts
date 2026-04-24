@@ -51,6 +51,7 @@ export interface Salon {
   maxConcurrentClients?: number;
   totalChairs?: number;
   operatingModel?: string;
+  providerCategory?: string;
   subscriptionStatus?: string;
 }
 
@@ -75,6 +76,8 @@ export interface Service {
   promoLabel?: string | null;
   image?: string | null;
   isActive?: boolean;
+  offersHomeService?: boolean;
+  homeServiceFee?: number | string | null;
 }
 
 export interface Worker {

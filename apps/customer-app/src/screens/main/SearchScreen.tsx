@@ -108,6 +108,12 @@ export default function SearchScreen() {
         <Text variant="titleSmall" numberOfLines={1} style={styles.salonName}>
           {item.businessName}
         </Text>
+        {(item as any).providerCategory === 'FREELANCER' && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+            <Ionicons name="person" size={12} color="#4F46E5" />
+            <Text style={{ fontSize: 11, color: '#4F46E5', fontWeight: '500', marginLeft: 3 }}>Freelancer</Text>
+          </View>
+        )}
         <View style={styles.locationRow}>
           <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
           <Text variant="bodySmall" numberOfLines={1} style={styles.address}>

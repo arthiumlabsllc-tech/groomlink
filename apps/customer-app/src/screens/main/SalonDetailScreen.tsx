@@ -246,18 +246,33 @@ export default function SalonDetailScreen() {
           {item.description && (
             <Text variant="bodySmall" style={styles.serviceDescription}>{item.description}</Text>
           )}
-          {item.duration && (
-            <View style={styles.serviceDuration}>
-              <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-              <Text variant="bodySmall" style={styles.serviceDurationText}>
-                {formatDuration(item.duration)}
-              </Text>
-            </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            {item.duration && (
+              <View style={styles.serviceDuration}>
+                <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+                <Text variant="bodySmall" style={styles.serviceDurationText}>
+                  {formatDuration(item.duration)}
+                </Text>
+              </View>
+            )}
+            {item.offersHomeService && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
+                <Ionicons name="home-outline" size={12} color="#4F46E5" />
+                <Text style={{ fontSize: 11, color: '#4F46E5', marginLeft: 3, fontWeight: '500' }}>Home Service</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text variant="titleMedium" style={styles.servicePrice}>
+            GH₵ {parseFloat(String(item?.price ?? 0)).toFixed(2)}
+          </Text>
+          {item.offersHomeService && item.homeServiceFee && parseFloat(String(item.homeServiceFee)) > 0 && (
+            <Text style={{ fontSize: 10, color: COLORS.textSecondary, marginTop: 2 }}>
+              +GH₵ {parseFloat(String(item.homeServiceFee)).toFixed(2)} home fee
+            </Text>
           )}
         </View>
-        <Text variant="titleMedium" style={styles.servicePrice}>
-          GH₵ {parseFloat(String(item?.price ?? 0)).toFixed(2)}
-        </Text>
       </View>
     );
   }, []);
@@ -482,6 +497,12 @@ export default function SalonDetailScreen() {
           {/* Salon Name Overlay */}
           <View style={styles.heroOverlay}>
             <Text variant="headlineMedium" style={styles.heroTitle}>{salon?.businessName ?? 'Unnamed Salon'}</Text>
+            {(salon as any).providerCategory === 'FREELANCER' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 16, marginTop: 6 }}>
+                <Ionicons name="person" size={14} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600', marginLeft: 4 }}>Freelancer</Text>
+              </View>
+            )}
           </View>
         </View>
 

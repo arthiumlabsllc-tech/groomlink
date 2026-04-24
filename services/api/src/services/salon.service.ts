@@ -7,6 +7,7 @@ export interface CreateSalonData {
   businessName: string;
   description?: string;
   type: SalonType;
+  providerCategory?: string;
   phoneNumber: string;
   email?: string;
   website?: string;
@@ -33,6 +34,7 @@ export interface UpdateSalonData extends Partial<CreateSalonData> {
 
 export interface SalonFilters {
   type?: SalonType;
+  providerCategory?: string;
   city?: string;
   status?: SalonStatus;
   minRating?: number;
@@ -66,6 +68,7 @@ export async function createSalon(ownerId: string, data: CreateSalonData) {
       businessName: data.businessName,
       description: data.description,
       type: data.type,
+      providerCategory: data.providerCategory || 'BUSINESS',
       phoneNumber: data.phoneNumber,
       email: data.email,
       website: data.website,
@@ -85,7 +88,7 @@ export async function createSalon(ownerId: string, data: CreateSalonData) {
       ownerId,
       latitude: typeof latitude === 'number' ? latitude : null,
       longitude: typeof longitude === 'number' ? longitude : null,
-    },
+    } as any,
   });
 
   logger.info(`Salon created: ${salon.id} by owner: ${ownerId}`);
@@ -163,6 +166,10 @@ export async function getSalons(filters: SalonFilters, page: number = 1, limit: 
     where.isFeatured = true;
   }
 
+  if (filters.providerCategory) {
+    (where as any).providerCategory = filters.providerCategory;
+  }
+
   // Geolocation filter
   if (filters.latitude && filters.longitude && filters.radius) {
     // Using raw query for PostGIS distance calculation
@@ -235,7 +242,7 @@ export async function updateSalon(id: string, ownerId: string, data: UpdateSalon
     data.region !== undefined;
 
   // Prepare update data
-  const updateData: Prisma.SalonUpdateInput = { ...data };
+  const updateData: any = { ...data };
 
   // If address is updated, try to geocode the new address
   if (isAddressUpdated && (data.address || salon.address)) {

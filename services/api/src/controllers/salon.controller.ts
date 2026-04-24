@@ -15,6 +15,11 @@ enum SalonType {
   BEAUTY_SALON = 'BEAUTY_SALON',
 }
 
+enum ProviderCategory {
+  BUSINESS = 'BUSINESS',
+  FREELANCER = 'FREELANCER',
+}
+
 const createSalonSchema = z.object({
   businessName: z.string().min(2),
   description: z.string().optional(),
@@ -38,6 +43,7 @@ const createSalonSchema = z.object({
   totalChairs: z.number().int().min(1).max(50).optional(),
   bufferTimeMinutes: z.number().int().min(0).max(60).optional(),
   operatingModel: z.string().optional(),
+  providerCategory: z.enum(['BUSINESS', 'FREELANCER']).optional(),
 });
 
 const updateSalonSchema = createSalonSchema.partial().extend({
@@ -63,6 +69,7 @@ export async function getSalons(req: Request, res: Response): Promise<void> {
       radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
       search: req.query.search as string,
       isFeatured: req.query.featured === 'true' ? true : undefined,
+      providerCategory: req.query.providerCategory as string || undefined,
     };
 
     const { salons, total } = await salonService.getSalons(filters, page, limit);

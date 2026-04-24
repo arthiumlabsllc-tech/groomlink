@@ -724,6 +724,52 @@ function MiniFooter() {
   )
 }
 
+// Floating Partner CTA that appears after scrolling
+function FloatingPartnerCTA() {
+  const [visible, setVisible] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setVisible(window.scrollY > 400)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  if (dismissed) return null
+
+  return (
+    <div
+      className={`fixed bottom-20 left-4 right-4 z-40 transition-all duration-500 ${
+        visible ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0 pointer-events-none'
+      }`}
+    >
+      <div className="relative bg-gradient-to-r from-[#006B3F] to-[#008a50] rounded-2xl p-4 shadow-2xl border border-[#FCD116]/30">
+        <button
+          onClick={() => setDismissed(true)}
+          className="absolute -top-2 -right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-700"
+          aria-label="Dismiss"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <a href="https://partners.groomlinkgh.com" className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-[#FCD116] rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-slow">
+            <Icon name="storefront" size={24} className="text-[#006B3F]" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-bold text-sm">Own a Salon or Barbershop?</p>
+            <p className="text-white/70 text-xs">List free & get more bookings today</p>
+          </div>
+          <div className="bg-[#FCD116] text-[#006B3F] font-extrabold text-xs px-3 py-2 rounded-lg flex-shrink-0">
+            JOIN
+          </div>
+        </a>
+      </div>
+    </div>
+  )
+}
+
 export default function MobileHome() {
   const [recommendedSalons, setRecommendedSalons] = useState<Salon[]>([])
   const [popularSalons, setPopularSalons] = useState<Salon[]>([])
@@ -784,16 +830,27 @@ export default function MobileHome() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Partner With Us Bar */}
+      {/* Partner With Us Banner - Bold & Eye-catching */}
       <Link
         to="/partners"
-        className="block bg-[#006B3F] text-white text-center text-xs py-1.5 font-medium tracking-wide hover:bg-[#005a35] transition-colors"
+        className="block bg-gradient-to-r from-[#006B3F] via-[#008a50] to-[#006B3F] text-white text-center py-3 font-bold tracking-wide hover:brightness-110 transition-all relative overflow-hidden"
       >
-        Are you a salon/barbershop owner? Partner With Us →
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+        <div className="relative flex items-center justify-center gap-2">
+          <span className="text-[#FCD116] animate-bounce-gentle">&#9733;</span>
+          <span className="text-xs font-bold">SALON/BARBERSHOP OWNER?</span>
+          <span className="bg-[#FCD116] text-[#006B3F] font-extrabold text-[10px] px-2 py-0.5 rounded-full">
+            PARTNER WITH US
+          </span>
+          <span className="text-[#FCD116] animate-bounce-gentle" style={{ animationDelay: '0.3s' }}>&#9733;</span>
+        </div>
       </Link>
 
       {/* App Download Popup */}
       <AppDownloadBanner />
+
+      {/* Floating Partner CTA */}
+      <FloatingPartnerCTA />
 
       {/* Hero Section */}
       <HeroSection />

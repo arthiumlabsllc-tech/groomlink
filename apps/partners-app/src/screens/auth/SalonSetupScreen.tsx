@@ -27,6 +27,11 @@ const SALON_TYPES = [
   { label: 'Spa', value: 'SPA', icon: 'water' },
 ];
 
+const PROVIDER_CATEGORIES = [
+  { label: 'Business (Salon/Barbershop)', value: 'BUSINESS', icon: 'business', desc: 'Registered business with a physical shop' },
+  { label: 'Freelancer (Individual)', value: 'FREELANCER', icon: 'person', desc: 'Independent barber or hairdresser' },
+];
+
 const GHANA_REGIONS = [
   'Greater Accra',
   'Ashanti',
@@ -84,6 +89,7 @@ export default function SalonSetupScreen() {
   const { user, setUser } = useAuthStore();
 
   // Section 1: Basic Info
+  const [providerCategory, setProviderCategory] = useState<string>('BUSINESS');
   const [businessName, setBusinessName] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [description, setDescription] = useState('');
@@ -217,6 +223,7 @@ export default function SalonSetupScreen() {
       const salonData: CreateSalonData = {
         businessName: businessName.trim(),
         type: selectedType,
+        providerCategory,
         phoneNumber: phoneNumber.trim(),
         email: email.trim() || undefined,
         address: address.trim(),
@@ -291,10 +298,10 @@ export default function SalonSetupScreen() {
               <Ionicons name="business" size={28} color="#006B3F" />
             </View>
             <Text variant="headlineSmall" style={styles.title}>
-              Set Up Your Salon
+              {providerCategory === 'FREELANCER' ? 'Set Up Your Profile' : 'Set Up Your Salon'}
             </Text>
             <Text variant="bodyMedium" style={styles.subtitle}>
-              Tell us about your business to get started
+              {providerCategory === 'FREELANCER' ? 'Tell us about yourself to get started' : 'Tell us about your business to get started'}
             </Text>
           </View>
 
@@ -308,16 +315,46 @@ export default function SalonSetupScreen() {
             </View>
             <Divider style={styles.sectionDivider} />
 
+            <Text variant="bodyMedium" style={styles.label}>
+              I am a... *
+            </Text>
+            <View style={styles.typeGrid}>
+              {PROVIDER_CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat.value}
+                  style={[
+                    styles.typeChip,
+                    { flex: 1 },
+                    providerCategory === cat.value && styles.typeChipSelected,
+                  ]}
+                  onPress={() => setProviderCategory(cat.value)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={cat.icon as any}
+                    size={18}
+                    color={providerCategory === cat.value ? '#FFFFFF' : '#6B7280'}
+                  />
+                  <Text style={[
+                    styles.typeChipText,
+                    providerCategory === cat.value && styles.typeChipTextSelected,
+                  ]}>
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <TextInput
-              label="Business Name *"
+              label={providerCategory === 'FREELANCER' ? 'Your Name / Brand Name *' : 'Business Name *'}
               value={businessName}
               onChangeText={setBusinessName}
               style={styles.input}
               mode="outlined"
               outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
-              placeholder="e.g., Glamour Beauty Salon"
-              left={<TextInput.Icon icon="storefront" color="#6B7280" />}
+              placeholder={providerCategory === 'FREELANCER' ? 'e.g., John the Barber' : 'e.g., Glamour Beauty Salon'}
+              left={<TextInput.Icon icon={providerCategory === 'FREELANCER' ? 'account' : 'storefront'} color="#6B7280" />}
               theme={{ roundness: 10 }}
               autoFocus
             />
@@ -361,7 +398,7 @@ export default function SalonSetupScreen() {
               mode="outlined"
               outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
-              placeholder="Tell customers about your salon and services..."
+              placeholder={providerCategory === 'FREELANCER' ? 'Tell customers about your skills and services...' : 'Tell customers about your salon and services...'}
               theme={{ roundness: 10 }}
             />
 

@@ -20,6 +20,7 @@ interface Salon {
   logo: string | null
   images: string[]
   isSponsored?: boolean
+  providerCategory?: string
   priceFrom?: number
   nextAvailable?: string
 }

@@ -7,6 +7,7 @@ interface HeaderProps {
 
 export default function Header({ scrolled }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
 
   // Close mobile menu on resize
   useEffect(() => {
@@ -30,10 +31,33 @@ export default function Header({ scrolled }: HeaderProps) {
         scrolled ? 'bg-white shadow-md' : 'bg-white'
       }`}
     >
-      {/* Partner With Us Bar - Mobile Only */}
-      <a href="/partners" className="lg:hidden block bg-[#006B3F] text-white text-center text-xs py-1.5 font-medium tracking-wide hover:bg-[#005a35] transition-colors">
-        Are you a salon/barbershop owner? Partner With Us →
-      </a>
+      {/* Partner With Us Banner - ALL devices, bold & animated */}
+      {!bannerDismissed && (
+        <div className="relative bg-gradient-to-r from-[#006B3F] via-[#008a50] to-[#006B3F] overflow-hidden">
+          {/* Animated shimmer overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+          <a
+            href="/partners"
+            className="relative flex items-center justify-center gap-2 text-white text-center py-2.5 sm:py-3 font-bold tracking-wide hover:bg-white/10 transition-colors group"
+          >
+            <span className="text-[#FCD116] text-lg sm:text-xl animate-bounce-gentle">&#9733;</span>
+            <span className="text-xs sm:text-sm md:text-base">
+              ARE YOU A SALON/BARBERSHOP OWNER?
+            </span>
+            <span className="bg-[#FCD116] text-[#006B3F] font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full group-hover:scale-110 transition-transform shadow-md">
+              PARTNER WITH US
+            </span>
+            <span className="text-[#FCD116] text-lg sm:text-xl animate-bounce-gentle" style={{ animationDelay: '0.3s' }}>&#9733;</span>
+          </a>
+          <button
+            onClick={(e) => { e.preventDefault(); setBannerDismissed(true); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/60 hover:text-white p-1 transition-colors"
+            aria-label="Dismiss"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      )}
       <nav className="section-container">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}

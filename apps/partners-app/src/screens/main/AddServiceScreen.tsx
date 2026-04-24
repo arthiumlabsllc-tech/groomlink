@@ -20,6 +20,7 @@ import {
   HelperText,
   Surface,
   Chip,
+  Switch,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { servicesApi, CreateServiceData, UpdateServiceData, Service } from '../../api/services';
@@ -76,6 +77,8 @@ export default function AddServiceScreen() {
   const [duration, setDuration] = useState<number>(existingService?.duration || 30);
   const [category, setCategory] = useState(existingService?.category || 'HAIRCUT');
   const [description, setDescription] = useState(existingService?.description || '');
+  const [offersHomeService, setOffersHomeService] = useState((existingService as any)?.offersHomeService || false);
+  const [homeServiceFee, setHomeServiceFee] = useState((existingService as any)?.homeServiceFee?.toString() || '');
 
   // Menu visibility
   const [durationMenuVisible, setDurationMenuVisible] = useState(false);
@@ -167,6 +170,8 @@ export default function AddServiceScreen() {
       duration,
       category,
       description: description.trim() || undefined,
+      offersHomeService,
+      homeServiceFee: offersHomeService && homeServiceFee ? parseFloat(homeServiceFee) : null,
     };
 
     if (isEditMode) {
@@ -327,6 +332,41 @@ export default function AddServiceScreen() {
               placeholder="Describe your service..."
               theme={{ roundness: 12 }}
             />
+          </View>
+
+          {/* Home Service Toggle */}
+          <View style={styles.inputGroup}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                <Ionicons name="home" size={20} color="#006B3F" />
+                <View>
+                  <Text style={styles.inputLabel}>Offers Home Service</Text>
+                  <Text style={{ fontSize: 12, color: '#6B7280' }}>Can you go to the customer's location?</Text>
+                </View>
+              </View>
+              <Switch
+                value={offersHomeService}
+                onValueChange={setOffersHomeService}
+                color="#006B3F"
+              />
+            </View>
+            {offersHomeService && (
+              <View style={{ marginTop: 8 }}>
+                <Text style={styles.inputLabel}>Home Service Fee (GHS)</Text>
+                <TextInput
+                  value={homeServiceFee}
+                  onChangeText={setHomeServiceFee}
+                  mode="outlined"
+                  outlineColor="#E5E7EB"
+                  activeOutlineColor="#006B3F"
+                  keyboardType="numeric"
+                  placeholder="Extra charge for home service (e.g., 20)"
+                  left={<TextInput.Affix text="GH\u20B5" />}
+                  theme={{ roundness: 12 }}
+                  style={styles.input}
+                />
+              </View>
+            )}
           </View>
 
           {/* Action Buttons */}
