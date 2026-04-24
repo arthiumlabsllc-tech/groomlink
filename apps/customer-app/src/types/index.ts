@@ -91,7 +91,8 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   scheduledDate: string;
   scheduledTime: string;
-  totalAmount: number;
+  totalAmount: number | string; // Prisma Decimal returns string
+  finalAmount?: number | string;
   notes: string | null;
   salon: Salon;
   worker: Worker;
@@ -111,15 +112,15 @@ export interface Booking {
     specialInstructions?: string;
     checkedIn?: boolean;
     serviceId?: string;
-    service?: { id: string; name: string; price: number; duration?: number };
+    service?: { id: string; name: string; price: number | string; duration?: number };
     staff?: { id: string; fullName: string };
   }>;
   escrow?: {
     id: string;
     status: string;
-    amountHeld: number;
-    platformFee: number;
-    providerAmount: number;
+    amountHeld: number | string;
+    platformFee: number | string;
+    providerAmount: number | string;
   };
   refundEligible?: boolean;
   refundPercentage?: number;

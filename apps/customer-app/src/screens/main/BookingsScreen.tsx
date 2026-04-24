@@ -208,7 +208,7 @@ export default function BookingsScreen() {
 
           <View style={styles.cardFooter}>
             <Text variant="titleMedium" style={styles.totalAmount}>
-              GH₵ {item.totalAmount.toFixed(2)}
+              GH₵ {parseFloat(String(item.totalAmount)).toFixed(2)}
             </Text>
             {(item.status === 'CONFIRMED' || item.status === 'PENDING') && (
               <TouchableOpacity 

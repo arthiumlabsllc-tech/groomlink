@@ -296,7 +296,7 @@ export default function BookingConfirmationScreen() {
               <View style={styles.detailContent}>
                 <Text variant="bodySmall" style={styles.detailLabel}>Total Amount</Text>
                 <Text variant="titleLarge" style={styles.totalAmount}>
-                  GH₵ {booking.totalAmount.toFixed(2)}
+                  GH₵ {parseFloat(String(booking.totalAmount)).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -309,7 +309,7 @@ export default function BookingConfirmationScreen() {
                   <Text variant="bodyMedium" style={styles.escrowTitle}>Secure Payment</Text>
                 </View>
                 <Text variant="bodySmall" style={styles.escrowMessage}>
-                  Your payment of GH₵ {booking.escrow.amountHeld.toFixed(2)} is held securely until service completion.
+                  Your payment of GH₵ {parseFloat(String(booking.escrow.amountHeld)).toFixed(2)} is held securely until service completion.
                 </Text>
               </View>
             )}

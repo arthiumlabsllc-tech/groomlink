@@ -9,6 +9,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
 import { notificationApi } from './src/api/notification';
@@ -175,15 +176,17 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <PaperProvider>
-        <QueryClientProvider client={queryClient}>
-          <NavigationContainer ref={navigationRef}>
-            <AppContent />
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </QueryClientProvider>
-      </PaperProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <PaperProvider>
+          <QueryClientProvider client={queryClient}>
+            <NavigationContainer ref={navigationRef}>
+              <AppContent />
+              <StatusBar style="auto" />
+            </NavigationContainer>
+          </QueryClientProvider>
+        </PaperProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

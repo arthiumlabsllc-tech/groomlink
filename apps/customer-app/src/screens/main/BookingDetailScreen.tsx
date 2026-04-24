@@ -627,7 +627,7 @@ export default function BookingDetailScreen() {
               <View style={styles.detailContent}>
                 <Text variant="bodySmall" style={styles.detailLabel}>Total Amount</Text>
                 <Text variant="titleLarge" style={styles.totalAmount}>
-                  GH₵ {booking.totalAmount.toFixed(2)}
+                  GH₵ {parseFloat(String(booking.totalAmount)).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -659,7 +659,7 @@ export default function BookingDetailScreen() {
                   <View style={styles.escrowRow}>
                     <Text variant="bodySmall" style={styles.escrowLabel}>Amount Held</Text>
                     <Text variant="bodyMedium" style={styles.escrowAmount}>
-                      GH₵ {booking.escrow.amountHeld.toFixed(2)}
+                      GH₵ {parseFloat(String(booking.escrow.amountHeld)).toFixed(2)}
                     </Text>
                   </View>
                   {booking.escrow.status === 'HELD' && (
