@@ -46,9 +46,11 @@ export interface StaffServiceData {
 
 export const staffApi = {
   // Get all staff for a salon
-  getStaff: async (salonId: string): Promise<{ staff: StaffMember[] }> => {
+  getStaff: async (salonId: string): Promise<StaffMember[]> => {
     const response = await apiClient.get(`/salon-owner/${salonId}/staff`);
-    return response.data.data;
+    const data = response.data.data;
+    // API returns array directly, not { staff: [...] }
+    return Array.isArray(data) ? data : (data?.staff || []);
   },
 
   // Create a new staff member

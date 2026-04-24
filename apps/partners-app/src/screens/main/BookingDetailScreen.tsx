@@ -458,7 +458,7 @@ export default function BookingDetailScreen() {
           <View style={styles.serviceItem}>
             <View style={styles.serviceRow}>
               <Text style={styles.serviceName}>{booking.service.name}</Text>
-              <Text style={styles.servicePrice}>GH₵{booking.service.price.toLocaleString()}</Text>
+              <Text style={styles.servicePrice}>GH₵{parseFloat(String(booking.service.price)).toLocaleString()}</Text>
             </View>
             <Text style={styles.serviceDuration}>
               <Ionicons name="time-outline" size={14} color="#6B7280" /> {booking.service.duration} minutes
@@ -467,7 +467,7 @@ export default function BookingDetailScreen() {
           <Divider style={styles.divider} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Amount</Text>
-            <Text style={styles.totalValue}>GH₵{booking.finalAmount.toLocaleString()}</Text>
+            <Text style={styles.totalValue}>GH₵{parseFloat(String(booking.finalAmount || 0)).toLocaleString()}</Text>
           </View>
         </Surface>
 
@@ -580,15 +580,15 @@ export default function BookingDetailScreen() {
             </View>
             <View style={styles.escrowRow}>
               <Text style={styles.escrowLabel}>Amount Held</Text>
-              <Text style={styles.escrowValue}>GH₵{booking.escrow.amountHeld.toLocaleString()}</Text>
+              <Text style={styles.escrowValue}>GH₵{parseFloat(String(booking.escrow.amountHeld || 0)).toLocaleString()}</Text>
             </View>
             <View style={styles.escrowRow}>
               <Text style={styles.escrowLabel}>Platform Fee</Text>
-              <Text style={styles.escrowDeduction}>- GH₵{booking.escrow.platformFee.toLocaleString()}</Text>
+              <Text style={styles.escrowDeduction}>- GH₵{parseFloat(String(booking.escrow.platformFee || 0)).toLocaleString()}</Text>
             </View>
             <View style={[styles.escrowRow, styles.escrowTotalRow]}>
               <Text style={styles.escrowTotalLabel}>Your Share</Text>
-              <Text style={styles.escrowTotalValue}>GH₵{booking.escrow.providerAmount.toLocaleString()}</Text>
+              <Text style={styles.escrowTotalValue}>GH₵{parseFloat(String(booking.escrow.providerAmount || 0)).toLocaleString()}</Text>
             </View>
             {booking.refundEligible !== undefined && (
               <View style={styles.refundInfo}>

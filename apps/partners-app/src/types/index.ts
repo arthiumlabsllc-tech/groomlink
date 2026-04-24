@@ -14,21 +14,47 @@ export interface Salon {
   businessName: string;
   address: string;
   city: string;
-  phone: string;
+  region?: string;
+  phoneNumber: string;
   email: string | null;
   description: string | null;
-  latitude: number;
-  longitude: number;
+  type?: string;
+  latitude: number | null;
+  longitude: number | null;
   rating: number;
   reviewCount: number;
   images: string[];
   logo: string | null;
   coverImage: string | null;
-  openingHours: OpeningHours;
+  // Business hours - server returns these fields
+  openingTime?: string;
+  closingTime?: string;
+  workingDays?: string[];
+  operatingHours?: Record<string, { open: string; close: string; isOpen: boolean } | string> | null;
+  // Legacy field for backwards compat
+  openingHours?: OpeningHours;
   status: 'PENDING' | 'APPROVED' | 'SUSPENDED';
   services: Service[];
   workers: Worker[];
   bookings: Booking[];
+  // Subscription
+  subscriptionStatus?: string;
+  // Features
+  hasParking?: boolean;
+  hasWifi?: boolean;
+  hasAC?: boolean;
+  acceptsWalkIns?: boolean;
+  isFeatured?: boolean;
+  maxConcurrentClients?: number;
+  totalChairs?: number;
+  operatingModel?: string;
+  owner?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string | null;
+  };
+  _count?: { reviews: number };
 }
 
 export interface OpeningHours {
@@ -45,9 +71,13 @@ export interface Service {
   id: string;
   name: string;
   description: string | null;
-  price: number;
+  price: number | string;
   duration: number;
   category: string;
+  isActive?: boolean;
+  discountPrice?: number | string | null;
+  promoLabel?: string | null;
+  image?: string | null;
 }
 
 export interface Worker {
@@ -96,8 +126,8 @@ export interface Booking {
   date: string;
   startTime: string;
   endTime: string;
-  totalAmount: number;
-  finalAmount: number;
+  totalAmount: number | string;
+  finalAmount: number | string;
   customerNotes: string | null;
   salonNotes: string | null;
   customer: {

@@ -55,7 +55,7 @@ export default function ServicesScreen() {
     enabled: !!salonId,
   });
 
-  const services = servicesData?.services || [];
+  const services = servicesData || [];
 
   // Toggle service status mutation
   const toggleMutation = useMutation({
@@ -107,8 +107,8 @@ export default function ServicesScreen() {
     navigation.navigate('AddService');
   };
 
-  const formatPrice = (price: number) => {
-    return `GH₵${price.toFixed(2)}`;
+  const formatPrice = (price: number | string) => {
+    return `GH₵${parseFloat(String(price)).toFixed(2)}`;
   };
 
   const formatDuration = (minutes: number) => {

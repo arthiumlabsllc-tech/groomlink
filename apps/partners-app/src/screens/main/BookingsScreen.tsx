@@ -187,7 +187,7 @@ export default function BookingsScreen() {
 
           {/* Footer */}
           <View style={styles.bookingFooter}>
-            <Text style={styles.price}>GH₵{item.finalAmount.toLocaleString()}</Text>
+            <Text style={styles.price}>GH₵{parseFloat(String(item.finalAmount || 0)).toLocaleString()}</Text>
             <View style={styles.tapHint}>
               <Text style={styles.tapHintText}>View Details</Text>
               <Ionicons name="chevron-forward" size={16} color="#006B3F" />

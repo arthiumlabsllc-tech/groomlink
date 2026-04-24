@@ -41,7 +41,7 @@ const createSalonSchema = z.object({
 });
 
 const updateSalonSchema = createSalonSchema.partial().extend({
-  operatingHours: z.record(z.string()).optional(),
+  operatingHours: z.record(z.any()).optional(),
   // Completion settings
   autoCompletionHours: z.number().int().min(1).max(72).optional(),
   requiresCustomerConfirmation: z.boolean().optional(),

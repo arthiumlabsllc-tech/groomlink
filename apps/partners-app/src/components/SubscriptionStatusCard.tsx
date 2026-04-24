@@ -222,12 +222,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginRight: 8,
   },
   statusChip: {
-    height: 22,
+    height: 28,
     justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
+    lineHeight: 14,
   },
   expiryText: {
     fontSize: 12,

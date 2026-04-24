@@ -67,7 +67,7 @@ export default function AddStaffScreen() {
     enabled: !!salonId,
   });
 
-  const availableServices = servicesData?.services || [];
+  const availableServices = servicesData || [];
 
   // Form state
   const [fullName, setFullName] = useState(existingStaff?.fullName || '');

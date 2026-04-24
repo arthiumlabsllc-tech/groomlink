@@ -45,7 +45,7 @@ export default function StaffScreen() {
     enabled: !!salonId,
   });
 
-  const staff = staffData?.staff || [];
+  const staff = staffData || [];
 
   // Delete staff mutation
   const deleteMutation = useMutation({

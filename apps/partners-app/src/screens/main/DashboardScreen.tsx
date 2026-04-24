@@ -80,7 +80,7 @@ export default function DashboardScreen() {
         b.status === 'COMPLETED'
       );
     })
-    .reduce((sum: number, b: Booking) => sum + (b.finalAmount || 0), 0);
+    .reduce((sum: number, b: Booking) => sum + parseFloat(String(b.finalAmount || 0)), 0);
 
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['mySalon'] });
@@ -170,7 +170,7 @@ export default function DashboardScreen() {
               </Chip>
             </View>
             <View style={styles.bookingFooter}>
-              <Text style={styles.bookingPrice}>GH₵{(item.finalAmount || 0).toLocaleString()}</Text>
+              <Text style={styles.bookingPrice}>GH₵{parseFloat(String(item.finalAmount || 0)).toLocaleString()}</Text>
               <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
             </View>
           </View>

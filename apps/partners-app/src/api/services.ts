@@ -38,9 +38,11 @@ export interface UpdateServiceData extends Partial<CreateServiceData> {
 
 export const servicesApi = {
   // Get all services for a salon
-  getServices: async (salonId: string): Promise<{ services: Service[] }> => {
+  getServices: async (salonId: string): Promise<Service[]> => {
     const response = await apiClient.get(`/salon-owner/${salonId}/services`);
-    return response.data.data;
+    const data = response.data.data;
+    // API returns array directly, not { services: [...] }
+    return Array.isArray(data) ? data : (data?.services || []);
   },
 
   // Create a new service

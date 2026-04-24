@@ -143,15 +143,17 @@ export default function EditSalonScreen() {
       setBusinessName(salon.businessName || '');
       setAddress(salon.address || '');
       setCity(salon.city || '');
-      setRegion(''); // Region field not in Salon type
-      setPhoneNumber(salon?.phone || (salon as any)?.phoneNumber || '');
+      setRegion((salon as any).region || '');
+      setPhoneNumber(salon?.phoneNumber || (salon as any)?.phone || '');
       setEmail(salon.email || '');
       setDescription(salon.description || '');
-      setType('SALON'); // Default to SALON (type field not in Salon type)
+      setType(salon.type || 'BARBERSHOP');
       setGalleryImages(salon.images || []);
 
-      if (salon.openingHours) {
-        const hours = salon.openingHours as OpeningHours;
+      // Try operatingHours first, then openingHours for backward compat
+      const rawHours = (salon as any).operatingHours || salon.openingHours;
+      if (rawHours && typeof rawHours === 'object') {
+        const hours = rawHours as OpeningHours;
         setOpeningHours({
           monday: hours.monday || defaultHours.monday,
           tuesday: hours.tuesday || defaultHours.tuesday,
@@ -349,7 +351,7 @@ export default function EditSalonScreen() {
   const handleSave = () => {
     if (!validateForm() || !salon) return;
 
-    const data: Partial<CreateSalonData & { openingHours?: HoursState }> = {
+    const data: Partial<CreateSalonData & { operatingHours?: HoursState }> = {
       businessName: businessName.trim(),
       address: address.trim(),
       city: city.trim(),
@@ -358,7 +360,7 @@ export default function EditSalonScreen() {
       email: email.trim() || undefined,
       description: description.trim() || undefined,
       type,
-      openingHours,
+      operatingHours: openingHours,
       workingDays: getWorkingDaysFromHours(openingHours),
       openingTime: getOpeningTime(openingHours),
       closingTime: getClosingTime(openingHours),

@@ -301,7 +301,7 @@ export default function ProfileScreen() {
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: '#006B3F' }]}>
-              GH₵{stats?.totalRevenue?.toLocaleString() || 0}
+              GH₵{parseFloat(String(stats?.totalRevenue || 0)).toLocaleString()}
             </Text>
             <Text style={styles.statLabel}>Revenue</Text>
           </View>
