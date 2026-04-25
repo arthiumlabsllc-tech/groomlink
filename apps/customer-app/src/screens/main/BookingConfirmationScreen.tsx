@@ -185,7 +185,7 @@ export default function BookingConfirmationScreen() {
               </View>
               <View style={styles.detailContent}>
                 <Text variant="bodySmall" style={styles.detailLabel}>Services</Text>
-                {booking.services.map((service: any) => (
+                {(booking.services || (booking as any).service ? [(booking as any).service] : []).map((service: any) => (
                   <Text key={service.id} variant="bodyMedium" style={styles.serviceText}>
                     {service.name}
                   </Text>
@@ -206,7 +206,7 @@ export default function BookingConfirmationScreen() {
                       Guests ({booking.guests.length})
                     </Text>
                     {booking.guests.map((guest: any, index: number) => {
-                      const guestService = guest.service || booking.services.find((s: any) => s.id === guest.serviceId);
+                      const guestService = guest.service || (booking.services || []).find((s: any) => s.id === guest.serviceId);
                       const staffName = guest.staff?.fullName;
                       return (
                         <View key={guest.id || index} style={styles.guestItem}>

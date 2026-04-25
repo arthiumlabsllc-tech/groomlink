@@ -54,6 +54,20 @@ export interface BookingFilters {
   toDate?: Date;
 }
 
+/**
+ * Normalize booking response: convert singular `service` to `services` array
+ * for frontend compatibility. Also ensures `city` is included in salon data.
+ */
+function normalizeBookingResponse(booking: any): any {
+  if (!booking) return booking;
+  const result = { ...booking };
+  // Add `services` array from singular `service` if not already present
+  if (result.service && !result.services) {
+    result.services = [result.service];
+  }
+  return result;
+}
+
 export async function createBooking(customerId: string, data: CreateBookingData) {
   const { 
     salonId, 
@@ -305,7 +319,7 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     // AFTER payment success in payment.service.ts, NOT on booking creation.
     // This ensures customers only receive confirmations for paid bookings.
 
-    return booking;
+    return normalizeBookingResponse(booking);
   } finally {
     // Always release the lock
     try {
@@ -335,6 +349,7 @@ export async function getBookingById(id: string, userId: string, userRole: strin
           id: true,
           businessName: true,
           address: true,
+          city: true,
           phoneNumber: true,
           logo: true,
         },
@@ -377,7 +392,7 @@ export async function getBookingById(id: string, userId: string, userRole: strin
     delete (booking as any).checkinCode;
   }
 
-  return booking;
+  return normalizeBookingResponse(booking);
 }
 
 export async function getBookings(filters: BookingFilters, page: number = 1, limit: number = 20) {
@@ -416,6 +431,7 @@ export async function getBookings(filters: BookingFilters, page: number = 1, lim
           select: {
             id: true,
             businessName: true,
+            city: true,
             logo: true,
             latitude: true,
             longitude: true,
@@ -469,7 +485,7 @@ export async function getBookings(filters: BookingFilters, page: number = 1, lim
     prisma.booking.count({ where }),
   ]);
 
-  return { bookings, total };
+  return { bookings: bookings.map(normalizeBookingResponse), total };
 }
 
 export async function confirmBooking(id: string, salonOwnerId: string) {

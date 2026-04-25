@@ -207,7 +207,7 @@ export default function BookingDetailScreen() {
             navigation.navigate('Booking', {
               salonId: booking?.salon.id,
               workerId: booking?.worker?.id,
-              services: booking?.services.map(s => s.id),
+              services: booking?.services?.map(s => s.id) || ((booking as any)?.service ? [(booking as any).service.id] : []),
             });
           }
         },
@@ -479,7 +479,7 @@ export default function BookingDetailScreen() {
               </View>
               <View style={styles.detailContent}>
                 <Text variant="bodySmall" style={styles.detailLabel}>Services</Text>
-                {booking.services.map((service: any) => (
+                {(booking.services || (booking as any).service ? [(booking as any).service] : []).map((service: any) => (
                   <View key={service.id} style={styles.serviceRow}>
                     <Text variant="bodyMedium" style={styles.serviceText}>
                       {service.name}
@@ -524,7 +524,7 @@ export default function BookingDetailScreen() {
                 {groupMembersExpanded && (
                   <View style={styles.groupMembersList}>
                     {booking.guests.map((guest: any, index: number) => {
-                      const guestService = guest.service || booking.services.find((s: any) => s.id === guest.serviceId);
+                      const guestService = guest.service || (booking.services || []).find((s: any) => s.id === guest.serviceId);
                       return (
                         <View key={guest.id || index} style={styles.groupMemberCard}>
                           <View style={styles.memberHeader}>
