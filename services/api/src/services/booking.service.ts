@@ -55,12 +55,37 @@ export interface BookingFilters {
 }
 
 /**
- * Normalize booking response: convert singular `service` to `services` array
- * for frontend compatibility. Also ensures `city` is included in salon data.
+ * Normalize booking response: map Prisma field names to frontend-expected names
+ * and convert singular `service` to `services` array for frontend compatibility.
+ *
+ * Prisma fields → Frontend fields:
+ *   date → scheduledDate
+ *   startTime → scheduledTime
+ *   endTime → scheduledEndTime
+ *   customerNotes → notes
+ *   service (object) → services (array)
  */
 function normalizeBookingResponse(booking: any): any {
   if (!booking) return booking;
   const result = { ...booking };
+
+  // Map Prisma date/time fields to frontend-expected names
+  if (result.date !== undefined && result.scheduledDate === undefined) {
+    result.scheduledDate = result.date instanceof Date
+      ? result.date.toISOString().split('T')[0]
+      : result.date;
+  }
+  if (result.startTime !== undefined && result.scheduledTime === undefined) {
+    result.scheduledTime = result.startTime;
+  }
+  if (result.endTime !== undefined && result.scheduledEndTime === undefined) {
+    result.scheduledEndTime = result.endTime;
+  }
+  // Map customerNotes → notes
+  if (result.customerNotes !== undefined && result.notes === undefined) {
+    result.notes = result.customerNotes;
+  }
+
   // Add `services` array from singular `service` if not already present
   if (result.service && !result.services) {
     result.services = [result.service];
@@ -535,7 +560,7 @@ export async function confirmBooking(id: string, salonOwnerId: string) {
   emitBookingConfirmed(booking.customerId, { bookingId: id, status: 'CONFIRMED' });
 
   logger.info(`Booking confirmed: ${id}`);
-  return updated;
+  return normalizeBookingResponse(updated);
 }
 
 export async function completeBooking(id: string, salonOwnerId: string) {
@@ -560,7 +585,7 @@ export async function completeBooking(id: string, salonOwnerId: string) {
   });
 
   logger.info(`Booking completed: ${id}`);
-  return updated;
+  return normalizeBookingResponse(updated);
 }
 
 export async function cancelBooking(id: string, userId: string, userRole: string, reason?: string) {
@@ -667,7 +692,7 @@ export async function cancelBooking(id: string, userId: string, userRole: string
     }
   }
 
-  return updated;
+  return normalizeBookingResponse(updated);
 }
 
 // Constants for slot generation
@@ -1066,7 +1091,7 @@ export async function rescheduleBooking(
     });
   }
 
-  return { booking: updated, rescheduleFee };
+  return { booking: normalizeBookingResponse(updated), rescheduleFee };
 }
 
 export async function rateBooking(
