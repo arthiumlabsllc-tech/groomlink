@@ -11,7 +11,8 @@ type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
   ProfileSetup: { email: string };
-  SalonSetup: undefined;
+  ProviderCategory: undefined;
+  SalonSetup: { providerCategory: string };
 };
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'OTP'>;

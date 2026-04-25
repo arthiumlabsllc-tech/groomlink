@@ -10,7 +10,8 @@ type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
   ProfileSetup: { email: string };
-  SalonSetup: undefined;
+  ProviderCategory: undefined;
+  SalonSetup: { providerCategory: string };
 };
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ProfileSetup'>;
@@ -104,8 +105,8 @@ export default function ProfileSetupScreen() {
       });
 
       // On success, tokens are stored by the API
-      // Navigate to SalonSetup to create the salon
-      navigation.navigate('SalonSetup');
+      // Navigate to ProviderCategory selection
+      navigation.navigate('ProviderCategory');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to complete registration. Please try again.');
     } finally {

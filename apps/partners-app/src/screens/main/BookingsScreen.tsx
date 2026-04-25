@@ -134,11 +134,11 @@ export default function BookingsScreen() {
               </View>
               <View style={styles.customerInfo}>
                 <Text style={styles.customerName}>
-                  {item.customer.firstName} {item.customer.lastName}
+                  {item.customer?.firstName || ''} {item.customer?.lastName || ''}
                 </Text>
                 <View style={styles.phoneRow}>
                   <Ionicons name="call-outline" size={12} color="#9CA3AF" />
-                  <Text style={styles.phoneText}>{item.customer.phoneNumber}</Text>
+                  <Text style={styles.phoneText}>{item.customer?.phoneNumber || 'N/A'}</Text>
                 </View>
               </View>
             </View>
@@ -170,7 +170,7 @@ export default function BookingsScreen() {
             <View style={styles.detailRow}>
               <View style={styles.detailItem}>
                 <Ionicons name="cut-outline" size={16} color="#6B7280" />
-                <Text style={styles.detailText}>{item.service.name}</Text>
+                <Text style={styles.detailText}>{item.service?.name || 'Service'}</Text>
               </View>
             </View>
             <View style={styles.detailRow}>

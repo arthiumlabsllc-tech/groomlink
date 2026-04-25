@@ -784,10 +784,10 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       amountPaid: Number(payment.amount),
       serviceAmount: serviceAmount,
       platformFee: platformFee,
-      serviceName: booking.service.name,
+      serviceName: booking.service?.name || 'Service',
       bookingDate: booking.date.toISOString(),
       bookingTime: booking.startTime,
-      salonName: booking.salon.businessName,
+      salonName: booking.salon?.businessName || 'Salon',
       isGroupBooking: booking.isGroupBooking,
       totalPeople: booking.totalPeople,
     };
@@ -866,9 +866,9 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     try {
       await escrowService.createEscrow({
         bookingId: booking.id,
-        customerId: booking.customer.id,
-        providerId: booking.salon.owner?.id || booking.salon.id,
-        salonId: booking.salon.id,
+        customerId: booking.customer?.id || booking.customerId,
+        providerId: booking.salon?.owner?.id || booking.salon?.id || booking.salonId,
+        salonId: booking.salon?.id || booking.salonId,
         amount: Number(payment.amount),
         paymentTransactionId: payment.providerRef || undefined,
       });
@@ -886,18 +886,18 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     // This is the ONLY place these notifications should be sent - after payment success
     sendBookingNotificationsOnPaymentSuccess({
       bookingId: booking.id,
-      salonId: booking.salon.id,
-      salonName: booking.salon.businessName,
-      salonAddress: booking.salon.address,
-      salonPhone: booking.salon.phoneNumber,
-      serviceName: booking.service.name,
+      salonId: booking.salon?.id || booking.salonId,
+      salonName: booking.salon?.businessName || 'Salon',
+      salonAddress: booking.salon?.address || '',
+      salonPhone: booking.salon?.phoneNumber,
+      serviceName: booking.service?.name || 'Service',
       workerName: booking.worker?.fullName,
       customer: {
-        id: booking.customer.id,
-        firstName: booking.customer.firstName,
-        lastName: booking.customer.lastName,
-        email: booking.customer.email,
-        phoneNumber: booking.customer.phoneNumber,
+        id: booking.customer?.id || booking.customerId,
+        firstName: booking.customer?.firstName || '',
+        lastName: booking.customer?.lastName || '',
+        email: booking.customer?.email,
+        phoneNumber: booking.customer?.phoneNumber,
       },
       salonOwnerId: booking.salon.owner?.id,
       salonOwnerEmail: booking.salon.owner?.email,
@@ -913,20 +913,20 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       logger.error('Failed to send booking notifications after payment success', { bookingId: booking.id, err });
     });
 
-    const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
+    const customerFullName = `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim();
     const paymentMethod = payment.provider.replace(/_/g, ' ');
     const formattedDate = new Date(booking.date).toLocaleDateString('en-GB');
 
     // Send to customer
-    if (booking.customer.email) {
+    if (booking.customer?.email) {
       emailService.sendPaymentReceiptEmail(
-        booking.customer.email,
+        booking.customer?.email,
         {
           customerName: customerFullName,
           bookingReference: booking.id,
           paymentReference: payment.providerRef || undefined,
-          salonName: booking.salon.businessName,
-          serviceName: booking.service.name,
+          salonName: booking.salon?.businessName || 'Salon',
+          serviceName: booking.service?.name || 'Service',
           date: booking.date.toISOString(),
           startTime: booking.startTime,
           amount: Number(payment.amount),
@@ -945,7 +945,7 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
           customerName: customerFullName,
           bookingReference: booking.id,
           paymentReference: payment.providerRef || undefined,
-          serviceName: booking.service.name,
+          serviceName: booking.service?.name || 'Service',
           date: booking.date.toISOString(),
           startTime: booking.startTime,
           amount: Number(payment.amount),
@@ -959,10 +959,10 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     // Send in-app notifications
     // Notify customer
     notificationService.notifyPaymentReceived(
-      booking.customer.id,
+      booking.customer?.id || booking.customerId,
       booking.id,
       Number(payment.amount),
-      booking.service.name
+      booking.service?.name || 'Service'
     ).catch((err) => logger.error('Failed to send payment notification to customer', { err }));
 
     // Notify salon owner
@@ -971,7 +971,7 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
         booking.salon.owner.id,
         booking.id,
         Number(payment.amount),
-        booking.service.name
+        booking.service?.name || 'Service'
       ).catch((err) => logger.error('Failed to send payment notification to salon owner', { err }));
     }
     
@@ -989,10 +989,10 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       amountPaid: Number(payment.amount),
       serviceAmount: serviceAmount,
       platformFee: platformFee,
-      serviceName: booking.service.name,
+      serviceName: booking.service?.name || 'Service',
       bookingDate: booking.date.toISOString(),
       bookingTime: booking.startTime,
-      salonName: booking.salon.businessName,
+      salonName: booking.salon?.businessName || 'Salon',
       isGroupBooking: booking.isGroupBooking,
       totalPeople: booking.totalPeople,
     };
@@ -1005,10 +1005,10 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     // Send in-app notification for failed payment
     const booking = payment.booking;
     notificationService.notifyPaymentFailed(
-      booking.customer.id,
+      booking.customer?.id || booking.customerId,
       booking.id,
       Number(payment.amount),
-      booking.service.name
+      booking.service?.name || 'Service'
     ).catch((err) => logger.error('Failed to send payment failed notification to customer', { err }));
     
     return { 
@@ -1249,9 +1249,9 @@ export async function handleHubtelWebhook(
         try {
           await escrowService.createEscrow({
             bookingId: booking.id,
-            customerId: booking.customer.id,
-            providerId: booking.salon.owner?.id || booking.salon.id,
-            salonId: booking.salon.id,
+            customerId: booking.customer?.id || booking.customerId,
+            providerId: booking.salon?.owner?.id || booking.salon?.id || booking.salonId,
+            salonId: booking.salon?.id || booking.salonId,
             amount: Number(payment.amount),
             paymentTransactionId: payment.providerRef || undefined,
           });
@@ -1269,18 +1269,18 @@ export async function handleHubtelWebhook(
         // This is the ONLY place these notifications should be sent - after payment success
         sendBookingNotificationsOnPaymentSuccess({
           bookingId: booking.id,
-          salonId: booking.salon.id,
-          salonName: booking.salon.businessName,
-          salonAddress: booking.salon.address,
-          salonPhone: booking.salon.phoneNumber,
-          serviceName: booking.service.name,
+          salonId: booking.salon?.id || booking.salonId,
+          salonName: booking.salon?.businessName || 'Salon',
+          salonAddress: booking.salon?.address || '',
+          salonPhone: booking.salon?.phoneNumber,
+          serviceName: booking.service?.name || 'Service',
           workerName: booking.worker?.fullName,
           customer: {
-            id: booking.customer.id,
-            firstName: booking.customer.firstName,
-            lastName: booking.customer.lastName,
-            email: booking.customer.email,
-            phoneNumber: booking.customer.phoneNumber,
+            id: booking.customer?.id || booking.customerId,
+            firstName: booking.customer?.firstName || '',
+            lastName: booking.customer?.lastName || '',
+            email: booking.customer?.email,
+            phoneNumber: booking.customer?.phoneNumber,
           },
           salonOwnerId: booking.salon.owner?.id,
           salonOwnerEmail: booking.salon.owner?.email,
@@ -1296,19 +1296,19 @@ export async function handleHubtelWebhook(
           logger.error('Failed to send booking notifications after payment success', { bookingId: booking.id, err });
         });
 
-        const customerFullName = `${booking.customer.firstName} ${booking.customer.lastName}`.trim();
+        const customerFullName = `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim();
         const paymentMethod = payment.provider.replace(/_/g, ' ');
 
         // Send to customer
-        if (booking.customer.email) {
+        if (booking.customer?.email) {
           emailService.sendPaymentReceiptEmail(
-            booking.customer.email,
+            booking.customer?.email,
             {
               customerName: customerFullName,
               bookingReference: booking.id,
               paymentReference: payment.providerRef || undefined,
-              salonName: booking.salon.businessName,
-              serviceName: booking.service.name,
+              salonName: booking.salon?.businessName || 'Salon',
+              serviceName: booking.service?.name || 'Service',
               date: booking.date.toISOString(),
               startTime: booking.startTime,
               amount: Number(payment.amount),
@@ -1327,7 +1327,7 @@ export async function handleHubtelWebhook(
               customerName: customerFullName,
               bookingReference: booking.id,
               paymentReference: payment.providerRef || undefined,
-              serviceName: booking.service.name,
+              serviceName: booking.service?.name || 'Service',
               date: booking.date.toISOString(),
               startTime: booking.startTime,
               amount: Number(payment.amount),
@@ -1385,7 +1385,7 @@ export async function handleHubtelWebhook(
         if (booking?.customer?.phoneNumber) {
           const failureMessage = `GroomLink: Payment failed for your booking. Please try again. Ref: ${booking.reference}`;
           smsService.sendSMS({
-            to: booking.customer.phoneNumber,
+            to: booking.customer?.phoneNumber,
             message: failureMessage,
           }).catch((err) => logger.error('Failed to send payment failure SMS to customer', { err }));
         }
@@ -1674,17 +1674,17 @@ export async function cleanupOrphanedPayments(): Promise<{
       
       // Notify customer of payment failure
       notificationService.notifyPaymentFailed(
-        booking.customer.id,
+        booking.customer?.id || booking.customerId,
         payment.bookingId,
         Number(payment.amount),
         'Booking'
       ).catch((err: Error) => logger.error('Failed to send payment failed notification', { err }));
       
       // Send failure SMS if phone number available
-      if (booking.customer.phoneNumber) {
+      if (booking.customer?.phoneNumber) {
         const failureMessage = `GroomLink: Payment expired for your booking. Please retry payment. Ref: ${payment.bookingId}`;
         smsService.sendSMS({
-          to: booking.customer.phoneNumber,
+          to: booking.customer?.phoneNumber,
           message: failureMessage,
         }).catch((err: Error) => logger.error('Failed to send payment expiry SMS to customer', { err }));
       }

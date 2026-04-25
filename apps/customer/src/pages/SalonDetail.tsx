@@ -95,7 +95,6 @@ const formatDayName = (day: string): string => {
 }
 
 // Default GroomLink assets
-const DEFAULT_LOGO_ICON = 'https://groomlinkgh.com/api/uploads/assets/logo-icon.png'
 const DEFAULT_LOGO_WHITE = 'https://groomlinkgh.com/api/uploads/assets/email-logo.png'
 
 const getSalonCoverImage = (salon: Salon): string | null => {
@@ -111,14 +110,6 @@ const getSalonCoverImage = (salon: Salon): string | null => {
   return null
 }
 
-const getSalonLogo = (salon: Salon): string => {
-  // Use salon logo if available
-  if (salon.logo) {
-    return salon.logo
-  }
-  // Default to GL logo icon
-  return DEFAULT_LOGO_ICON
-}
 
 const formatPrice = (price: string): string => {
   const numPrice = parseFloat(price)
@@ -1114,24 +1105,24 @@ export default function SalonDetail() {
                           <div className="flex items-center gap-3">
                             {/* Avatar with first letter */}
                             <div className="w-10 h-10 rounded-full bg-ghana-green/10 flex items-center justify-center flex-shrink-0">
-                              {review.customer.avatar ? (
+                              {review.customer?.avatar ? (
                                 <img
                                   src={review.customer.avatar}
-                                  alt={`${review.customer.firstName} ${review.customer.lastName}`}
+                                  alt={`${review.customer?.firstName || ''} ${review.customer?.lastName || ''}`}
                                   className="w-10 h-10 rounded-full object-cover"
                                 />
                               ) : (
                                 <span className="text-sm font-semibold text-ghana-green">
-                                  {review.customer.firstName.charAt(0).toUpperCase()}
+                                  {(review.customer?.firstName || 'U').charAt(0).toUpperCase()}
                                 </span>
                               )}
                             </div>
                             <div>
                               <p className="font-semibold text-gray-900 text-sm">
-                                {review.customer.firstName} {review.customer.lastName}
+                                {review.customer?.firstName || ''} {review.customer?.lastName || ''}
                               </p>
                               {/* City badge */}
-                              {review.customer.city && (
+                              {review.customer?.city && (
                                 <div className="flex items-center gap-1 mt-0.5">
                                   <Icon name="location_on" size={10} className="text-gray-400" />
                                   <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">

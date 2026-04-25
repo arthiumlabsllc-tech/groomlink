@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EmailScreen from '../screens/auth/EmailScreen';
 import OTPScreen from '../screens/auth/OTPScreen';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
+import ProviderCategoryScreen from '../screens/auth/ProviderCategoryScreen';
 import SalonSetupScreen from '../screens/auth/SalonSetupScreen';
 
 const Stack = createNativeStackNavigator();
@@ -13,6 +14,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="Email" component={EmailScreen} />
       <Stack.Screen name="OTP" component={OTPScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+      <Stack.Screen name="ProviderCategory" component={ProviderCategoryScreen} />
       <Stack.Screen name="SalonSetup" component={SalonSetupScreen} />
     </Stack.Navigator>
   );

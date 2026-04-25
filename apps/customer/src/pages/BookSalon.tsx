@@ -225,7 +225,7 @@ export default function BookSalon() {
         setLoadingServices(true);
         const response = await apiClient.get(`/salons/${salonId}/services`);
         if (response.data.success) {
-          setServices(response.data.data.services || []);
+          setServices(response.data?.data?.services || response.data?.data || []);
         }
       } catch (err) {
         toast.error('Failed to load services');
@@ -246,7 +246,7 @@ export default function BookSalon() {
         setLoadingStaff(true);
         const response = await apiClient.get(`/salons/${salonId}/staff`);
         if (response.data.success) {
-          setStaff(response.data.data.staff || []);
+          setStaff(response.data?.data?.staff || response.data?.data || []);
         }
       } catch (err) {
         toast.error('Failed to load staff');

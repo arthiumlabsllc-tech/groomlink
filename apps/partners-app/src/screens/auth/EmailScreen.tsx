@@ -9,7 +9,8 @@ import { authApi } from '../../api/auth';
 type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
-  SalonSetup: undefined;
+  ProviderCategory: undefined;
+  SalonSetup: { providerCategory: string };
 };
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Email'>;

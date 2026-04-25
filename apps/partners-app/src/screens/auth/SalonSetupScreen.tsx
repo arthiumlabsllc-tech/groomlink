@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text, HelperText, Divider, Surface, Chip } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -13,10 +13,12 @@ type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
   ProfileSetup: { email: string };
-  SalonSetup: undefined;
+  ProviderCategory: undefined;
+  SalonSetup: { providerCategory: string };
 };
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SalonSetup'>;
+type SalonSetupRouteProp = RouteProp<AuthStackParamList, 'SalonSetup'>;
 
 const SALON_TYPES = [
   { label: 'Barbershop', value: 'BARBERSHOP', icon: 'cut' },
@@ -25,11 +27,6 @@ const SALON_TYPES = [
   { label: 'Nail Salon', value: 'NAIL_SALON', icon: 'hand-left' },
   { label: 'Pedicure Salon', value: 'PEDICURE_SALON', icon: 'footsteps' },
   { label: 'Spa', value: 'SPA', icon: 'water' },
-];
-
-const PROVIDER_CATEGORIES = [
-  { label: 'Business (Salon/Barbershop)', value: 'BUSINESS', icon: 'business', desc: 'Registered business with a physical shop' },
-  { label: 'Freelancer (Individual)', value: 'FREELANCER', icon: 'person', desc: 'Independent barber or hairdresser' },
 ];
 
 const GHANA_REGIONS = [
@@ -86,10 +83,11 @@ const DAY_LABELS: Record<string, string> = {
 
 export default function SalonSetupScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<SalonSetupRouteProp>();
   const { user, setUser } = useAuthStore();
 
-  // Section 1: Basic Info
-  const [providerCategory, setProviderCategory] = useState<string>('BUSINESS');
+  // Get provider category from route params (selected in ProviderCategoryScreen)
+  const providerCategory = route.params?.providerCategory || 'BUSINESS';
   const [businessName, setBusinessName] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [description, setDescription] = useState('');
@@ -285,10 +283,19 @@ export default function SalonSetupScreen() {
               <View style={styles.progressLineFilled} />
             </View>
             <View style={styles.progressStep}>
-              <View style={[styles.stepCircle, styles.stepActive]}>
-                <Text style={styles.stepNumber}>3</Text>
+              <View style={[styles.stepCircle, styles.stepComplete]}>
+                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
               </View>
-              <Text style={[styles.stepLabel, styles.stepLabelActive]}>Salon</Text>
+              <Text style={styles.stepLabel}>Type</Text>
+            </View>
+            <View style={styles.progressLine}>
+              <View style={styles.progressLineFilled} />
+            </View>
+            <View style={styles.progressStep}>
+              <View style={[styles.stepCircle, styles.stepActive]}>
+                <Text style={styles.stepNumber}>4</Text>
+              </View>
+              <Text style={[styles.stepLabel, styles.stepLabelActive]}>Setup</Text>
             </View>
           </View>
 
@@ -315,38 +322,16 @@ export default function SalonSetupScreen() {
             </View>
             <Divider style={styles.sectionDivider} />
 
-            <Text variant="bodyMedium" style={styles.label}>
-              I am a... *
-            </Text>
-            <View style={styles.typeGrid}>
-              {PROVIDER_CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat.value}
-                  style={[
-                    styles.typeChip,
-                    { flex: 1 },
-                    providerCategory === cat.value && styles.typeChipSelected,
-                  ]}
-                  onPress={() => setProviderCategory(cat.value)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={cat.icon as any}
-                    size={18}
-                    color={providerCategory === cat.value ? '#FFFFFF' : '#6B7280'}
-                  />
-                  <Text style={[
-                    styles.typeChipText,
-                    providerCategory === cat.value && styles.typeChipTextSelected,
-                  ]}>
-                    {cat.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Provider category badge */}
+            <View style={styles.categoryBadge}>
+              <Ionicons name={providerCategory === 'FREELANCER' ? 'person' : 'business'} size={16} color="#006B3F" />
+              <Text style={styles.categoryBadgeText}>
+                {providerCategory === 'FREELANCER' ? 'Freelancer' : 'Business Owner'}
+              </Text>
             </View>
 
             <TextInput
-              label={providerCategory === 'FREELANCER' ? 'Your Name / Brand Name *' : 'Business Name *'}
+              label="Business Name *"
               value={businessName}
               onChangeText={setBusinessName}
               style={styles.input}
@@ -354,13 +339,13 @@ export default function SalonSetupScreen() {
               outlineColor="#E5E7EB"
               activeOutlineColor="#006B3F"
               placeholder={providerCategory === 'FREELANCER' ? 'e.g., John the Barber' : 'e.g., Glamour Beauty Salon'}
-              left={<TextInput.Icon icon={providerCategory === 'FREELANCER' ? 'account' : 'storefront'} color="#6B7280" />}
+              left={<TextInput.Icon icon="storefront" color="#6B7280" />}
               theme={{ roundness: 10 }}
               autoFocus
             />
 
             <Text variant="bodyMedium" style={styles.label}>
-              Salon Type *
+              {providerCategory === 'FREELANCER' ? 'Service Type *' : 'Salon Type *'}
             </Text>
             <View style={styles.typeGrid}>
               {SALON_TYPES.map((type) => (
@@ -608,7 +593,7 @@ export default function SalonSetupScreen() {
             buttonColor="#006B3F"
             theme={{ roundness: 12 }}
           >
-            {loading ? 'Creating Salon...' : 'Create Salon'}
+            {loading ? (providerCategory === 'FREELANCER' ? 'Creating Profile...' : 'Creating Salon...') : (providerCategory === 'FREELANCER' ? 'Create Profile' : 'Create Salon')}
           </Button>
 
           <Text variant="bodySmall" style={styles.hint}>
@@ -856,5 +841,21 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 16,
     lineHeight: 20,
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 14,
+  },
+  categoryBadgeText: {
+    fontSize: 14,
+    color: '#006B3F',
+    fontWeight: '600',
   },
 });

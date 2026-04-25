@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare, Wallet, Building2, Smartphone, CreditCard } from 'lucide-react'
+import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare, Wallet, Building2, Smartphone, CreditCard, User, ArrowLeft } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Salon, CompletionSettings, PayoutAccount, SetupPayoutAccountPayload } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -73,6 +73,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isNewPartner, setIsNewPartner] = useState(false)
+  const [setupStep, setSetupStep] = useState<'category' | 'details'>('category')
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -657,42 +658,179 @@ export default function Settings() {
           {/* Welcome Header */}
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-ghana-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Store className="w-10 h-10 text-ghana-green" />
+              {setupStep === 'category' ? (
+                <Store className="w-10 h-10 text-ghana-green" />
+              ) : (
+                <Store className="w-10 h-10 text-ghana-green" />
+              )}
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to GroomLink Partners!</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {setupStep === 'category' ? 'How do you work?' : (
+                formData.providerCategory === 'FREELANCER' ? 'Set Up Your Profile' : 'Set Up Your Salon'
+              )}
+            </h1>
             <p className="text-gray-600 max-w-md mx-auto">
-              Let's set up your salon profile so you can start accepting bookings and managing your business.
+              {setupStep === 'category'
+                ? 'Choose the option that best describes your business model'
+                : (formData.providerCategory === 'FREELANCER'
+                    ? 'Tell us about yourself so customers can find and book you.'
+                    : "Let's set up your salon profile so you can start accepting bookings."
+                  )
+              }
             </p>
           </div>
 
           {/* Progress Steps */}
           <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-2">
             <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-8 h-8 bg-ghana-green text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
-              <span className="text-sm font-medium text-gray-900 whitespace-nowrap">Create Salon</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                setupStep === 'category' ? 'bg-ghana-green text-white ring-2 ring-ghana-gold' : 'bg-ghana-green text-white'
+              }`}>{setupStep === 'details' ? <CheckCircle className="w-4 h-4" /> : '1'}</div>
+              <span className={`text-sm font-medium whitespace-nowrap ${setupStep === 'category' ? 'text-ghana-green' : 'text-gray-900'}`}>Type</span>
             </div>
-            <div className="w-8 sm:w-12 h-0.5 bg-gray-200 flex-shrink-0"></div>
+            <div className={`w-8 sm:w-12 h-0.5 flex-shrink-0 ${setupStep === 'details' ? 'bg-ghana-green' : 'bg-gray-200'}`}></div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">2</div>
-              <span className="text-sm text-gray-500 whitespace-nowrap">Add Services</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                setupStep === 'details' ? 'bg-ghana-green text-white ring-2 ring-ghana-gold' : 'bg-gray-200 text-gray-500'
+              }`}>2</div>
+              <span className={`text-sm whitespace-nowrap ${setupStep === 'details' ? 'text-ghana-green font-medium' : 'text-gray-500'}`}>Setup</span>
             </div>
             <div className="w-8 sm:w-12 h-0.5 bg-gray-200 flex-shrink-0"></div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">3</div>
-              <span className="text-sm text-gray-500 whitespace-nowrap">Add Staff</span>
+              <span className="text-sm text-gray-500 whitespace-nowrap">Services</span>
+            </div>
+            <div className="w-8 sm:w-12 h-0.5 bg-gray-200 flex-shrink-0"></div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">4</div>
+              <span className="text-sm text-gray-500 whitespace-nowrap">Staff</span>
             </div>
           </div>
 
+          {/* Step 1: Category Selection */}
+          {setupStep === 'category' && (
+            <div className="space-y-4">
+              {/* Business Card */}
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, providerCategory: 'BUSINESS' })
+                  setSetupStep('details')
+                }}
+                className={`w-full p-6 rounded-2xl border-2 text-left transition-all hover:shadow-md ${
+                  formData.providerCategory === 'BUSINESS'
+                    ? 'border-ghana-green bg-ghana-green/5'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    formData.providerCategory === 'BUSINESS' ? 'bg-ghana-green/10' : 'bg-gray-100'
+                  }`}>
+                    <span className="text-2xl">🏪</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Business Owner</h3>
+                    <p className="text-sm text-gray-500 mb-3">Salon, Barbershop or Beauty Studio</p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      I have a registered business with a physical shop where customers come for services.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <CheckCircle className="w-3.5 h-3.5 text-ghana-green" /> Physical shop location
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <CheckCircle className="w-3.5 h-3.5 text-ghana-green" /> Multiple staff members
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <CheckCircle className="w-3.5 h-3.5 text-ghana-green" /> Walk-in & appointments
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                </div>
+              </button>
+
+              {/* Freelancer Card */}
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, providerCategory: 'FREELANCER' })
+                  setSetupStep('details')
+                }}
+                className={`w-full p-6 rounded-2xl border-2 text-left transition-all hover:shadow-md ${
+                  formData.providerCategory === 'FREELANCER'
+                    ? 'border-ghana-green bg-ghana-green/5'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    formData.providerCategory === 'FREELANCER' ? 'bg-ghana-green/10' : 'bg-gray-100'
+                  }`}>
+                    <span className="text-2xl">✂️</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Freelancer</h3>
+                    <p className="text-sm text-gray-500 mb-3">Independent Barber or Hairdresser</p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      I work independently and can provide services at my location or travel to clients.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <CheckCircle className="w-3.5 h-3.5 text-ghana-green" /> Home service available
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <CheckCircle className="w-3.5 h-3.5 text-ghana-green" /> Flexible location
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <CheckCircle className="w-3.5 h-3.5 text-ghana-green" /> Personal brand
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                </div>
+              </button>
+
+              <p className="text-center text-sm text-gray-400 mt-4">You can change this later in settings</p>
+            </div>
+          )}
+
+          {/* Step 2: Details Form */}
+          {setupStep === 'details' && (
+            <>
           {/* Setup Form */}
           <div className="card-v2">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-ghana-green/10 rounded-lg flex items-center justify-center">
-                <Store className="w-5 h-5 text-ghana-green" />
+                {formData.providerCategory === 'FREELANCER' ? (
+                  <User className="w-5 h-5 text-ghana-green" />
+                ) : (
+                  <Store className="w-5 h-5 text-ghana-green" />
+                )}
               </div>
-              <div>
-                <h2 className="font-semibold text-gray-900">Create Your Salon</h2>
-                <p className="text-sm text-gray-500">Fill in your business details below</p>
+              <div className="flex-1">
+                <h2 className="font-semibold text-gray-900">
+                  {formData.providerCategory === 'FREELANCER' ? 'Create Your Profile' : 'Create Your Salon'}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {formData.providerCategory === 'FREELANCER' ? 'Fill in your details below' : 'Fill in your business details below'}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setSetupStep('category')}
+                className="text-sm text-ghana-green hover:text-ghana-green/80 font-medium flex items-center gap-1"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Change type
+              </button>
+            </div>
+
+            {/* Category Badge */}
+            <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 bg-ghana-green/10 text-ghana-green rounded-full text-sm font-medium">
+              <span>{formData.providerCategory === 'FREELANCER' ? '✂️' : '🏪'}</span>
+              {formData.providerCategory === 'FREELANCER' ? 'Freelancer' : 'Business Owner'}
             </div>
 
             {error && (
@@ -702,49 +840,10 @@ export default function Settings() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Provider Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Provider Category <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, providerCategory: 'BUSINESS' })}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
-                      formData.providerCategory === 'BUSINESS'
-                        ? 'border-ghana-green bg-ghana-green/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">🏪</span>
-                      <span className="font-medium text-sm text-gray-900">Business</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Salon, barbershop, or beauty company</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, providerCategory: 'FREELANCER' })}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
-                      formData.providerCategory === 'FREELANCER'
-                        ? 'border-ghana-green bg-ghana-green/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">✂️</span>
-                      <span className="font-medium text-sm text-gray-900">Freelancer</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Independent barber or hairdresser</p>
-                  </button>
-                </div>
-              </div>
-
               {/* Business Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {formData.providerCategory === 'FREELANCER' ? 'Your Name / Brand' : 'Business Name'} <span className="text-red-500">*</span>
+                  Business Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -759,7 +858,7 @@ export default function Settings() {
               {/* Salon Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Salon Type <span className="text-red-500">*</span>
+                  {formData.providerCategory === 'FREELANCER' ? 'Service Type' : 'Salon Type'} <span className="text-red-500">*</span>
                 </label>
                 <select
                   className="input-field"
@@ -780,7 +879,7 @@ export default function Settings() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   className="input-field min-h-[100px] resize-none"
-                  placeholder="Tell customers about your salon..."
+                  placeholder={formData.providerCategory === 'FREELANCER' ? 'Tell customers about your skills and services...' : 'Tell customers about your salon...'}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
@@ -919,16 +1018,16 @@ export default function Settings() {
                   {saving ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Creating Salon...
+                      {formData.providerCategory === 'FREELANCER' ? 'Creating Profile...' : 'Creating Salon...'}
                     </>
                   ) : saved ? (
                     <>
                       <CheckCircle className="w-5 h-5" />
-                      Salon Created! Redirecting...
+                      {formData.providerCategory === 'FREELANCER' ? 'Profile Created! Redirecting...' : 'Salon Created! Redirecting...'}
                     </>
                   ) : (
                     <>
-                      Create Salon & Continue
+                      {formData.providerCategory === 'FREELANCER' ? 'Create Profile & Continue' : 'Create Salon & Continue'}
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
@@ -943,7 +1042,7 @@ export default function Settings() {
               <div className="w-10 h-10 bg-ghana-gold/10 rounded-lg flex items-center justify-center mb-3">
                 <Store className="w-5 h-5 text-ghana-gold" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Step 1: Create Salon</h3>
+              <h3 className="font-semibold text-gray-900 mb-1">Step 1: Set Up Profile</h3>
               <p className="text-sm text-gray-600">Add your business name, location, and contact details.</p>
             </div>
             <div className="card-v2 p-4">
@@ -961,6 +1060,8 @@ export default function Settings() {
               <p className="text-sm text-gray-600">Add your team members and their specialties.</p>
             </div>
           </div>
+          </>
+          )}
         </div>
       ) : (
         // Existing Partner Settings View

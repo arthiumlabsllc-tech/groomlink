@@ -131,7 +131,7 @@ export default function StaffScreen() {
                   textStyle={styles.serviceChipText}
                   compact
                 >
-                  {ws.service.name}
+                  {ws.service?.name || 'Service'}
                 </Chip>
               ))}
               {item.workerServices.length > 4 && (

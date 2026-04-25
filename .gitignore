@@ -9,10 +9,14 @@ build/
 web-build/
 *.tsbuildinfo
 
-# Environment variables
+# Environment variables - NEVER commit these
 .env
 .env.local
+.env.beta
+.env.production
 .env.*.local
+apps/**/.env
+services/**/.env
 
 # IDE
 .idea/
@@ -86,3 +90,54 @@ redis-data/
 # Android SDK (local development only - never commit)
 android-sdk/
 .gradle/
+
+# ===== SENSITIVE FILES - KEEP LOCAL ONLY =====
+# VPS deployment scripts (contain server credentials)
+deploy-api-to-vps.py
+deploy-feedback-system.py
+deploy-to-vps.sh
+deploy-api.sh
+deploy-sms.sh
+deploy.sh
+hostinger-deploy.sh
+setup-vps.sh
+backup.sh
+ssh_to_vps.exp
+ssh_vps.py
+run_on_vps.py
+run_migration_on_vps.py
+scp_file.py
+sync_to_vps.py
+check_vps.py
+deploy_*.py
+deploy-landing-*.sh
+platform-feedback-migration.sql
+hostinger-setup.md
+
+# Python virtual env
+.venv/
+
+# Package backups
+*.backup
+
+# Documentation files that shouldn't be in repo
+BABEL_PLUGIN_FIX.md
+BOTH_APPS_BUILD_STATUS.md
+BUILD_FIXES_APPLIED.md
+FINAL_BUILD_FIXES.md
+GOOGLE_PLAY_STORE_UPLOAD_GUIDE.md
+MOBILE_APPS_COMPLETE_AUDIT.md
+PACKAGE_NAME_FIX_SUMMARY.md
+PARTNERS_APP_TYPESCRIPT_FIXES.md
+PLATFORM_FEEDBACK_SYSTEM.md
+PRODUCTION_DEPLOYMENT_SUMMARY.md
+QUICK_BUILD_TEST.md
+SDK_51_UPGRADE_SUMMARY.md
+IMPLEMENTATION_COMPARISON.md
+IMPLEMENTATION_SUMMARY.md
+MULTI_PROVIDER_PAYMENT_GUIDE.md
+PAYSTACK_DEPLOYMENT_CHECKLIST.md
+PAYSTACK_QUICK_REFERENCE.md
+SMART_ROUTING_GUIDE.md
+ADMIN_API_ALREADY_EXISTS.md
+PAYSTACK_ADMIN_UI_GUIDE.md

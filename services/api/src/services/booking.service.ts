@@ -146,12 +146,14 @@ export async function createBooking(customerId: string, data: CreateBookingData)
     select: { closingTime: true, maxConcurrentClients: true, operatingModel: true },
   });
 
-  if (salon) {
-    const closingMinutes = timeToMinutes(salon.closingTime);
-    const endMinutes = timeToMinutes(endTime);
-    if (endMinutes > closingMinutes) {
-      throw new Error('Booking would extend past salon closing time');
-    }
+  if (!salon) {
+    throw new Error('Salon not found');
+  }
+
+  const closingMinutes = timeToMinutes(salon.closingTime);
+  const endMinutes = timeToMinutes(endTime);
+  if (endMinutes > closingMinutes) {
+    throw new Error('Booking would extend past salon closing time');
   }
 
   // Create lock key for this booking slot (salon-wide for capacity checks)
@@ -667,11 +669,11 @@ export async function cancelBooking(id: string, userId: string, userRole: string
   });
 
   // Send cancellation SMS (only if customer has phone number)
-  if (booking.customer.phoneNumber) {
+  if (booking.customer?.phoneNumber) {
     await smsService.sendCancellationSMS(
       booking.customer.phoneNumber,
       booking.id,
-      booking.salon.businessName
+      booking.salon?.businessName || 'the salon'
     );
   }
 
@@ -685,7 +687,7 @@ export async function cancelBooking(id: string, userId: string, userRole: string
       notificationService.notifySalonOwnerOfCancellation(
         salon.ownerId,
         booking.id,
-        `${booking.customer.firstName} ${booking.customer.lastName}`,
+        `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
         booking.service?.name || 'service',
         reason
       ).catch((err) => logger.error('Failed to send cancellation notification to salon owner', { err }));
