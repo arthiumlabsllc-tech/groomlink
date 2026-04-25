@@ -56,9 +56,13 @@ const getDayOfWeek = (date: Date): keyof OpeningHours => {
   return days[date.getDay()];
 };
 
-const formatTime = (time: string) => {
-  const [hours, minutes] = time.split(':');
+const formatTime = (time: string | undefined | null) => {
+  if (!time) return 'N/A';
+  const parts = time.split(':');
+  if (parts.length < 2) return time;
+  const [hours, minutes] = parts;
   const hour = parseInt(hours);
+  if (isNaN(hour)) return time;
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const displayHour = hour % 12 || 12;
   return `${displayHour}:${minutes} ${ampm}`;
@@ -261,7 +265,7 @@ export default function BookingScreen() {
     // Add guest services for group bookings
     if (isGroupBooking && guests.length > 0) {
       guests.forEach(guest => {
-        const guestService = salon.services.find(s => s.id === guest.serviceId);
+        const guestService = salon?.services?.find(s => s.id === guest.serviceId);
         if (guestService) {
           total += parseFloat(String(guestService.price));
         }
@@ -562,7 +566,7 @@ export default function BookingScreen() {
                   >
                     <View style={[styles.staffAvatar, selectedWorker === worker.id && styles.staffAvatarSelected]}>
                       <Text style={styles.staffInitials}>
-                        {worker.fullName.split(' ').map(n => n[0]).join('')}
+                        {(worker.fullName || '').split(' ').map(n => n?.[0] || '').join('')}
                       </Text>
                     </View>
                     <Text variant="bodySmall" style={[styles.staffName, selectedWorker === worker.id && styles.staffNameSelected]}>

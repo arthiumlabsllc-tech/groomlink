@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput, Image } from 'react-native';
 import { Text, Button, HelperText } from 'react-native-paper';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
@@ -90,8 +90,15 @@ export default function OTPScreen() {
           // Existing user - tokens are already stored in SecureStore by authApi
           // Set user in store which updates isAuthenticated to true
           setUser(user);
-          // Dismiss the auth modal so the user returns to the main tabs
-          navigation.goBack();
+          // Dismiss the entire auth modal by resetting to MainTabs
+          // navigation.goBack() only pops within AuthNavigator (OTP->Email),
+          // it doesn't dismiss the modal. We need to reset the root navigator.
+          navigation.getParent()?.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs' }],
+            })
+          );
         }
       }
     } catch (err: any) {

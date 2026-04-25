@@ -52,7 +52,8 @@ const groupSlotsByPeriod = (slots: TimeSlotData[]): GroupedSlots => {
   const evening: TimeSlotData[] = [];
 
   slots.forEach((slot) => {
-    const [hours] = slot.time.split(':').map(Number);
+    const parts = (slot.time || '').split(':').map(Number);
+    const hours = parts[0] || 0;
     
     if (hours < 12) {
       morning.push(slot);
@@ -67,7 +68,10 @@ const groupSlotsByPeriod = (slots: TimeSlotData[]): GroupedSlots => {
 };
 
 const formatTime = (time: string): string => {
-  const [hours, minutes] = time.split(':').map(Number);
+  if (!time) return 'N/A';
+  const parts = time.split(':').map(Number);
+  const hours = parts[0] || 0;
+  const minutes = parts[1] || 0;
   const ampm = hours >= 12 ? 'PM' : 'AM';
   const displayHour = hours % 12 || 12;
   return `${displayHour}:${minutes.toString().padStart(2, '0')} ${ampm}`;

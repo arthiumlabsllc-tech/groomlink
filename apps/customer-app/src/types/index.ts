@@ -98,7 +98,7 @@ export interface Booking {
   finalAmount?: number | string;
   notes: string | null;
   salon: Salon;
-  worker: Worker;
+  worker: Worker | null;
   services: Service[];
   createdAt: string;
   isGroupBooking?: boolean;

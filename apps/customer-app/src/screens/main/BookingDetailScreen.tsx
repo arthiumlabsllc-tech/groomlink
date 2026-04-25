@@ -155,9 +155,13 @@ export default function BookingDetailScreen() {
     });
   };
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
+  const formatTime = (time: string | undefined | null) => {
+    if (!time) return 'N/A';
+    const parts = time.split(':');
+    if (parts.length < 2) return time;
+    const [hours, minutes] = parts;
     const hour = parseInt(hours);
+    if (isNaN(hour)) return time;
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
@@ -679,7 +683,7 @@ export default function BookingDetailScreen() {
                   <Text variant="bodySmall" style={styles.deadlineTitle}>Cancellation Deadline</Text>
                 </View>
                 <Text variant="bodyMedium" style={styles.deadlineText}>
-                  {formatDate(booking.cancellationDeadline)} at {formatTime(booking.cancellationDeadline.split('T')[1]?.substring(0, 5) || '00:00')}
+                  {formatDate(booking.cancellationDeadline)} at {formatTime(booking.cancellationDeadline?.split('T')[1]?.substring(0, 5) || '00:00')}
                 </Text>
                 {booking.refundPercentage !== undefined && (
                   <Text variant="bodySmall" style={styles.refundHint}>
@@ -754,7 +758,7 @@ export default function BookingDetailScreen() {
                       Completed At
                     </Text>
                     <Text variant="bodyMedium" style={styles.completionValue}>
-                      {formatDate(booking.serviceCompletedAt)} at {formatTime(booking.serviceCompletedAt.split('T')[1]?.substring(0, 5) || '00:00')}
+                      {formatDate(booking.serviceCompletedAt)} at {formatTime(booking.serviceCompletedAt?.split('T')[1]?.substring(0, 5) || '00:00')}
                     </Text>
                   </>
                 )}
@@ -1101,67 +1105,6 @@ export default function BookingDetailScreen() {
         </View>
       </Modal>
 
-      {/* Dispute Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={disputeModalVisible}
-        onRequestClose={() => setDisputeModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text variant="titleLarge" style={styles.modalTitle}>Report Issue</Text>
-              <TouchableOpacity 
-                onPress={() => setDisputeModalVisible(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.disputeModalContent}>
-              <View style={styles.disputeIconContainer}>
-                <Ionicons name="alert-circle" size={48} color={COLORS.accentRed} />
-              </View>
-              
-              <Text variant="titleMedium" style={styles.disputeModalTitle}>
-                Issue with Service
-              </Text>
-              
-              <Text variant="bodySmall" style={styles.disputeModalDescription}>
-                Please describe the issue you experienced. Our support team will review your case and contact you within 24 hours.
-              </Text>
-
-              <Text variant="bodySmall" style={styles.reasonLabel}>
-                Describe the issue *
-              </Text>
-              <TextInput
-                style={styles.reasonInput}
-                multiline
-                numberOfLines={4}
-                placeholder="e.g., Service was not performed, quality issues, no-show by provider..."
-                value={disputeReason}
-                onChangeText={setDisputeReason}
-              />
-
-              <Button
-                mode="contained"
-                onPress={handleSubmitDispute}
-                loading={raiseDisputeMutation.isPending}
-                disabled={raiseDisputeMutation.isPending}
-                style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
-                contentStyle={styles.confirmCancelButtonContent}
-              >
-                {raiseDisputeMutation.isPending 
-                  ? 'Submitting...' 
-                  : 'Submit Dispute'
-                }
-              </Button>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

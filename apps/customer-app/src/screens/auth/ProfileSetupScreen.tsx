@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
@@ -152,8 +152,14 @@ export default function ProfileSetupScreen() {
         // Clear the isNewUser flag since registration is complete
         await SecureStore.deleteItemAsync('isNewUser');
         setUser(response.data.user);
-        // Dismiss the auth modal so the user returns to the main tabs
-        navigation.goBack();
+        // Dismiss the entire auth modal by resetting to MainTabs
+        // navigation.goBack() only pops within AuthNavigator, doesn't dismiss the modal
+        navigation.getParent()?.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          })
+        );
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to complete registration');

@@ -138,7 +138,7 @@ export default function HomeScreen() {
         )}
         <View style={styles.ratingBadge}>
           <Ionicons name="star" size={12} color={COLORS.accentGold} />
-          <Text style={styles.ratingBadgeText}>{salon.rating.toFixed(1)}</Text>
+          <Text style={styles.ratingBadgeText}>{(salon.rating ?? 0).toFixed(1)}</Text>
         </View>
         {isHorizontal && salon.isFeatured && (
           <View style={styles.featuredBadge}>

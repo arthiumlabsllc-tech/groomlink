@@ -150,9 +150,13 @@ export default function BookingsScreen() {
     });
   };
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
+  const formatTime = (time: string | undefined | null) => {
+    if (!time) return 'N/A';
+    const parts = time.split(':');
+    if (parts.length < 2) return time;
+    const [hours, minutes] = parts;
     const hour = parseInt(hours);
+    if (isNaN(hour)) return time;
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
