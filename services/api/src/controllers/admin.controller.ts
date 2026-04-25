@@ -716,11 +716,22 @@ export async function deleteAdmin(req: AuthenticatedRequest, res: Response): Pro
 // Site Settings
 const siteSettingsSchema = z.object({
   siteName: z.string().min(1).optional(),
-  email: z.string().email().optional(),
+  email: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().email().optional()
+  ),
   phoneNumber: z.string().optional(),
   address: z.string().optional(),
-  logoUrl: z.string().url().optional(),
-});
+  logoUrl: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().url().optional()
+  ),
+}).transform((data) => ({
+  ...data,
+  // Convert undefined back to null for database nullable fields
+  email: data.email ?? null,
+  logoUrl: data.logoUrl ?? null,
+}));
 
 // Payment Settings Schema
 const paymentSettingsSchema = z.object({
