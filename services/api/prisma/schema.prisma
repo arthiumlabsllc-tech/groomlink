@@ -777,7 +777,8 @@ model AdminPermission {
 model SiteSettings {
   id                    String   @id @default("default")
   siteName              String   @default("GroomLink")
-  logoUrl               String?
+  logoUrl               String?  // Header logo
+  footerLogoUrl         String?  @map("footer_logo_url") // Footer logo
   email                 String?
   phoneNumber           String?
   address               String?

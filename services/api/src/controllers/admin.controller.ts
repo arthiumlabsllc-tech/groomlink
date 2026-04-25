@@ -14,6 +14,7 @@ import axios from 'axios';
 import { verifyPaymentWithHubtel } from '../services/payment.service';
 import * as escrowService from '../services/escrow.service';
 import { paymentProviderRegistry } from '../services/payment-provider.registry';
+import { uploadService } from '../services/upload.service';
 import * as notificationService from '../services/notification.service';
 
 const couponSchema = z.object({
@@ -804,6 +805,84 @@ export async function updateSiteSettings(req: AuthenticatedRequest, res: Respons
       return;
     }
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Upload site header logo
+ * POST /api/admin/settings/upload-header-logo
+ */
+export async function uploadHeaderLogo(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const file = req.file as any;
+    if (!file || !file.path) {
+      errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded', 400);
+      return;
+    }
+
+    // Get old logo URL for cleanup
+    const oldSettings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' },
+      select: { logoUrl: true },
+    });
+
+    // Update logoUrl in site settings
+    const settings = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      create: { id: 'default', logoUrl: file.path, updatedBy: req.user!.id },
+      update: { logoUrl: file.path, updatedBy: req.user!.id },
+    });
+
+    // Delete old logo from Cloudinary
+    if (oldSettings?.logoUrl) {
+      const publicId = uploadService.extractPublicId(oldSettings.logoUrl);
+      if (publicId) {
+        uploadService.deleteImage(publicId).catch(() => {});
+      }
+    }
+
+    successResponse(res, { logoUrl: file.path, settings });
+  } catch (error) {
+    errorResponse(res, 'UPLOAD_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Upload site footer logo
+ * POST /api/admin/settings/upload-footer-logo
+ */
+export async function uploadFooterLogo(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const file = req.file as any;
+    if (!file || !file.path) {
+      errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded', 400);
+      return;
+    }
+
+    // Get old footer logo URL for cleanup
+    const oldSettings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' },
+      select: { footerLogoUrl: true } as any,
+    });
+
+    // Update footerLogoUrl in site settings
+    const settings = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      create: { id: 'default', footerLogoUrl: file.path, updatedBy: req.user!.id } as any,
+      update: { footerLogoUrl: file.path, updatedBy: req.user!.id } as any,
+    });
+
+    // Delete old footer logo from Cloudinary
+    if ((oldSettings as any)?.footerLogoUrl) {
+      const publicId = uploadService.extractPublicId((oldSettings as any).footerLogoUrl);
+      if (publicId) {
+        uploadService.deleteImage(publicId).catch(() => {});
+      }
+    }
+
+    successResponse(res, { footerLogoUrl: file.path, settings });
+  } catch (error) {
+    errorResponse(res, 'UPLOAD_FAILED', (error as Error).message, 500);
   }
 }
 

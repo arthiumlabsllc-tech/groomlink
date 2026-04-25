@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Icon from '../components/Icon';
 import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings } from '../hooks';
+import { settingsApi } from '../api/settings';
 import LoadingScreen from '../components/LoadingScreen';
 
 function formatUptime(seconds: number): string {
@@ -32,6 +33,14 @@ export function Settings() {
     address: '',
     logoUrl: '',
   });
+
+  // Logo upload state
+  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const [footerLogoUrl, setFooterLogoUrl] = useState<string | null>(null);
+  const [uploadingHeaderLogo, setUploadingHeaderLogo] = useState(false);
+  const [uploadingFooterLogo, setUploadingFooterLogo] = useState(false);
+  const headerLogoInputRef = useRef<HTMLInputElement>(null);
+  const footerLogoInputRef = useRef<HTMLInputElement>(null);
 
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
@@ -68,6 +77,8 @@ export function Settings() {
         address: settings.address || '',
         logoUrl: settings.logoUrl || '',
       });
+      setHeaderLogoUrl(settings.logoUrl || null);
+      setFooterLogoUrl((settings as any).footerLogoUrl || null);
     }
   }, [settings]);
 
@@ -337,28 +348,130 @@ export function Settings() {
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <Icon name="image" size={14} className="text-gray-400" />
-                  Logo URL
+                  Header Logo
                 </label>
-                <input
-                  type="url"
-                  value={formData.logoUrl}
-                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
-                  placeholder="https://example.com/logo.png"
-                />
-                {formData.logoUrl && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-xl">
-                    <p className="text-xs text-gray-500 mb-2">Preview:</p>
-                    <img
-                      src={formData.logoUrl}
-                      alt="Logo preview"
-                      className="h-12 w-auto object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-[#006B3F]/40 transition-colors">
+                  {headerLogoUrl ? (
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 rounded-lg p-3 inline-block">
+                        <img
+                          src={headerLogoUrl}
+                          alt="Header logo"
+                          className="h-14 w-auto object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => headerLogoInputRef.current?.click()}
+                          disabled={uploadingHeaderLogo}
+                          className="text-xs px-3 py-1.5 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <Icon name="upload" size={14} />
+                          {uploadingHeaderLogo ? 'Uploading...' : 'Change'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => headerLogoInputRef.current?.click()}
+                      disabled={uploadingHeaderLogo}
+                      className="w-full py-4 text-gray-500 hover:text-[#006B3F] disabled:opacity-50"
+                    >
+                      <Icon name="cloud_upload" size={32} className="mx-auto mb-2" />
+                      <p className="text-sm font-medium">{uploadingHeaderLogo ? 'Uploading...' : 'Click to upload header logo'}</p>
+                      <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP (max 5MB)</p>
+                    </button>
+                  )}
+                  <input
+                    ref={headerLogoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingHeaderLogo(true);
+                      setGeneralError(null);
+                      try {
+                        const result = await settingsApi.uploadHeaderLogo(file);
+                        setHeaderLogoUrl(result.logoUrl);
+                        setFormData(prev => ({ ...prev, logoUrl: result.logoUrl }));
+                      } catch (err: any) {
+                        setGeneralError(err.response?.data?.error?.message || 'Failed to upload header logo');
+                      } finally {
+                        setUploadingHeaderLogo(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <Icon name="image" size={14} className="text-gray-400" />
+                  Footer Logo
+                </label>
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-[#006B3F]/40 transition-colors">
+                  {footerLogoUrl ? (
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 rounded-lg p-3 inline-block">
+                        <img
+                          src={footerLogoUrl}
+                          alt="Footer logo"
+                          className="h-14 w-auto object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => footerLogoInputRef.current?.click()}
+                          disabled={uploadingFooterLogo}
+                          className="text-xs px-3 py-1.5 bg-[#006B3F] text-white rounded-lg hover:bg-[#005a35] disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <Icon name="upload" size={14} />
+                          {uploadingFooterLogo ? 'Uploading...' : 'Change'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => footerLogoInputRef.current?.click()}
+                      disabled={uploadingFooterLogo}
+                      className="w-full py-4 text-gray-500 hover:text-[#006B3F] disabled:opacity-50"
+                    >
+                      <Icon name="cloud_upload" size={32} className="mx-auto mb-2" />
+                      <p className="text-sm font-medium">{uploadingFooterLogo ? 'Uploading...' : 'Click to upload footer logo'}</p>
+                      <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP (max 5MB)</p>
+                    </button>
+                  )}
+                  <input
+                    ref={footerLogoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingFooterLogo(true);
+                      setGeneralError(null);
+                      try {
+                        const result = await settingsApi.uploadFooterLogo(file);
+                        setFooterLogoUrl(result.footerLogoUrl);
+                      } catch (err: any) {
+                        setGeneralError(err.response?.data?.error?.message || 'Failed to upload footer logo');
+                      } finally {
+                        setUploadingFooterLogo(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               <button

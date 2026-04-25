@@ -1,10 +1,15 @@
 import { Router } from 'express';
+import multer from 'multer';
 import * as adminController from '../controllers/admin.controller';
 import * as supportTicketController from '../controllers/support-ticket.controller';
 import * as sponsorshipController from '../controllers/sponsorship.controller';
 import { authenticateToken, requireAdminOrHigher, requireSuperAdmin } from '../middleware/auth';
+import { salonStorage } from '../config/cloudinary';
 
 const router = Router();
+
+// Multer config for site logo uploads (using Cloudinary)
+const uploadSiteLogo = multer({ storage: salonStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 
 // Public endpoint (NO AUTH) - must be before authenticated routes
 router.get('/public-settings', adminController.getPublicSiteSettings);
@@ -54,6 +59,10 @@ router.delete('/admins/:id', authenticateToken, requireAdminOrHigher, adminContr
 router.get('/settings', authenticateToken, requireAdminOrHigher, adminController.getSiteSettings);
 router.put('/settings', authenticateToken, requireAdminOrHigher, adminController.updateSiteSettings);
 router.post('/settings/maintenance', authenticateToken, requireAdminOrHigher, adminController.toggleMaintenanceMode);
+
+// Site logo uploads
+router.post('/settings/upload-header-logo', authenticateToken, requireAdminOrHigher, uploadSiteLogo.single('logo'), adminController.uploadHeaderLogo);
+router.post('/settings/upload-footer-logo', authenticateToken, requireAdminOrHigher, uploadSiteLogo.single('logo'), adminController.uploadFooterLogo);
 
 // Payment settings
 router.get('/payment-settings', authenticateToken, requireAdminOrHigher, adminController.getPaymentSettings);

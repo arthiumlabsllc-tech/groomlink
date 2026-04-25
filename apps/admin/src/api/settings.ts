@@ -6,6 +6,7 @@ export interface SiteSettings {
   phoneNumber: string;
   address: string;
   logoUrl: string | null;
+  footerLogoUrl: string | null;
   maintenanceMode: boolean;
   maintenanceMsg: string | null;
 }
@@ -91,6 +92,26 @@ export const settingsApi = {
   // Update payment settings
   updatePaymentSettings: async (data: Partial<PaymentSettings>): Promise<PaymentSettings> => {
     const response = await apiClient.put('/admin/payment-settings', data);
+    return response.data.data;
+  },
+
+  // Upload header logo
+  uploadHeaderLogo: async (file: File): Promise<{ logoUrl: string }> => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await apiClient.post('/admin/settings/upload-header-logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  // Upload footer logo
+  uploadFooterLogo: async (file: File): Promise<{ footerLogoUrl: string }> => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await apiClient.post('/admin/settings/upload-footer-logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data.data;
   },
 };
