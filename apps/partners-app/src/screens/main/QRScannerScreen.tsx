@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -22,6 +22,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { bookingsApi } from '../../api/bookings';
 import { MainStackParamList } from '../../types';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 interface BarcodeScanResult {
   type: string;
@@ -40,6 +42,8 @@ export default function QRScannerScreen() {
   const navigation = useNavigation();
   const route = useRoute<QRScannerRouteProp>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { bookingId } = route.params || {};
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -364,7 +368,7 @@ export default function QRScannerScreen() {
 const { width } = Dimensions.get('window');
 const frameSize = Math.min(width - 64, 280);
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
@@ -375,7 +379,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
   },
   backButtonContainer: {
     padding: 8,
@@ -383,7 +387,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   placeholder: {
     width: 40,
@@ -423,7 +427,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 24,
     height: 24,
-    borderColor: '#006B3F',
+    borderColor: theme.accent,
     borderWidth: 4,
   },
   cornerTopLeft: {
@@ -459,9 +463,9 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     height: 2,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     top: '50%',
-    shadowColor: '#006B3F',
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
@@ -492,7 +496,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   instructionsContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     padding: 24,
     alignItems: 'center',
     borderTopLeftRadius: 24,
@@ -502,12 +506,12 @@ const styles = StyleSheet.create({
   instructionsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     marginTop: 12,
   },
   instructionsText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
@@ -518,30 +522,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   manualEntryContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     padding: 16,
     paddingBottom: 32,
   },
   manualEntryButton: {
     borderRadius: 12,
-    borderColor: '#006B3F',
+    borderColor: theme.accent,
   },
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   permissionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     marginTop: 16,
   },
   permissionText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
@@ -553,18 +557,18 @@ const styles = StyleSheet.create({
   },
   dialog: {
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
   },
   dialogTitle: {
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   dialogText: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginBottom: 16,
   },
   codeInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
   },
   dialogActions: {
     paddingHorizontal: 20,
