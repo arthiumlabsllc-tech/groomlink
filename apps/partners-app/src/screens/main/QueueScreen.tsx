@@ -414,16 +414,16 @@ export default function QueueScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   scrollContent: {
     paddingBottom: 24,
@@ -441,12 +441,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#D1FAE5',
+    backgroundColor: theme.successBg,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -456,15 +456,15 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10B981',
+    backgroundColor: theme.success,
   },
   liveText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#059669',
+    color: theme.success,
   },
   subtitle: {
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 14,
     borderLeftWidth: 4,
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statsLabel: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginBottom: 2,
   },
   statsValue: {
@@ -519,10 +519,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   queueCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     padding: 14,
     shadowColor: '#000',
@@ -585,11 +585,11 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   divider: {
     marginVertical: 12,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.border,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -610,18 +610,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   emptyTitle: {
-    color: '#111827',
+    color: theme.text,
     marginBottom: 8,
     fontWeight: '600',
   },
   emptySubtitle: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },
