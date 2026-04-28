@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,12 +17,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { staffApi, StaffMember } from '../../api/staff';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
 export default function StaffScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Fetch salon to get salon ID
   const { data: salon, isLoading: isLoadingSalon } = useQuery({
@@ -262,10 +266,10 @@ export default function StaffScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
@@ -282,7 +286,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme.dangerBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -290,12 +294,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     marginTop: 8,
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -306,7 +310,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     borderRadius: 10,
   },
   retryButtonText: {
@@ -317,9 +321,9 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: theme.border,
   },
   headerContent: {
     flexDirection: 'row',
@@ -329,18 +333,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -351,7 +355,7 @@ const styles = StyleSheet.create({
   staffCard: {
     marginBottom: 12,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -361,7 +365,7 @@ const styles = StyleSheet.create({
   },
   inactiveCard: {
     opacity: 0.6,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.background,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -375,7 +379,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -407,11 +411,11 @@ const styles = StyleSheet.create({
   staffName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   staffRole: {
     fontSize: 13,
-    color: '#006B3F',
+    color: theme.accent,
     marginTop: 2,
     fontWeight: '500',
   },
@@ -423,13 +427,13 @@ const styles = StyleSheet.create({
   },
   staffPhone: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   deleteButton: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme.dangerBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -437,11 +441,11 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: theme.border,
   },
   servicesLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginBottom: 8,
     fontWeight: '500',
   },
@@ -451,27 +455,27 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   serviceChip: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.successBg,
     height: 28,
   },
   serviceChipText: {
     fontSize: 12,
-    color: '#006B3F',
+    color: theme.accent,
   },
   moreChip: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     height: 28,
   },
   moreChipText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   statsContainer: {
     flexDirection: 'row',
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: theme.border,
   },
   statItem: {
     flex: 1,
@@ -486,11 +490,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   editHint: {
     flexDirection: 'row',
@@ -501,7 +505,7 @@ const styles = StyleSheet.create({
   },
   editHintText: {
     fontSize: 13,
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '500',
   },
   emptyState: {
@@ -514,7 +518,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -522,11 +526,11 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -537,7 +541,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     borderRadius: 10,
   },
   emptyButtonText: {

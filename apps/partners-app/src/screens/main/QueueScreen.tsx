@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,9 +20,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { queueApi, QueueEntry, QueueStatus } from '../../api/queue';
 import { salonApi } from '../../api/salon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 export default function QueueScreen() {
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Fetch salon data
   const { data: salon, isLoading: salonLoading } = useQuery({
