@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,8 @@ import { staffApi, CreateStaffData, UpdateStaffData, StaffMember } from '../../a
 import { servicesApi, Service } from '../../api/services';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type AddStaffRouteProp = RouteProp<MainStackParamList, 'AddStaff'>;
 
@@ -48,6 +50,8 @@ export default function AddStaffScreen() {
   const navigation = useNavigation();
   const route = useRoute<AddStaffRouteProp>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const isEditMode = !!route.params?.staffId;
   const existingStaff = route.params?.staff as StaffMember | undefined;
@@ -426,10 +430,10 @@ export default function AddStaffScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   keyboardView: {
     flex: 1,
@@ -443,11 +447,11 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
   },
   roleGrid: {
     flexDirection: 'row',
@@ -460,18 +464,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     gap: 8,
   },
   roleChipSelected: {
-    backgroundColor: '#006B3F',
-    borderColor: '#006B3F',
+    backgroundColor: theme.accent,
+    borderColor: theme.accent,
   },
   roleChipText: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   roleChipTextSelected: {
@@ -481,17 +485,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
   },
   noServicesText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
   servicesContainer: {
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     overflow: 'hidden',
   },
   serviceItem: {
@@ -499,10 +503,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: theme.surfaceVariant,
   },
   serviceItemSelected: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.successBg,
   },
   serviceCheckbox: {
     marginRight: 12,
@@ -512,7 +516,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
   },
   serviceInfo: {
     flex: 1,
@@ -520,7 +524,7 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#111827',
+    color: theme.text,
     marginBottom: 4,
   },
   serviceMeta: {
@@ -529,21 +533,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   serviceCategoryChip: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     height: 22,
   },
   serviceCategoryText: {
     fontSize: 11,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   servicePrice: {
     fontSize: 13,
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '600',
   },
   selectionHint: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     marginTop: 8,
   },
   buttonContainer: {
@@ -554,7 +558,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   deleteButton: {
-    borderColor: '#CE1126',
+    borderColor: theme.danger,
   },
   buttonContent: {
     paddingVertical: 8,

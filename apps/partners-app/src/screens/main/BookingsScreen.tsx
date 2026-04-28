@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -23,6 +23,8 @@ import { salonApi } from '../../api/salon';
 import { bookingsApi } from '../../api/bookings';
 import { Booking, BookingStatus, MainStackParamList } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -37,6 +39,8 @@ const STATUS_FILTERS: { value: BookingStatus | 'ALL'; label: string; color: stri
 export default function BookingsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [statusFilter, setStatusFilter] = useState<BookingStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
 
@@ -318,16 +322,16 @@ export default function BookingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   header: {
     paddingHorizontal: 20,
@@ -336,17 +340,17 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   headerSubtitle: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   filterContainer: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: theme.border,
+    backgroundColor: theme.surface,
   },
   filterList: {
     paddingHorizontal: 16,
@@ -356,16 +360,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     marginRight: 8,
     minHeight: 44,
     justifyContent: 'center',
   },
   filterTabText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontWeight: '500',
   },
   filterTabTextActive: {
@@ -379,7 +383,7 @@ const styles = StyleSheet.create({
   bookingCard: {
     marginBottom: 12,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     flexDirection: 'row',
     overflow: 'hidden',
     shadowColor: '#000',
@@ -411,7 +415,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -427,7 +431,7 @@ const styles = StyleSheet.create({
   customerName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     flexShrink: 1,
   },
   phoneRow: {
@@ -438,7 +442,7 @@ const styles = StyleSheet.create({
   },
   phoneText: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   statusChip: {
     minHeight: 28,
@@ -490,7 +494,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 13,
-    color: '#374151',
+    color: theme.text,
   },
   bookingFooter: {
     flexDirection: 'row',
@@ -498,12 +502,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: theme.border,
   },
   price: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: theme.accent,
   },
   tapHint: {
     flexDirection: 'row',
@@ -515,7 +519,7 @@ const styles = StyleSheet.create({
   },
   tapHintText: {
     fontSize: 13,
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '600',
   },
   emptyState: {
@@ -526,23 +530,23 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   emptyTitle: {
-    color: '#111827',
+    color: theme.text,
     marginBottom: 8,
     fontWeight: '600',
   },
   emptySubtitle: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     textAlign: 'center',
     marginBottom: 16,
   },
   viewAllButton: {
-    borderColor: '#006B3F',
+    borderColor: theme.accent,
   },
   loadMore: {
     paddingVertical: 16,
