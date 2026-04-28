@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { salonApi, CreateSalonData } from '../../api/salon';
 import { OpeningHours } from '../../types';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 const BUSINESS_CATEGORIES = [
   { label: 'Barbershop', value: 'BARBERSHOP', icon: 'cut' },
@@ -99,6 +101,8 @@ const defaultHours: HoursState = {
 export default function EditSalonScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Fetch salon data
   const { data: salon, isLoading: salonLoading } = useQuery({
@@ -587,11 +591,13 @@ export default function EditSalonScreen() {
               onBlur={() => setTouched({ ...touched, businessName: true })}
               error={touched.businessName && !!errors.businessName}
               mode="outlined"
-              outlineColor="#E5E7EB"
-              activeOutlineColor="#006B3F"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               style={styles.input}
               placeholder="Enter salon name"
-              left={<TextInput.Icon icon="storefront" color="#6B7280" />}
+              left={<TextInput.Icon icon="storefront" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
             />
             {touched.businessName && errors.businessName && (
@@ -608,11 +614,13 @@ export default function EditSalonScreen() {
               onBlur={() => setTouched({ ...touched, address: true })}
               error={touched.address && !!errors.address}
               mode="outlined"
-              outlineColor="#E5E7EB"
-              activeOutlineColor="#006B3F"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               style={styles.input}
               placeholder="Street address"
-              left={<TextInput.Icon icon="map-marker-outline" color="#6B7280" />}
+              left={<TextInput.Icon icon="map-marker-outline" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
             />
             {touched.address && errors.address && (
@@ -631,8 +639,10 @@ export default function EditSalonScreen() {
                   onBlur={() => setTouched({ ...touched, city: true })}
                   error={touched.city && !!errors.city}
                   mode="outlined"
-                  outlineColor="#E5E7EB"
-                  activeOutlineColor="#006B3F"
+                  outlineColor={theme.border}
+                  activeOutlineColor={theme.accent}
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
                   style={styles.input}
                   placeholder="City"
                   theme={{ roundness: 10 }}
@@ -652,12 +662,14 @@ export default function EditSalonScreen() {
                   onBlur={() => setTouched({ ...touched, phone: true })}
                   error={touched.phone && !!errors.phone}
                   mode="outlined"
-                  outlineColor="#E5E7EB"
-                  activeOutlineColor="#006B3F"
+                  outlineColor={theme.border}
+                  activeOutlineColor={theme.accent}
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
                   style={styles.input}
                   keyboardType="phone-pad"
                   placeholder="+233 XX XXX XXXX"
-                  left={<TextInput.Icon icon="phone-outline" color="#6B7280" />}
+                  left={<TextInput.Icon icon="phone-outline" color={theme.textSecondary} />}
                   theme={{ roundness: 10 }}
                 />
                 {touched.phone && errors.phone && (
@@ -671,13 +683,15 @@ export default function EditSalonScreen() {
               value={email}
               onChangeText={setEmail}
               mode="outlined"
-              outlineColor="#E5E7EB"
-              activeOutlineColor="#006B3F"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               style={styles.input}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholder="salon@example.com"
-              left={<TextInput.Icon icon="email-outline" color="#6B7280" />}
+              left={<TextInput.Icon icon="email-outline" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
             />
 
@@ -686,8 +700,10 @@ export default function EditSalonScreen() {
               value={description}
               onChangeText={setDescription}
               mode="outlined"
-              outlineColor="#E5E7EB"
-              activeOutlineColor="#006B3F"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.accent}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               style={[styles.input, styles.textArea]}
               multiline
               numberOfLines={4}
@@ -699,7 +715,7 @@ export default function EditSalonScreen() {
           {/* ─── Category Section ─── */}
           <Surface style={styles.section} elevation={0}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="pricetag" size={20} color="#006B3F" />
+              <Ionicons name="pricetag" size={20} color={theme.accent} />
               <Text style={styles.sectionTitle}>Business Category</Text>
             </View>
             <Divider style={styles.sectionDivider} />
@@ -849,19 +865,19 @@ export default function EditSalonScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   errorText: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontSize: 16,
     marginBottom: 16,
     marginTop: 12,
@@ -890,7 +906,7 @@ const styles = StyleSheet.create({
   coverPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
@@ -949,7 +965,7 @@ const styles = StyleSheet.create({
   logoPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -971,11 +987,11 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: theme.surface,
   },
   logoInfo: {
     marginLeft: 12,
@@ -984,18 +1000,18 @@ const styles = StyleSheet.create({
   logoInfoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   logoInfoSub: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
 
   // ─── Gallery Styles ───
   galleryCounter: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginLeft: 'auto',
     fontWeight: '500',
   },
@@ -1032,12 +1048,12 @@ const styles = StyleSheet.create({
   galleryEmptyText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     marginTop: 8,
   },
   galleryEmptySub: {
     fontSize: 13,
-    color: '#D1D5DB',
+    color: theme.border,
     marginTop: 4,
   },
   addPhotosButton: {
@@ -1048,30 +1064,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#006B3F',
+    borderColor: theme.accent,
     borderStyle: 'dashed',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.successBg,
   },
   addPhotosButtonDisabled: {
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: theme.border,
+    backgroundColor: theme.background,
   },
   addPhotosButtonText: {
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '600',
     fontSize: 14,
   },
   addPhotosButtonTextDisabled: {
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   addPhotosRemaining: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
 
   // ─── Section Styles ───
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     padding: 16,
     marginHorizontal: 16,
@@ -1085,14 +1101,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     fontSize: 16,
   },
   sectionDivider: {
     marginBottom: 16,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginBottom: 12,
   },
   textArea: {
@@ -1116,18 +1132,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     gap: 8,
   },
   categoryChipSelected: {
-    backgroundColor: '#006B3F',
-    borderColor: '#006B3F',
+    backgroundColor: theme.accent,
+    borderColor: theme.accent,
   },
   categoryChipText: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   categoryChipTextSelected: {
@@ -1136,7 +1152,7 @@ const styles = StyleSheet.create({
   dayRow: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: theme.surfaceVariant,
   },
   dayHeader: {
     flexDirection: 'row',
@@ -1145,11 +1161,11 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#111827',
+    color: theme.text,
     marginLeft: 12,
   },
   dayLabelClosed: {
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   timeRow: {
     flexDirection: 'row',
@@ -1160,26 +1176,26 @@ const styles = StyleSheet.create({
   },
   timeButton: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     alignItems: 'center',
     minWidth: 85,
   },
   timeButtonLabel: {
     fontSize: 10,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   timeButtonValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#111827',
+    color: theme.text,
   },
   closedText: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     marginTop: 8,
     paddingLeft: 52,
   },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { servicesApi, CreateServiceData, UpdateServiceData, Service } from '../../api/services';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type AddServiceRouteProp = RouteProp<MainStackParamList, 'AddService'>;
 
@@ -59,6 +61,8 @@ export default function AddServiceScreen() {
   const navigation = useNavigation();
   const route = useRoute<AddServiceRouteProp>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const isEditMode = !!route.params?.serviceId;
   const existingService = route.params?.service;
@@ -405,10 +409,10 @@ export default function AddServiceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   keyboardView: {
     flex: 1,
@@ -422,11 +426,11 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
   },
   textArea: {
     minHeight: 120,
@@ -442,18 +446,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     gap: 8,
   },
   categoryChipSelected: {
-    backgroundColor: '#006B3F',
-    borderColor: '#006B3F',
+    backgroundColor: theme.accent,
+    borderColor: theme.accent,
   },
   categoryChipText: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   categoryChipTextSelected: {
@@ -468,17 +472,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
   },
   durationChipSelected: {
-    backgroundColor: '#006B3F',
-    borderColor: '#006B3F',
+    backgroundColor: theme.accent,
+    borderColor: theme.accent,
   },
   durationChipText: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   durationChipTextSelected: {
@@ -493,7 +497,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   deleteButton: {
-    borderColor: '#CE1126',
+    borderColor: theme.danger,
   },
   buttonContent: {
     paddingVertical: 8,

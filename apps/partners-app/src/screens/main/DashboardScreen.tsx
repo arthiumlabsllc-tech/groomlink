@@ -625,14 +625,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: 2,
   },
   statusChip: {
-    height: 26,
+    minHeight: 28,
     justifyContent: 'center',
     borderRadius: 6,
+    paddingHorizontal: 2,
   },
   statusText: {
     fontSize: 10,
     fontWeight: '600',
     paddingHorizontal: 4,
+    lineHeight: 16,
   },
   bookingFooter: {
     flexDirection: 'row',
