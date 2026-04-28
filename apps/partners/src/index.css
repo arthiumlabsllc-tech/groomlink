@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Lock to light color-scheme to prevent browser auto-dark-mode from inverting inputs */
+:root {
+  color-scheme: light;
+}
+
+/* Ensure form inputs remain visible on devices with dark mode enabled */
+input,
+textarea,
+select {
+  color-scheme: light;
+  color: #1A1A1A;
+  background-color: #FFFFFF;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9CA3AF;
+  opacity: 1;
+}
+
 html {
   scroll-behavior: smooth;
 }
