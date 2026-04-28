@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -23,6 +23,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { bookingsApi, BookingDetail } from '../../api/bookings';
 import { MainStackParamList, MainNavigationProp } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type BookingDetailRouteProp = RouteProp<MainStackParamList, 'BookingDetail'>;
 
@@ -31,6 +33,8 @@ export default function BookingDetailScreen() {
   const route = useRoute<BookingDetailRouteProp>();
   const { bookingId } = route.params;
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
@@ -774,22 +778,22 @@ export default function BookingDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
     padding: 24,
   },
   errorButtons: {
@@ -801,7 +805,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   errorText: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginBottom: 16,
     marginTop: 12,
     textAlign: 'center',
@@ -828,7 +832,7 @@ const styles = StyleSheet.create({
   section: {
     padding: 16,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginBottom: 12,
   },
   sectionHeader: {
@@ -839,7 +843,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   divider: {
     marginBottom: 14,
@@ -852,7 +856,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -868,7 +872,7 @@ const styles = StyleSheet.create({
   customerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     marginBottom: 4,
   },
   contactRow: {
@@ -878,7 +882,7 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   serviceItem: {
     marginBottom: 10,
@@ -891,35 +895,35 @@ const styles = StyleSheet.create({
   },
   serviceName: {
     fontSize: 16,
-    color: '#111827',
+    color: theme.text,
     fontWeight: '500',
     flex: 1,
   },
   servicePrice: {
     fontSize: 16,
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '600',
   },
   serviceDuration: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontSize: 13,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.successBg,
     padding: 12,
     borderRadius: 10,
   },
   totalLabel: {
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     fontSize: 15,
   },
   totalValue: {
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: theme.accent,
     fontSize: 18,
   },
   dateTimeGrid: {
@@ -929,19 +933,19 @@ const styles = StyleSheet.create({
   dateTimeItem: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
     padding: 14,
     borderRadius: 12,
   },
   dateTimeLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textSecondary,
     marginTop: 6,
     marginBottom: 2,
   },
   dateTimeValue: {
     fontSize: 14,
-    color: '#111827',
+    color: theme.text,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -952,14 +956,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   workerLabel: {
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   workerName: {
-    color: '#111827',
+    color: theme.text,
     fontWeight: '500',
   },
   notesText: {
-    color: '#374151',
+    color: theme.text,
     fontStyle: 'italic',
     lineHeight: 22,
     fontSize: 14,
@@ -971,10 +975,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   paymentLabel: {
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   paymentValue: {
-    color: '#111827',
+    color: theme.text,
     fontWeight: '500',
   },
   paymentChip: {
@@ -1024,7 +1028,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     borderRadius: 12,
-    borderColor: '#CE1126',
+    borderColor: theme.danger,
   },
   buttonContent: {
     paddingVertical: 10,
@@ -1034,7 +1038,7 @@ const styles = StyleSheet.create({
   readOnlyNotice: {
     marginTop: 16,
     padding: 20,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.successBg,
     borderRadius: 12,
     alignItems: 'center',
     flexDirection: 'row',
@@ -1042,7 +1046,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   readOnlyText: {
-    color: '#10B981',
+    color: theme.success,
     fontWeight: '500',
   },
   dialog: {
@@ -1053,11 +1057,11 @@ const styles = StyleSheet.create({
   },
   dialogText: {
     marginBottom: 16,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   reasonInput: {
     marginTop: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
   },
   dialogActions: {
     paddingHorizontal: 20,
@@ -1076,16 +1080,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   escrowLabel: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontSize: 14,
   },
   escrowValue: {
-    color: '#111827',
+    color: theme.text,
     fontWeight: '600',
     fontSize: 14,
   },
   escrowDeduction: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontSize: 14,
   },
   escrowTotalRow: {
@@ -1140,7 +1144,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   guestCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
@@ -1174,42 +1178,42 @@ const styles = StyleSheet.create({
   guestName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   childChip: {
     height: 20,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: theme.warningBg,
   },
   childChipText: {
     fontSize: 10,
-    color: '#D97706',
+    color: theme.warning,
   },
   checkInBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#D1FAE5',
+    backgroundColor: theme.successBg,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   checkInText: {
     fontSize: 11,
-    color: '#059669',
+    color: theme.success,
     fontWeight: '500',
   },
   pendingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.background,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   pendingText: {
     fontSize: 11,
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontWeight: '500',
   },
   guestDetails: {
@@ -1225,27 +1229,27 @@ const styles = StyleSheet.create({
   },
   guestDetailLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textSecondary,
   },
   guestDetailText: {
     fontSize: 13,
-    color: '#374151',
+    color: theme.text,
     flex: 1,
   },
   specialInstructions: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: theme.border,
   },
   specialInstructionsLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontWeight: '500',
   },
   specialInstructionsText: {
     fontSize: 13,
-    color: '#374151',
+    color: theme.text,
     marginTop: 2,
   },
   groupRef: {
@@ -1259,11 +1263,11 @@ const styles = StyleSheet.create({
   },
   completionDetails: {
     marginTop: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#D1FAE5',
+    borderColor: theme.successBg,
   },
   completionDetailRow: {
     flexDirection: 'row',
@@ -1273,11 +1277,11 @@ const styles = StyleSheet.create({
   },
   completionLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   completionValue: {
     fontSize: 13,
-    color: '#111827',
+    color: theme.text,
     fontWeight: '500',
   },
   methodBadge: {
@@ -1306,12 +1310,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     padding: 14,
     borderRadius: 12,
   },
   waitingText: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontWeight: '500',
   },
   // Check-in styles
@@ -1322,28 +1326,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.successBg,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D1FAE5',
+    borderColor: theme.successBg,
   },
   checkedInInfo: {
     flex: 1,
   },
   checkedInText: {
-    color: '#059669',
+    color: theme.success,
     fontWeight: '600',
     fontSize: 15,
   },
   queuePositionText: {
-    color: '#10B981',
+    color: theme.success,
     fontWeight: '500',
     fontSize: 14,
     marginTop: 2,
   },
   checkedInTimeText: {
-    color: '#6B7280',
+    color: theme.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
