@@ -594,6 +594,8 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   emptyState: {
     padding: 40,

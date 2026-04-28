@@ -441,14 +441,16 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   statusChip: {
-    height: 26,
+    minHeight: 28,
     justifyContent: 'center',
     borderRadius: 6,
+    paddingHorizontal: 2,
   },
   statusText: {
     fontSize: 10,
     fontWeight: '600',
     paddingHorizontal: 4,
+    lineHeight: 16,
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -457,15 +459,17 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   groupChip: {
-    height: 24,
+    minHeight: 26,
     justifyContent: 'center',
     borderRadius: 6,
     backgroundColor: '#E9D5FF',
+    paddingHorizontal: 2,
   },
   groupChipText: {
     fontSize: 10,
     fontWeight: '600',
     color: '#7C3AED',
+    lineHeight: 14,
   },
   divider: {
     marginBottom: 10,

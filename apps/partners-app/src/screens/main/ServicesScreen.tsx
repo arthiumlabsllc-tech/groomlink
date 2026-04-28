@@ -383,13 +383,14 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     backgroundColor: '#E8F5E9',
-    height: 26,
+    minHeight: 28,
     alignSelf: 'flex-start',
   },
   categoryChipText: {
     fontSize: 11,
     color: '#006B3F',
     fontWeight: '500',
+    lineHeight: 16,
   },
   cardDivider: {
     height: 1,

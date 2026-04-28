@@ -1027,7 +1027,9 @@ const styles = StyleSheet.create({
     borderColor: '#CE1126',
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   readOnlyNotice: {
     marginTop: 16,
