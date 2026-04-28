@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -6,19 +6,21 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
 import { AuthStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors (theme-aware)
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Email'>;
 
@@ -27,6 +29,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function EmailScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -93,6 +98,8 @@ export default function EmailScreen() {
               autoFocus
               style={styles.input}
               placeholder="you@example.com"
+              placeholderTextColor={COLORS.textSecondary}
+              textColor={COLORS.textPrimary}
               left={<TextInput.Icon icon="email" color={COLORS.textSecondary} />}
               outlineColor={COLORS.border}
               activeOutlineColor={COLORS.primaryGreen}
@@ -127,7 +134,7 @@ export default function EmailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

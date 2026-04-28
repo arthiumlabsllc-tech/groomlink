@@ -23,19 +23,21 @@ import { bookingApi } from '../../api/booking';
 import { Booking } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { autoCheckinService } from '../../services/AutoCheckinService';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors - theme-aware factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 type TabType = 'upcoming' | 'past';
 
@@ -43,11 +45,11 @@ const UPCOMING_STATUSES = ['PENDING', 'CONFIRMED', 'IN_PROGRESS'];
 const PAST_STATUSES = ['COMPLETED', 'CANCELLED'];
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: COLORS.accentGold,
-  CONFIRMED: COLORS.primaryGreen,
+  PENDING: '#FCD116',
+  CONFIRMED: '#006B3F',
   IN_PROGRESS: '#2196F3',
   COMPLETED: '#6B7280',
-  CANCELLED: COLORS.accentRed,
+  CANCELLED: '#CE1126',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -60,6 +62,9 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function BookingsScreen() {
   const navigation = useNavigation<any>();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { isAuthenticated, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
@@ -395,7 +400,7 @@ export default function BookingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

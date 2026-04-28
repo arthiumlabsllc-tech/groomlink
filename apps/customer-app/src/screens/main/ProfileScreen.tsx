@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -27,19 +27,21 @@ import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import Constants from 'expo-constants';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors - theme-aware factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 // App version from expo config
 const APP_VERSION = Constants.expoConfig?.version || Constants.manifest?.version || '1.0.0';
@@ -47,6 +49,9 @@ const APP_VERSION = Constants.expoConfig?.version || Constants.manifest?.version
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { user, setUser, logout, isAuthenticated } = useAuthStore();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -311,6 +316,8 @@ export default function ProfileScreen() {
                   style={styles.input}
                   outlineColor={COLORS.border}
                   activeOutlineColor={COLORS.primaryGreen}
+                  textColor={COLORS.textPrimary}
+                  placeholderTextColor={COLORS.textSecondary}
                 />
                 <TextInput
                   label="Last Name"
@@ -320,6 +327,8 @@ export default function ProfileScreen() {
                   style={styles.input}
                   outlineColor={COLORS.border}
                   activeOutlineColor={COLORS.primaryGreen}
+                  textColor={COLORS.textPrimary}
+                  placeholderTextColor={COLORS.textSecondary}
                 />
                 <TextInput
                   label="Email (Optional)"
@@ -331,6 +340,8 @@ export default function ProfileScreen() {
                   style={styles.input}
                   outlineColor={COLORS.border}
                   activeOutlineColor={COLORS.primaryGreen}
+                  textColor={COLORS.textPrimary}
+                  placeholderTextColor={COLORS.textSecondary}
                 />
                 <View style={styles.editActions}>
                   <Button
@@ -498,7 +509,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

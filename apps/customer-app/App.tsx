@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
-import { PaperProvider } from 'react-native-paper';
+import { PaperProvider, DefaultTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -14,6 +14,7 @@ import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
 import { notificationApi } from './src/api/notification';
 import { useNotificationStore } from './src/store/notificationStore';
+import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -178,15 +179,52 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <PaperProvider>
-          <QueryClientProvider client={queryClient}>
-            <NavigationContainer ref={navigationRef}>
-              <AppContent />
-              <StatusBar style="auto" />
-            </NavigationContainer>
-          </QueryClientProvider>
-        </PaperProvider>
+        <ThemeProvider>
+          <AppShell />
+        </ThemeProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
+  );
+}
+
+function AppShell() {
+  const { theme, isDark } = useAppTheme();
+
+  const paperTheme = {
+    ...DefaultTheme,
+    dark: isDark,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: theme.primary,
+      background: theme.background,
+      surface: theme.surface,
+      text: theme.text,
+      onSurface: theme.text,
+    },
+  };
+
+  const navigationTheme = {
+    dark: isDark,
+    colors: {
+      primary: theme.primary,
+      background: theme.background,
+      card: theme.surface,
+      text: theme.text,
+      border: theme.border,
+      notification: theme.notificationBadge,
+    },
+  };
+
+  return (
+    <PaperProvider theme={paperTheme}>
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+          <View style={{ flex: 1, backgroundColor: theme.background }}>
+            <AppContent />
+            <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={theme.statusBar} />
+          </View>
+        </NavigationContainer>
+      </QueryClientProvider>
+    </PaperProvider>
   );
 }

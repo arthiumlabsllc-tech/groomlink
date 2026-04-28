@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text, HelperText, Divider, Surface, Chip } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -8,6 +8,8 @@ import * as Location from 'expo-location';
 import { salonApi, CreateSalonData } from '../../api/salon';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type AuthStackParamList = {
   Email: undefined;
@@ -85,6 +87,8 @@ export default function SalonSetupScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<SalonSetupRouteProp>();
   const { user, setUser } = useAuthStore();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Get provider category from route params (selected in ProviderCategoryScreen)
   const providerCategory = route.params?.providerCategory || 'BUSINESS';
@@ -336,10 +340,12 @@ export default function SalonSetupScreen() {
               onChangeText={setBusinessName}
               style={styles.input}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder={providerCategory === 'FREELANCER' ? 'e.g., John the Barber' : 'e.g., Glamour Beauty Salon'}
-              left={<TextInput.Icon icon="storefront" color="#6B7280" />}
+              left={<TextInput.Icon icon="storefront" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
               autoFocus
             />
@@ -361,7 +367,7 @@ export default function SalonSetupScreen() {
                   <Ionicons
                     name={type.icon as any}
                     size={18}
-                    color={selectedType === type.value ? '#FFFFFF' : '#6B7280'}
+                    color={selectedType === type.value ? '#FFFFFF' : theme.textSecondary}
                   />
                   <Text style={[
                     styles.typeChipText,
@@ -381,8 +387,10 @@ export default function SalonSetupScreen() {
               numberOfLines={3}
               style={[styles.input, styles.textArea]}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder={providerCategory === 'FREELANCER' ? 'Tell customers about your skills and services...' : 'Tell customers about your salon and services...'}
               theme={{ roundness: 10 }}
             />
@@ -394,10 +402,12 @@ export default function SalonSetupScreen() {
               keyboardType="phone-pad"
               style={styles.input}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder="+233 XX XXX XXXX"
-              left={<TextInput.Icon icon="phone" color="#6B7280" />}
+              left={<TextInput.Icon icon="phone" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
             />
 
@@ -409,10 +419,12 @@ export default function SalonSetupScreen() {
               autoCapitalize="none"
               style={styles.input}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder="salon@example.com"
-              left={<TextInput.Icon icon="email" color="#6B7280" />}
+              left={<TextInput.Icon icon="email" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
             />
           </Surface>
@@ -433,10 +445,12 @@ export default function SalonSetupScreen() {
               onChangeText={setAddress}
               style={styles.input}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder="e.g., 123 Oxford Street, Osu"
-              left={<TextInput.Icon icon="map-marker" color="#6B7280" />}
+              left={<TextInput.Icon icon="map-marker" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
             />
 
@@ -448,8 +462,10 @@ export default function SalonSetupScreen() {
                   onChangeText={setCity}
                   style={styles.input}
                   mode="outlined"
-                  outlineColor="#E5E7EB"
+                  outlineColor={theme.border}
                   activeOutlineColor="#006B3F"
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
                   placeholder="e.g., Accra"
                   theme={{ roundness: 10 }}
                 />
@@ -461,8 +477,10 @@ export default function SalonSetupScreen() {
                   onChangeText={setRegion}
                   style={styles.input}
                   mode="outlined"
-                  outlineColor="#E5E7EB"
+                  outlineColor={theme.border}
                   activeOutlineColor="#006B3F"
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
                   placeholder="e.g., Greater Accra"
                   theme={{ roundness: 10 }}
                 />
@@ -605,10 +623,10 @@ export default function SalonSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -650,7 +668,7 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textSecondary,
   },
   stepLabelActive: {
     color: '#006B3F',
@@ -685,14 +703,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   subtitle: {
     textAlign: 'center',
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -705,19 +723,19 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   sectionDivider: {
     marginBottom: 16,
     marginTop: 8,
   },
   label: {
-    color: '#374151',
+    color: theme.text,
     marginBottom: 8,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginBottom: 12,
   },
   textArea: {
@@ -742,10 +760,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
   },
   typeChipSelected: {
     backgroundColor: '#006B3F',
@@ -753,7 +771,7 @@ const styles = StyleSheet.create({
   },
   typeChipText: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   typeChipTextSelected: {
@@ -784,7 +802,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeChip: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     marginVertical: 2,
   },
   timeChipSelected: {
@@ -802,9 +820,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     minWidth: 60,
     alignItems: 'center',
   },
@@ -814,7 +832,7 @@ const styles = StyleSheet.create({
   },
   dayChipText: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   dayChipTextSelected: {
@@ -838,7 +856,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     textAlign: 'center',
-    color: '#9CA3AF',
+    color: theme.textSecondary,
     marginTop: 16,
     lineHeight: 20,
   },

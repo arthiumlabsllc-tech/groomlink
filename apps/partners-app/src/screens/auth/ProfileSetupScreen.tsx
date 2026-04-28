@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, Text, HelperText, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type AuthStackParamList = {
   Email: undefined;
@@ -21,6 +23,8 @@ export default function ProfileSetupScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ProfileSetupRouteProp>();
   const { email } = route.params;
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -173,10 +177,12 @@ export default function ProfileSetupScreen() {
               onChangeText={setFirstName}
               style={styles.input}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder="e.g., Kwame"
-              left={<TextInput.Icon icon="account" color="#6B7280" />}
+              left={<TextInput.Icon icon="account" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
               autoFocus
               autoCapitalize="words"
@@ -188,10 +194,12 @@ export default function ProfileSetupScreen() {
               onChangeText={setLastName}
               style={styles.input}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder="e.g., Asante"
-              left={<TextInput.Icon icon="account-outline" color="#6B7280" />}
+              left={<TextInput.Icon icon="account-outline" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
               autoCapitalize="words"
             />
@@ -203,10 +211,12 @@ export default function ProfileSetupScreen() {
               keyboardType="phone-pad"
               style={styles.input}
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
               placeholder="+233 XX XXX XXXX"
-              left={<TextInput.Icon icon="phone" color="#6B7280" />}
+              left={<TextInput.Icon icon="phone" color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
             />
             <Text variant="bodySmall" style={styles.phoneHint}>
@@ -245,10 +255,10 @@ export default function ProfileSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -337,24 +347,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   subtitle: {
     textAlign: 'center',
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginBottom: 12,
   },
   phoneHint: {
-    color: '#9CA3AF',
+    color: theme.textSecondary,
     marginTop: -8,
     marginBottom: 4,
   },
@@ -376,7 +386,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     textAlign: 'center',
-    color: '#9CA3AF',
+    color: theme.textSecondary,
     marginTop: 16,
     lineHeight: 20,
   },

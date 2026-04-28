@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -29,19 +29,21 @@ import { queueApi, QueueStatus, MyQueuePosition } from '../../api/queue';
 import { Salon, Review, Service } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors - theme-aware factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 // Default GroomLink assets
 const DEFAULT_LOGO_ICON = 'https://groomlinkgh.com/api/uploads/assets/logo-icon.png';
@@ -56,6 +58,9 @@ const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
 export default function SalonDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<SalonDetailRouteProp>();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { salonId } = route.params;
   const { isAuthenticated, setPendingBooking } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
@@ -856,7 +861,7 @@ export default function SalonDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

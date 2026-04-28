@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,23 +18,29 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { subscriptionApi, Plan, SubscriptionStatus } from '../../api/subscription';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type BillingPeriod = 'MONTHLY' | 'YEARLY';
 
-const COLORS = {
+const createColors = (t: AppTheme) => ({
   green: '#006B3F',
   red: '#CE1126',
   gold: '#FCD116',
   white: '#FFFFFF',
-  black: '#111827',
-  gray: '#6B7280',
-  lightGray: '#F3F4F6',
-  border: '#E5E7EB',
-};
+  black: t.text,
+  gray: t.textSecondary,
+  lightGray: t.background,
+  border: t.border,
+  surface: t.surface,
+});
 
 export default function PricingScreen() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('MONTHLY');
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
   const { data: plans, isLoading: plansLoading, isError: plansError } = useQuery({
     queryKey: ['subscriptionPlans'],
@@ -296,7 +302,7 @@ export default function PricingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.lightGray,
@@ -336,7 +342,7 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 4,
     marginBottom: 24,
@@ -382,7 +388,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   planCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type AuthStackParamList = {
   Email: undefined;
@@ -17,6 +19,8 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Email'>;
 
 export default function EmailScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -89,9 +93,11 @@ export default function EmailScreen() {
               style={styles.input}
               placeholder="you@example.com"
               mode="outlined"
-              outlineColor="#E5E7EB"
+              outlineColor={theme.border}
               activeOutlineColor="#006B3F"
-              left={<TextInput.Icon icon="email-outline" color="#6B7280" />}
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
+              left={<TextInput.Icon icon="email-outline" color={theme.textSecondary} />}
               theme={{ roundness: 12 }}
             />
             <HelperText type="info" visible={true} style={styles.helperText}>
@@ -140,10 +146,10 @@ export default function EmailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -197,29 +203,29 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: 'center',
     marginBottom: 4,
-    color: '#111827',
+    color: theme.text,
     fontWeight: '600',
   },
   tagline: {
     textAlign: 'center',
     marginBottom: 40,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   inputContainer: {
     marginBottom: 24,
   },
   inputLabel: {
     marginBottom: 8,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     fontSize: 16,
   },
   helperText: {
     marginTop: 6,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   errorText: {
     marginTop: 4,
@@ -240,7 +246,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     textAlign: 'center',
-    color: '#9CA3AF',
+    color: theme.textSecondary,
     marginTop: 12,
     fontSize: 13,
   },
@@ -253,12 +259,12 @@ const styles = StyleSheet.create({
   },
   signupNote: {
     flex: 1,
-    color: '#6B7280',
+    color: theme.textSecondary,
     lineHeight: 20,
   },
   termsText: {
     textAlign: 'center',
-    color: '#9CA3AF',
+    color: theme.textSecondary,
     marginTop: 24,
     fontSize: 12,
   },

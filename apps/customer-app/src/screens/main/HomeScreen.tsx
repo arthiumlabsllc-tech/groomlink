@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
 import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -11,19 +11,21 @@ import { Salon } from '../../types';
 import { salonApi } from '../../api/salon';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors (theme-aware)
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 type NavigationProp = any;
 
@@ -37,6 +39,9 @@ export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const { unreadCount } = useNotificationStore();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<LocationState>({
@@ -241,6 +246,7 @@ export default function HomeScreen() {
             style={styles.searchBar}
             inputStyle={styles.searchInput}
             iconColor={COLORS.textSecondary}
+            placeholderTextColor={COLORS.textSecondary}
             onSubmitEditing={() => navigation.getParent()?.navigate('Search', { query: searchQuery })}
           />
         </View>
@@ -293,7 +299,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

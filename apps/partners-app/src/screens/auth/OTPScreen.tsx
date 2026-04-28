@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput, Image } from 'react-native';
 import { Text, Button, HelperText, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -6,6 +6,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type AuthStackParamList = {
   Email: undefined;
@@ -23,6 +25,8 @@ export default function OTPScreen() {
   const route = useRoute<OTPRouteProp>();
   const { email } = route.params;
   const { setUser } = useAuthStore();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -181,6 +185,7 @@ export default function OTPScreen() {
               onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
               selectTextOnFocus
               editable={!loading}
+              placeholderTextColor={theme.textSecondary}
             />
           ))}
         </Surface>
@@ -242,10 +247,10 @@ export default function OTPScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.background,
   },
   content: {
     flex: 1,
@@ -264,11 +269,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   subtitle: {
     textAlign: 'center',
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   emailText: {
     textAlign: 'center',
@@ -287,13 +292,13 @@ const styles = StyleSheet.create({
     width: 50,
     height: 60,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     borderRadius: 12,
     textAlign: 'center',
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
-    backgroundColor: '#F9FAFB',
+    color: theme.text,
+    backgroundColor: theme.surface,
   },
   otpInputFilled: {
     borderColor: '#006B3F',
@@ -335,7 +340,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   timerText: {
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   timerCount: {
     fontWeight: 'bold',

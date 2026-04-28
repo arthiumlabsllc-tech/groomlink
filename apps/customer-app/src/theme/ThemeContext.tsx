@@ -14,7 +14,6 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Automatic theme switching driven by the device's color-scheme preference.
-  // Screens that consume useAppTheme() will adapt automatically.
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme: AppTheme = isDark ? DARK_THEME : LIGHT_THEME;

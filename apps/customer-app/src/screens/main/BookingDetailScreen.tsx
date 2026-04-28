@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -24,19 +24,21 @@ import { bookingApi } from '../../api/booking';
 import { MainStackParamList } from '../../types/navigation';
 import { RefundPreview, QueuePositionResponse } from '../../types';
 import { autoCheckinService } from '../../services/AutoCheckinService';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors - theme-aware factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 type BookingDetailRouteProp = RouteProp<MainStackParamList, 'BookingDetail'>;
 
@@ -44,6 +46,9 @@ export default function BookingDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<BookingDetailRouteProp>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { bookingId } = route.params;
 
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -1016,6 +1021,7 @@ export default function BookingDetailScreen() {
                   multiline
                   numberOfLines={3}
                   placeholder="Tell us why you're cancelling..."
+                  placeholderTextColor={COLORS.textSecondary}
                   value={cancelReason}
                   onChangeText={setCancelReason}
                 />
@@ -1083,6 +1089,7 @@ export default function BookingDetailScreen() {
                 multiline
                 numberOfLines={4}
                 placeholder="e.g., Service was not performed, quality issues, no-show by provider..."
+                placeholderTextColor={COLORS.textSecondary}
                 value={disputeReason}
                 onChangeText={setDisputeReason}
               />
@@ -1110,11 +1117,11 @@ export default function BookingDetailScreen() {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: COLORS.accentGold,
-  CONFIRMED: COLORS.primaryGreen,
+  PENDING: '#FCD116',
+  CONFIRMED: '#006B3F',
   IN_PROGRESS: '#2196F3',
   COMPLETED: '#6B7280',
-  CANCELLED: COLORS.accentRed,
+  CANCELLED: '#CE1126',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -1125,7 +1132,7 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelled',
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,19 +14,28 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import { notificationApi, NotificationType, Notification } from '../../api/notification';
 import { useNotificationStore } from '../../store/notificationStore';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors (matches customer-app theme)
-const COLORS = {
+// Design System Colors - theme-aware factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-  unreadBg: '#F0FDF4',
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+  unreadBg: t.surfaceVariant,
+});
+
+// Brand/status colors used by icon helper (don't depend on theme)
+const ICON_COLORS = {
+  accentRed: '#CE1126',
+  primaryGreen: '#006B3F',
+  neutralGray: '#6B7280',
 };
 
 function getRelativeTime(dateString: string): string {
@@ -52,7 +61,7 @@ function getNotificationIcon(type: NotificationType): { name: string; color: str
     case 'BOOKING_CONFIRMED':
       return { name: 'check-circle', color: '#16A34A' };
     case 'BOOKING_CANCELLED':
-      return { name: 'close-circle', color: COLORS.accentRed };
+      return { name: 'close-circle', color: ICON_COLORS.accentRed };
     case 'BOOKING_REMINDER':
       return { name: 'alarm', color: '#D97706' };
     case 'BOOKING_COMPLETED':
@@ -60,9 +69,9 @@ function getNotificationIcon(type: NotificationType): { name: string; color: str
     case 'PAYMENT_RECEIVED':
       return { name: 'cash', color: '#16A34A' };
     case 'PAYMENT_FAILED':
-      return { name: 'cash-remove', color: COLORS.accentRed };
+      return { name: 'cash-remove', color: ICON_COLORS.accentRed };
     case 'BOOKING_CREATED':
-      return { name: 'calendar-plus', color: COLORS.primaryGreen };
+      return { name: 'calendar-plus', color: ICON_COLORS.primaryGreen };
     case 'CHECKIN':
       return { name: 'qrcode-scan', color: '#7C3AED' };
     case 'REVIEW':
@@ -70,14 +79,17 @@ function getNotificationIcon(type: NotificationType): { name: string; color: str
     case 'PROMOTION':
       return { name: 'tag', color: '#2563EB' };
     case 'SYSTEM':
-      return { name: 'information', color: COLORS.textSecondary };
+      return { name: 'information', color: ICON_COLORS.neutralGray };
     default:
-      return { name: 'bell', color: COLORS.textSecondary };
+      return { name: 'bell', color: ICON_COLORS.neutralGray };
   }
 }
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<any>();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { setNotifications, markAsRead, markAllAsRead, notifications: localNotifications } = useNotificationStore();
 
   const {
@@ -204,7 +216,7 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

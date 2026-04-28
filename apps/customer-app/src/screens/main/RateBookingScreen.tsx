@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -21,19 +21,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { bookingApi } from '../../api/booking';
 import { MainStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors - theme-aware factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 type RateBookingRouteProp = RouteProp<MainStackParamList, 'RateBooking'>;
 
@@ -42,6 +44,9 @@ const STAR_SIZE = 40;
 export default function RateBookingScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<RateBookingRouteProp>();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { bookingId } = route.params;
 
   const [rating, setRating] = useState(0);
@@ -232,6 +237,8 @@ export default function RateBookingScreen() {
               style={styles.commentInput}
               outlineColor={COLORS.border}
               activeOutlineColor={COLORS.primaryGreen}
+              textColor={COLORS.textPrimary}
+              placeholderTextColor={COLORS.textSecondary}
               maxLength={500}
             />
             <Text variant="bodySmall" style={styles.charCount}>
@@ -267,7 +274,7 @@ export default function RateBookingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

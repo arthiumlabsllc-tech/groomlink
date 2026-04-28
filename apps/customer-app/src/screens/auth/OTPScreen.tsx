@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput, Image } from 'react-native';
 import { Text, Button, HelperText } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
@@ -7,19 +7,21 @@ import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors (theme-aware)
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+});
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'OTP'>;
 type OTPRouteProp = RouteProp<AuthStackParamList, 'OTP'>;
@@ -31,6 +33,9 @@ export default function OTPScreen() {
   const route = useRoute<OTPRouteProp>();
   const { email } = route.params;
   const { setUser } = useAuthStore();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -163,6 +168,7 @@ export default function OTPScreen() {
               value={digit}
               onChangeText={(value) => handleOtpChange(index, value)}
               onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
+              placeholderTextColor={COLORS.textSecondary}
               selectTextOnFocus
             />
           ))}
@@ -200,7 +206,7 @@ export default function OTPScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

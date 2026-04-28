@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,6 +9,8 @@ import { Text, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
@@ -51,6 +53,8 @@ const CATEGORIES = [
 export default function ProviderCategoryScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [selected, setSelected] = useState<string | null>(null);
+  const { theme, isDark } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleContinue = () => {
     if (!selected) return;
@@ -59,7 +63,7 @@ export default function ProviderCategoryScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.statusBar} />
 
       {/* Progress Steps */}
       <View style={styles.progressContainer}>
@@ -147,7 +151,7 @@ export default function ProviderCategoryScreen() {
                     <Ionicons
                       name="checkmark-circle"
                       size={16}
-                      color={isSelected ? '#006B3F' : '#9CA3AF'}
+                      color={isSelected ? '#006B3F' : theme.textTertiary}
                     />
                     <Text style={[styles.featureText, isSelected && styles.featureTextSelected]}>
                       {feature}
@@ -180,10 +184,10 @@ export default function ProviderCategoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
     paddingHorizontal: 20,
     paddingTop: 16,
   },
@@ -268,13 +272,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
     textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -285,11 +289,11 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 18,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
   },
   cardSelected: {
     borderColor: '#006B3F',
@@ -326,7 +330,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -342,19 +346,19 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: theme.text,
   },
   cardTitleSelected: {
     color: '#006B3F',
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   cardDescription: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
     lineHeight: 19,
     marginBottom: 12,
   },
@@ -368,10 +372,10 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   featureTextSelected: {
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   // Bottom
@@ -393,7 +397,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     textAlign: 'center',
-    color: '#9CA3AF',
+    color: theme.textSecondary,
     fontSize: 13,
     marginTop: 12,
   },

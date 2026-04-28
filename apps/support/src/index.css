@@ -4,24 +4,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Lock to light color-scheme to prevent browser auto-dark-mode from inverting inputs */
-:root {
-  color-scheme: light;
-}
+/* Color scheme supports both light and dark, driven by device preference */
+:root { color-scheme: light dark; }
+input, textarea, select { color-scheme: light dark; }
 
-/* Ensure form inputs remain visible on devices with dark mode enabled */
-input,
-textarea,
-select {
-  color-scheme: light;
-  color: #1A1A1A;
-  background-color: #FFFFFF;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #9CA3AF;
-  opacity: 1;
+/* Dark mode overrides (surgical — keeps brand colors intact, flips neutral Tailwind classes) */
+@media (prefers-color-scheme: dark) {
+  body { background-color: #0F1419 !important; color: #F3F4F6 !important; }
+  /* Surfaces */
+  .bg-white { background-color: #1A1F2E !important; }
+  .bg-gray-50 { background-color: #232937 !important; }
+  .bg-gray-100 { background-color: #2A2F3E !important; }
+  /* Text */
+  .text-\[\#1A1A1A\], .text-\[\#1a1a1a\] { color: #F3F4F6 !important; }
+  .text-gray-900 { color: #F3F4F6 !important; }
+  .text-gray-800 { color: #E5E7EB !important; }
+  .text-gray-700 { color: #D1D5DB !important; }
+  .text-gray-600, .text-gray-500 { color: #9CA3AF !important; }
+  /* Borders */
+  .border-gray-100 { border-color: #2A2F3E !important; }
+  .border-gray-200 { border-color: #374151 !important; }
+  .border-gray-300 { border-color: #4B5563 !important; }
+  /* Inputs */
+  input, textarea, select {
+    background-color: #1F2937 !important;
+    color: #F9FAFB !important;
+    border-color: #4B5563 !important;
+  }
+  input::placeholder, textarea::placeholder { color: #9CA3AF !important; }
+  .placeholder-gray-400::placeholder, .placeholder-gray-500::placeholder { color: #9CA3AF !important; }
 }
 
 * {

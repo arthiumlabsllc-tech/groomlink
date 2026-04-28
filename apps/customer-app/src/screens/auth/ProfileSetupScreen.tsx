@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
@@ -8,20 +8,22 @@ import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
-// Design System Colors
-const COLORS = {
+// Design System Colors (theme-aware)
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-  success: '#10B981',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+  success: t.success,
+});
 
 type ProfileSetupRouteProp = RouteProp<AuthStackParamList, 'ProfileSetup'>;
 
@@ -33,6 +35,9 @@ export default function ProfileSetupScreen() {
   const email = route.params?.email || '';
   
   const { setUser } = useAuthStore();
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -278,6 +283,8 @@ export default function ProfileSetupScreen() {
               mode="outlined"
               outlineColor={COLORS.border}
               activeOutlineColor={COLORS.primaryGreen}
+              textColor={COLORS.textPrimary}
+              placeholderTextColor={COLORS.textSecondary}
               autoFocus
             />
             <TextInput
@@ -288,6 +295,8 @@ export default function ProfileSetupScreen() {
               mode="outlined"
               outlineColor={COLORS.border}
               activeOutlineColor={COLORS.primaryGreen}
+              textColor={COLORS.textPrimary}
+              placeholderTextColor={COLORS.textSecondary}
             />
             <View style={styles.phoneContainer}>
               <View style={styles.phonePrefix}>
@@ -302,6 +311,8 @@ export default function ProfileSetupScreen() {
                 mode="outlined"
                 outlineColor={COLORS.border}
                 activeOutlineColor={COLORS.primaryGreen}
+                textColor={COLORS.textPrimary}
+                placeholderTextColor={COLORS.textSecondary}
                 placeholder="24 123 4567"
                 maxLength={12}
               />
@@ -339,7 +350,7 @@ export default function ProfileSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
