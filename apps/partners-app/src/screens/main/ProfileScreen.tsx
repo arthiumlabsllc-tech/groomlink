@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -31,6 +31,8 @@ import { useAuthStore } from '../../store/authStore';
 import { MainStackParamList } from '../../types/navigation';
 import { CompletionSettings } from '../../types';
 import Constants from 'expo-constants';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -45,6 +47,8 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, setUser, logout: authLogout } = useAuthStore();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
@@ -649,16 +653,16 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   scrollContent: {
     padding: 16,
@@ -673,7 +677,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatar: {
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
   },
   avatarText: {
     color: '#FFFFFF',
@@ -687,19 +691,19 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FCD116',
+    backgroundColor: theme.warning,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: theme.surface,
   },
   name: {
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
     marginBottom: 2,
   },
   salonName: {
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '500',
     marginBottom: 8,
   },
@@ -709,15 +713,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   contactText: {
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   contactSeparator: {
-    color: '#D1D5DB',
+    color: theme.border,
     marginHorizontal: 4,
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
@@ -729,16 +733,16 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.border,
   },
   statValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 4,
   },
   ratingRow: {
@@ -747,7 +751,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     marginBottom: 12,
     overflow: 'hidden',
@@ -761,7 +765,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   sectionDivider: {
     marginHorizontal: 16,
@@ -770,7 +774,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: theme.textSecondary,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 8,
@@ -790,10 +794,10 @@ const styles = StyleSheet.create({
   editProfileText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#111827',
+    color: theme.text,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginHorizontal: 16,
     marginBottom: 12,
   },
@@ -805,7 +809,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   cancelButton: {
-    borderColor: '#E5E7EB',
+    borderColor: theme.border,
     flex: 1,
   },
   saveButton: {
@@ -830,11 +834,11 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#111827',
+    color: theme.text,
   },
   menuSubtitle: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     marginTop: 2,
   },
   menuDivider: {
@@ -843,7 +847,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     padding: 14,
     marginTop: 4,
@@ -851,12 +855,12 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#CE1126',
+    color: theme.danger,
     marginLeft: 12,
   },
   version: {
     textAlign: 'center',
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     marginTop: 24,
     fontSize: 12,
   },
@@ -868,7 +872,7 @@ const styles = StyleSheet.create({
   },
   arthiumText: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     opacity: 0.7,
   },
   // Stepper styles
@@ -881,17 +885,17 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: theme.infoBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepperButtonDisabled: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
   },
   stepperValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     minWidth: 24,
     textAlign: 'center',
   },
