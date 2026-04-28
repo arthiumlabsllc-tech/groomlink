@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { servicesApi, Service } from '../../api/services';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
+import { useAppTheme } from '../../theme/ThemeContext';
+import type { AppTheme } from '../../theme/colors';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -33,6 +35,8 @@ const SERVICE_CATEGORIES: Record<string, string> = {
 export default function ServicesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Fetch salon to get salon ID
   const { data: salon, isLoading: isLoadingSalon } = useQuery({
@@ -265,10 +269,10 @@ export default function ServicesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
@@ -285,7 +289,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme.dangerBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -293,12 +297,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     marginTop: 8,
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -309,7 +313,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     borderRadius: 10,
   },
   retryButtonText: {
@@ -320,9 +324,9 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: theme.border,
   },
   headerContent: {
     flexDirection: 'row',
@@ -332,18 +336,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: theme.text,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -354,7 +358,7 @@ const styles = StyleSheet.create({
   serviceCard: {
     marginBottom: 12,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -364,7 +368,7 @@ const styles = StyleSheet.create({
   },
   inactiveCard: {
     opacity: 0.6,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.background,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -378,23 +382,23 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
     marginBottom: 6,
   },
   categoryChip: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.successBg,
     minHeight: 28,
     alignSelf: 'flex-start',
   },
   categoryChipText: {
     fontSize: 11,
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '500',
     lineHeight: 16,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.border,
     marginVertical: 14,
   },
   cardDetails: {
@@ -412,27 +416,27 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   detailDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.border,
     marginHorizontal: 16,
   },
   priceValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: theme.accent,
   },
   durationValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   serviceDescription: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 12,
     lineHeight: 20,
   },
@@ -443,7 +447,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: theme.border,
   },
   deleteButton: {
     flexDirection: 'row',
@@ -452,11 +456,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme.dangerBg,
   },
   deleteButtonText: {
     fontSize: 13,
-    color: '#CE1126',
+    color: theme.danger,
     fontWeight: '500',
   },
   editHint: {
@@ -465,7 +469,7 @@ const styles = StyleSheet.create({
   },
   editHintText: {
     fontSize: 13,
-    color: '#006B3F',
+    color: theme.accent,
     fontWeight: '500',
   },
   emptyState: {
@@ -478,7 +482,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -486,11 +490,11 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -501,7 +505,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: '#006B3F',
+    backgroundColor: theme.accent,
     borderRadius: 10,
   },
   emptyButtonText: {
