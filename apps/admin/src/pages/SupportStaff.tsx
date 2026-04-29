@@ -26,7 +26,7 @@ export function SupportStaff() {
       await createStaff.mutateAsync({
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber || null,
+        phoneNumber: formData.phoneNumber.trim() || null,
         email: formData.email,
       });
       

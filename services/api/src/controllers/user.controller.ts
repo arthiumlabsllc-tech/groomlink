@@ -964,7 +964,10 @@ export async function adminDeleteUser(req: AuthenticatedRequest, res: Response):
 const createSupportStaffSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number').optional().nullable(),
+  phoneNumber: z.string()
+    .transform((val) => val.trim() || null)
+    .pipe(z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number').nullable())
+    .optional(),
   email: z.string().email('Invalid email address'),
 });
 
