@@ -297,16 +297,68 @@ export default function BookingConfirmationScreen() {
 
             <Divider style={styles.divider} />
 
+            {/* Price Breakdown */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="receipt-outline" size={20} color={COLORS.primaryGreen} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text variant="bodySmall" style={styles.detailLabel}>Price Breakdown</Text>
+                <View style={styles.priceBreakdown}>
+                  {/* Primary Service */}
+                  <View style={styles.priceRow}>
+                    <Text variant="bodySmall" style={styles.priceLabel}>
+                      {(booking.services || (booking as any).service ? [(booking as any).service] : []).length} Service(s) - Primary
+                    </Text>
+                    <Text variant="bodySmall" style={styles.priceValue}>
+                      GH₵ {parseFloat(String((booking.services || (booking as any).service ? [(booking as any).service] : [])[0]?.price || 0)).toFixed(2)}
+                    </Text>
+                  </View>
+                  
+                  {/* Guest Services (if group booking) */}
+                  {booking.isGroupBooking && booking.guests && booking.guests.length > 0 && booking.guests.map((guest: any, index: number) => {
+                    const guestService = guest.service || (booking.services || []).find((s: any) => s.id === guest.serviceId);
+                    const guestPrice = guest.priceAmount || guestService?.price || 0;
+                    return (
+                      <View key={guest.id || index} style={styles.priceRow}>
+                        <Text variant="bodySmall" style={styles.priceLabel}>
+                          {guest.guestName} - {guestService?.name || 'Service'}
+                        </Text>
+                        <Text variant="bodySmall" style={styles.priceValue}>
+                          GH₵ {parseFloat(String(guestPrice)).toFixed(2)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                  
+                  {/* Subtotal */}
+                  <View style={[styles.priceRow, styles.subtotalRow]}>
+                    <Text variant="bodyMedium" style={styles.subtotalLabel}>Subtotal</Text>
+                    <Text variant="bodyMedium" style={styles.subtotalValue}>
+                      GH₵ {parseFloat(String(booking.totalAmount)).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <Divider style={styles.divider} />
+
             {/* Total */}
             <View style={styles.detailRow}>
               <View style={styles.detailIconContainer}>
                 <Ionicons name="wallet-outline" size={20} color={COLORS.primaryGreen} />
               </View>
               <View style={styles.detailContent}>
-                <Text variant="bodySmall" style={styles.detailLabel}>Total Amount</Text>
+                <Text variant="bodySmall" style={styles.detailLabel}>Total Amount Paid</Text>
                 <Text variant="titleLarge" style={styles.totalAmount}>
                   GH₵ {parseFloat(String(booking.totalAmount)).toFixed(2)}
                 </Text>
+                {booking.isGroupBooking && (
+                  <Text variant="bodySmall" style={styles.totalNote}>
+                    Combined billing for {booking.totalPeople || (booking.guests?.length || 0) + 1} {booking.totalPeople === 1 ? 'person' : 'people'}
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -574,6 +626,43 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     fontSize: 11,
     color: COLORS.primaryGreen,
     fontWeight: '500',
+  },
+  // Price Breakdown Styles
+  priceBreakdown: {
+    marginTop: 8,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  priceLabel: {
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
+  priceValue: {
+    color: COLORS.textPrimary,
+    fontWeight: '500',
+  },
+  subtotalRow: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    marginTop: 8,
+    paddingTop: 8,
+  },
+  subtotalLabel: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  subtotalValue: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  totalNote: {
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   escrowInfoContainer: {
     backgroundColor: `${COLORS.primaryGreen}08`,

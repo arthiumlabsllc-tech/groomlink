@@ -294,8 +294,19 @@ export async function createBooking(customerId: string, data: CreateBookingData)
 
       // Create BookingGuest records if guests are provided
       if (guests && guests.length > 0) {
-        await Promise.all(guests.map(guest =>
-          tx.bookingGuest.create({
+        // Fetch all guest service prices to calculate accurate total
+        const guestServiceIds = [...new Set(guests.map(g => g.serviceId))];
+        const guestServices = await tx.service.findMany({
+          where: { id: { in: guestServiceIds } },
+          select: { id: true, price: true, discountPrice: true },
+        });
+        const servicePriceMap = new Map(guestServices.map(s => [s.id, s]));
+
+        await Promise.all(guests.map(guest => {
+          const guestService = servicePriceMap.get(guest.serviceId);
+          const priceAmount = guest.priceAmount || (guestService ? parseFloat(guestService.price.toString()) : 0);
+          
+          return tx.bookingGuest.create({
             data: {
               bookingId: newBooking.id,
               guestName: guest.guestName,
@@ -303,19 +314,24 @@ export async function createBooking(customerId: string, data: CreateBookingData)
               guestAgeGroup: guest.guestAgeGroup || 'adult',
               serviceId: guest.serviceId,
               staffId: guest.staffId || null,
-              priceAmount: guest.priceAmount || null,
+              priceAmount,
               specialInstructions: guest.specialInstructions || null,
               isChild: guest.isChild || guest.guestAgeGroup === 'child' || false,
             }
-          })
-        ));
-      }
+          });
+        }));
 
-      // After guests are created, recalculate total for group bookings
-      if (isGroupBooking && guests?.length) {
-        const guestTotal = guests.reduce((sum, g) => sum + (g.priceAmount || 0), 0);
-        const realTotal = parseFloat(service.price.toString()) + guestTotal;
-        const realFinal = (service.discountPrice ? parseFloat(service.discountPrice.toString()) : parseFloat(service.price.toString())) + guestTotal;
+        // Recalculate total for group bookings with actual service prices
+        const guestTotal = guests.reduce((sum, guest) => {
+          const guestService = servicePriceMap.get(guest.serviceId);
+          const price = guest.priceAmount || (guestService ? parseFloat(guestService.price.toString()) : 0);
+          return sum + price;
+        }, 0);
+        
+        const primaryPrice = parseFloat(service.price.toString());
+        const primaryDiscount = service.discountPrice ? parseFloat(service.discountPrice.toString()) : primaryPrice;
+        const realTotal = primaryPrice + guestTotal;
+        const realFinal = primaryDiscount + guestTotal; // Guest prices don't have discounts
 
         await tx.booking.update({
           where: { id: newBooking.id },
