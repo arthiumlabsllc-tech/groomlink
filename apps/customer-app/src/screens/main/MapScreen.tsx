@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { Text, Button, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +21,10 @@ import { salonApi } from '../../api/salon';
 import { Salon } from '../../types';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+
+// Use OpenStreetMap tiles (free, no API key required)
+// react-native-maps uses Apple Maps on iOS and Google Maps on Android by default
+// We'll use the default provider which works without API key for basic maps
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -61,6 +66,28 @@ const DEFAULT_LOCATION = {
 
 type NavigationProp = any;
 
+// Error boundary to catch MapView render crashes
+interface MapErrorBoundaryProps {
+  children: React.ReactNode;
+  onMapError: () => void;
+}
+interface MapErrorBoundaryState {
+  hasError: boolean;
+}
+class MapErrorBoundary extends React.Component<MapErrorBoundaryProps, MapErrorBoundaryState> {
+  state: MapErrorBoundaryState = { hasError: false };
+  static getDerivedStateFromError(): MapErrorBoundaryState {
+    return { hasError: true };
+  }
+  componentDidCatch() {
+    this.props.onMapError();
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
 export default function MapScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useAppTheme();
@@ -71,6 +98,24 @@ export default function MapScreen() {
   const [region, setRegion] = useState<Region>(DEFAULT_LOCATION);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationPermission, setLocationPermission] = useState(false);
+  const [mapError, setMapError] = useState(false);
+
+  const handleMapError = useCallback(() => {
+    setMapError(true);
+  }, []);
+
+  const openDirections = useCallback((salon: Salon) => {
+    if (salon.latitude && salon.longitude) {
+      Linking.openURL(
+        `https://www.google.com/maps/dir/?api=1&destination=${salon.latitude},${salon.longitude}`
+      ).catch(() => Alert.alert('Error', 'Could not open Google Maps.'));
+    } else {
+      const query = encodeURIComponent(salon.address || salon.businessName);
+      Linking.openURL(
+        `https://www.google.com/maps/search/?api=1&query=${query}`
+      ).catch(() => Alert.alert('Error', 'Could not open Google Maps.'));
+    }
+  }, []);
 
   // Get user location on mount
   useEffect(() => {
@@ -117,7 +162,24 @@ export default function MapScreen() {
     queryKey: ['salons-map', region.latitude, region.longitude],
     queryFn: () => salonApi.getSalonsForMap(region.latitude, region.longitude, 10),
     enabled: !!region,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: 2,
   });
+
+  // Debug logging
+  useEffect(() => {
+    if (salons) {
+      const withCoords = salons.filter((s: Salon) => s.latitude && s.longitude);
+      console.log(`[MapScreen] Loaded ${salons.length} salons, ${withCoords.length} have coordinates`);
+      if (withCoords.length > 0) {
+        console.log('[MapScreen] Sample salon:', {
+          name: withCoords[0].businessName,
+          lat: withCoords[0].latitude,
+          lng: withCoords[0].longitude,
+        });
+      }
+    }
+  }, [salons]);
 
   // Filter salons based on selected type
   const filteredSalons = React.useMemo(() => {
@@ -193,7 +255,18 @@ export default function MapScreen() {
   }, [refetch]);
 
   const renderMarker = (salon: Salon) => {
-    if (!salon.latitude || !salon.longitude) return null;
+    // Skip salons without coordinates
+    if (!salon.latitude || !salon.longitude) {
+      console.log(`[MapScreen] Salon "${salon.businessName}" missing coordinates`);
+      return null;
+    }
+    
+    // Validate coordinates are reasonable (Ghana area)
+    if (salon.latitude < 4 || salon.latitude > 12 || salon.longitude < -4 || salon.longitude > 2) {
+      console.log(`[MapScreen] Salon "${salon.businessName}" has invalid coordinates: ${salon.latitude}, ${salon.longitude}`);
+      return null;
+    }
+    
     const markerColor = getMarkerColor(salon);
     const isOpen = isSalonOpen(salon);
 
@@ -205,6 +278,8 @@ export default function MapScreen() {
           longitude: salon.longitude,
         }}
         pinColor={markerColor}
+        title={salon.businessName}
+        description={isOpen ? 'Open' : 'Closed'}
       >
         <Callout
           onPress={() => navigation.navigate('SalonDetail', { salonId: salon.id })}
@@ -300,65 +375,160 @@ export default function MapScreen() {
         </ScrollView>
       </View>
 
-      {/* Map */}
-      <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          region={region}
-          onRegionChangeComplete={setRegion}
-          showsUserLocation
-          showsMyLocationButton={false}
-          showsCompass
-          showsScale
-        >
-          {filteredSalons.map(renderMarker)}
-        </MapView>
+      {/* Map or Fallback */}
+      {mapError ? (
+        <View style={styles.mapContainer}>
+          {/* Fallback Header */}
+          <View style={styles.mapFallbackHeader}>
+            <Ionicons name="map-outline" size={48} color={COLORS.textSecondary} />
+            <Text style={styles.mapFallbackTitle}>Map unavailable</Text>
+            <Text style={styles.mapFallbackSubtext}>
+              Unable to load the map. You can still browse salons below.
+            </Text>
+          </View>
 
-        {/* Loading Indicator */}
-        {isLoading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={COLORS.primaryGreen} />
-          </View>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <View style={styles.errorOverlay}>
-            <Ionicons name="alert-circle-outline" size={48} color={COLORS.accentRed} />
-            <Text style={styles.errorText}>Failed to load salons</Text>
-            <TouchableOpacity onPress={() => refetch()}>
-              <Text style={styles.retryText}>Tap to retry</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* My Location FAB */}
-        <TouchableOpacity
-          style={styles.myLocationButton}
-          onPress={centerOnUserLocation}
-          activeOpacity={0.8}
-        >
-          <View style={styles.myLocationButtonInner}>
-            <Ionicons name="locate" size={24} color={COLORS.primaryGreen} />
-          </View>
-        </TouchableOpacity>
-
-        {/* Legend */}
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.openGreen }]} />
-            <Text style={styles.legendText}>Open (4.0+)</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.accentGold }]} />
-            <Text style={styles.legendText}>Open (&lt;4.0)</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.closedGray }]} />
-            <Text style={styles.legendText}>Closed</Text>
-          </View>
+          {/* Fallback Salon List */}
+          {isLoading ? (
+            <View style={styles.mapFallbackLoading}>
+              <ActivityIndicator size="large" color={COLORS.primaryGreen} />
+              <Text style={styles.mapFallbackLoadingText}>Loading salons...</Text>
+            </View>
+          ) : filteredSalons.length > 0 ? (
+            <ScrollView
+              style={styles.mapFallbackList}
+              contentContainerStyle={styles.mapFallbackListContent}
+            >
+              {filteredSalons.map((salon: Salon) => (
+                <View key={salon.id} style={styles.mapFallbackCard}>
+                  <View style={styles.mapFallbackSalonInfo}>
+                    <Text style={styles.mapFallbackSalonName} numberOfLines={1}>
+                      {salon.businessName}
+                    </Text>
+                    <View style={styles.mapFallbackAddressRow}>
+                      <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
+                      <Text style={styles.mapFallbackSalonAddress} numberOfLines={2}>
+                        {salon.address || 'Address not available'}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.mapFallbackDirectionsBtn}
+                    onPress={() => openDirections(salon)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="navigate-outline" size={16} color="#fff" />
+                    <Text style={styles.mapFallbackDirectionsText}>
+                      {salon.latitude && salon.longitude ? 'Directions' : 'Search'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.mapFallbackEmpty}>
+              <Ionicons name="search-outline" size={40} color={COLORS.textSecondary} />
+              <Text style={styles.mapFallbackEmptyText}>No salons found in this area.</Text>
+            </View>
+          )}
         </View>
-      </View>
+      ) : (
+        <MapErrorBoundary onMapError={handleMapError}>
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.map}
+              region={region}
+              onRegionChangeComplete={setRegion}
+              showsUserLocation={locationPermission}
+              showsMyLocationButton={false}
+              showsCompass
+              showsScale
+              mapType="standard"
+              onError={handleMapError}
+            >
+              {filteredSalons.map(renderMarker)}
+            </MapView>
+
+            {/* Loading Indicator */}
+            {isLoading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color={COLORS.primaryGreen} />
+              </View>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <View style={styles.errorOverlay}>
+                <Ionicons name="alert-circle-outline" size={48} color={COLORS.accentRed} />
+                <Text style={styles.errorText}>Failed to load salons</Text>
+                <TouchableOpacity onPress={() => refetch()}>
+                  <Text style={styles.retryText}>Tap to retry</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* No Salons with Location Data */}
+            {!isLoading && filteredSalons.length > 0 && filteredSalons.every((s: Salon) => !s.latitude || !s.longitude) && (
+              <View style={styles.noSalonsOverlay}>
+                <Ionicons name="map-outline" size={48} color={COLORS.textSecondary} />
+                <Text style={styles.noSalonsTitle}>No Salons with Map Data</Text>
+                <Text style={styles.noSalonsText}>
+                  Salons in this area don't have location coordinates yet.
+                </Text>
+                <Text style={styles.noSalonsHint}>
+                  Please browse salons from the Home screen instead.
+                </Text>
+              </View>
+            )}
+
+            {/* No Salons Found */}
+            {!isLoading && (!filteredSalons || filteredSalons.length === 0) && (
+              <View style={styles.noSalonsOverlay}>
+                <Ionicons name="search-outline" size={48} color={COLORS.textSecondary} />
+                <Text style={styles.noSalonsTitle}>No Salons in This Area</Text>
+                <Text style={styles.noSalonsText}>
+                  Try zooming out or moving the map to find nearby salons.
+                </Text>
+                <Button
+                  mode="outlined"
+                  onPress={centerOnUserLocation}
+                  style={styles.retryButton}
+                  textColor={COLORS.primaryGreen}
+                >
+                  <Ionicons name="locate" size={16} color={COLORS.primaryGreen} style={{ marginRight: 4 }} />
+                  Go to My Location
+                </Button>
+              </View>
+            )}
+
+            {/* My Location FAB */}
+            <TouchableOpacity
+              style={styles.myLocationButton}
+              onPress={centerOnUserLocation}
+              activeOpacity={0.8}
+            >
+              <View style={styles.myLocationButtonInner}>
+                <Ionicons name="locate" size={24} color={COLORS.primaryGreen} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Legend */}
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.openGreen }]} />
+                <Text style={styles.legendText}>Open (4.0+)</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.accentGold }]} />
+                <Text style={styles.legendText}>Open (&lt;4.0)</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.closedGray }]} />
+                <Text style={styles.legendText}>Closed</Text>
+              </View>
+            </View>
+          </View>
+        </MapErrorBoundary>
+      )}
     </SafeAreaView>
   );
 }
@@ -445,6 +615,40 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     marginTop: 8,
     color: COLORS.primaryGreen,
     fontWeight: '600',
+  },
+  noSalonsOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  noSalonsTitle: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+  },
+  noSalonsText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  noSalonsHint: {
+    marginTop: 8,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  retryButton: {
+    marginTop: 16,
+    borderColor: COLORS.primaryGreen,
+    borderWidth: 1,
+    borderRadius: 8,
   },
   myLocationButton: {
     position: 'absolute',
@@ -558,5 +762,102 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     fontSize: 12,
     fontWeight: '600',
     color: '#fff',
+  },
+  // Map Fallback Styles
+  mapFallbackHeader: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    backgroundColor: COLORS.cardBackground,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  mapFallbackTitle: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  mapFallbackSubtext: {
+    marginTop: 6,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  mapFallbackLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  mapFallbackLoadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  mapFallbackList: {
+    flex: 1,
+  },
+  mapFallbackListContent: {
+    padding: 12,
+    gap: 8,
+  },
+  mapFallbackCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  mapFallbackSalonInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  mapFallbackSalonName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  mapFallbackAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  mapFallbackSalonAddress: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginLeft: 4,
+    flex: 1,
+    lineHeight: 18,
+  },
+  mapFallbackDirectionsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryGreen,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  mapFallbackDirectionsText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  mapFallbackEmpty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  mapFallbackEmptyText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
 });

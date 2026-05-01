@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from './Icon'
+import { useDarkMode } from '../hooks/useDarkMode'
 
 interface Salon {
   id: string
@@ -22,6 +23,7 @@ export default function FeaturedSalons() {
   const [salons, setSalons] = useState<Salon[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const isDark = useDarkMode()
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -88,7 +90,7 @@ export default function FeaturedSalons() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-16">
             <img
-              src="/logo-black.png"
+              src={isDark ? "/logo-white.png" : "/logo-black.png"}
               alt="Loading..."
               className="w-10 h-10 animate-pulse-logo mb-4"
             />

@@ -3,6 +3,7 @@ import Icon from './Icon';
 import { useNotificationStore, Notification, NotificationType } from '../store/notifications';
 import { useAuthStore } from '../store/auth';
 import { Link } from 'react-router-dom';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 // Helper function to format relative time
 function formatRelativeTime(dateString: string): string {
@@ -80,6 +81,7 @@ function NotificationItem({
 }
 
 export default function Header() {
+  const isDark = useDarkMode();
   const { isAuthenticated, user } = useAuthStore();
   const { 
     notifications, 
@@ -136,7 +138,7 @@ export default function Header() {
         {/* Logo */}
         <Link to="/dashboard" className="flex items-center gap-2 transition-all duration-200 hover:opacity-80">
           <img 
-            src="/logo-black.png" 
+            src={isDark ? "/logo-white.png" : "/logo-black.png"} 
             alt="GroomLink" 
             className="h-7 w-auto"
           />

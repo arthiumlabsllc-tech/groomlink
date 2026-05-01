@@ -19,7 +19,7 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Email'>;
 
 export default function EmailScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ export default function EmailScreen() {
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
               <Image
-                source={require('../../../assets/logo-white.png')}
+                source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   Dimensions,
+  useColorScheme,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -151,6 +152,13 @@ function LoadingDots() {
 }
 
 export default function LoadingScreen() {
+  // Use useColorScheme directly since LoadingScreen may render before ThemeProvider
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const logoSource = isDark
+    ? require('../../assets/logo-full-white.png')
+    : require('../../assets/logo-full-black.png');
+
   const logoScale = useRef(new Animated.Value(0.9)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
@@ -213,7 +221,7 @@ export default function LoadingScreen() {
         ]}
       >
         <Image
-          source={require('../../assets/logo-full-white.png')}
+          source={logoSource}
           style={styles.logo}
           resizeMode="contain"
         />

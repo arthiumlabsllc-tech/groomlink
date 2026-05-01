@@ -25,7 +25,7 @@ export default function OTPScreen() {
   const route = useRoute<OTPRouteProp>();
   const { email } = route.params;
   const { setUser } = useAuthStore();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -151,7 +151,7 @@ export default function OTPScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../../assets/logo-black.png')}
+            source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />

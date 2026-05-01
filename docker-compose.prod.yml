@@ -77,6 +77,10 @@ services:
       HUBTEL_API_SECRET: ${HUBTEL_API_SECRET}
       HUBTEL_MERCHANT_ACCOUNT_ID: ${HUBTEL_MERCHANT_ACCOUNT_ID}
       HUBTEL_PAYMENT_WEBHOOK_URL: ${HUBTEL_PAYMENT_WEBHOOK_URL:-https://groomlinkgh.com/api/payments/webhook/hubtel}
+      # Paystack Payment Gateway
+      PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
+      PAYSTACK_CALLBACK_URL: ${PAYSTACK_CALLBACK_URL:-https://groomlinkgh.com/api/payments/callback/paystack}
     ports:
       - "3000:3000"
     depends_on:
@@ -97,6 +101,8 @@ services:
     build:
       context: ./apps/admin
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://groomlinkgh.com/api}
     container_name: groomlink-admin
     restart: always
     ports:
@@ -123,6 +129,8 @@ services:
     build:
       context: ./apps/partners
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://groomlinkgh.com/api}
     container_name: groomlink-partners
     restart: always
     ports:
@@ -135,6 +143,8 @@ services:
     build:
       context: ./apps/support
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://groomlinkgh.com/api}
     container_name: groomlink-support
     restart: always
     ports:
@@ -147,6 +157,9 @@ services:
     build:
       context: ./apps/customer
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://groomlinkgh.com/api}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
     container_name: groomlink-customer
     restart: always
     ports:

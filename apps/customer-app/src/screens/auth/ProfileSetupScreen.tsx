@@ -35,7 +35,7 @@ export default function ProfileSetupScreen() {
   const email = route.params?.email || '';
   
   const { setUser } = useAuthStore();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [firstName, setFirstName] = useState('');
@@ -243,7 +243,7 @@ export default function ProfileSetupScreen() {
           {/* Logo */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../assets/logo-full-black.png')}
+              source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />

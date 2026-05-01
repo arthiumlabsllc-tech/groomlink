@@ -49,7 +49,8 @@
         "googleMaps": {
           "apiKey": ""
         }
-      }
+      },
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

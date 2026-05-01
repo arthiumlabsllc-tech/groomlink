@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Icon from './Icon'
+import { useDarkMode } from '../hooks/useDarkMode'
 
 interface HeaderProps {
   scrolled: boolean
@@ -8,6 +9,7 @@ interface HeaderProps {
 export default function Header({ scrolled }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const isDark = useDarkMode()
 
   // Close mobile menu on resize
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function Header({ scrolled }: HeaderProps) {
           {/* Logo */}
           <a href="/" className="flex items-center">
             <img 
-              src="/logo-full-black.png" 
+              src={isDark ? "/logo-full-white.png" : "/logo-full-black.png"} 
               alt="GroomLink" 
               className="h-10 md:h-14 w-auto"
             />

@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/auth';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 type Step = 'email' | 'otp';
 
 export default function Login() {
   const navigate = useNavigate();
   const { requestOTP, verifyOTP, isAuthenticated } = useAuthStore();
+  const isDark = useDarkMode();
   
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -213,7 +215,7 @@ export default function Login() {
         {/* Mobile Logo */}
         <div className="md:hidden absolute top-8 left-0 right-0 flex justify-center z-10">
           <img 
-            src="/logo-full-black.png" 
+            src={isDark ? "/logo-full-white.png" : "/logo-full-black.png"} 
             alt="GroomLink" 
             className="h-10 w-auto"
           />

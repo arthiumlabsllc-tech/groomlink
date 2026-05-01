@@ -54,9 +54,8 @@ export default {
       ],
       config: {
         googleMaps: {
-          // API key injected at build time
-          // TODO: Move to EAS environment variables for security
-          apiKey: "AIzaSyBMVYRP-l1YqjsRV-S6V1WG6fPH3caSphI"
+          // API key injected at build time from environment variables
+          apiKey: process.env.GOOGLE_MAPS_API_KEY || process.env.EAS_BUILD_SECRET_GOOGLE_MAPS_API_KEY || ''
         }
       }
     },

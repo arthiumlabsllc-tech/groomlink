@@ -559,7 +559,58 @@ export default function Explore() {
         />
       )}
 
-      {/* Salons Grid/List */}
+      {/* Compact salon grid below map - ensures salons are always browsable even when map fails */}
+      {displayMode === 'map' && salons.length > 0 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Browse Salons</h2>
+            <button
+              onClick={() => setDisplayMode('grid')}
+              className="text-sm text-ghana-green font-medium hover:underline"
+            >
+              Switch to grid view
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {salons.map((salon) => (
+              <div
+                key={salon.id}
+                onClick={() => handleSalonClick(salon.id)}
+                className="card-v2 overflow-hidden cursor-pointer group"
+              >
+                <div className="img-zoom relative w-full h-36 rounded-t-2xl">
+                  <img
+                    src={getSalonImage(salon)}
+                    alt={salon.businessName || 'Salon'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = 'https://images.unsplash.com/photo-1522337360788-8b13ee0af107?w=400&h=300&fit=crop'
+                    }}
+                  />
+                  <span className="absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded bg-ghana-gold text-ghana-green">
+                    {formatCategoryLabel(salon.type)}
+                  </span>
+                </div>
+                <div className="p-3">
+                  <h3 className="font-semibold text-gray-900 text-sm truncate">{salon.businessName || 'Unnamed Salon'}</h3>
+                  <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                    <Icon name="location_on" size={14} className="flex-shrink-0" />
+                    <span className="truncate">{salon.address || 'Address not available'}</span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Icon name="star" size={14} filled className="text-ghana-gold" />
+                    <span className="text-xs font-medium">{salon.rating?.toFixed(1) || '0.0'}</span>
+                    <span className="text-xs text-gray-500">({salon.reviewCount || 0})</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Salons Grid/List (non-map mode) */}
       {displayMode !== 'map' && salons.length > 0 && (
         <>
           <div className={displayMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>

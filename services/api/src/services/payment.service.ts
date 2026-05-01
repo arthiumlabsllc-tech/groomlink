@@ -9,6 +9,8 @@ import * as notificationService from './notification.service';
 import * as smsService from './sms.service';
 import { generateCheckinCode } from './checkin.service';
 import { emitNewBooking } from '../config/socket';
+import { paymentProviderRegistry } from './payment-provider.registry';
+import { PaymentInitializationRequest } from './payment-provider.interface';
 
 // Re-export getPolicyValue from escrow.service for use in payment calculations
 export const getPolicyValue = escrowService.getPolicyValue;
@@ -627,8 +629,8 @@ export async function initializePayment(
     },
   });
 
-  // Check if Hubtel is configured
-  const hubtelCredentials = await getHubtelCredentials();
+  // Get the active payment provider from the registry (reads from SiteSettings.paymentGateway)
+  const activeProvider = await paymentProviderRegistry.getActiveProvider();
   // Use totalChargeAmount which includes platform fee (already in GHS, NOT pesewas)
   const amount = totalChargeAmount;
 
@@ -651,27 +653,53 @@ export async function initializePayment(
 
   let result: PaymentResult;
 
-  // Use Hubtel if credentials are configured, otherwise fall back to mock
-  if (hubtelCredentials) {
-    // Use customer email or generate a placeholder email
+  if (activeProvider) {
+    // Use the active provider from the registry (Hubtel or Paystack based on admin settings)
+    const { provider: paymentProvider, credentials, name: providerName } = activeProvider;
     const email = booking.customer?.email || `customer_${userId}@groomlink.temp`;
-    
-    result = await HubtelPaymentProvider.initializePayment(
+
+    // Build the initialization request using the unified interface
+    const initRequest: PaymentInitializationRequest = {
       amount,
       email,
+      phoneNumber,
       reference,
       bookingId,
-      provider,
-      hubtelCredentials.apiId,
-      hubtelCredentials.apiSecret,
-      hubtelCredentials.merchantAccountId,
-      phoneNumber  // Pass phone number for mobile money prompt
-    );
-    
-    logger.info(`Hubtel payment initiated for booking: ${bookingId}`);
-  } else {
-    // Fall back to mock provider
-    logger.warn('Hubtel not configured, using mock payment provider');
+      metadata: {
+        paymentMethod: 'mobile_money',
+        providerName,
+      },
+    };
+
+    // Call the provider's initializePayment method
+    const providerResponse = await paymentProvider.initializePayment(initRequest, credentials);
+
+    // Map provider response to PaymentResult
+    result = {
+      success: providerResponse.success,
+      reference: providerResponse.reference || reference,
+      message: providerResponse.message,
+      checkout_url: providerResponse.redirectUrl || providerResponse.authorizationUrl,
+      access_code: providerResponse.accessCode,
+    };
+
+    logger.info(`Payment initiated via ${providerName} for booking: ${bookingId}`);
+
+    // Store gateway name in providerData for later reference (e.g., verification, cleanup)
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        providerData: {
+          serviceAmount,
+          platformFee,
+          feePercent,
+          gateway: providerName,
+        },
+      },
+    });
+  } else if (process.env.NODE_ENV === 'development') {
+    // Fall back to mock provider only in development
+    logger.warn('No active payment provider configured, using mock payment provider (development only)');
     
     switch (provider) {
       case PaymentProvider.MTN_MOMO:
@@ -688,11 +716,13 @@ export async function initializePayment(
     }
 
     // Simulate webhook for mock provider in development
-    if (process.env.NODE_ENV === 'development') {
-      setTimeout(async () => {
-        await verifyAndCompletePayment(payment.id, reference);
-      }, 5000);
-    }
+    setTimeout(async () => {
+      await verifyAndCompletePayment(payment.id, reference);
+    }, 5000);
+  } else {
+    // No provider configured in production - return error
+    logger.error('No active payment provider configured');
+    return { success: false, message: 'Payment service not configured. Please contact support.' };
   }
 
   if (result.success) {
@@ -793,33 +823,62 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     };
   }
 
-  // Check if Hubtel is configured
-  const hubtelCredentials = await getHubtelCredentials();
-  let isSuccess = false;
+  // Determine which provider to use for verification
+  // Check if payment was initiated with a specific gateway (stored in providerData.gateway)
+  const paymentProviderData = payment.providerData as { gateway?: string } | null;
+  const paymentGateway = paymentProviderData?.gateway;
 
-  if (hubtelCredentials) {
-    // Verify with Hubtel
-    const verification = await HubtelPaymentProvider.verifyPayment(
-      reference,
-      hubtelCredentials.apiId,
-      hubtelCredentials.apiSecret
-    );
-    
-    isSuccess = verification.success;
-    
-    // Store provider data
-    if (verification.data) {
-      await prisma.payment.update({
-        where: { id: paymentId },
-        data: {
-          providerData: verification.data,
-        },
-      });
+  let isSuccess = false;
+  let verificationAttempted = false;
+
+  // Step 1: Try the specific provider that was used to initiate the payment
+  if (paymentGateway === 'hubtel' || paymentGateway === 'paystack') {
+    const providerResult = await paymentProviderRegistry.getProvider(paymentGateway);
+    if (providerResult) {
+      verificationAttempted = true;
+      const verification = await providerResult.provider.verifyPayment(reference, providerResult.credentials);
+      isSuccess = verification.success;
+
+      if (verification.data) {
+        await prisma.payment.update({
+          where: { id: paymentId },
+          data: { providerData: verification.data },
+        });
+      }
+
+      logger.info(`Payment verification via ${paymentGateway}`, { paymentId, reference, isSuccess });
     }
-  } else {
-    // Fall back to mock verification
-    const verification = await MockPaymentProvider.verifyPayment(reference);
-    isSuccess = verification.success;
+    // If specific provider not found in registry (credentials removed), fall through to active provider
+  }
+
+  // Step 2: If no specific provider or specific provider not available, try active provider
+  if (!verificationAttempted) {
+    const activeProvider = await paymentProviderRegistry.getActiveProvider();
+    if (activeProvider) {
+      verificationAttempted = true;
+      const { provider: paymentProvider, credentials, name: providerName } = activeProvider;
+      const verification = await paymentProvider.verifyPayment(reference, credentials);
+      isSuccess = verification.success;
+
+      if (verification.data) {
+        await prisma.payment.update({
+          where: { id: paymentId },
+          data: { providerData: verification.data },
+        });
+      }
+
+      logger.info(`Payment verification via active provider (${providerName})`, { paymentId, reference, isSuccess });
+    }
+  }
+
+  // Step 3: If no provider available, use mock in development or fail
+  if (!verificationAttempted) {
+    if (process.env.NODE_ENV === 'development') {
+      const verification = await MockPaymentProvider.verifyPayment(reference);
+      isSuccess = verification.success;
+    } else {
+      logger.error('No payment provider available for verification');
+    }
   }
 
   if (isSuccess) {

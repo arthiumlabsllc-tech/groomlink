@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 type EmailStep = 'email' | 'verify';
 
 export default function Login() {
   const navigate = useNavigate();
   const { loginWithEmailOTP } = useAuth();
+  const isDark = useDarkMode();
   
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -158,7 +160,7 @@ export default function Login() {
         {/* Mobile Logo */}
         <div className="lg:hidden absolute top-8 left-0 right-0 flex justify-center z-10">
           <img
-            src="/logo-full-black.png"
+            src={isDark ? "/logo-full-white.png" : "/logo-full-black.png"}
             alt="GroomLink Support"
             className="h-10 w-auto"
           />

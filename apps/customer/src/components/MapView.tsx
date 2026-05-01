@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import Icon from './Icon';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,10 @@ interface MapViewProps {
   salons: Salon[];
   userLocation: { lat: number; lng: number } | null;
   defaultCenter?: { lat: number; lng: number };
+}
+
+interface MapInnerProps extends MapViewProps {
+  apiKey: string;
 }
 
 const mapContainerStyle = {
@@ -70,12 +74,52 @@ const getSalonImage = (salon: Salon): string => {
   return defaultImages[salon.type] || 'https://images.unsplash.com/photo-1522337360788-8b13ee0af107?w=100&h=100&fit=crop';
 };
 
-export default function MapView({ salons, userLocation, defaultCenter: propCenter }: MapViewProps) {
+function MapFallback({ salons, message }: { salons: Salon[]; message?: string }) {
+  return (
+    <div className="flex flex-col h-[500px] bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+      <div className="flex flex-col items-center justify-center py-8 px-4 border-b border-gray-200">
+        <Icon name="location_on" size={48} className="text-gray-400 mb-3" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Map unavailable</h3>
+        <p className="text-gray-600 text-center max-w-md">
+          {message || 'Unable to load Google Maps. Browse salons from the list instead.'}
+        </p>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {salons.length === 0 && (
+          <p className="text-center text-gray-500 py-8">No salons available.</p>
+        )}
+        {salons.map((salon) => (
+          <div key={salon.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-gray-900 text-sm truncate">{salon.businessName}</h4>
+              <p className="text-xs text-gray-500 truncate mt-0.5">{salon.address || 'Address not available'}</p>
+            </div>
+            <a
+              href={
+                salon.latitude && salon.longitude
+                  ? `https://www.google.com/maps/dir/?api=1&destination=${salon.latitude},${salon.longitude}`
+                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(salon.address || salon.businessName)}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-ghana-green text-white text-xs font-medium rounded-lg hover:bg-ghana-green/90 transition-colors whitespace-nowrap"
+            >
+              <Icon name="directions" size={14} />
+              Get Directions
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MapInner({ salons, userLocation, defaultCenter: propCenter, apiKey }: MapInnerProps) {
   const navigate = useNavigate();
   const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    googleMapsApiKey: apiKey,
   });
 
   const onMarkerClick = useCallback((salon: Salon) => {
@@ -98,15 +142,7 @@ export default function MapView({ salons, userLocation, defaultCenter: propCente
   );
 
   if (loadError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[500px] bg-gray-50 rounded-xl border border-gray-200">
-        <Icon name="location_on" size={48} className="text-gray-400 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load map</h3>
-        <p className="text-gray-600 text-center max-w-md px-4">
-          There was an error loading Google Maps. Please check your internet connection and try again.
-        </p>
-      </div>
-    );
+    return <MapFallback salons={salons} />;
   }
 
   if (!isLoaded) {
@@ -234,4 +270,43 @@ export default function MapView({ salons, userLocation, defaultCenter: propCente
       </div>
     </div>
   );
+}
+
+// Wrapper component that fetches API key at runtime if not provided via build-time env var
+export default function MapView(props: MapViewProps) {
+  const [apiKey, setApiKey] = useState<string>(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '');
+  const [isLoadingKey, setIsLoadingKey] = useState<boolean>(!import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+
+  useEffect(() => {
+    if (!apiKey) {
+      fetch('/api/config')
+        .then(res => res.json())
+        .then(data => {
+          if (data.config?.googleMapsApiKey) {
+            setApiKey(data.config.googleMapsApiKey);
+          }
+        })
+        .catch(() => {
+          // Silent fail - env var is primary, this is just a fallback
+        })
+        .finally(() => {
+          setIsLoadingKey(false);
+        });
+    }
+  }, []);
+
+  if (isLoadingKey) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[500px] bg-gray-50 rounded-xl border border-gray-200">
+        <div className="w-12 h-12 border-4 border-ghana-green border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-gray-600">Loading map...</p>
+      </div>
+    );
+  }
+
+  if (!apiKey) {
+    return <MapFallback salons={props.salons} message="Google Maps API key is not configured. Browse salons from the list instead." />;
+  }
+
+  return <MapInner {...props} apiKey={apiKey} />;
 }

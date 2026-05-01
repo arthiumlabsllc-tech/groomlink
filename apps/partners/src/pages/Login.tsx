@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { api } from '../lib/api'
+import { useDarkMode } from '../hooks/useDarkMode'
 
 type Step = 'email' | 'otp' | 'register'
 
 export default function Login() {
   const navigate = useNavigate()
+  const isDark = useDarkMode()
   const [step, setStep] = useState<Step>('email')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -270,7 +272,7 @@ export default function Login() {
         {/* Mobile Logo */}
         <div className="lg:hidden absolute top-8 left-0 right-0 flex justify-center z-10">
           <img 
-            src="/logo-full-black.png" 
+            src={isDark ? "/logo-full-white.png" : "/logo-full-black.png"} 
             alt="GroomLink Partners" 
             className="h-10 w-auto"
           />

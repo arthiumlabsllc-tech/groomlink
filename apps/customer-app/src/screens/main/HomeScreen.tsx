@@ -39,7 +39,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const { unreadCount } = useNotificationStore();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -206,7 +206,7 @@ export default function HomeScreen() {
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
               <Image
-                source={require('../../../assets/logo-black.png')}
+                source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
                 style={styles.headerLogo}
                 resizeMode="contain"
               />

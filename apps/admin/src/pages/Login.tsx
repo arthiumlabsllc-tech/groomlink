@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import Icon from '../components/Icon';
 import { useAuth } from '../hooks';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 export function Login() {
+  const isDark = useDarkMode();
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -174,7 +176,7 @@ export function Login() {
         {/* Mobile Logo */}
         <div className="lg:hidden absolute top-8 left-0 right-0 flex flex-col items-center z-10">
           <img 
-            src="/logo-full-black.png" 
+            src={isDark ? "/logo-full-white.png" : "/logo-full-black.png"} 
             alt="GroomLink Admin" 
             className="h-10 w-auto"
           />
