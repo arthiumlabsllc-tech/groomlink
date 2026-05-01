@@ -279,15 +279,35 @@ export default function MapView(props: MapViewProps) {
 
   useEffect(() => {
     if (!apiKey) {
-      fetch('/api/config')
-        .then(res => res.json())
+      const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://groomlinkgh.com/api');
+
+      // Try /api/config first (dedicated config endpoint)
+      fetch(`${API_BASE}/config`)
+        .then(res => {
+          if (!res.ok) throw new Error(`Config returned ${res.status}`);
+          return res.json();
+        })
         .then(data => {
           if (data.config?.googleMapsApiKey) {
             setApiKey(data.config.googleMapsApiKey);
           }
         })
         .catch(() => {
-          // Silent fail - env var is primary, this is just a fallback
+          // Fallback: try public-settings which may include googleMapsApiKey
+          return fetch(`${API_BASE}/admin/public-settings`)
+            .then(res => {
+              if (!res.ok) throw new Error(`Public settings returned ${res.status}`);
+              return res.json();
+            })
+            .then(data => {
+              const key = data.data?.googleMapsApiKey || data.googleMapsApiKey;
+              if (key) {
+                setApiKey(key);
+              }
+            })
+            .catch(() => {
+              // Silent fail - env var is primary, this is just a fallback
+            });
         })
         .finally(() => {
           setIsLoadingKey(false);

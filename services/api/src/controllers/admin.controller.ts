@@ -1611,7 +1611,9 @@ export async function getPublicSiteSettings(req: AuthenticatedRequest, res: Resp
       email: settings.email,
       phoneNumber: settings.phoneNumber,
       address: settings.address,
-      maintenanceMode: settings.maintenanceMode
+      maintenanceMode: settings.maintenanceMode,
+      // Google Maps API key (client-side key, safe to expose publicly)
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     };
 
     successResponse(res, publicSettings);
