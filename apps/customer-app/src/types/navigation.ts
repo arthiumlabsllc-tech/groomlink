@@ -48,6 +48,7 @@ export type MainStackParamList = {
   SalonDetail: { salonId: string };
   Booking: { salonId: string; workerId?: string; services?: string[] };
   BookingConfirmation: { bookingId: string };
+  PaymentProcessing: { bookingId: string; clientReference: string; provider: string };
   BookingDetail: { bookingId: string };
   BookingQRCode: { bookingId: string };
   RateBooking: { bookingId: string };
@@ -71,6 +72,7 @@ export type RootStackParamList = {
   // Protected screens (require authentication)
   Booking: { salonId: string; workerId?: string; services?: string[] };
   BookingConfirmation: { bookingId: string };
+  PaymentProcessing: { bookingId: string; clientReference: string; provider: string };
   BookingDetail: { bookingId: string };
   BookingQRCode: { bookingId: string };
   RateBooking: { bookingId: string };

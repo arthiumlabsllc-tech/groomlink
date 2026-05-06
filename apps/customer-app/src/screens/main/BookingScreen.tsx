@@ -25,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { salonApi } from '../../api/salon';
 import { bookingApi, AvailableSlot, GuestData } from '../../api/booking';
+import { paymentApi, PaymentProvider } from '../../api/payment';
 import { NoShowStatus } from '../../types';
 import { Service, Worker, OpeningHours } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
@@ -102,6 +103,18 @@ export default function BookingScreen() {
   const [isGroupBooking, setIsGroupBooking] = useState(false);
   const [guests, setGuests] = useState<GuestData[]>([]);
   const [totalPeople, setTotalPeople] = useState(1);
+
+  // Payment state
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentProvider>('MTN_MOMO');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [initializingPayment, setInitializingPayment] = useState(false);
+
+  // Fetch platform fee config
+  const { data: paymentConfig } = useQuery({
+    queryKey: ['payment-config'],
+    queryFn: () => paymentApi.getConfig(),
+    staleTime: 10 * 60 * 1000, // Cache for 10 mins
+  });
 
   // Update totalPeople when group booking or guests change
   useEffect(() => {
@@ -237,14 +250,46 @@ export default function BookingScreen() {
         guests: data.guests,
         billingType: data.billingType,
       }),
-    onSuccess: (booking) => {
+    onSuccess: async (booking) => {
       // Save worker preference on successful booking
       if (selectedWorker) {
         saveWorkerPreference(selectedWorker);
       }
       
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      navigation.navigate('BookingConfirmation', { bookingId: booking.id });
+
+      // Initialize payment via Hubtel
+      try {
+        setInitializingPayment(true);
+        const paymentResponse = await paymentApi.initialize({
+          bookingId: booking.id,
+          provider: selectedPaymentMethod,
+          phoneNumber: `+233${phoneNumber.replace(/\s/g, '').replace(/\D/g, '')}`,
+        });
+
+        // Navigate to payment processing screen
+        navigation.navigate('PaymentProcessing', {
+          bookingId: booking.id,
+          clientReference: paymentResponse.clientReference,
+          provider: selectedPaymentMethod,
+        });
+      } catch (paymentError: any) {
+        // Payment initialization failed - navigate to confirmation anyway
+        // so the user doesn't lose their booking
+        console.error('Payment init failed:', paymentError);
+        Alert.alert(
+          'Payment Setup Failed',
+          paymentError.response?.data?.message || 'Could not start payment. Your booking is saved as pending. You can pay later from booking details.',
+          [
+            {
+              text: 'View Booking',
+              onPress: () => navigation.navigate('BookingConfirmation', { bookingId: booking.id }),
+            },
+          ]
+        );
+      } finally {
+        setInitializingPayment(false);
+      }
     },
     onError: (error: any) => {
       Alert.alert('Booking Failed', error.response?.data?.message || 'Please try again');
@@ -281,8 +326,9 @@ export default function BookingScreen() {
   }, [salon?.services, selectedServices, isGroupBooking, guests]);
 
   const platformFee = useMemo(() => {
-    return serviceSubtotal * 0.05; // 5% platform fee
-  }, [serviceSubtotal]);
+    const feePercent = paymentConfig?.platformFeePercentage ?? 5;
+    return serviceSubtotal * (feePercent / 100);
+  }, [serviceSubtotal, paymentConfig?.platformFeePercentage]);
 
   const totalPrice = useMemo(() => {
     return serviceSubtotal + platformFee;
@@ -315,6 +361,10 @@ export default function BookingScreen() {
     }
     if (!selectedTime) {
       Alert.alert('Select Time', 'Please select a time slot');
+      return;
+    }
+    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 9) {
+      Alert.alert('Phone Number Required', 'Please enter your mobile money phone number');
       return;
     }
 
@@ -817,6 +867,65 @@ export default function BookingScreen() {
             />
           </View>
 
+          {/* Payment Method */}
+          <View style={styles.section}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>Payment Method</Text>
+            <View style={styles.paymentMethodsRow}>
+              {([
+                { id: 'MTN_MOMO' as PaymentProvider, label: 'MTN', color: '#FFCC00', textColor: '#000' },
+                { id: 'VODAFONE_CASH' as PaymentProvider, label: 'VOD', color: '#E60000', textColor: '#fff' },
+                { id: 'AIRTELTIGO_MONEY' as PaymentProvider, label: 'AT', color: '#0066CC', textColor: '#fff' },
+              ]).map((method) => (
+                <TouchableOpacity
+                  key={method.id}
+                  style={[
+                    styles.paymentMethodChip,
+                    selectedPaymentMethod === method.id && styles.paymentMethodChipSelected,
+                  ]}
+                  onPress={() => setSelectedPaymentMethod(method.id)}
+                >
+                  <View style={[styles.paymentMethodIcon, { backgroundColor: method.color }]}>
+                    <Text style={[styles.paymentMethodIconText, { color: method.textColor }]}>
+                      {method.label}
+                    </Text>
+                  </View>
+                  <Text style={[
+                    styles.paymentMethodLabel,
+                    selectedPaymentMethod === method.id && styles.paymentMethodLabelSelected,
+                  ]}>
+                    {method.id === 'MTN_MOMO' ? 'MTN MoMo' : method.id === 'VODAFONE_CASH' ? 'Vodafone' : 'AirtelTigo'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Phone Number for Mobile Money */}
+          <View style={styles.section}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>Mobile Money Number</Text>
+            <View style={styles.phoneInputContainer}>
+              <View style={styles.phonePrefix}>
+                <Text style={styles.phonePrefixText}>+233</Text>
+              </View>
+              <TextInput
+                mode="outlined"
+                placeholder="XX XXX XXXX"
+                value={phoneNumber}
+                onChangeText={(text) => setPhoneNumber(text.replace(/\D/g, '').slice(0, 9))}
+                keyboardType="phone-pad"
+                maxLength={9}
+                style={styles.phoneInput}
+                outlineColor={COLORS.border}
+                activeOutlineColor={COLORS.primaryGreen}
+                textColor={COLORS.textPrimary}
+                placeholderTextColor={COLORS.textSecondary}
+              />
+            </View>
+            <Text style={styles.phoneHint}>
+              Enter your mobile money number. You'll receive a prompt on your phone.
+            </Text>
+          </View>
+
           <View style={styles.bottomPadding} />
         </ScrollView>
 
@@ -837,7 +946,7 @@ export default function BookingScreen() {
                 <Text variant="bodySmall" style={styles.feeValue}>GH₵ {serviceSubtotal.toFixed(2)}</Text>
               </View>
               <View style={styles.feeRow}>
-                <Text variant="bodySmall" style={styles.feeLabel}>Platform Fee (5%)</Text>
+                <Text variant="bodySmall" style={styles.feeLabel}>Platform Fee ({paymentConfig?.platformFeePercentage ?? 5}%)</Text>
                 <Text variant="bodySmall" style={styles.feeValue}>GH₵ {platformFee.toFixed(2)}</Text>
               </View>
               <View style={styles.feeDivider} />
@@ -877,13 +986,13 @@ export default function BookingScreen() {
             <Button
               mode="contained"
               onPress={handleConfirmBooking}
-              loading={createBookingMutation.isPending}
-              disabled={selectedServices.length === 0 || !selectedTime || createBookingMutation.isPending || noShowStatus?.restricted}
+              loading={createBookingMutation.isPending || initializingPayment}
+              disabled={selectedServices.length === 0 || !selectedTime || createBookingMutation.isPending || initializingPayment || noShowStatus?.restricted}
               style={styles.confirmButton}
               contentStyle={styles.confirmButtonContent}
               buttonColor={COLORS.primaryGreen}
             >
-              {noShowStatus?.restricted ? 'Booking Restricted' : 'Confirm Booking'}
+              {noShowStatus?.restricted ? 'Booking Restricted' : initializingPayment ? 'Processing Payment...' : 'Confirm & Pay'}
             </Button>
           </View>
         </Surface>
@@ -1452,5 +1561,78 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 4,
+  },
+  // Payment Method
+  paymentMethodsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  paymentMethodChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.cardBackground,
+  },
+  paymentMethodChipSelected: {
+    borderColor: COLORS.primaryGreen,
+    backgroundColor: `${COLORS.primaryGreen}08`,
+  },
+  paymentMethodIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  paymentMethodIconText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  paymentMethodLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  paymentMethodLabelSelected: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
+  },
+  // Phone Input
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+  },
+  phonePrefix: {
+    height: 56,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRightWidth: 0,
+    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
+  },
+  phonePrefixText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  phoneInput: {
+    flex: 1,
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+  },
+  phoneHint: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 6,
   },
 });

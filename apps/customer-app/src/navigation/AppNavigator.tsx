@@ -6,6 +6,7 @@ import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import BookingScreen from '../screens/main/BookingScreen';
 import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen';
+import PaymentProcessingScreen from '../screens/main/PaymentProcessingScreen';
 import BookingDetailScreen from '../screens/main/BookingDetailScreen';
 import BookingQRCodeScreen from '../screens/main/BookingQRCodeScreen';
 import RateBookingScreen from '../screens/main/RateBookingScreen';
@@ -56,6 +57,11 @@ export default function AppNavigator() {
         name="BookingConfirmation"
         component={BookingConfirmationScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PaymentProcessing"
+        component={PaymentProcessingScreen}
+        options={{ title: 'Processing Payment', headerShown: true }}
       />
       <Stack.Screen
         name="BookingDetail"

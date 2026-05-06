@@ -185,7 +185,7 @@ export default function BookingsScreen() {
               <View style={styles.dateTimeRow}>
                 <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
                 <Text variant="bodySmall" style={styles.dateTimeText}>
-                  {formatDate(item.scheduledDate)} • {formatTime(item.scheduledTime)}
+                  {formatDate(item.scheduledDate || item.date || '')} • {formatTime(item.scheduledTime || item.startTime)}
                 </Text>
               </View>
             </View>

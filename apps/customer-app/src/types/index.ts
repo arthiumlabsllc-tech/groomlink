@@ -94,6 +94,10 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   scheduledDate: string;
   scheduledTime: string;
+  // Fallback fields - API may return original Prisma field names
+  date?: string;
+  startTime?: string;
+  endTime?: string;
   totalAmount: number | string; // Prisma Decimal returns string
   finalAmount?: number | string;
   notes: string | null;
@@ -101,6 +105,10 @@ export interface Booking {
   worker: Worker | null;
   services: Service[];
   createdAt: string;
+  payment?: {
+    status: string;
+    provider: string;
+  } | null;
   isGroupBooking?: boolean;
   totalPeople?: number;
   groupBookingRef?: string;

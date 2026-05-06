@@ -12,8 +12,11 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Brand illustrations – randomly pick one per mount
 const ILLUSTRATIONS = [
-  require('../../assets/loading-barber.png'),
-  require('../../assets/loading-salon.png'),
+  require('../../assets/loading-barber-01.png'),
+  require('../../assets/loading-barber-02.png'),
+  require('../../assets/loading-salon-01.png'),
+  require('../../assets/loading-salon-02.png'),
+  require('../../assets/loading-salon-03.png'),
 ];
 
 /** Custom dot-dot-dot loading animation */

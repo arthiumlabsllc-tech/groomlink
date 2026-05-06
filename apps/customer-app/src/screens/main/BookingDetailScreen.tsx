@@ -182,8 +182,8 @@ export default function BookingDetailScreen() {
     try {
       const message = `My GroomLink Booking\n\n` +
         `Salon: ${booking.salon.businessName}\n` +
-        `Date: ${formatDate(booking.scheduledDate)}\n` +
-        `Time: ${formatTime(booking.scheduledTime)}\n` +
+        `Date: ${formatDate(booking.scheduledDate || booking.date || '')}\n` +
+        `Time: ${formatTime(booking.scheduledTime || booking.startTime)}\n` +
         `Reference: ${generateReference()}`;
       
       await Share.share({
@@ -228,7 +228,7 @@ export default function BookingDetailScreen() {
   const canReschedule = booking && booking.status === 'CONFIRMED';
 
   // Check if booking is in the past and needs completion confirmation
-  const isPastBooking = booking && new Date(booking.scheduledDate) < new Date();
+  const isPastBooking = booking && new Date(booking.scheduledDate || booking.date || '') < new Date();
   const needsCompletionConfirmation = booking && 
     isPastBooking && 
     booking.status === 'CONFIRMED' && 
@@ -589,7 +589,7 @@ export default function BookingDetailScreen() {
               <View style={styles.detailContent}>
                 <Text variant="bodySmall" style={styles.detailLabel}>Date</Text>
                 <Text variant="bodyLarge" style={styles.detailValue}>
-                  {formatDate(booking.scheduledDate)}
+                  {formatDate(booking.scheduledDate || booking.date || '')}
                 </Text>
               </View>
             </View>
@@ -604,7 +604,7 @@ export default function BookingDetailScreen() {
               <View style={styles.detailContent}>
                 <Text variant="bodySmall" style={styles.detailLabel}>Time</Text>
                 <Text variant="bodyLarge" style={styles.detailValue}>
-                  {formatTime(booking.scheduledTime)}
+                  {formatTime(booking.scheduledTime || booking.startTime)}
                 </Text>
               </View>
             </View>
@@ -627,6 +627,30 @@ export default function BookingDetailScreen() {
             )}
 
             <Divider style={styles.divider} />
+
+            {/* Payment Method */}
+            {booking.payment && (
+              <>
+                <View style={styles.detailRow}>
+                  <View style={styles.detailIconContainer}>
+                    <Ionicons name="card-outline" size={20} color={COLORS.primaryGreen} />
+                  </View>
+                  <View style={styles.detailContent}>
+                    <Text variant="bodySmall" style={styles.detailLabel}>Payment Method</Text>
+                    <Text variant="bodyLarge" style={styles.detailValue}>
+                      {booking.payment.provider === 'MTN_MOMO' ? 'MTN Mobile Money'
+                        : booking.payment.provider === 'VODAFONE_CASH' ? 'Vodafone Cash'
+                        : booking.payment.provider === 'AIRTELTIGO_MONEY' ? 'AirtelTigo Money'
+                        : booking.payment.provider}
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: COLORS.textSecondary, marginTop: 2 }}>
+                      Payment: {booking.payment.status}
+                    </Text>
+                  </View>
+                </View>
+                <Divider style={styles.divider} />
+              </>
+            )}
 
             {/* Total */}
             <View style={styles.detailRow}>
