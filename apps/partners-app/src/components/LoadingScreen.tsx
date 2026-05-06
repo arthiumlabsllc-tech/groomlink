@@ -16,7 +16,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BARBER_ICONS = ['✂️', '💈', '💇', '🪒', '🪮'];
 
 // Pre-defined scatter positions so they stay consistent across renders
-const ICON_CONFIGS = [
+const ICON_CONFIGS: Array<{ icon: string; left: DimensionValue; top: DimensionValue; size: number; opacity: number; floatDelay: number }> = [
   { icon: '✂️', left: '8%',  top: '5%',  size: 52, opacity: 0.07, floatDelay: 0 },
   { icon: '💈', left: '75%', top: '3%',  size: 48, opacity: 0.06, floatDelay: 400 },
   { icon: '💇', left: '85%', top: '18%', size: 44, opacity: 0.08, floatDelay: 800 },
