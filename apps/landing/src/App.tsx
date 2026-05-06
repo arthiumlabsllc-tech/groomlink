@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
@@ -9,6 +9,7 @@ import Testimonials from './components/Testimonials'
 import ForSalonOwners from './components/ForSalonOwners'
 import Footer from './components/Footer'
 import MobileHome from './components/MobileHome'
+import LoadingScreen from './components/LoadingScreen'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 import DataDeletion from './pages/DataDeletion'
@@ -116,17 +117,19 @@ function LandingPage() {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/salon/:id" element={<SalonDetail />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/delete-account" element={<DataDeletion />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/partners" element={<PartnerWithUs />} />
-        <Route path="/for-salon-owners" element={<PartnerWithUs />} />
-      </Routes>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/salon/:id" element={<SalonDetail />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/delete-account" element={<DataDeletion />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/partners" element={<PartnerWithUs />} />
+          <Route path="/for-salon-owners" element={<PartnerWithUs />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

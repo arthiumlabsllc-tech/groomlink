@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 
 const ILLUSTRATIONS = [
-  '/loading-barber-01.png',
-  '/loading-barber-02.png',
-  '/loading-salon-01.png',
-  '/loading-salon-02.png',
-  '/loading-salon-03.png',
+  '/loading-barber-01.webp',
+  '/loading-barber-02.webp',
+  '/loading-salon-01.webp',
+  '/loading-salon-02.webp',
+  '/loading-salon-03.webp',
 ];
 
 export default function LoadingScreen() {
