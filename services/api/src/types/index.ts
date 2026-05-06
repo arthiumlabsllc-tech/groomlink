@@ -7,6 +7,7 @@ export interface AuthenticatedUser {
   role: UserRole;
   status: UserStatus;
   impersonatedBy?: string; // ID of support staff if impersonating
+  pendingEmail?: string; // Verified email from OTP token (registration flow)
 }
 
 export interface AuthenticatedRequest extends Request {

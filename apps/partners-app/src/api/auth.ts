@@ -31,7 +31,7 @@ export const authApi = {
 
   // Verify Email OTP and login
   verifyEmailOTP: async (email: string, code: string): Promise<AuthResponse> => {
-    const response = await apiClient.post('/auth/otp/email/verify', { email, code });
+    const response = await apiClient.post('/auth/otp/email/verify', { email, code, role: 'SALON_OWNER' });
     
     if (response.data.success) {
       const { tokens, user, isNewUser } = response.data.data;
@@ -40,6 +40,7 @@ export const authApi = {
       // Only store tokens if we have a valid access token
       if (tokens?.accessToken) {
         await SecureStore.setItemAsync('accessToken', tokens.accessToken);
+        // Only store refresh token if it's non-empty (new users get empty string)
         if (tokens.refreshToken) {
           await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
         }
@@ -48,6 +49,11 @@ export const authApi = {
       // Always store user data
       if (user) {
         await SecureStore.setItemAsync('user', JSON.stringify(user));
+      }
+      
+      // Mark new user state so app doesn't clear tokens during registration flow
+      if (isNewUser) {
+        await SecureStore.setItemAsync('isNewUser', 'true');
       }
     }
     
@@ -76,6 +82,7 @@ export const authApi = {
     await SecureStore.deleteItemAsync('accessToken');
     await SecureStore.deleteItemAsync('refreshToken');
     await SecureStore.deleteItemAsync('user');
+    await SecureStore.deleteItemAsync('isNewUser');
   },
 
   // Get stored user
@@ -107,6 +114,8 @@ export const authApi = {
         await SecureStore.setItemAsync('refreshToken', response.data.data.tokens.refreshToken);
       }
       await SecureStore.setItemAsync('user', JSON.stringify(response.data.data.user));
+      // Clear the new user flag since registration is now complete
+      await SecureStore.deleteItemAsync('isNewUser');
     }
     return response.data;
   },

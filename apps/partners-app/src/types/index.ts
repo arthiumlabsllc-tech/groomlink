@@ -48,6 +48,8 @@ export interface Salon {
   maxConcurrentClients?: number;
   totalChairs?: number;
   operatingModel?: string;
+  providerCategory?: string;
+  serviceAreas?: string[];
   owner?: {
     id: string;
     firstName: string;

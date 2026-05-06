@@ -31,13 +31,21 @@ export const authApi = {
 
   // Verify Email OTP and login
   verifyEmailOTP: async (email: string, code: string): Promise<AuthResponse> => {
-    const response = await apiClient.post('/auth/otp/email/verify', { email, code });
+    const response = await apiClient.post('/auth/otp/email/verify', { email, code, role: 'CUSTOMER' });
     
     if (response.data.success) {
       const { tokens, user } = response.data.data;
-      await SecureStore.setItemAsync('accessToken', tokens.accessToken);
-      await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
-      await SecureStore.setItemAsync('user', JSON.stringify(user));
+      // Store access token (may be a temp registration token for new users)
+      if (tokens?.accessToken) {
+        await SecureStore.setItemAsync('accessToken', tokens.accessToken);
+      }
+      // Only store refresh token if it's non-empty (new users get empty string)
+      if (tokens?.refreshToken) {
+        await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+      }
+      if (user) {
+        await SecureStore.setItemAsync('user', JSON.stringify(user));
+      }
     }
     
     return response.data;
@@ -88,6 +96,7 @@ export const authApi = {
     await SecureStore.deleteItemAsync('accessToken');
     await SecureStore.deleteItemAsync('refreshToken');
     await SecureStore.deleteItemAsync('user');
+    await SecureStore.deleteItemAsync('isNewUser');
   },
 
   // Get stored user

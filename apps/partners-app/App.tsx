@@ -128,7 +128,7 @@ function AppInner() {
 }
 
 function AppContent() {
-  const { setUser, clearAuth, isAuthenticated, isLoading } = useAuthStore();
+  const { setUser, clearAuth, isAuthenticated, isLoading, setLoading } = useAuthStore();
   const [salonId, setSalonId] = useState<string | null>(null);
   const [salonReady, setSalonReady] = useState(false);
 
@@ -154,6 +154,15 @@ function AppContent() {
       const storedUser = await authApi.getStoredUser();
       
       if (accessToken && storedUser) {
+        // Check if this is a new user in the registration flow
+        // New users have a temporary token that will fail profile validation
+        const isNewUser = await SecureStore.getItemAsync('isNewUser');
+        if (isNewUser === 'true') {
+          console.log('New user in registration flow, skipping profile validation');
+          setLoading(false);
+          return;
+        }
+        
         // Verify token is still valid by fetching profile
         try {
           const profile = await authApi.getProfile();

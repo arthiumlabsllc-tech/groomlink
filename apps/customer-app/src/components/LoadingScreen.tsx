@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Image,
@@ -6,86 +6,15 @@ import {
   StyleSheet,
   Text,
   Dimensions,
-  useColorScheme,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Barbershop/salon themed background icons
-const BARBER_ICONS = ['✂️', '💈', '💇', '🪒', '🪮'];
-
-// Pre-defined scatter positions so they stay consistent across renders
-const ICON_CONFIGS = [
-  { icon: '✂️', left: '8%',  top: '5%',  size: 52, opacity: 0.07, floatDelay: 0 },
-  { icon: '💈', left: '75%', top: '3%',  size: 48, opacity: 0.06, floatDelay: 400 },
-  { icon: '💇', left: '85%', top: '18%', size: 44, opacity: 0.08, floatDelay: 800 },
-  { icon: '🪒', left: '12%', top: '22%', size: 50, opacity: 0.05, floatDelay: 200 },
-  { icon: '🪮', left: '45%', top: '8%',  size: 46, opacity: 0.07, floatDelay: 600 },
-  { icon: '✂️', left: '90%', top: '38%', size: 54, opacity: 0.06, floatDelay: 1000 },
-  { icon: '💈', left: '5%',  top: '42%', size: 42, opacity: 0.08, floatDelay: 300 },
-  { icon: '💇', left: '55%', top: '30%', size: 48, opacity: 0.05, floatDelay: 700 },
-  { icon: '🪒', left: '30%', top: '55%', size: 56, opacity: 0.07, floatDelay: 500 },
-  { icon: '🪮', left: '78%', top: '52%', size: 44, opacity: 0.06, floatDelay: 900 },
-  { icon: '✂️', left: '18%', top: '68%', size: 50, opacity: 0.08, floatDelay: 1100 },
-  { icon: '💈', left: '62%', top: '65%', size: 46, opacity: 0.05, floatDelay: 150 },
-  { icon: '💇', left: '88%', top: '72%', size: 52, opacity: 0.07, floatDelay: 450 },
-  { icon: '🪒', left: '35%', top: '78%', size: 48, opacity: 0.06, floatDelay: 750 },
-  { icon: '🪮', left: '70%', top: '82%', size: 54, opacity: 0.08, floatDelay: 350 },
-  { icon: '✂️', left: '50%', top: '90%', size: 44, opacity: 0.05, floatDelay: 650 },
-  { icon: '💈', left: '3%',  top: '88%', size: 50, opacity: 0.07, floatDelay: 850 },
-  { icon: '💇', left: '92%', top: '55%', size: 46, opacity: 0.06, floatDelay: 550 },
+// Brand illustrations – randomly pick one per mount
+const ILLUSTRATIONS = [
+  require('../../assets/loading-barber.png'),
+  require('../../assets/loading-salon.png'),
 ];
-
-/** A single floating background icon */
-function FloatingIcon({
-  icon,
-  left,
-  top,
-  size,
-  opacity,
-  floatDelay,
-}: {
-  icon: string;
-  left: string;
-  top: string;
-  size: number;
-  opacity: number;
-  floatDelay: number;
-}) {
-  const translateY = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(translateY, {
-          toValue: -12,
-          duration: 3000,
-          delay: floatDelay,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [translateY, floatDelay]);
-
-  return (
-    <Animated.Text
-      style={[
-        styles.backgroundIcon,
-        { left, top, fontSize: size, opacity },
-        { transform: [{ translateY }] },
-      ]}
-    >
-      {icon}
-    </Animated.Text>
-  );
-}
 
 /** Custom dot-dot-dot loading animation */
 function LoadingDots() {
@@ -152,85 +81,51 @@ function LoadingDots() {
 }
 
 export default function LoadingScreen() {
-  // Use useColorScheme directly since LoadingScreen may render before ThemeProvider
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const logoSource = isDark
-    ? require('../../assets/logo-full-white.png')
-    : require('../../assets/logo-full-black.png');
+  // Pick a random illustration once per mount
+  const [illustrationSource] = useState(
+    () => ILLUSTRATIONS[Math.floor(Math.random() * ILLUSTRATIONS.length)]
+  );
 
-  const logoScale = useRef(new Animated.Value(0.9)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const illustrationOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade-in the logo on mount
-    Animated.timing(logoOpacity, {
+    // Fade-in the illustration
+    Animated.timing(illustrationOpacity, {
       toValue: 1,
-      duration: 800,
+      duration: 1000,
       useNativeDriver: true,
     }).start();
 
-    // Subtle fade-in for the loading text
+    // Subtle fade-in for the tagline and dots
     Animated.timing(textOpacity, {
       toValue: 1,
       duration: 600,
-      delay: 600,
+      delay: 800,
       useNativeDriver: true,
     }).start();
-
-    // Pulsing/breathing animation - loops scale between 0.9 and 1.1
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoScale, {
-          toValue: 1.1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScale, {
-          toValue: 0.9,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-
-    return () => pulse.stop();
-  }, [logoScale, logoOpacity, textOpacity]);
+  }, [illustrationOpacity, textOpacity]);
 
   return (
     <View style={styles.container}>
-      {/* Background scattered icons */}
-      {ICON_CONFIGS.map((cfg, i) => (
-        <FloatingIcon key={i} {...cfg} />
-      ))}
-
-      {/* Subtle gradient overlay using layered Views */}
-      <View style={styles.gradientTop} />
-      <View style={styles.gradientBottom} />
-
-      {/* Logo with pulse + fade-in */}
+      {/* Brand illustration */}
       <Animated.View
         style={[
-          styles.logoWrapper,
-          {
-            opacity: logoOpacity,
-            transform: [{ scale: logoScale }],
-          },
+          styles.illustrationWrapper,
+          { opacity: illustrationOpacity },
         ]}
       >
         <Image
-          source={logoSource}
-          style={styles.logo}
+          source={illustrationSource}
+          style={styles.illustration}
           resizeMode="contain"
         />
       </Animated.View>
 
       {/* Brand tagline */}
-      <Animated.Text style={[styles.tagline, { opacity: textOpacity }]}>
-        Book Your Next Grooming
-      </Animated.Text>
+      <Animated.View style={{ opacity: textOpacity }}>
+        <Text style={styles.tagline}>Book Your Next Grooming</Text>
+      </Animated.View>
 
       {/* Custom loading dots */}
       <Animated.View style={[styles.dotsWrapper, { opacity: textOpacity }]}>
@@ -245,47 +140,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#FFFFFF',
   },
-  // Simulated gradient overlays (top lighter fade, bottom darker)
-  gradientTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: SCREEN_HEIGHT * 0.3,
-    backgroundColor: 'rgba(30, 30, 60, 0.6)',
+  illustrationWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
-  gradientBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: SCREEN_HEIGHT * 0.3,
-    backgroundColor: 'rgba(10, 10, 25, 0.7)',
-  },
-  backgroundIcon: {
-    position: 'absolute',
-    color: '#FFFFFF',
-  },
-  logoWrapper: {
-    marginBottom: 16,
-    zIndex: 10,
-  },
-  logo: {
-    width: 220,
-    height: 100,
+  illustration: {
+    width: SCREEN_WIDTH * 0.85,
+    height: SCREEN_HEIGHT * 0.55,
   },
   tagline: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#333333',
     fontSize: 16,
-    fontFamily: 'System',
+    fontWeight: '600',
     letterSpacing: 1.5,
-    marginBottom: 32,
-    zIndex: 10,
+    marginBottom: 24,
   },
   dotsWrapper: {
-    zIndex: 10,
+    marginBottom: 48,
   },
   dotsContainer: {
     flexDirection: 'row',

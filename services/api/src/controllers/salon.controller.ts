@@ -27,14 +27,14 @@ const createSalonSchema = z.object({
   phoneNumber: z.string(),
   email: z.string().email().optional(),
   website: z.string().url().optional(),
-  address: z.string(),
+  address: z.string().optional(), // Optional for freelancers
   city: z.string(),
   region: z.string(),
   latitude: z.number().optional(), // Optional - will be auto-geocoded from address
   longitude: z.number().optional(), // Optional - will be auto-geocoded from address
-  openingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
-  closingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
-  workingDays: z.array(z.string()),
+  openingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(), // Optional for freelancers
+  closingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(), // Optional for freelancers
+  workingDays: z.array(z.string()).optional(), // Optional for freelancers
   hasParking: z.boolean().optional(),
   hasWifi: z.boolean().optional(),
   hasAC: z.boolean().optional(),
@@ -44,6 +44,7 @@ const createSalonSchema = z.object({
   bufferTimeMinutes: z.number().int().min(0).max(60).optional(),
   operatingModel: z.string().optional(),
   providerCategory: z.enum(['BUSINESS', 'FREELANCER']).optional(),
+  serviceAreas: z.array(z.string()).optional(),
 });
 
 const updateSalonSchema = createSalonSchema.partial().extend({
@@ -143,6 +144,27 @@ export async function createSalon(req: AuthenticatedRequest, res: Response): Pro
     }
 
     const data = createSalonSchema.parse(req.body);
+
+    // Additional validation for BUSINESS providers
+    if (data.providerCategory !== 'FREELANCER') {
+      if (!data.address || data.address.trim().length < 5) {
+        errorResponse(res, 'VALIDATION_ERROR', 'Address is required for business owners (min 5 characters)', 400);
+        return;
+      }
+      if (!data.openingTime) {
+        errorResponse(res, 'VALIDATION_ERROR', 'Opening time is required for business owners', 400);
+        return;
+      }
+      if (!data.closingTime) {
+        errorResponse(res, 'VALIDATION_ERROR', 'Closing time is required for business owners', 400);
+        return;
+      }
+      if (!data.workingDays || data.workingDays.length === 0) {
+        errorResponse(res, 'VALIDATION_ERROR', 'At least one working day is required for business owners', 400);
+        return;
+      }
+    }
+
     const salon = await salonService.createSalon(req.user.id, data);
     successResponse(res, salon, 201);
   } catch (error) {

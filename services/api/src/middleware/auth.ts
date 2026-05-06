@@ -65,6 +65,59 @@ export function authenticateToken(
   }
 }
 
+/**
+ * Middleware to authenticate temporary registration tokens.
+ * These are tokens issued after OTP verification for new users (userId === 'pending').
+ * Unlike authenticateToken, this middleware ACCEPTS pending tokens and extracts
+ * the verified email from the token payload.
+ */
+export function authenticateRegistrationToken(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    errorResponse(res, 'UNAUTHORIZED', 'Registration token is required. Please verify your email first.', 401);
+    return;
+  }
+
+  try {
+    const decoded = verifyToken(token);
+    const userId = decoded.userId || (decoded as any).id;
+    if (!userId) {
+      errorResponse(res, 'INVALID_TOKEN', 'Token missing user identifier', 401);
+      return;
+    }
+
+    // This middleware MUST only accept pending registration tokens
+    if (userId !== 'pending') {
+      errorResponse(res, 'INVALID_TOKEN', 'Invalid registration token', 401);
+      return;
+    }
+
+    // For pending tokens, phoneNumber field contains the verified email address
+    const verifiedEmail = decoded.phoneNumber;
+    if (!verifiedEmail) {
+      errorResponse(res, 'INVALID_TOKEN', 'Registration token missing verified email', 401);
+      return;
+    }
+
+    req.user = {
+      id: 'pending',
+      phoneNumber: null,
+      role: decoded.role,
+      status: UserStatus.ACTIVE,
+      pendingEmail: verifiedEmail,
+    };
+    next();
+  } catch (error) {
+    errorResponse(res, 'INVALID_TOKEN', 'Invalid or expired registration token. Please verify your email again.', 401);
+  }
+}
+
 export function requireRole(...roles: string[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {

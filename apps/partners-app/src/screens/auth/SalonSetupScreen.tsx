@@ -92,6 +92,8 @@ export default function SalonSetupScreen() {
 
   // Get provider category from route params (selected in ProviderCategoryScreen)
   const providerCategory = route.params?.providerCategory || 'BUSINESS';
+  const isFreelancer = providerCategory === 'FREELANCER';
+
   const [businessName, setBusinessName] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [description, setDescription] = useState('');
@@ -106,6 +108,9 @@ export default function SalonSetupScreen() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationDetected, setLocationDetected] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
+
+  // Service Areas (freelancers only)
+  const [serviceAreasText, setServiceAreasText] = useState('');
 
   // Section 3: Business Hours
   const [openingTime, setOpeningTime] = useState('08:00');
@@ -169,11 +174,11 @@ export default function SalonSetupScreen() {
 
   const validateForm = (): boolean => {
     if (!businessName.trim()) {
-      setError('Business name is required');
+      setError(isFreelancer ? 'Professional name is required' : 'Business name is required');
       return false;
     }
     if (!selectedType) {
-      setError('Please select a salon type');
+      setError(isFreelancer ? 'Please select a service type' : 'Please select a salon type');
       return false;
     }
     if (!phoneNumber.trim()) {
@@ -184,10 +189,27 @@ export default function SalonSetupScreen() {
       setError('Phone number must be in Ghana format (+233XXXXXXXXX)');
       return false;
     }
-    if (!address.trim()) {
-      setError('Address is required');
-      return false;
+
+    // Business-specific validation
+    if (!isFreelancer) {
+      if (!address.trim()) {
+        setError('Address is required');
+        return false;
+      }
+      if (latitude === null || longitude === null) {
+        setError('Location coordinates are required. Please enable location services.');
+        return false;
+      }
+      if (!openingTime) {
+        setError('Opening time is required');
+        return false;
+      }
+      if (!closingTime) {
+        setError('Closing time is required');
+        return false;
+      }
     }
+
     if (!city.trim()) {
       setError('City is required');
       return false;
@@ -196,21 +218,22 @@ export default function SalonSetupScreen() {
       setError('Region is required');
       return false;
     }
-    if (latitude === null || longitude === null) {
-      setError('Location coordinates are required. Please enable location services.');
-      return false;
-    }
-    if (!openingTime) {
-      setError('Opening time is required');
-      return false;
-    }
-    if (!closingTime) {
-      setError('Closing time is required');
-      return false;
-    }
-    if (workingDays.length === 0) {
-      setError('Please select at least one working day');
-      return false;
+
+    // Freelancer-specific validation
+    if (isFreelancer) {
+      if (!serviceAreasText.trim()) {
+        setError('Please enter at least one service area (neighborhoods you cover)');
+        return false;
+      }
+      if (workingDays.length === 0) {
+        setError('Please select at least one available day');
+        return false;
+      }
+    } else {
+      if (workingDays.length === 0) {
+        setError('Please select at least one working day');
+        return false;
+      }
     }
     return true;
   };
@@ -222,22 +245,35 @@ export default function SalonSetupScreen() {
     setError('');
 
     try {
+      // Parse service areas from comma-separated text
+      const serviceAreas = isFreelancer
+        ? serviceAreasText.split(',').map(s => s.trim()).filter(s => s.length > 0)
+        : undefined;
+
       const salonData: CreateSalonData = {
         businessName: businessName.trim(),
         type: selectedType,
         providerCategory,
         phoneNumber: phoneNumber.trim(),
         email: email.trim() || undefined,
-        address: address.trim(),
         city: city.trim(),
         region: region.trim(),
-        latitude: latitude!,
-        longitude: longitude!,
-        openingTime,
-        closingTime,
-        workingDays,
         description: description.trim() || undefined,
+        serviceAreas,
       };
+
+      // Business-specific fields
+      if (!isFreelancer) {
+        salonData.address = address.trim();
+        salonData.latitude = latitude!;
+        salonData.longitude = longitude!;
+        salonData.openingTime = openingTime;
+        salonData.closingTime = closingTime;
+        salonData.workingDays = workingDays;
+      } else {
+        // Freelancers: pass workingDays, defaults handled by backend
+        salonData.workingDays = workingDays;
+      }
 
       // Create the salon
       await salonApi.create(salonData);
@@ -309,10 +345,10 @@ export default function SalonSetupScreen() {
               <Ionicons name="business" size={28} color="#006B3F" />
             </View>
             <Text variant="headlineSmall" style={styles.title}>
-              {providerCategory === 'FREELANCER' ? 'Set Up Your Profile' : 'Set Up Your Salon'}
+              {isFreelancer ? 'Set Up Your Profile' : 'Set Up Your Salon'}
             </Text>
             <Text variant="bodyMedium" style={styles.subtitle}>
-              {providerCategory === 'FREELANCER' ? 'Tell us about yourself to get started' : 'Tell us about your business to get started'}
+              {isFreelancer ? 'Tell us about yourself to get started' : 'Tell us about your business to get started'}
             </Text>
           </View>
 
@@ -328,14 +364,14 @@ export default function SalonSetupScreen() {
 
             {/* Provider category badge */}
             <View style={styles.categoryBadge}>
-              <Ionicons name={providerCategory === 'FREELANCER' ? 'person' : 'business'} size={16} color="#006B3F" />
+              <Ionicons name={isFreelancer ? 'person' : 'business'} size={16} color="#006B3F" />
               <Text style={styles.categoryBadgeText}>
-                {providerCategory === 'FREELANCER' ? 'Freelancer' : 'Business Owner'}
+                {isFreelancer ? 'Freelancer' : 'Business Owner'}
               </Text>
             </View>
 
             <TextInput
-              label="Business Name *"
+              label={isFreelancer ? 'Professional Name *' : 'Business Name *'}
               value={businessName}
               onChangeText={setBusinessName}
               style={styles.input}
@@ -344,14 +380,14 @@ export default function SalonSetupScreen() {
               activeOutlineColor="#006B3F"
               textColor={theme.text}
               placeholderTextColor={theme.textSecondary}
-              placeholder={providerCategory === 'FREELANCER' ? 'e.g., John the Barber' : 'e.g., Glamour Beauty Salon'}
-              left={<TextInput.Icon icon="storefront" color={theme.textSecondary} />}
+              placeholder={isFreelancer ? 'e.g., Kwame the Barber' : 'e.g., Glamour Beauty Salon'}
+              left={<TextInput.Icon icon={isFreelancer ? 'account' : 'storefront'} color={theme.textSecondary} />}
               theme={{ roundness: 10 }}
               autoFocus
             />
 
             <Text variant="bodyMedium" style={styles.label}>
-              {providerCategory === 'FREELANCER' ? 'Service Type *' : 'Salon Type *'}
+              {isFreelancer ? 'Service Type *' : 'Salon Type *'}
             </Text>
             <View style={styles.typeGrid}>
               {SALON_TYPES.map((type) => (
@@ -391,7 +427,7 @@ export default function SalonSetupScreen() {
               activeOutlineColor="#006B3F"
               textColor={theme.text}
               placeholderTextColor={theme.textSecondary}
-              placeholder={providerCategory === 'FREELANCER' ? 'Tell customers about your skills and services...' : 'Tell customers about your salon and services...'}
+              placeholder={isFreelancer ? 'Tell customers about your skills, experience, and services...' : 'Tell customers about your salon and services...'}
               theme={{ roundness: 10 }}
             />
 
@@ -434,25 +470,53 @@ export default function SalonSetupScreen() {
             <View style={styles.sectionHeader}>
               <Ionicons name="location" size={20} color="#006B3F" />
               <Text variant="titleMedium" style={styles.sectionTitle}>
-                Location
+                {isFreelancer ? 'Service Area' : 'Location'}
               </Text>
             </View>
             <Divider style={styles.sectionDivider} />
 
-            <TextInput
-              label="Address *"
-              value={address}
-              onChangeText={setAddress}
-              style={styles.input}
-              mode="outlined"
-              outlineColor={theme.border}
-              activeOutlineColor="#006B3F"
-              textColor={theme.text}
-              placeholderTextColor={theme.textSecondary}
-              placeholder="e.g., 123 Oxford Street, Osu"
-              left={<TextInput.Icon icon="map-marker" color={theme.textSecondary} />}
-              theme={{ roundness: 10 }}
-            />
+            {/* Service Areas - Freelancers only */}
+            {isFreelancer && (
+              <>
+                <TextInput
+                  label="Areas You Serve *"
+                  value={serviceAreasText}
+                  onChangeText={setServiceAreasText}
+                  style={styles.input}
+                  mode="outlined"
+                  outlineColor={theme.border}
+                  activeOutlineColor="#006B3F"
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
+                  placeholder="e.g., East Legon, Cantonments, Airport Residential"
+                  left={<TextInput.Icon icon="map-marker-radius" color={theme.textSecondary} />}
+                  theme={{ roundness: 10 }}
+                  multiline
+                  numberOfLines={2}
+                />
+                <Text variant="bodySmall" style={styles.fieldHint}>
+                  Enter neighborhoods separated by commas where you can provide home service
+                </Text>
+              </>
+            )}
+
+            {/* Address - Business owners only */}
+            {!isFreelancer && (
+              <TextInput
+                label="Address *"
+                value={address}
+                onChangeText={setAddress}
+                style={styles.input}
+                mode="outlined"
+                outlineColor={theme.border}
+                activeOutlineColor="#006B3F"
+                textColor={theme.text}
+                placeholderTextColor={theme.textSecondary}
+                placeholder="e.g., 123 Oxford Street, Osu"
+                left={<TextInput.Icon icon="map-marker" color={theme.textSecondary} />}
+                theme={{ roundness: 10 }}
+              />
+            )}
 
             <View style={styles.row}>
               <View style={styles.halfInput}>
@@ -487,88 +551,103 @@ export default function SalonSetupScreen() {
               </View>
             </View>
 
-            {/* GPS Location Status */}
-            <View style={styles.locationStatusContainer}>
-              {locationDetected ? (
-                <View style={styles.locationDetected}>
-                  <Ionicons name="checkmark-circle" size={20} color="#006B3F" />
-                  <Text style={styles.locationDetectedText}>
-                    Location detected successfully
-                  </Text>
-                </View>
-              ) : (
-                <Button
-                  mode="outlined"
-                  onPress={detectLocation}
-                  loading={detectingLocation}
-                  disabled={detectingLocation}
-                  style={styles.detectLocationButton}
-                  textColor="#006B3F"
-                  icon="map-marker"
-                >
-                  {detectingLocation ? 'Detecting...' : 'Detect GPS Location'}
-                </Button>
-              )}
-            </View>
+            {/* GPS Location - Business owners only */}
+            {!isFreelancer && (
+              <View style={styles.locationStatusContainer}>
+                {locationDetected ? (
+                  <View style={styles.locationDetected}>
+                    <Ionicons name="checkmark-circle" size={20} color="#006B3F" />
+                    <Text style={styles.locationDetectedText}>
+                      Location detected successfully
+                    </Text>
+                  </View>
+                ) : (
+                  <Button
+                    mode="outlined"
+                    onPress={detectLocation}
+                    loading={detectingLocation}
+                    disabled={detectingLocation}
+                    style={styles.detectLocationButton}
+                    textColor="#006B3F"
+                    icon="map-marker"
+                  >
+                    {detectingLocation ? 'Detecting...' : 'Detect GPS Location'}
+                  </Button>
+                )}
+              </View>
+            )}
           </Surface>
 
-          {/* Section 3: Business Hours */}
+          {/* Section 3: Business Hours / Availability */}
           <Surface style={styles.section} elevation={0}>
             <View style={styles.sectionHeader}>
               <Ionicons name="time" size={20} color="#006B3F" />
               <Text variant="titleMedium" style={styles.sectionTitle}>
-                Business Hours
+                {isFreelancer ? 'Availability' : 'Business Hours'}
               </Text>
             </View>
             <Divider style={styles.sectionDivider} />
 
-            <View style={styles.row}>
-              <View style={styles.halfInput}>
-                <Text variant="bodyMedium" style={styles.label}>
-                  Opening Time *
-                </Text>
-                <View style={styles.timeChips}>
-                  {['06:00', '07:00', '08:00', '09:00'].map((time) => (
-                    <Chip
-                      key={time}
-                      selected={openingTime === time}
-                      onPress={() => setOpeningTime(time)}
-                      style={[
-                        styles.timeChip,
-                        openingTime === time && styles.timeChipSelected,
-                      ]}
-                      textStyle={openingTime === time ? styles.timeChipTextSelected : undefined}
-                    >
-                      {time}
-                    </Chip>
-                  ))}
+            {/* Opening/Closing Time - Business owners only */}
+            {!isFreelancer && (
+              <View style={styles.row}>
+                <View style={styles.halfInput}>
+                  <Text variant="bodyMedium" style={styles.label}>
+                    Opening Time *
+                  </Text>
+                  <View style={styles.timeChips}>
+                    {['06:00', '07:00', '08:00', '09:00'].map((time) => (
+                      <Chip
+                        key={time}
+                        selected={openingTime === time}
+                        onPress={() => setOpeningTime(time)}
+                        style={[
+                          styles.timeChip,
+                          openingTime === time && styles.timeChipSelected,
+                        ]}
+                        textStyle={openingTime === time ? styles.timeChipTextSelected : undefined}
+                      >
+                        {time}
+                      </Chip>
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.halfInput}>
+                  <Text variant="bodyMedium" style={styles.label}>
+                    Closing Time *
+                  </Text>
+                  <View style={styles.timeChips}>
+                    {['17:00', '18:00', '19:00', '20:00'].map((time) => (
+                      <Chip
+                        key={time}
+                        selected={closingTime === time}
+                        onPress={() => setClosingTime(time)}
+                        style={[
+                          styles.timeChip,
+                          closingTime === time && styles.timeChipSelected,
+                        ]}
+                        textStyle={closingTime === time ? styles.timeChipTextSelected : undefined}
+                      >
+                        {time}
+                      </Chip>
+                    ))}
+                  </View>
                 </View>
               </View>
-              <View style={styles.halfInput}>
-                <Text variant="bodyMedium" style={styles.label}>
-                  Closing Time *
-                </Text>
-                <View style={styles.timeChips}>
-                  {['17:00', '18:00', '19:00', '20:00'].map((time) => (
-                    <Chip
-                      key={time}
-                      selected={closingTime === time}
-                      onPress={() => setClosingTime(time)}
-                      style={[
-                        styles.timeChip,
-                        closingTime === time && styles.timeChipSelected,
-                      ]}
-                      textStyle={closingTime === time ? styles.timeChipTextSelected : undefined}
-                    >
-                      {time}
-                    </Chip>
-                  ))}
-                </View>
-              </View>
-            </View>
+            )}
 
-            <Text variant="bodyMedium" style={[styles.label, { marginTop: 16 }]}>
-              Working Days *
+            {/* Freelancer info note */}
+            {isFreelancer && (
+              <View style={styles.infoNote}>
+                <Ionicons name="information-circle" size={18} color="#006B3F" />
+                <Text variant="bodySmall" style={styles.infoNoteText}>
+                  You work by appointment only. Customers will book you for specific times on your available days.
+                </Text>
+              </View>
+            )}
+
+            <Text variant="bodyMedium" style={[styles.label, !isFreelancer && { marginTop: 16 }]}>
+              {isFreelancer ? 'Available Days *' : 'Working Days *'}
             </Text>
             <View style={styles.daysContainer}>
               {DAYS_OF_WEEK.map((day) => (
@@ -611,7 +690,7 @@ export default function SalonSetupScreen() {
             buttonColor="#006B3F"
             theme={{ roundness: 12 }}
           >
-            {loading ? (providerCategory === 'FREELANCER' ? 'Creating Profile...' : 'Creating Salon...') : (providerCategory === 'FREELANCER' ? 'Create Profile' : 'Create Salon')}
+            {loading ? (isFreelancer ? 'Creating Profile...' : 'Creating Salon...') : (isFreelancer ? 'Create Profile' : 'Create Salon')}
           </Button>
 
           <Text variant="bodySmall" style={styles.hint}>
@@ -875,5 +954,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 14,
     color: '#006B3F',
     fontWeight: '600',
+  },
+  fieldHint: {
+    color: theme.textSecondary,
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  infoNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  infoNoteText: {
+    flex: 1,
+    color: theme.textSecondary,
+    lineHeight: 18,
   },
 });

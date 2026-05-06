@@ -30,6 +30,8 @@ export interface Salon {
   totalChairs?: number;
   bufferTimeMinutes?: number;
   operatingModel?: 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED';
+  providerCategory?: 'BUSINESS' | 'FREELANCER';
+  serviceAreas?: string[];
 }
 
 export interface Service {
@@ -423,17 +425,27 @@ class ApiClient {
   async createSalon(data: {
     businessName: string;
     type: string;
+    providerCategory?: string;
     phoneNumber: string;
-    address: string;
+    address?: string;
     city: string;
     region: string;
-    latitude: number;
-    longitude: number;
-    openingTime: string;
-    closingTime: string;
-    workingDays: string[];
+    latitude?: number;
+    longitude?: number;
+    openingTime?: string;
+    closingTime?: string;
+    workingDays?: string[];
     description?: string;
     email?: string;
+    serviceAreas?: string[];
+    hasParking?: boolean;
+    hasWifi?: boolean;
+    hasAC?: boolean;
+    acceptsWalkIns?: boolean;
+    maxConcurrentClients?: number;
+    totalChairs?: number;
+    bufferTimeMinutes?: number;
+    operatingModel?: string;
   }) {
     return this.request<{ success: boolean; data: Salon }>('/salons', {
       method: 'POST',

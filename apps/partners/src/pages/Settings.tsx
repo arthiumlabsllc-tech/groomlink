@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare, Wallet, Building2, Smartphone, CreditCard, User, ArrowLeft } from 'lucide-react'
+import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare, Wallet, Building2, Smartphone, CreditCard, User, ArrowLeft, Info } from 'lucide-react'
 import Layout from '../components/Layout'
 import { api, Salon, CompletionSettings, PayoutAccount, SetupPayoutAccountPayload } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
@@ -95,7 +95,8 @@ export default function Settings() {
     maxConcurrentClients: 1,
     totalChairs: 1,
     bufferTimeMinutes: 0,
-    operatingModel: 'APPOINTMENTS_ONLY' as 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED'
+    operatingModel: 'APPOINTMENTS_ONLY' as 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED',
+    serviceAreas: '' as string, // Comma-separated for freelancers
   })
 
   // Image upload state
@@ -295,13 +296,16 @@ export default function Settings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    const isFreelancer = formData.providerCategory === 'FREELANCER'
+
     // Validate required fields for new partners
     if (isNewPartner) {
       if (!formData.businessName.trim()) {
-        setError('Business name is required')
+        setError(isFreelancer ? 'Professional name is required' : 'Business name is required')
         return
       }
-      if (!formData.address.trim()) {
+      // Address required for business owners only
+      if (!isFreelancer && !formData.address.trim()) {
         setError('Address is required')
         return
       }
@@ -317,6 +321,11 @@ export default function Settings() {
         setError('Phone number is required')
         return
       }
+      // Service areas required for freelancers
+      if (isFreelancer && !formData.serviceAreas.trim()) {
+        setError('Please enter at least one service area (neighborhoods you cover)')
+        return
+      }
     }
     
     setSaving(true)
@@ -325,31 +334,43 @@ export default function Settings() {
     
     try {
       if (isNewPartner) {
+        // Parse service areas from comma-separated text
+        const serviceAreas = isFreelancer
+          ? formData.serviceAreas.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0)
+          : undefined
+
         // Create new salon for new partner
-        const createData = {
+        const createData: Parameters<typeof api.createSalon>[0] = {
           businessName: formData.businessName,
           description: formData.description,
           type: formData.type,
           providerCategory: formData.providerCategory,
-          address: formData.address,
           city: formData.city,
           region: formData.region,
           phoneNumber: formData.phoneNumber,
           email: formData.email || undefined,
-          // Default coordinates - in a real app, you'd geocode the address
-          latitude: 5.6037, // Default to Accra
-          longitude: -0.1870,
-          openingTime: getOpeningTime(formData.businessHours),
-          closingTime: getClosingTime(formData.businessHours),
-          workingDays: getWorkingDays(formData.businessHours),
-          hasParking: formData.hasParking,
-          hasWifi: formData.hasWifi,
-          hasAC: formData.hasAC,
-          acceptsWalkIns: formData.acceptsWalkIns,
-          maxConcurrentClients: formData.maxConcurrentClients,
-          totalChairs: formData.totalChairs,
-          bufferTimeMinutes: formData.bufferTimeMinutes,
-          operatingModel: formData.operatingModel
+          serviceAreas,
+        }
+
+        // Business-specific fields
+        if (!isFreelancer) {
+          createData.address = formData.address
+          createData.latitude = 5.6037 // Default to Accra
+          createData.longitude = -0.1870
+          createData.openingTime = getOpeningTime(formData.businessHours)
+          createData.closingTime = getClosingTime(formData.businessHours)
+          createData.workingDays = getWorkingDays(formData.businessHours)
+          createData.hasParking = formData.hasParking
+          createData.hasWifi = formData.hasWifi
+          createData.hasAC = formData.hasAC
+          createData.acceptsWalkIns = formData.acceptsWalkIns
+          createData.maxConcurrentClients = formData.maxConcurrentClients
+          createData.totalChairs = formData.totalChairs
+          createData.bufferTimeMinutes = formData.bufferTimeMinutes
+          createData.operatingModel = formData.operatingModel
+        } else {
+          // Freelancer: pass working days, defaults handled by backend
+          createData.workingDays = getWorkingDays(formData.businessHours)
         }
         
         const response = await api.createSalon(createData)
@@ -840,22 +861,22 @@ export default function Settings() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Business Name */}
+              {/* Business Name / Professional Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Business Name <span className="text-red-500">*</span>
+                  {formData.providerCategory === 'FREELANCER' ? 'Professional Name' : 'Business Name'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   className="input-field"
-                  placeholder={formData.providerCategory === 'FREELANCER' ? 'e.g., Kwame the Barber' : 'e.g., Kofi\'s Barbershop'}
+                  placeholder={formData.providerCategory === 'FREELANCER' ? 'e.g., Kwame the Barber' : "e.g., Kofi's Barbershop"}
                   value={formData.businessName}
                   onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                   required
                 />
               </div>
-
-              {/* Salon Type */}
+            
+              {/* Salon Type / Service Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {formData.providerCategory === 'FREELANCER' ? 'Service Type' : 'Salon Type'} <span className="text-red-500">*</span>
@@ -873,35 +894,57 @@ export default function Settings() {
                   <option value="OTHER">Other</option>
                 </select>
               </div>
-
+            
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   className="input-field min-h-[100px] resize-none"
-                  placeholder={formData.providerCategory === 'FREELANCER' ? 'Tell customers about your skills and services...' : 'Tell customers about your salon...'}
+                  placeholder={formData.providerCategory === 'FREELANCER' ? 'Tell customers about your skills, experience, and services...' : 'Tell customers about your salon...'}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-
-              {/* Address */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    className="input-field pl-10"
-                    placeholder="Street address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    required
-                  />
+            
+              {/* Service Areas - Freelancers only */}
+              {formData.providerCategory === 'FREELANCER' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Areas You Serve <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <textarea
+                      className="input-field pl-10 min-h-[80px] resize-none"
+                      placeholder="e.g., East Legon, Cantonments, Airport Residential"
+                      value={formData.serviceAreas}
+                      onChange={(e) => setFormData({ ...formData, serviceAreas: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Enter neighborhoods separated by commas where you can provide home service</p>
                 </div>
-              </div>
+              )}
+            
+              {/* Address - Business owners only */}
+              {formData.providerCategory !== 'FREELANCER' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      className="input-field pl-10"
+                      placeholder="Street address"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* City & Region */}
               <div className="grid md:grid-cols-2 gap-4">
@@ -966,9 +1009,20 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* Business Hours */}
+              {/* Business Hours / Availability */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Business Hours</label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  {formData.providerCategory === 'FREELANCER' ? 'Availability' : 'Business Hours'}
+                </label>
+
+                {/* Freelancer info note */}
+                {formData.providerCategory === 'FREELANCER' && (
+                  <div className="mb-4 p-3 bg-ghana-green/5 border border-ghana-green/20 rounded-lg flex items-start gap-2">
+                    <Info className="w-5 h-5 text-ghana-green flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-gray-600">You work by appointment only. Customers will book you for specific times on your available days.</p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   {formData.businessHours.map((hour, index) => (
                     <div key={hour.day} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 bg-gray-50 rounded-lg">
@@ -983,9 +1037,10 @@ export default function Settings() {
                             onChange={(e) => updateBusinessHour(index, 'isOpen', e.target.checked)}
                             className="w-4 h-4 text-ghana-green rounded border-gray-300 focus:ring-ghana-green"
                           />
-                          <span className="text-sm text-gray-600">Open</span>
+                          <span className="text-sm text-gray-600">{formData.providerCategory === 'FREELANCER' ? 'Available' : 'Open'}</span>
                         </label>
-                        {hour.isOpen && (
+                        {/* Time inputs - Business owners only */}
+                        {formData.providerCategory !== 'FREELANCER' && hour.isOpen && (
                           <div className="flex items-center gap-2">
                             <input
                               type="time"

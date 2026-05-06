@@ -50,6 +50,13 @@ export function errorHandler(
     return;
   }
 
+  // JSON parse errors from body-parser
+  const anyErr = err as any;
+  if (anyErr.type === 'entity.parse.failed' || (err instanceof SyntaxError && anyErr.status === 400 && anyErr.body)) {
+    errorResponse(res, 'INVALID_JSON', 'Invalid JSON in request body', 400);
+    return;
+  }
+
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     errorResponse(res, 'INVALID_TOKEN', 'Invalid token', 401);

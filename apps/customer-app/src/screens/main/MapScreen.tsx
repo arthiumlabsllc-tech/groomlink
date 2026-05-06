@@ -443,7 +443,7 @@ export default function MapScreen() {
               showsCompass
               showsScale
               mapType="standard"
-              onError={handleMapError}
+              onMapReady={() => console.log('Map loaded successfully')}
             >
               {filteredSalons.map(renderMarker)}
             </MapView>

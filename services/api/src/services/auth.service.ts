@@ -256,12 +256,21 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     throw new Error('Account has been suspended');
   }
 
-  // If password is set, verify it
-  if (user.password && password) {
-    const isValid = await verifyPassword(password, user.password);
-    if (!isValid) {
-      throw new Error('Invalid phone number or password');
-    }
+  // Require password for login - direct passwordless login is not allowed
+  // Users must authenticate via OTP (phone or email) instead
+  if (!password) {
+    throw new Error('Password is required. Please use OTP login instead.');
+  }
+
+  // If user has no password set, they must use OTP login
+  if (!user.password) {
+    throw new Error('No password set for this account. Please use OTP login instead.');
+  }
+
+  // Verify the provided password
+  const isValid = await verifyPassword(password, user.password);
+  if (!isValid) {
+    throw new Error('Invalid phone number or password');
   }
 
   // Update last login

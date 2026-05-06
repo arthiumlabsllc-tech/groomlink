@@ -55,6 +55,14 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
+        // Check if this is a new user in registration flow
+        // New users have a temporary token that will fail - don't clear tokens
+        const isNewUser = await SecureStore.getItemAsync('isNewUser');
+        if (isNewUser === 'true') {
+          console.log('New user token refresh failed - keeping registration state');
+          return Promise.reject(error);
+        }
+        
         // Clear tokens and let the app handle re-authentication
         await SecureStore.deleteItemAsync('accessToken');
         await SecureStore.deleteItemAsync('refreshToken');

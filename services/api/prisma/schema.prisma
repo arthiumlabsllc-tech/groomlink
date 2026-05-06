@@ -201,6 +201,9 @@ model Salon {
   coverImage String?  @map("cover_image")
   images     String[]
 
+  // Service Areas (for freelancers - neighborhoods they cover)
+  serviceAreas String[] @default([]) @map("service_areas")
+
   // Business Hours
   openingTime    String   @map("opening_time")
   closingTime    String   @map("closing_time")

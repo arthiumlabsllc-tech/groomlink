@@ -182,6 +182,24 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
 export async function completeRegistration(req: Request, res: Response): Promise<void> {
   try {
     const data = completeRegistrationSchema.parse(req.body);
+
+    // Verify that the email in the request matches the verified email from the token
+    const verifiedEmail = (req as any).user?.pendingEmail;
+    if (!verifiedEmail) {
+      errorResponse(res, 'UNAUTHORIZED', 'Email verification required. Please verify your email first.', 401);
+      return;
+    }
+    if (data.email.toLowerCase() !== verifiedEmail.toLowerCase()) {
+      errorResponse(res, 'EMAIL_MISMATCH', 'The email provided does not match the verified email. Please use the email you verified with OTP.', 400);
+      return;
+    }
+
+    // Use the role from the token (verified during OTP step)
+    const tokenRole = (req as any).user?.role;
+    if (tokenRole) {
+      data.role = tokenRole;
+    }
+
     const result = await authService.completeRegistration(data);
     successResponse(res, result, 201);
   } catch (error) {

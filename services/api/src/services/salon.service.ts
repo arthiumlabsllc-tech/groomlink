@@ -11,21 +11,26 @@ export interface CreateSalonData {
   phoneNumber: string;
   email?: string;
   website?: string;
-  address: string;
+  address?: string;
   city: string;
   region: string;
   latitude?: number;
   longitude?: number;
-  openingTime: string;
-  closingTime: string;
-  workingDays: string[];
+  openingTime?: string;
+  closingTime?: string;
+  workingDays?: string[];
   operatingHours?: Record<string, string>;
   hasParking?: boolean;
   hasWifi?: boolean;
   hasAC?: boolean;
   acceptsWalkIns?: boolean;
+  maxConcurrentClients?: number;
+  totalChairs?: number;
+  bufferTimeMinutes?: number;
+  operatingModel?: string;
   logo?: string;
   images?: string[];
+  serviceAreas?: string[];
 }
 
 export interface UpdateSalonData extends Partial<CreateSalonData> {
@@ -46,12 +51,20 @@ export interface SalonFilters {
 }
 
 export async function createSalon(ownerId: string, data: CreateSalonData) {
+  const isFreelancer = data.providerCategory === 'FREELANCER';
+
+  // Apply freelancer defaults for missing fields
+  const address = data.address || (isFreelancer ? `${data.city}, ${data.region}` : undefined);
+  const openingTime = data.openingTime || (isFreelancer ? '08:00' : undefined);
+  const closingTime = data.closingTime || (isFreelancer ? '18:00' : undefined);
+  const workingDays = data.workingDays || (isFreelancer ? ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] : undefined);
+
   // If latitude/longitude not provided, try to geocode the address
   let latitude: number | null = data.latitude ?? null;
   let longitude: number | null = data.longitude ?? null;
   
-  if ((!latitude || !longitude) && data.address) {
-    const fullAddress = formatAddressForGeocoding(data.address, data.city, data.region);
+  if ((!latitude || !longitude) && address) {
+    const fullAddress = formatAddressForGeocoding(address, data.city, data.region);
     const geocodingResult = await geocodeAddress(fullAddress);
     
     if (geocodingResult) {
@@ -72,16 +85,21 @@ export async function createSalon(ownerId: string, data: CreateSalonData) {
       phoneNumber: data.phoneNumber,
       email: data.email,
       website: data.website,
-      address: data.address,
+      address: address || '',
       city: data.city,
       region: data.region,
-      openingTime: data.openingTime,
-      closingTime: data.closingTime,
-      workingDays: data.workingDays,
-      hasParking: data.hasParking,
-      hasWifi: data.hasWifi,
-      hasAC: data.hasAC,
-      acceptsWalkIns: data.acceptsWalkIns,
+      openingTime: openingTime || '09:00',
+      closingTime: closingTime || '18:00',
+      workingDays: workingDays || [],
+      hasParking: isFreelancer ? false : (data.hasParking || false),
+      hasWifi: isFreelancer ? false : (data.hasWifi || false),
+      hasAC: isFreelancer ? false : (data.hasAC || false),
+      acceptsWalkIns: isFreelancer ? false : (data.acceptsWalkIns || false),
+      maxConcurrentClients: isFreelancer ? 1 : (data.maxConcurrentClients || 1),
+      totalChairs: isFreelancer ? 1 : (data.totalChairs || 1),
+      bufferTimeMinutes: data.bufferTimeMinutes || 15,
+      operatingModel: isFreelancer ? 'appointment_only' : (data.operatingModel || 'appointment_only'),
+      serviceAreas: data.serviceAreas || [],
       logo: data.logo,
       images: data.images,
       status: SalonStatus.PENDING, // Requires admin approval
@@ -91,7 +109,7 @@ export async function createSalon(ownerId: string, data: CreateSalonData) {
     } as any,
   });
 
-  logger.info(`Salon created: ${salon.id} by owner: ${ownerId}`);
+  logger.info(`Salon created: ${salon.id} by owner: ${ownerId} (category: ${data.providerCategory || 'BUSINESS'})`);
   return salon;
 }
 

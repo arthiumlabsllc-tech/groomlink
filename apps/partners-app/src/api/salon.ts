@@ -7,15 +7,16 @@ export interface CreateSalonData {
   providerCategory?: string;
   phoneNumber: string;
   email?: string;
-  address: string;
+  address?: string;
   city: string;
   region: string;
-  latitude: number;
-  longitude: number;
-  openingTime: string;
-  closingTime: string;
-  workingDays: string[];
+  latitude?: number;
+  longitude?: number;
+  openingTime?: string;
+  closingTime?: string;
+  workingDays?: string[];
   description?: string;
+  serviceAreas?: string[];
 }
 
 export const salonApi = {

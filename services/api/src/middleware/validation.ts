@@ -96,14 +96,18 @@ export const salonValidations = {
     body('businessName').trim().isLength({ min: 2, max: 100 }).withMessage('Business name must be 2-100 characters'),
     body('type').isIn(['BARBERSHOP', 'HAIR_SALON', 'PEDICURE_SALON', 'NAIL_SALON', 'SPA', 'BEAUTY_SALON']).withMessage('Invalid salon type'),
     body('phoneNumber').matches(/^\+233[0-9]{9}$/).withMessage('Invalid phone number format'),
-    body('address').trim().isLength({ min: 5, max: 200 }).withMessage('Address must be 5-200 characters'),
+    // address is optional for freelancers (validated in controller)
+    body('address').optional().trim().isLength({ max: 200 }).withMessage('Address must be at most 200 characters'),
     body('city').trim().isLength({ min: 2, max: 50 }).withMessage('City must be 2-50 characters'),
     body('region').trim().isLength({ min: 2, max: 50 }).withMessage('Region must be 2-50 characters'),
     commonValidations.latitude,
     commonValidations.longitude,
-    body('openingTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Opening time must be in HH:mm format'),
-    body('closingTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Closing time must be in HH:mm format'),
-    body('workingDays').isArray({ min: 1 }).withMessage('Working days must be an array with at least one day'),
+    // openingTime and closingTime are optional for freelancers (validated in controller)
+    body('openingTime').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Opening time must be in HH:mm format'),
+    body('closingTime').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Closing time must be in HH:mm format'),
+    body('workingDays').optional().isArray().withMessage('Working days must be an array'),
+    body('serviceAreas').optional().isArray().withMessage('Service areas must be an array'),
+    body('providerCategory').optional().isIn(['BUSINESS', 'FREELANCER']).withMessage('Invalid provider category'),
   ]),
 
   updateSalon: validate([
