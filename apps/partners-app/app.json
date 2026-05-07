@@ -7,9 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#006B3F"
+      "image": "./assets/loading-barber-01-splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -29,8 +29,8 @@
       "package": "com.arthiumlabsllc.partners",
       "versionCode": 5,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo-white.png",
-        "backgroundColor": "#006B3F"
+        "foregroundImage": "./assets/loading-barber-01-splash.png",
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "INTERNET",

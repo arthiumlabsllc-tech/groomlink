@@ -111,7 +111,7 @@ export default function LoadingScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Brand illustration */}
+      {/* Brand illustration - covers full screen */}
       <Animated.View
         style={[
           styles.illustrationWrapper,
@@ -121,18 +121,16 @@ export default function LoadingScreen() {
         <Image
           source={illustrationSource}
           style={styles.illustration}
-          resizeMode="contain"
+          resizeMode="cover"
         />
       </Animated.View>
 
-      {/* Brand tagline */}
-      <Animated.View style={{ opacity: textOpacity }}>
+      {/* Bottom overlay with tagline and dots */}
+      <Animated.View style={[styles.bottomOverlay, { opacity: textOpacity }]}>
         <Text style={styles.tagline}>Book Your Next Grooming</Text>
-      </Animated.View>
-
-      {/* Custom loading dots */}
-      <Animated.View style={[styles.dotsWrapper, { opacity: textOpacity }]}>
-        <LoadingDots />
+        <View style={styles.dotsWrapper}>
+          <LoadingDots />
+        </View>
       </Animated.View>
     </View>
   );
@@ -141,29 +139,34 @@ export default function LoadingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
   },
   illustrationWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
+    ...StyleSheet.absoluteFillObject,
   },
   illustration: {
-    width: SCREEN_WIDTH * 0.85,
-    height: SCREEN_HEIGHT * 0.55,
+    width: '100%',
+    height: '100%',
+  },
+  bottomOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingBottom: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    paddingTop: 20,
   },
   tagline: {
-    color: '#333333',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#006B3F',
+    fontSize: 18,
+    fontWeight: '700',
     letterSpacing: 1.5,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   dotsWrapper: {
-    marginBottom: 48,
+    marginBottom: 8,
   },
   dotsContainer: {
     flexDirection: 'row',

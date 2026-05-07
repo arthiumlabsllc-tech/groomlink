@@ -60,7 +60,7 @@ export default function EmailScreen() {
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
               <Image
-                source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
+                source={require('../../../assets/logo-white.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />

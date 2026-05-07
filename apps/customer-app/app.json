@@ -7,9 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#CE1126"
+      "image": "./assets/loading-salon-02-splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -29,8 +29,8 @@
       "package": "com.arthiumlabsllc.groomlink",
       "versionCode": 17,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo-white.png",
-        "backgroundColor": "#CE1126"
+        "foregroundImage": "./assets/loading-salon-02-splash.png",
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "INTERNET",

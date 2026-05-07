@@ -35,14 +35,14 @@ export default function LoadingScreen() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white transition-opacity duration-500">
-      <div className="flex flex-col items-center gap-5">
-        <img
-          src={illustration}
-          alt="GroomLink"
-          className="w-56 h-56 md:w-72 md:h-72 object-contain animate-fade-in"
-          loading="eager"
-        />
+    <div className="fixed inset-0 z-[9999] bg-white transition-opacity duration-500">
+      <img
+        src={illustration}
+        alt="GroomLink"
+        className="absolute inset-0 w-full h-full object-cover object-center animate-fade-in"
+        loading="eager"
+      />
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-3 px-5 pt-8 pb-16 bg-gradient-to-t from-white/95 via-white/80 to-transparent">
         <div className="flex gap-2">
           <span className="w-2 h-2 rounded-full bg-[#CE1126] animate-bounce" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 rounded-full bg-[#CE1126] animate-bounce" style={{ animationDelay: '150ms' }} />
