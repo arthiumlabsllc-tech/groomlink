@@ -68,6 +68,7 @@ router.post('/settings/upload-footer-logo', authenticateToken, requireAdminOrHig
 router.get('/payment-settings', authenticateToken, requireAdminOrHigher, adminController.getPaymentSettings);
 router.put('/payment-settings', authenticateToken, requireAdminOrHigher, adminController.updatePaymentSettings);
 router.post('/payment-settings/test-connection', authenticateToken, requireAdminOrHigher, adminController.testPaymentConnection);
+router.get('/payment-settings/status', authenticateToken, requireAdminOrHigher, adminController.getPaymentProviderStatus);
 
 // User activity & security
 router.get('/users/:id/activities', authenticateToken, requireAdminOrHigher, adminController.getUserActivities);

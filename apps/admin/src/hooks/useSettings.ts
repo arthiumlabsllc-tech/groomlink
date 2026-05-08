@@ -61,3 +61,10 @@ export function useTestPaymentConnection() {
     mutationFn: () => settingsApi.testPaymentConnection(),
   });
 }
+
+export function usePaymentProviderStatus() {
+  return useQuery({
+    queryKey: ['paymentProviderStatus'],
+    queryFn: () => settingsApi.getPaymentProviderStatus(),
+  });
+}

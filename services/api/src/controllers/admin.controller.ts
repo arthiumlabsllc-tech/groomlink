@@ -2847,3 +2847,47 @@ export async function testPaymentConnection(req: AuthenticatedRequest, res: Resp
     errorResponse(res, 'TEST_FAILED', (error as Error).message, 500);
   }
 }
+
+/**
+ * Get current payment provider status
+ * Returns which provider is active and whether credentials are configured
+ */
+export async function getPaymentProviderStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+
+    const activeGateway = settings?.paymentGateway || 'paystack';
+
+    // Check which credentials are configured
+    const hubtelConfigured = !!(settings as any)?.hubtelApiId && !!(settings as any)?.hubtelApiSecret;
+    const paystackConfigured = !!(settings as any)?.paystackSecretKey && !!(settings as any)?.paystackPublicKey;
+
+    // Check environment variable fallbacks
+    const hubtelEnvConfigured = !!process.env.HUBTEL_API_ID && !!process.env.HUBTEL_API_SECRET;
+    const paystackEnvConfigured = !!process.env.PAYSTACK_SECRET_KEY && !!process.env.PAYSTACK_PUBLIC_KEY;
+
+    successResponse(res, {
+      activeGateway,
+      isPaymentTestMode: settings?.isPaymentTestMode ?? true,
+      transactionFeePercent: settings?.transactionFeePercent ?? 1.95,
+      providers: {
+        hubtel: {
+          configured: hubtelConfigured || hubtelEnvConfigured,
+          source: hubtelConfigured ? 'database' : (hubtelEnvConfigured ? 'environment' : 'none'),
+          apiId: hubtelConfigured || hubtelEnvConfigured ? '****' : null,
+        },
+        paystack: {
+          configured: paystackConfigured || paystackEnvConfigured,
+          source: paystackConfigured ? 'database' : (paystackEnvConfigured ? 'environment' : 'none'),
+          publicKey: paystackConfigured || paystackEnvConfigured ? '****' : null,
+        },
+      },
+      nodeEnv: process.env.NODE_ENV || 'not set',
+    });
+  } catch (error) {
+    logger.error('Get payment provider status error:', { error });
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}

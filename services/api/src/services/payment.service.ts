@@ -634,6 +634,20 @@ export async function initializePayment(
   // Use totalChargeAmount which includes platform fee (already in GHS, NOT pesewas)
   const amount = totalChargeAmount;
 
+  // Log provider status for debugging
+  if (activeProvider) {
+    logger.info(`Active payment provider found: ${activeProvider.name}`, {
+      bookingId,
+      providerName: activeProvider.name,
+      hasCredentials: Object.keys(activeProvider.credentials).length > 0,
+    });
+  } else {
+    logger.warn('No active payment provider found in registry', {
+      bookingId,
+      nodeEnv: process.env.NODE_ENV,
+    });
+  }
+
   // Cash payment doesn't need payment gateway
   if (provider === PaymentProvider.CASH) {
     const result: PaymentResult = {

@@ -101,6 +101,21 @@ export const settingsApi = {
     return response.data.data;
   },
 
+  // Get payment provider status
+  getPaymentProviderStatus: async (): Promise<{
+    activeGateway: string;
+    isPaymentTestMode: boolean;
+    transactionFeePercent: number;
+    providers: {
+      hubtel: { configured: boolean; source: string; apiId: string | null };
+      paystack: { configured: boolean; source: string; publicKey: string | null };
+    };
+    nodeEnv: string;
+  }> => {
+    const response = await apiClient.get('/admin/payment-settings/status');
+    return response.data.data;
+  },
+
   // Upload header logo
   uploadHeaderLogo: async (file: File): Promise<{ logoUrl: string }> => {
     const formData = new FormData();

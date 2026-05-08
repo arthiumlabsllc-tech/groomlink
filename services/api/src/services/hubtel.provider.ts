@@ -113,17 +113,43 @@ export class HubtelPaymentProvider implements IPaymentProvider {
 
       const data = response.data;
 
+      // Hubtel returns ResponseCode in the body - validate it
+      const responseCode = data?.ResponseCode;
+      const responseDesc = data?.ResponseDescription || data?.Message || '';
+
       logger.info('Hubtel payment initialized', {
         reference,
         bookingId,
         amount,
+        responseCode,
+        responseDesc,
+        hubtelTransactionId: data?.Data?.TransactionId,
+        hubtelStatus: data?.Data?.TransactionStatus,
       });
+
+      // ResponseCode "0000" = Success, "0001" = Pending (also acceptable for init)
+      const isSuccess = responseCode === '0000' || responseCode === '0001' || !responseCode;
+
+      if (!isSuccess) {
+        logger.error('Hubtel payment initialization failed', {
+          reference,
+          responseCode,
+          responseDesc,
+          requestBody: { ...requestBody, CustomerMsisdn: '***REDACTED***' },
+        });
+
+        return {
+          success: false,
+          reference,
+          message: `Hubtel error (${responseCode}): ${responseDesc || 'Failed to initialize payment'}`,
+        };
+      }
 
       return {
         success: true,
         reference,
         redirectUrl: data?.checkoutUrl || data?.redirectUrl || undefined,
-        message: 'Payment initialized. Please complete payment on your phone.',
+        message: responseDesc || 'Payment initialized. Please complete payment on your phone.',
       };
     } catch (error: any) {
       logger.error('Hubtel initialize payment error', {

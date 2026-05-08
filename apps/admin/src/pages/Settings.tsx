@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Icon from '../components/Icon';
-import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings, useTestPaymentConnection } from '../hooks';
+import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings, useTestPaymentConnection, usePaymentProviderStatus } from '../hooks';
 import { settingsApi } from '../api/settings';
 import LoadingScreen from '../components/LoadingScreen';
 
@@ -26,6 +26,7 @@ export function Settings() {
   const { data: paymentSettings, isLoading: paymentSettingsLoading } = usePaymentSettings();
   const updatePaymentSettings = useUpdatePaymentSettings();
   const testPaymentConnection = useTestPaymentConnection();
+  const { data: providerStatus, isLoading: providerStatusLoading } = usePaymentProviderStatus();
 
   const [formData, setFormData] = useState({
     siteName: '',
@@ -173,6 +174,29 @@ export function Settings() {
     setPaymentError(null);
     setPaymentSuccess(false);
     setTestConnectionSuccess(false);
+
+    // Validate credentials for selected gateway
+    if (paymentFormData.paymentGateway === 'hubtel') {
+      const hasHubtelId = paymentFormData.hubtelApiId.trim().length > 0;
+      const hasHubtelSecret = paymentFormData.hubtelApiSecret.trim().length > 0;
+      const hasExistingHubtel = providerStatus?.providers.hubtel.configured;
+
+      if (!hasExistingHubtel && (!hasHubtelId || !hasHubtelSecret)) {
+        setPaymentError('Hubtel API ID and Secret Key are required to use Hubtel as the payment gateway.');
+        return;
+      }
+    }
+
+    if (paymentFormData.paymentGateway === 'paystack') {
+      const hasPaystackPublic = paymentFormData.paystackPublicKey.trim().length > 0;
+      const hasPaystackSecret = paymentFormData.paystackSecretKey.trim().length > 0;
+      const hasExistingPaystack = providerStatus?.providers.paystack.configured;
+
+      if (!hasExistingPaystack && (!hasPaystackPublic || !hasPaystackSecret)) {
+        setPaymentError('Paystack Public Key and Secret Key are required to use Paystack as the payment gateway.');
+        return;
+      }
+    }
 
     try {
       await updatePaymentSettings.mutateAsync({
@@ -655,6 +679,62 @@ export function Settings() {
                     <p className="font-medium">Live Mode Active</p>
                     <p className="text-yellow-700">All transactions will process real payments. Ensure your API keys are correct.</p>
                   </div>
+                </div>
+              )}
+
+              {/* Current Provider Status */}
+              {providerStatus && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Current Provider Status</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Active Gateway</span>
+                      <span className={`text-sm font-medium capitalize ${
+                        providerStatus.activeGateway === paymentFormData.paymentGateway
+                          ? 'text-green-600'
+                          : 'text-amber-600'
+                      }`}>
+                        {providerStatus.activeGateway}
+                        {providerStatus.activeGateway !== paymentFormData.paymentGateway && ' (unsaved)'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Environment</span>
+                      <span className="text-sm font-mono text-gray-800">{providerStatus.nodeEnv}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Hubtel Credentials</span>
+                      <span className={`text-sm font-medium ${
+                        providerStatus.providers.hubtel.configured ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {providerStatus.providers.hubtel.configured
+                          ? `Configured (${providerStatus.providers.hubtel.source})`
+                          : 'Not Configured'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Paystack Credentials</span>
+                      <span className={`text-sm font-medium ${
+                        providerStatus.providers.paystack.configured ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {providerStatus.providers.paystack.configured
+                          ? `Configured (${providerStatus.providers.paystack.source})`
+                          : 'Not Configured'}
+                      </span>
+                    </div>
+                  </div>
+                  {paymentFormData.paymentGateway === 'hubtel' && !providerStatus.providers.hubtel.configured && (
+                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                      <Icon name="error" size={14} className="inline mr-1" />
+                      Hubtel credentials are required to use Hubtel as the payment gateway.
+                    </div>
+                  )}
+                  {paymentFormData.paymentGateway === 'paystack' && !providerStatus.providers.paystack.configured && (
+                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                      <Icon name="error" size={14} className="inline mr-1" />
+                      Paystack credentials are required to use Paystack as the payment gateway.
+                    </div>
+                  )}
                 </div>
               )}
 
