@@ -52,7 +52,7 @@ export function Settings() {
 
   // Payment settings state
   const [paymentFormData, setPaymentFormData] = useState({
-    paymentGateway: 'hubtel',
+    paymentGateway: 'paystack',
     hubtelApiId: '',
     hubtelApiSecret: '',
     hubtelMerchantAccountId: '',
@@ -96,7 +96,7 @@ export function Settings() {
   useEffect(() => {
     if (paymentSettings) {
       setPaymentFormData({
-        paymentGateway: paymentSettings.paymentGateway || 'hubtel',
+        paymentGateway: paymentSettings.paymentGateway || 'paystack',
         hubtelApiId: paymentSettings.hubtelApiId || '',
         hubtelApiSecret: paymentSettings.hubtelApiSecret || '',
         hubtelMerchantAccountId: paymentSettings.hubtelMerchantAccountId || '',

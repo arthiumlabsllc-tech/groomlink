@@ -736,7 +736,7 @@ const siteSettingsSchema = z.object({
 
 // Payment Settings Schema
 const paymentSettingsSchema = z.object({
-  paymentGateway: z.string().default('hubtel'),
+  paymentGateway: z.string().default('paystack'),
   hubtelApiId: z.string().max(500).optional().nullable(),
   hubtelApiSecret: z.string().max(500).optional().nullable(),
   hubtelMerchantAccountId: z.string().max(500).optional().nullable(),

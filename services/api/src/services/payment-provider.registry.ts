@@ -55,7 +55,8 @@ class PaymentProviderRegistry {
       }
 
       // Determine active payment gateway from settings
-      const activeGateway = settings.paymentGateway || 'hubtel';
+      // Default to paystack since that's our primary gateway
+      const activeGateway = settings.paymentGateway || 'paystack';
 
       // Register Hubtel provider
       const hubtelApiId = (settings as any).hubtelApiId || process.env.HUBTEL_API_ID;
@@ -117,30 +118,30 @@ class PaymentProviderRegistry {
     const hubtelApiSecret = process.env.HUBTEL_API_SECRET;
     const hubtelMerchantAccountId = process.env.HUBTEL_MERCHANT_ACCOUNT_ID;
 
-    if (hubtelApiId && hubtelApiSecret && hubtelMerchantAccountId) {
-      this.providers.set('hubtel', {
-        provider: new HubtelPaymentProvider(),
-        isActive: true,
-        priority: 1,
-        credentials: {
-          apiId: hubtelApiId,
-          apiSecret: hubtelApiSecret,
-          merchantAccountId: hubtelMerchantAccountId,
-        },
-      });
-    }
-
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
     const paystackPublicKey = process.env.PAYSTACK_PUBLIC_KEY;
 
     if (paystackSecretKey && paystackPublicKey) {
       this.providers.set('paystack', {
         provider: new PaystackProvider(),
-        isActive: false, // Inactive by default
-        priority: 2,
+        isActive: true, // Paystack is active by default
+        priority: 1,
         credentials: {
           secretKey: paystackSecretKey,
           publicKey: paystackPublicKey,
+        },
+      });
+    }
+
+    if (hubtelApiId && hubtelApiSecret && hubtelMerchantAccountId) {
+      this.providers.set('hubtel', {
+        provider: new HubtelPaymentProvider(),
+        isActive: false, // Hubtel inactive by default unless explicitly selected
+        priority: 2,
+        credentials: {
+          apiId: hubtelApiId,
+          apiSecret: hubtelApiSecret,
+          merchantAccountId: hubtelMerchantAccountId,
         },
       });
     }
