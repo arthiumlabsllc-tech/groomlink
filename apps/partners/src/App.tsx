@@ -25,13 +25,14 @@ import { SalonSetupWrapper } from './components/SalonSetupWrapper'
 
 const queryClient = new QueryClient()
 
-// Component to handle token from URL
+// Component to handle token from URL (e.g. impersonation flow)
 function TokenHandler({ children }: { children: React.ReactNode }) {
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
     const token = searchParams.get('token')
     const impersonationLogId = searchParams.get('impersonation_log_id')
+    const isImpersonating = searchParams.get('impersonation') === 'true'
     
     if (token) {
       // Store the token
@@ -39,6 +40,9 @@ function TokenHandler({ children }: { children: React.ReactNode }) {
       // Store impersonation log id if present
       if (impersonationLogId) {
         localStorage.setItem('impersonation_log_id', impersonationLogId)
+      }
+      if (isImpersonating) {
+        localStorage.setItem('is_impersonating', 'true')
       }
       // Remove token from URL for security
       window.history.replaceState({}, document.title, window.location.pathname)

@@ -222,8 +222,32 @@ export default function Layout({ children, activeTab }: LayoutProps) {
     navigate('/login')
   }
 
+  const isImpersonating = !!localStorage.getItem('is_impersonating')
+
+  const handleEndImpersonation = () => {
+    localStorage.removeItem('is_impersonating')
+    localStorage.removeItem('impersonation_log_id')
+    localStorage.removeItem('auth_token')
+    window.location.href = 'https://support.groomlinkgh.com'
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${isImpersonating ? 'pt-10' : ''}`}>
+      {/* Impersonation Banner */}
+      {isImpersonating && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-black px-4 py-2 flex items-center justify-between text-sm font-medium">
+          <div className="flex items-center gap-2">
+            <Icon name="visibility" size={18} />
+            <span>You are impersonating this account. All actions are logged for audit purposes.</span>
+          </div>
+          <button 
+            onClick={handleEndImpersonation}
+            className="bg-black text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-gray-800 transition-colors"
+          >
+            End Impersonation
+          </button>
+        </div>
+      )}
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a2e] transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo Section */}

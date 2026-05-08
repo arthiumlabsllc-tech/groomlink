@@ -25,7 +25,12 @@ export function useImpersonation() {
       const response = await api.startImpersonation(userId, reason);
       if (response.success) {
         setIsImpersonating(true);
-        window.location.href = 'https://partners.groomlinkgh.com';
+        // Pass token and impersonation_log_id as URL params so the target app
+        // can authenticate via its TokenHandler component
+        const { accessToken } = response.data.tokens;
+        const { impersonationLogId } = response.data;
+        const targetUrl = `https://partners.groomlinkgh.com?token=${encodeURIComponent(accessToken)}&impersonation_log_id=${encodeURIComponent(impersonationLogId)}&impersonation=true`;
+        window.open(targetUrl, '_blank');
         return true;
       }
       return false;
