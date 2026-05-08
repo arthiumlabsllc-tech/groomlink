@@ -95,6 +95,12 @@ export const settingsApi = {
     return response.data.data;
   },
 
+  // Test payment provider connection
+  testPaymentConnection: async (): Promise<{ success: boolean; gateway: string; message: string; status: string }> => {
+    const response = await apiClient.post('/admin/payment-settings/test-connection');
+    return response.data.data;
+  },
+
   // Upload header logo
   uploadHeaderLogo: async (file: File): Promise<{ logoUrl: string }> => {
     const formData = new FormData();

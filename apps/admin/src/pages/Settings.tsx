@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Icon from '../components/Icon';
-import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings } from '../hooks';
+import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings, useTestPaymentConnection } from '../hooks';
 import { settingsApi } from '../api/settings';
 import LoadingScreen from '../components/LoadingScreen';
 
@@ -25,6 +25,7 @@ export function Settings() {
   const toggleMaintenance = useToggleMaintenance();
   const { data: paymentSettings, isLoading: paymentSettingsLoading } = usePaymentSettings();
   const updatePaymentSettings = useUpdatePaymentSettings();
+  const testPaymentConnection = useTestPaymentConnection();
 
   const [formData, setFormData] = useState({
     siteName: '',
@@ -191,14 +192,18 @@ export function Settings() {
     }
   };
 
-  // Test connection (simple verification by re-fetching settings)
+  // Test connection - actually verifies provider credentials via API
   const handleTestConnection = async () => {
     setTestConnectionSuccess(false);
+    setPaymentError(null);
     try {
-      // Just verify we can fetch the settings - indicates API connectivity
-      await updatePaymentSettings.mutateAsync({});
-      setTestConnectionSuccess(true);
-      setTimeout(() => setTestConnectionSuccess(false), 3000);
+      const result = await testPaymentConnection.mutateAsync();
+      if (result.success) {
+        setTestConnectionSuccess(true);
+        setTimeout(() => setTestConnectionSuccess(false), 5000);
+      } else {
+        setPaymentError(result.message || 'Connection test failed');
+      }
     } catch (err: any) {
       setPaymentError(err.response?.data?.message || 'Connection test failed');
     }
@@ -948,11 +953,20 @@ export function Settings() {
                 <button
                   type="button"
                   onClick={handleTestConnection}
-                  disabled={updatePaymentSettings.isPending}
+                  disabled={updatePaymentSettings.isPending || testPaymentConnection.isPending}
                   className="btn-ripple px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
-                  <Icon name="refresh" size={18} />
-                  Test Connection
+                  {testPaymentConnection.isPending ? (
+                    <>
+                      <Icon name="progress_activity" className="animate-spin" size={18} />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="refresh" size={18} />
+                      Test Connection
+                    </>
+                  )}
                 </button>
               </div>
             </form>

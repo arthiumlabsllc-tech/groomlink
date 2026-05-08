@@ -71,8 +71,9 @@ export class HubtelPaymentProvider implements IPaymentProvider {
       const { amount, email, phoneNumber, reference, bookingId } = request;
 
       // Hubtel expects amount in GHS (not pesewas)
-      // Default to MTN MoMo channel
-      const channel = 'mtn-gh';
+      // Map the selected mobile money provider to Hubtel channel
+      const provider = request.provider as any;
+      const channel = provider ? this.getChannel(provider) : 'mtn-gh';
 
       // Ensure phone number has +233 prefix
       let customerMsisdn = phoneNumber || '';
@@ -83,7 +84,7 @@ export class HubtelPaymentProvider implements IPaymentProvider {
       const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 
         `${process.env.API_BASE_URL || 'https://groomlinkgh.com'}/api/payments/webhook/hubtel`;
 
-      const requestBody = {
+      const requestBody: any = {
         CustomerName: email || 'Customer',
         CustomerEmail: email,
         CustomerMsisdn: customerMsisdn,
@@ -94,6 +95,11 @@ export class HubtelPaymentProvider implements IPaymentProvider {
         PrimaryCallbackUrl: webhookUrl,
         SecondaryCallbackUrl: webhookUrl,
       };
+
+      // Include merchant account if configured (required for some Hubtel accounts)
+      if (merchantAccountId) {
+        requestBody.MerchantAccount = merchantAccountId;
+      }
 
       const authHeader = this.getAuthHeader(apiId, apiSecret);
 

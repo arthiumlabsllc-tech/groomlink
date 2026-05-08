@@ -2738,3 +2738,112 @@ export async function syncAllProcessingPayments(req: AuthenticatedRequest, res: 
     errorResponse(res, 'SYNC_FAILED', (error as Error).message, 500);
   }
 }
+
+/**
+ * Test payment provider connection
+ * Makes a lightweight API call to verify credentials are working
+ */
+export async function testPaymentConnection(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    // Get current settings
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' }
+    });
+
+    if (!settings) {
+      errorResponse(res, 'NOT_CONFIGURED', 'Payment settings not found. Please configure payment settings first.', 400);
+      return;
+    }
+
+    const activeGateway = settings.paymentGateway || 'hubtel';
+
+    if (activeGateway === 'hubtel') {
+      const apiId = (settings as any)?.hubtelApiId || process.env.HUBTEL_API_ID;
+      const apiSecret = (settings as any)?.hubtelApiSecret || process.env.HUBTEL_API_SECRET;
+
+      if (!apiId || !apiSecret) {
+        errorResponse(res, 'NOT_CONFIGURED', 'Hubtel API credentials not configured', 400);
+        return;
+      }
+
+      // Test Hubtel credentials with a lightweight status check
+      const credentials = Buffer.from(`${apiId}:${apiSecret}`).toString('base64');
+      try {
+        const response = await axios.get(
+          'https://api.hubtel.com/v1/receivemoney/status?ClientReference=test-connection',
+          {
+            headers: {
+              'Authorization': `Basic ${credentials}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          }
+        );
+
+        // If we get here, auth worked (even if reference not found)
+        successResponse(res, {
+          success: true,
+          gateway: 'hubtel',
+          message: 'Hubtel connection successful. Credentials are valid.',
+          status: response.data?.Status || 'connected',
+        });
+      } catch (hubtelError: any) {
+        if (hubtelError.response?.status === 401) {
+          errorResponse(res, 'AUTH_FAILED', 'Hubtel authentication failed. Please check your API ID and Secret.', 400);
+        } else if (hubtelError.response?.status === 404) {
+          // 404 means auth worked but endpoint doesn't exist - still valid
+          successResponse(res, {
+            success: true,
+            gateway: 'hubtel',
+            message: 'Hubtel connection successful. Credentials are valid.',
+            status: 'connected',
+          });
+        } else {
+          errorResponse(res, 'CONNECTION_FAILED', `Hubtel connection failed: ${hubtelError.response?.data?.message || hubtelError.message}`, 500);
+        }
+      }
+    } else if (activeGateway === 'paystack') {
+      const secretKey = (settings as any)?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+
+      if (!secretKey) {
+        errorResponse(res, 'NOT_CONFIGURED', 'Paystack secret key not configured', 400);
+        return;
+      }
+
+      // Test Paystack credentials
+      try {
+        const response = await axios.get(
+          'https://api.paystack.co/balance',
+          {
+            headers: {
+              'Authorization': `Bearer ${secretKey}`,
+            },
+            timeout: 10000,
+          }
+        );
+
+        if (response.data?.status) {
+          successResponse(res, {
+            success: true,
+            gateway: 'paystack',
+            message: 'Paystack connection successful. Secret key is valid.',
+            status: 'connected',
+          });
+        } else {
+          errorResponse(res, 'CONNECTION_FAILED', 'Paystack connection failed. Invalid response from API.', 500);
+        }
+      } catch (paystackError: any) {
+        if (paystackError.response?.status === 401) {
+          errorResponse(res, 'AUTH_FAILED', 'Paystack authentication failed. Please check your secret key.', 400);
+        } else {
+          errorResponse(res, 'CONNECTION_FAILED', `Paystack connection failed: ${paystackError.response?.data?.message || paystackError.message}`, 500);
+        }
+      }
+    } else {
+      errorResponse(res, 'UNKNOWN_GATEWAY', `Unknown payment gateway: ${activeGateway}`, 400);
+    }
+  } catch (error) {
+    logger.error('Test payment connection error:', { error });
+    errorResponse(res, 'TEST_FAILED', (error as Error).message, 500);
+  }
+}

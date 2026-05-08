@@ -665,6 +665,7 @@ export async function initializePayment(
       phoneNumber,
       reference,
       bookingId,
+      provider, // Pass the selected mobile money provider (MTN_MOMO, VODAFONE_CASH, AIRTELTIGO_MONEY)
       metadata: {
         paymentMethod: 'mobile_money',
         providerName,

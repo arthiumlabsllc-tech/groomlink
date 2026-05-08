@@ -22,6 +22,7 @@ export interface PaymentInitializationRequest {
   phoneNumber?: string;
   reference: string;
   bookingId: string;
+  provider?: string; // Mobile money provider: MTN_MOMO, VODAFONE_CASH, AIRTELTIGO_MONEY
   metadata?: Record<string, any>;
 }
 

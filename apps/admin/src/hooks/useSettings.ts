@@ -55,3 +55,9 @@ export function useUpdatePaymentSettings() {
     },
   });
 }
+
+export function useTestPaymentConnection() {
+  return useMutation({
+    mutationFn: () => settingsApi.testPaymentConnection(),
+  });
+}
