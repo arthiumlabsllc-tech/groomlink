@@ -61,7 +61,10 @@ export function SalonProvider({ children }: { children: ReactNode }) {
             console.log('Current user role:', userResponse.data.role)
             // Store user data for email pre-fill in settings
             setUser(userResponse.data)
-            if (userResponse.data.role !== 'SALON_OWNER') {
+            const isImpersonating = !!localStorage.getItem('is_impersonating')
+            // During impersonation, allow access regardless of role
+            // (support agents impersonate SALON_OWNERs but the token has the target user's role)
+            if (userResponse.data.role !== 'SALON_OWNER' && !isImpersonating) {
               // This is a real error - user has wrong role
               setError(`Access denied: Your account role is '${userResponse.data.role}'. Partners dashboard requires SALON_OWNER role. Please contact support.`)
               setHasSalon(false)

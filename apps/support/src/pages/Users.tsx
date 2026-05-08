@@ -66,7 +66,7 @@ export default function Users() {
   const handleImpersonate = async () => {
     if (!selectedUser) return;
     
-    const success = await startImpersonation(selectedUser.id, impersonationReason);
+    const success = await startImpersonation(selectedUser.id, impersonationReason, selectedUser.role);
     if (success) {
       setShowImpersonateModal(false);
       setSelectedUser(null);

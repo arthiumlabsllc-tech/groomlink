@@ -20,26 +20,49 @@ import Rewards from './pages/Rewards';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './store/auth';
 
+/**
+ * Process impersonation token from URL SYNCHRONOUSLY before React mounts.
+ * This is critical: if we wait for useEffect, ProtectedRoute will redirect
+ * to the login page before the token is stored.
+ */
+function processImpersonationToken(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const impersonationLogId = params.get('impersonation_log_id');
+  const isImpersonating = params.get('impersonation') === 'true';
+  
+  if (token) {
+    // Store the token IMMEDIATELY as customer_token so initialize() finds it
+    localStorage.setItem('customer_token', token);
+    if (impersonationLogId) {
+      localStorage.setItem('impersonation_log_id', impersonationLogId);
+    }
+    if (isImpersonating) {
+      localStorage.setItem('is_impersonating', 'true');
+    }
+    // Remove token from URL for security
+    const newUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, newUrl);
+    return true;
+  }
+  return false;
+}
+
+// Process token SYNCHRONOUSLY at module load time, BEFORE React renders
+const hasImpersonationToken = processImpersonationToken();
+
 function App() {
   const initialize = useAuthStore((state) => state.initialize);
   const setToken = useAuthStore((state) => state.setToken);
 
   useEffect(() => {
-    // Check for token in URL params (from redirect after login or impersonation)
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('token');
-    const impersonationLogId = urlParams.get('impersonation_log_id');
-    
-    if (tokenFromUrl) {
-      // Store token and clean up URL
-      setToken(tokenFromUrl);
-      // Store impersonation log id if present
-      if (impersonationLogId) {
-        localStorage.setItem('impersonation_log_id', impersonationLogId);
+    // If we processed an impersonation token synchronously, use setToken
+    // to update the Zustand store and trigger profile fetch
+    if (hasImpersonationToken) {
+      const token = localStorage.getItem('customer_token');
+      if (token) {
+        setToken(token);
       }
-      // Remove token from URL without reloading
-      const newUrl = window.location.pathname + window.location.hash;
-      window.history.replaceState({}, document.title, newUrl);
     }
     
     initialize();

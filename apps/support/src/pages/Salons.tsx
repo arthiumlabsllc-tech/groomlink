@@ -43,7 +43,7 @@ export default function Salons() {
   }, [page, selectedStatus, searchQuery]);
 
   const handleImpersonate = async (salon: Salon) => {
-    await startImpersonation(salon.owner.id, `Supporting salon: ${salon.businessName}`);
+    await startImpersonation(salon.owner.id, `Supporting salon: ${salon.businessName}`, 'SALON_OWNER');
   };
 
   const filteredSalons = salons;

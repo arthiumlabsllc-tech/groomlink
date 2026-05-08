@@ -26,9 +26,11 @@ export function ProfileSetupGuard({ children }: { children: React.ReactNode }) {
 
   // Check if profile is complete (has both firstName and phoneNumber)
   const isProfileComplete = user?.firstName && user?.phoneNumber;
+  const isImpersonating = !!localStorage.getItem('is_impersonating');
 
   // If user has incomplete profile, force them to setup page
-  if (!isProfileComplete) {
+  // But during impersonation, allow access to any page (support agent viewing account)
+  if (!isProfileComplete && !isImpersonating) {
     // Allow access to profile setup page
     if (location.pathname === '/profile/setup') {
       return <>{children}</>;

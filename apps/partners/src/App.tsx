@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Login from './pages/Login'
@@ -25,31 +25,49 @@ import { SalonSetupWrapper } from './components/SalonSetupWrapper'
 
 const queryClient = new QueryClient()
 
-// Component to handle token from URL (e.g. impersonation flow)
-function TokenHandler({ children }: { children: React.ReactNode }) {
-  const [searchParams] = useSearchParams()
+/**
+ * Process impersonation token from URL SYNCHRONOUSLY before React mounts.
+ * This is critical: if we wait for useEffect, ProtectedRoute will redirect
+ * to /login before the token is stored.
+ */
+function processImpersonationToken(): boolean {
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get('token')
+  const impersonationLogId = params.get('impersonation_log_id')
+  const isImpersonating = params.get('impersonation') === 'true'
+  
+  if (token) {
+    // Store the token IMMEDIATELY so it's available when ProtectedRoute evaluates
+    api.setToken(token)
+    if (impersonationLogId) {
+      localStorage.setItem('impersonation_log_id', impersonationLogId)
+    }
+    if (isImpersonating) {
+      localStorage.setItem('is_impersonating', 'true')
+    }
+    // Remove token from URL for security (but keep the path)
+    window.history.replaceState({}, document.title, window.location.pathname)
+    return true
+  }
+  return false
+}
 
+// Process token SYNCHRONOUSLY at module load time, BEFORE React renders
+const hasImpersonationToken = processImpersonationToken()
+
+// Component to dispatch auth:login event after mount so SalonContext re-fetches
+function TokenHandler({ children }: { children: React.ReactNode }) {
+  const [, setForceUpdate] = useState(0)
+  
   useEffect(() => {
-    const token = searchParams.get('token')
-    const impersonationLogId = searchParams.get('impersonation_log_id')
-    const isImpersonating = searchParams.get('impersonation') === 'true'
-    
-    if (token) {
-      // Store the token
-      api.setToken(token)
-      // Store impersonation log id if present
-      if (impersonationLogId) {
-        localStorage.setItem('impersonation_log_id', impersonationLogId)
-      }
-      if (isImpersonating) {
-        localStorage.setItem('is_impersonating', 'true')
-      }
-      // Remove token from URL for security
-      window.history.replaceState({}, document.title, window.location.pathname)
+    if (hasImpersonationToken) {
       // Dispatch auth:login event to notify SalonContext and other listeners
+      // This triggers fetchSalon() in SalonContext which gets the salon data
+      // using the token we already stored synchronously above
+      console.log('TokenHandler: Dispatching auth:login event for impersonation')
       window.dispatchEvent(new CustomEvent('auth:login'))
     }
-  }, [searchParams])
+  }, [])
 
   return <>{children}</>
 }

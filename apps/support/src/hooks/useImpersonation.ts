@@ -18,7 +18,7 @@ export function useImpersonation() {
   const [error, setError] = useState<string | null>(null);
   const [isImpersonating, setIsImpersonating] = useState(!!localStorage.getItem('impersonation_log_id'));
 
-  const startImpersonation = useCallback(async (userId: string, reason?: string) => {
+  const startImpersonation = useCallback(async (userId: string, reason?: string, userRole?: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -29,7 +29,15 @@ export function useImpersonation() {
         // can authenticate via its TokenHandler component
         const { accessToken } = response.data.tokens;
         const { impersonationLogId } = response.data;
-        const targetUrl = `https://partners.groomlinkgh.com?token=${encodeURIComponent(accessToken)}&impersonation_log_id=${encodeURIComponent(impersonationLogId)}&impersonation=true`;
+        // Choose target based on user role
+        const role = userRole || response.data.user?.role;
+        let targetBaseUrl: string;
+        if (role === 'CUSTOMER') {
+          targetBaseUrl = 'https://groomlinkgh.com';
+        } else {
+          targetBaseUrl = 'https://partners.groomlinkgh.com';
+        }
+        const targetUrl = `${targetBaseUrl}?token=${encodeURIComponent(accessToken)}&impersonation_log_id=${encodeURIComponent(impersonationLogId)}&impersonation=true`;
         window.open(targetUrl, '_blank');
         return true;
       }

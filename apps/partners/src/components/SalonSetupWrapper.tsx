@@ -20,7 +20,9 @@ export function SalonSetupWrapper({ children }: { children: React.ReactNode }) {
   }
 
   // If user has no salon, force them to settings page
-  if (hasSalon === false) {
+  // But during impersonation, allow access to any page (support agent viewing account)
+  const isImpersonating = !!localStorage.getItem('is_impersonating')
+  if (hasSalon === false && !isImpersonating) {
     // Allow access to settings page for salon creation
     if (location.pathname === '/settings') {
       return <>{children}</>;
