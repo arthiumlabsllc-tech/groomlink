@@ -926,51 +926,51 @@ export default function BookingScreen() {
             </Text>
           </View>
 
-          <View style={styles.bottomPadding} />
-        </ScrollView>
-
-        {/* Summary Footer */}
-        <Surface style={styles.footer} elevation={4}>
-          {isGroupBooking && (
-            <View style={styles.groupBadge}>
-              <Ionicons name="people" size={14} color="#fff" />
-              <Text style={styles.groupBadgeText}>Group Booking • {totalPeople} people</Text>
-            </View>
-          )}
-          
-          {/* Fee Breakdown */}
+          {/* Booking Summary & Fee Breakdown */}
           {selectedServices.length > 0 && (
-            <View style={styles.feeBreakdownCard}>
-              <View style={styles.feeRow}>
-                <Text variant="bodySmall" style={styles.feeLabel}>Services Subtotal</Text>
-                <Text variant="bodySmall" style={styles.feeValue}>GH₵ {serviceSubtotal.toFixed(2)}</Text>
+            <View style={styles.section}>
+              <Text variant="titleMedium" style={styles.sectionTitle}>Booking Summary</Text>
+              {isGroupBooking && (
+                <View style={styles.groupBadge}>
+                  <Ionicons name="people" size={14} color="#fff" />
+                  <Text style={styles.groupBadgeText}>Group Booking • {totalPeople} people</Text>
+                </View>
+              )}
+              <View style={styles.feeBreakdownCard}>
+                <View style={styles.feeRow}>
+                  <Text variant="bodySmall" style={styles.feeLabel}>Services Subtotal</Text>
+                  <Text variant="bodySmall" style={styles.feeValue}>GH₵ {serviceSubtotal.toFixed(2)}</Text>
+                </View>
+                <View style={styles.feeRow}>
+                  <Text variant="bodySmall" style={styles.feeLabel}>Platform Fee ({paymentConfig?.platformFeePercentage ?? 5}%)</Text>
+                  <Text variant="bodySmall" style={styles.feeValue}>GH₵ {platformFee.toFixed(2)}</Text>
+                </View>
+                <View style={styles.feeDivider} />
+                <View style={styles.feeRowTotal}>
+                  <Text variant="bodyMedium" style={styles.feeTotalLabel}>Total Amount</Text>
+                  <Text variant="titleMedium" style={styles.feeTotalValue}>GH₵ {totalPrice.toFixed(2)}</Text>
+                </View>
+                <View style={styles.escrowNote}>
+                  <Ionicons name="shield-checkmark" size={14} color={COLORS.primaryGreen} />
+                  <Text variant="bodySmall" style={styles.escrowText}>
+                    Payment held securely until service completion
+                  </Text>
+                </View>
               </View>
-              <View style={styles.feeRow}>
-                <Text variant="bodySmall" style={styles.feeLabel}>Platform Fee ({paymentConfig?.platformFeePercentage ?? 5}%)</Text>
-                <Text variant="bodySmall" style={styles.feeValue}>GH₵ {platformFee.toFixed(2)}</Text>
-              </View>
-              <View style={styles.feeDivider} />
-              <View style={styles.feeRowTotal}>
-                <Text variant="bodyMedium" style={styles.feeTotalLabel}>Total Amount</Text>
-                <Text variant="titleMedium" style={styles.feeTotalValue}>GH₵ {totalPrice.toFixed(2)}</Text>
-              </View>
-              <View style={styles.escrowNote}>
-                <Ionicons name="shield-checkmark" size={14} color={COLORS.primaryGreen} />
-                <Text variant="bodySmall" style={styles.escrowText}>
-                  Payment held securely until service completion
+              <View style={styles.policyNote}>
+                <Ionicons name="information-circle" size={14} color={COLORS.textSecondary} />
+                <Text variant="bodySmall" style={styles.policyText}>
+                  Free cancellation up to 48h before appointment
                 </Text>
               </View>
             </View>
           )}
-          
-          {/* Cancellation Policy Note */}
-          <View style={styles.policyNote}>
-            <Ionicons name="information-circle" size={14} color={COLORS.textSecondary} />
-            <Text variant="bodySmall" style={styles.policyText}>
-              Free cancellation up to 48h before appointment
-            </Text>
-          </View>
-          
+
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+
+        {/* Compact Summary Footer */}
+        <Surface style={styles.footer} elevation={4}>
           <View style={styles.summaryRow}>
             <View>
               <Text variant="bodySmall" style={styles.summaryLabel}>
@@ -1208,15 +1208,16 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     backgroundColor: COLORS.cardBackground,
   },
   bottomPadding: {
-    height: 120,
+    height: 80,
   },
-  // Footer
+  // Compact sticky footer
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: COLORS.cardBackground,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
