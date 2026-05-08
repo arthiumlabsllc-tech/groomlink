@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth, AuthProvider } from './hooks/useAuth';
+import { useImpersonation } from './hooks/useImpersonation';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
 import Login from './pages/Login';
@@ -70,10 +72,31 @@ function AppRoutes() {
   );
 }
 
+function ImpersonationEndHandler() {
+  const { endImpersonation } = useImpersonation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const endLogId = params.get('end_impersonation');
+
+    if (endLogId) {
+      // Clean up the URL immediately
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Call the backend API to record endedAt and clean up impersonation state
+      // The endImpersonation function calls api.endImpersonation(logId) and restores the original token
+      localStorage.setItem('impersonation_log_id', endLogId);
+      endImpersonation();
+    }
+  }, [endImpersonation]);
+
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ImpersonationEndHandler />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

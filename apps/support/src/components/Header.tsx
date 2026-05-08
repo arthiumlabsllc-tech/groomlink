@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useImpersonation } from '../hooks/useImpersonation';
 import Icon from './Icon';
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const { isImpersonating, endImpersonation, isLoading: isEndingImpersonation } = useImpersonation();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
@@ -25,6 +27,17 @@ export default function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-3 md:gap-4 ml-4">
+        {/* Impersonation indicator */}
+        {isImpersonating && (
+          <button
+            onClick={endImpersonation}
+            disabled={isEndingImpersonation}
+            className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-800 border border-amber-200 rounded-full text-xs font-medium hover:bg-amber-200 transition-colors"
+          >
+            <Icon name="visibility" size={14} />
+            {isEndingImpersonation ? 'Ending...' : 'End Impersonation'}
+          </button>
+        )}
         {/* Notifications */}
         <button className="relative p-2 sm:p-2.5 text-gray-500 hover:bg-gray-100/80 rounded-full transition-all duration-200 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center">
           <Icon name="notifications" size={20} />

@@ -6,10 +6,18 @@ export default function Layout() {
   const isImpersonating = !!localStorage.getItem('is_impersonating')
 
   const handleEndImpersonation = () => {
+    const logId = localStorage.getItem('impersonation_log_id')
+    // Clean up impersonation state in this domain
     localStorage.removeItem('is_impersonating')
     localStorage.removeItem('impersonation_log_id')
     localStorage.removeItem('customer_token')
-    window.location.href = 'https://support.groomlinkgh.com'
+    // Redirect to support dashboard with end_impersonation param so it can
+    // call the backend API to record endedAt and clean up its own state
+    if (logId) {
+      window.location.href = `https://support.groomlinkgh.com?end_impersonation=${encodeURIComponent(logId)}`
+    } else {
+      window.location.href = 'https://support.groomlinkgh.com'
+    }
   }
 
   return (
@@ -23,9 +31,10 @@ export default function Layout() {
           </div>
           <button 
             onClick={handleEndImpersonation}
-            className="bg-black text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-gray-800 transition-colors"
+            className="bg-black text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-gray-800 transition-colors flex items-center gap-1.5"
           >
-            End Impersonation
+            <span className="material-icons text-base">logout</span>
+            Return to Support
           </button>
         </div>
       )}
