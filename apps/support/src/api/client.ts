@@ -33,8 +33,10 @@ export interface User {
   email?: string;
   role: string;
   status: string;
+  isVerified?: boolean;
   createdAt: string;
-  salons?: { id: string; businessName: string }[];
+  lastLoginAt?: string;
+  salons?: { id: string; businessName: string; status: string; providerCategory: string }[];
 }
 
 interface ImpersonationResponse {
@@ -163,18 +165,19 @@ class ApiClient {
     });
   }
 
-  // User Search
+  // User Search - uses support/users endpoint for full access (except SUPER_ADMIN)
   async searchUsers(query: string, role?: string, page: number = 1, limit: number = 20): Promise<SearchResult> {
-    const params = new URLSearchParams({ query, page: String(page), limit: String(limit) });
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (query.trim()) params.append('search', query);
     if (role) params.append('role', role);
     
-    const response = await this.request<{ success: boolean; data: User[]; meta: SearchResult['pagination'] }>(
-      `/impersonation/search?${params}`
+    const response = await this.request<{ success: boolean; data: User[]; pagination: SearchResult['pagination'] }>(
+      `/support/users?${params}`
     );
     
     return {
       users: response.data,
-      pagination: response.meta,
+      pagination: response.pagination,
     };
   }
 
@@ -189,16 +192,17 @@ class ApiClient {
     }>(`/impersonation/dashboards/${userId}`);
   }
 
-  // Users list - uses admin endpoint for full access
-  async getUsers(page: number = 1, limit: number = 20) {
-    // Use impersonation search with empty query to get recent users
-    // The /users endpoint doesn't have a general list for SUPPORT role
-    // We use the admin/health stats + impersonation search as alternatives
+  // Users list - uses support/users endpoint for full access
+  async getUsers(page: number = 1, limit: number = 20, role?: string, search?: string) {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (role) params.append('role', role);
+    if (search) params.append('search', search);
+    
     return this.request<{ 
       success: boolean; 
       data: User[];
-      meta: { page: number; limit: number; total: number; totalPages: number };
-    }>(`/impersonation/search?query=&page=${page}&limit=${limit}`);
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/support/users?${params}`);
   }
 
   // Salons - uses support/salons endpoint to see ALL statuses (SUPPORT+ role)

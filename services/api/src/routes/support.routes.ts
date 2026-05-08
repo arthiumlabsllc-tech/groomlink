@@ -46,6 +46,87 @@ router.get('/stats', authenticateToken, requireSupportOrHigher, async (req, res)
 // This route allows SUPPORT, ADMIN, and SUPER_ADMIN roles
 router.post('/customers', authenticateToken, requireSupportOrHigher, adminController.adminCreateCustomer);
 
+// Support user listing - see ALL users except SUPER_ADMIN
+router.get('/users', authenticateToken, requireSupportOrHigher, async (req, res) => {
+  try {
+    const prisma = (await import('../config/database')).default;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const role = req.query.role as string | undefined;
+    const search = req.query.search as string | undefined;
+    const status = req.query.status as string | undefined;
+
+    // Exclude SUPER_ADMIN from listing
+    const where: any = {
+      role: { not: 'SUPER_ADMIN' },
+    };
+
+    // Filter by role if specified
+    if (role && role !== 'ALL') {
+      where.role = role;
+    }
+
+    // Filter by status if specified
+    if (status) {
+      where.status = status;
+    }
+
+    // Search by name, phone, or email
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      // If we already have a role filter, preserve it
+      const roleCondition = where.role;
+      where.role = undefined; // Clear to use OR with AND
+      where.AND = [
+        { role: roleCondition || { not: 'SUPER_ADMIN' } },
+        {
+          OR: [
+            { firstName: { contains: searchTerm, mode: 'insensitive' } },
+            { lastName: { contains: searchTerm, mode: 'insensitive' } },
+            { phoneNumber: { contains: searchTerm } },
+            { email: { contains: searchTerm, mode: 'insensitive' } },
+          ],
+        },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          email: true,
+          role: true,
+          status: true,
+          isVerified: true,
+          createdAt: true,
+          lastLoginAt: true,
+          salons: {
+            select: { id: true, businessName: true, status: true, providerCategory: true },
+            take: 5,
+          },
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    res.json({
+      success: true,
+      data: users,
+      pagination: { page, limit, total, totalPages },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: (error as Error).message });
+  }
+});
+
 // Support salon listing - see ALL statuses (not just APPROVED like the public endpoint)
 router.get('/salons', authenticateToken, requireSupportOrHigher, async (req, res) => {
   try {

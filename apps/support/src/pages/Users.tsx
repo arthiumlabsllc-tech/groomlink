@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '../components/Icon';
 import { useImpersonation } from '../hooks/useImpersonation';
 import { api } from '../api';
-import { formatPhoneNumber, getStatusColor, cn } from '../lib';
+import { formatPhoneNumber, formatDate, getStatusColor, cn } from '../lib';
 
 interface UserResult {
   id: string;
@@ -12,14 +12,18 @@ interface UserResult {
   email?: string;
   role: string;
   status: string;
+  isVerified?: boolean;
   createdAt: string;
-  salons?: { id: string; businessName: string }[];
+  lastLoginAt?: string;
+  salons?: { id: string; businessName: string; status: string; providerCategory: string }[];
 }
 
 const roleFilters = [
-  { value: '', label: 'All', icon: 'group' },
-  { value: 'CUSTOMER', label: 'Customers', icon: 'person' },
+  { value: '', label: 'All Users', icon: 'group' },
   { value: 'SALON_OWNER', label: 'Salon Owners', icon: 'store' },
+  { value: 'CUSTOMER', label: 'Customers', icon: 'person' },
+  { value: 'ADMIN', label: 'Admins', icon: 'admin_panel_settings' },
+  { value: 'SUPPORT', label: 'Support', icon: 'support_agent' },
 ];
 
 const getRoleBadge = (role: string) => {
@@ -30,6 +34,30 @@ const getRoleBadge = (role: string) => {
       return 'bg-purple-50 text-purple-700 border border-purple-200';
     case 'SUPPORT':
       return 'bg-ghana-green/10 text-ghana-green border border-ghana-green/20';
+    case 'ADMIN':
+      return 'bg-amber-50 text-amber-700 border border-amber-200';
+    default:
+      return 'bg-gray-50 text-gray-700 border border-gray-200';
+  }
+};
+
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case 'SALON_OWNER': return 'Salon Owner';
+    case 'CUSTOMER': return 'Customer';
+    case 'SUPPORT': return 'Support';
+    case 'ADMIN': return 'Admin';
+    case 'SUPER_ADMIN': return 'Super Admin';
+    default: return role;
+  }
+};
+
+const getProviderCategoryBadge = (category: string) => {
+  switch (category) {
+    case 'FREELANCER':
+      return 'bg-teal-50 text-teal-700 border border-teal-200';
+    case 'BUSINESS':
+      return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
     default:
       return 'bg-gray-50 text-gray-700 border border-gray-200';
   }
@@ -38,29 +66,40 @@ const getRoleBadge = (role: string) => {
 export default function Users() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('');
-  const [results, setResults] = useState<UserResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [users, setUsers] = useState<UserResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [selectedUser, setSelectedUser] = useState<UserResult | null>(null);
   const [impersonationReason, setImpersonationReason] = useState('');
   const [showImpersonateModal, setShowImpersonateModal] = useState(false);
   
   const { startImpersonation, isLoading: isImpersonating } = useImpersonation();
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
-    setIsSearching(true);
-    setHasSearched(true);
+  const fetchUsers = async (pageNum: number = 1, role?: string, search?: string) => {
+    setIsLoading(true);
     try {
-      const result = await api.searchUsers(searchQuery, selectedRole || undefined);
-      setResults(result.users);
+      const result = await api.getUsers(pageNum, 20, role || undefined, search || undefined);
+      setUsers(result.data);
+      setTotalPages(result.pagination.totalPages);
+      setTotal(result.pagination.total);
+      setPage(pageNum);
     } catch (error) {
-      console.error('Search failed:', error);
-      setResults([]);
+      console.error('Failed to fetch users:', error);
+      setUsers([]);
     } finally {
-      setIsSearching(false);
+      setIsLoading(false);
     }
+  };
+
+  // Load users on mount and when filters change
+  useEffect(() => {
+    fetchUsers(1, selectedRole, searchQuery);
+  }, [selectedRole]);
+
+  const handleSearch = () => {
+    fetchUsers(1, selectedRole, searchQuery);
   };
 
   const handleImpersonate = async () => {
@@ -78,8 +117,8 @@ export default function Users() {
     <div className="space-y-6 page-enter">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 font-heading">User Search</h1>
-        <p className="text-gray-500 mt-1">Search for users and impersonate them to provide support.</p>
+        <h1 className="text-2xl font-bold text-gray-900 font-heading">Users</h1>
+        <p className="text-gray-500 mt-1">View and manage all platform users. Search by name, phone, or email.</p>
       </div>
 
       {/* Search Card */}
@@ -118,10 +157,10 @@ export default function Users() {
           })}
           <button
             onClick={handleSearch}
-            disabled={isSearching}
+            disabled={isLoading}
             className="ml-auto bg-ghana-green text-white px-6 py-2.5 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all duration-200 disabled:opacity-50 flex items-center gap-2 shadow-md shadow-ghana-green/20 btn-ripple"
           >
-            {isSearching ? (
+            {isLoading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <Icon name="search" size={20} />
@@ -132,76 +171,103 @@ export default function Users() {
       </div>
 
       {/* Results */}
-      {hasSearched && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 font-heading">
-              {results.length} user{results.length !== 1 ? 's' : ''} found
-            </h2>
-          </div>
-          
-          {isSearching ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="card-v2 p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-full skeleton-shimmer flex-shrink-0"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-5 w-1/2 rounded skeleton-shimmer"></div>
-                      <div className="h-4 w-2/3 rounded skeleton-shimmer"></div>
-                      <div className="h-4 w-1/3 rounded skeleton-shimmer"></div>
-                    </div>
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 font-heading">
+            {total} user{total !== 1 ? 's' : ''} total
+            {selectedRole && ` (${getRoleLabel(selectedRole)})`}
+          </h2>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fetchUsers(page - 1, selectedRole, searchQuery)}
+                disabled={page <= 1 || isLoading}
+                className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+              <button
+                onClick={() => fetchUsers(page + 1, selectedRole, searchQuery)}
+                disabled={page >= totalPages || isLoading}
+                className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="card-v2 p-5">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-full skeleton-shimmer flex-shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-1/2 rounded skeleton-shimmer"></div>
+                    <div className="h-4 w-2/3 rounded skeleton-shimmer"></div>
+                    <div className="h-4 w-1/3 rounded skeleton-shimmer"></div>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : results.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {results.map((user) => (
-                <div 
-                  key={user.id} 
-                  className="card-v2 p-5 hover:shadow-md transition-all duration-200"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 font-bold text-lg">
-                          {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 text-lg">
-                          {user.firstName} {user.lastName}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm text-gray-500">
-                            {formatPhoneNumber(user.phoneNumber)}
-                          </span>
-                        </div>
-                        {user.email && (
-                          <p className="text-sm text-gray-400 mt-0.5">{user.email}</p>
-                        )}
-                        {user.salons && user.salons.length > 0 && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <Icon name="store" size={16} className="text-ghana-green" />
-                            <span className="text-sm text-gray-600">
-                              {user.salons.map(s => s.businessName).join(', ')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className={cn('px-3 py-1 rounded-full text-xs font-medium', getRoleBadge(user.role))}>
-                        {user.role}
+              </div>
+            ))}
+          </div>
+        ) : users.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {users.map((user) => (
+              <div 
+                key={user.id} 
+                className="card-v2 p-5 hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
+                      <span className="text-gray-600 font-bold text-lg">
+                        {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                       </span>
                     </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-lg">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-sm text-gray-500">
+                          {formatPhoneNumber(user.phoneNumber)}
+                        </span>
+                        {user.isVerified && (
+                          <Icon name="verified" size={14} className="text-ghana-green" />
+                        )}
+                      </div>
+                      {user.email && (
+                        <p className="text-sm text-gray-400 mt-0.5">{user.email}</p>
+                      )}
+                      {user.salons && user.salons.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          {user.salons.map((salon) => (
+                            <span key={salon.id} className={cn('px-2 py-0.5 rounded-full text-xs font-medium', getProviderCategoryBadge(salon.providerCategory))}>
+                              {salon.providerCategory === 'FREELANCER' ? 'Freelance' : 'Shop'}: {salon.businessName}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={cn('px-3 py-1 rounded-full text-xs font-medium', getRoleBadge(user.role))}>
+                      {getRoleLabel(user.role)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center gap-3">
                     <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium', getStatusColor(user.status))}>
                       {user.status}
                     </span>
+                    <span className="text-xs text-gray-400">Joined {formatDate(user.createdAt)}</span>
+                  </div>
+                  {(user.role === 'CUSTOMER' || user.role === 'SALON_OWNER') && (
                     <button
                       onClick={() => {
                         setSelectedUser(user);
@@ -213,20 +279,20 @@ export default function Users() {
                       <Icon name="login" size={16} />
                       Impersonate
                     </button>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icon name="search" size={32} className="text-gray-400" />
               </div>
-              <p className="text-gray-500 text-lg">No users found matching your search criteria.</p>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Icon name="search" size={32} className="text-gray-400" />
             </div>
-          )}
-        </div>
-      )}
+            <p className="text-gray-500 text-lg">No users found matching your criteria.</p>
+          </div>
+        )}
+      </div>
 
       {/* Impersonation Modal */}
       {showImpersonateModal && selectedUser && (
