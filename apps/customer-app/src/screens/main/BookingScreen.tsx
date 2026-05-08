@@ -21,7 +21,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { salonApi } from '../../api/salon';
 import { bookingApi, AvailableSlot, GuestData } from '../../api/booking';
@@ -85,6 +85,7 @@ export default function BookingScreen() {
   const { theme } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuthStore();
   const { salonId, workerId, services: preselectedServices } = route.params;
   
@@ -258,7 +259,7 @@ export default function BookingScreen() {
       
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
-      // Initialize payment via Hubtel
+      // Initialize payment via active gateway (Paystack/Hubtel)
       try {
         setInitializingPayment(true);
         const paymentResponse = await paymentApi.initialize({
@@ -270,8 +271,9 @@ export default function BookingScreen() {
         // Navigate to payment processing screen
         navigation.navigate('PaymentProcessing', {
           bookingId: booking.id,
-          clientReference: paymentResponse.clientReference,
+          reference: paymentResponse.reference,
           provider: selectedPaymentMethod,
+          checkoutUrl: paymentResponse.checkout_url,
         });
       } catch (paymentError: any) {
         // Payment initialization failed - navigate to confirmation anyway
@@ -970,7 +972,7 @@ export default function BookingScreen() {
         </ScrollView>
 
         {/* Compact Summary Footer */}
-        <Surface style={styles.footer} elevation={4}>
+        <Surface style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 8) }]} elevation={4}>
           <View style={styles.summaryRow}>
             <View>
               <Text variant="bodySmall" style={styles.summaryLabel}>

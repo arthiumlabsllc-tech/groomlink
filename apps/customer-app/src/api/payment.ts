@@ -3,8 +3,11 @@ import apiClient from './client';
 export type PaymentProvider = 'MTN_MOMO' | 'VODAFONE_CASH' | 'AIRTELTIGO_MONEY';
 
 export interface PaymentInitializeResponse {
-  clientReference: string;
-  hubtelTransactionId: string;
+  success: boolean;
+  reference: string;
+  message: string;
+  checkout_url?: string;
+  access_code?: string;
 }
 
 export interface PaymentVerifyResponse {

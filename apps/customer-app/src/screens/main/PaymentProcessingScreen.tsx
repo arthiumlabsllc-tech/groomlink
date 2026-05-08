@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Alert } from 'react-native';
+import { View, Text, StyleSheet, Animated, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from 'react-native-paper';
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function PaymentProcessingScreen({ route }: Props) {
-  const { bookingId, clientReference, provider } = route.params;
+  const { bookingId, reference, provider, checkoutUrl } = route.params;
   const navigation = useNavigation<PaymentProcessingNavProp>();
   const [status, setStatus] = useState<'polling' | 'success' | 'failed' | 'timeout'>('polling');
   const [attempts, setAttempts] = useState(0);
@@ -42,7 +42,7 @@ export default function PaymentProcessingScreen({ route }: Props) {
 
     const poll = async () => {
       try {
-        const result = await paymentApi.verify({ reference: clientReference });
+        const result = await paymentApi.verify({ reference });
 
         if (result.success) {
           setStatus('success');
@@ -89,7 +89,7 @@ export default function PaymentProcessingScreen({ route }: Props) {
     poll();
 
     return () => clearInterval(interval);
-  }, [status, clientReference, bookingId, navigation]);
+  }, [status, reference, bookingId, navigation]);
 
   const getProviderLabel = () => {
     switch (provider) {
@@ -131,8 +131,20 @@ export default function PaymentProcessingScreen({ route }: Props) {
             Waiting for {getProviderLabel()} confirmation...
           </Text>
           <Text style={styles.hint}>
-            Please approve the payment prompt on your phone
+            {checkoutUrl
+              ? 'Tap "Complete Payment" below to finish payment on the secure checkout page'
+              : 'Please approve the payment prompt on your phone'}
           </Text>
+          {checkoutUrl && (
+            <Button
+              mode="contained"
+              onPress={() => Linking.openURL(checkoutUrl)}
+              buttonColor="#006B3F"
+              style={styles.actionButton}
+            >
+              Complete Payment
+            </Button>
+          )}
           <View style={styles.progressContainer}>
             <View style={[styles.progressBar, { width: `${Math.min((attempts / MAX_POLL_ATTEMPTS) * 100, 100)}%` }]} />
           </View>
@@ -275,5 +287,9 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+  },
+  actionButton: {
+    width: '80%',
+    marginVertical: 16,
   },
 });
