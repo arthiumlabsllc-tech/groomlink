@@ -29,7 +29,7 @@
       "package": "com.arthiumlabsllc.groomlink",
       "versionCode": 17,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/loading-salon-02-splash.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [

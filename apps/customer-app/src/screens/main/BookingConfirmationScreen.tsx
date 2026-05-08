@@ -401,7 +401,12 @@ export default function BookingConfirmationScreen() {
       <View style={styles.footer}>
         <Button
           mode="contained"
-          onPress={() => navigation.navigate('Bookings')}
+          onPress={() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs' }],
+            });
+          }}
           style={styles.primaryButton}
           contentStyle={styles.buttonContent}
           buttonColor={COLORS.primaryGreen}
@@ -410,7 +415,12 @@ export default function BookingConfirmationScreen() {
         </Button>
         <Button
           mode="outlined"
-          onPress={() => navigation.navigate('HomeMain')}
+          onPress={() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs' }],
+            });
+          }}
           style={styles.secondaryButton}
           contentStyle={styles.buttonContent}
           textColor={COLORS.primaryGreen}

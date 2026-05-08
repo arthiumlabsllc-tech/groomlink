@@ -35,7 +35,7 @@ export default function ProfileSetupScreen() {
   const email = route.params?.email || '';
   
   const { setUser } = useAuthStore();
-  const { theme, isDark } = useAppTheme();
+  const { theme } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [firstName, setFirstName] = useState('');
@@ -242,11 +242,13 @@ export default function ProfileSetupScreen() {
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <Image
-              source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+            <View style={styles.logoCircle}>
+              <Image
+                source={require('../../../assets/logo-white.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
           </View>
 
           {/* Progress Indicator */}
@@ -367,8 +369,21 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     alignItems: 'center',
     marginBottom: 24,
   },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primaryGreen,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   logoImage: {
-    width: 180,
+    width: 48,
     height: 48,
   },
   progressContainer: {

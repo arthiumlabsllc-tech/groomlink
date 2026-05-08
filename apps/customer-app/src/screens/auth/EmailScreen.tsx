@@ -29,7 +29,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function EmailScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { theme, isDark } = useAppTheme();
+  const { theme } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [email, setEmail] = useState('');

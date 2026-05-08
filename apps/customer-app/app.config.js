@@ -12,11 +12,11 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/splash.png",
-      resizeMode: "contain",
-      backgroundColor: "#CE1126"
+      image: "./assets/loading-salon-02-splash.png",
+      resizeMode: "cover",
+      backgroundColor: "#FFFFFF"
     },
     assetBundlePatterns: [
       "**/*"
@@ -34,10 +34,10 @@ export default {
     },
     android: {
       package: "com.arthiumlabsllc.groomlink",
-      versionCode: 1,
+      versionCode: 17,
       adaptiveIcon: {
-        foregroundImage: "./assets/logo-white.png",
-        backgroundColor: "#CE1126"
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#FFFFFF"
       },
       permissions: [
         "INTERNET",

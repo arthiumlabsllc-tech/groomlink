@@ -5,10 +5,7 @@ import {
   Animated,
   StyleSheet,
   Text,
-  Dimensions,
 } from 'react-native';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Brand illustrations – randomly pick one per mount
 const ILLUSTRATIONS = [
