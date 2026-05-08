@@ -45,9 +45,18 @@ export function useImpersonation() {
       if (logId) {
         await api.endImpersonation(logId);
       }
+      // Restore original auth token
+      const originalToken = localStorage.getItem('original_auth_token');
+      if (originalToken) {
+        localStorage.setItem('auth_token', originalToken);
+        api.setToken(originalToken);
+        localStorage.removeItem('original_auth_token');
+      } else {
+        localStorage.removeItem('auth_token');
+        api.setToken(null);
+      }
       localStorage.removeItem('impersonation_log_id');
       localStorage.removeItem('impersonating_user');
-      localStorage.removeItem('auth_token');
       setIsImpersonating(false);
       window.location.reload();
     } catch (err) {

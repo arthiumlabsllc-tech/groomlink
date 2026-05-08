@@ -1,6 +1,30 @@
 // Use relative URL in development (Vite proxy handles it), production URL in production
 export const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://groomlinkgh.com/api');
 
+export interface SalonData {
+  id: string;
+  businessName: string;
+  description?: string;
+  type: string;
+  providerCategory: string;
+  status: string;
+  address: string;
+  city: string;
+  region: string;
+  phoneNumber: string;
+  email?: string;
+  logo?: string;
+  rating?: number;
+  createdAt: string;
+  owner: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    email?: string;
+  };
+}
+
 export interface User {
   id: string;
   firstName: string;
@@ -118,6 +142,13 @@ class ApiClient {
     
     if (response.success) {
       const { tokens, user, impersonationLogId } = response.data;
+      // Save original token BEFORE overwriting so we can restore on endImpersonation
+      const originalToken = this.token;
+      if (!localStorage.getItem('original_auth_token')) {
+        localStorage.setItem('original_auth_token', originalToken || '');
+      }
+      // Update the API client token so subsequent requests use the impersonation token
+      this.token = tokens.accessToken;
       localStorage.setItem('auth_token', tokens.accessToken);
       localStorage.setItem('impersonation_log_id', impersonationLogId);
       localStorage.setItem('impersonating_user', JSON.stringify(user));
@@ -158,28 +189,32 @@ class ApiClient {
     }>(`/impersonation/dashboards/${userId}`);
   }
 
-  // Users list
+  // Users list - uses admin endpoint for full access
   async getUsers(page: number = 1, limit: number = 20) {
+    // Use impersonation search with empty query to get recent users
+    // The /users endpoint doesn't have a general list for SUPPORT role
+    // We use the admin/health stats + impersonation search as alternatives
     return this.request<{ 
       success: boolean; 
       data: User[];
       meta: { page: number; limit: number; total: number; totalPages: number };
-    }>(`/users?page=${page}&limit=${limit}`);
+    }>(`/impersonation/search?query=&page=${page}&limit=${limit}`);
   }
 
-  // Salons
-  async getSalons(page: number = 1, limit: number = 20, status?: string) {
+  // Salons - uses support/salons endpoint to see ALL statuses (SUPPORT+ role)
+  async getSalons(page: number = 1, limit: number = 20, status?: string, search?: string) {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (status) params.append('status', status);
+    if (search) params.append('search', search);
     
     return this.request<{ 
       success: boolean; 
-      data: any[];
+      data: SalonData[];
       pagination: { page: number; limit: number; total: number; totalPages: number };
-    }>(`/salons?${params}`);
+    }>(`/support/salons?${params}`);
   }
 
-  // Support tickets
+  // Support tickets - uses support/tickets endpoints (SUPPORT+ role)
   async getTickets(page: number = 1, limit: number = 20, status?: string) {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (status) params.append('status', status);
@@ -191,7 +226,52 @@ class ApiClient {
     }>(`/support/tickets?${params}`);
   }
 
-  // Dashboard stats
+  async getTicketById(id: string) {
+    return this.request<{ 
+      success: boolean; 
+      data: {
+        id: string;
+        subject: string;
+        description: string;
+        status: string;
+        priority: string;
+        category: string;
+        createdAt: string;
+        updatedAt: string;
+        user: { id: string; firstName: string; lastName: string; phoneNumber: string };
+        assignedTo?: { id: string; firstName: string; lastName: string } | null;
+        messages: { id: string; content: string; isFromUser: boolean; createdAt: string; sender: { firstName: string; lastName: string } }[];
+      };
+    }>(`/support/tickets/${id}`);
+  }
+
+  async updateTicketStatus(id: string, status: string) {
+    return this.request<{ 
+      success: boolean; 
+      data: any;
+    }>(`/support/tickets/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async sendTicketMessage(id: string, content: string) {
+    return this.request<{ 
+      success: boolean; 
+      data: {
+        id: string;
+        content: string;
+        isFromUser: boolean;
+        createdAt: string;
+        sender: { firstName: string; lastName: string };
+      };
+    }>(`/support/tickets/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  // Dashboard stats - uses support/stats endpoint (SUPPORT+ role)
   async getStats() {
     return this.request<{ 
       success: boolean; 
@@ -203,7 +283,7 @@ class ApiClient {
         todaySignups: number;
         pendingSalons: number;
       };
-    }>('/admin/stats');
+    }>('/support/stats');
   }
 
   // Customer management

@@ -1,25 +1,10 @@
 import { useState, useEffect } from 'react';
 import Icon from '../components/Icon';
-import { api } from '../api';
+import { api, SalonData } from '../api';
 import { useImpersonation } from '../hooks/useImpersonation';
 import { formatPhoneNumber, formatDate, getStatusColor, cn } from '../lib';
 
-interface Salon {
-  id: string;
-  businessName: string;
-  address: string;
-  city: string;
-  phone: string;
-  status: string;
-  createdAt: string;
-  rating?: number;
-  owner: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-  };
-}
+type Salon = SalonData;
 
 const statusFilters = [
   { value: '', label: 'All Status' },
@@ -43,7 +28,7 @@ export default function Salons() {
   const fetchSalons = async () => {
     setIsLoading(true);
     try {
-      const response = await api.getSalons(page, 20, selectedStatus || undefined);
+      const response = await api.getSalons(page, 20, selectedStatus || undefined, searchQuery || undefined);
       setSalons(response.data || []);
       setTotalPages(response.pagination?.totalPages || 1);
     } catch (error) {
@@ -55,19 +40,13 @@ export default function Salons() {
 
   useEffect(() => {
     fetchSalons();
-  }, [page, selectedStatus]);
+  }, [page, selectedStatus, searchQuery]);
 
   const handleImpersonate = async (salon: Salon) => {
     await startImpersonation(salon.owner.id, `Supporting salon: ${salon.businessName}`);
   };
 
-  const filteredSalons = searchQuery
-    ? salons.filter(s => 
-        s.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.owner.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.owner.lastName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : salons;
+  const filteredSalons = salons;
 
   // Mobile detail view
   if (showDetailModal && selectedSalon) {
@@ -120,7 +99,7 @@ export default function Salons() {
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100">
               <span className="text-gray-500">Phone</span>
-              <span className="text-gray-900">{formatPhoneNumber(selectedSalon.phone)}</span>
+              <span className="text-gray-900">{formatPhoneNumber(selectedSalon.phoneNumber)}</span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100">
               <span className="text-gray-500">Owner</span>
@@ -257,7 +236,7 @@ export default function Salons() {
                   <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
                     <Icon name="call" size={16} className="text-gray-400" />
                   </div>
-                  <span>{formatPhoneNumber(salon.phone)}</span>
+                  <span>{formatPhoneNumber(salon.phoneNumber)}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
@@ -350,7 +329,7 @@ export default function Salons() {
               </div>
               <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">Phone</span>
-                <span className="text-gray-900">{formatPhoneNumber(selectedSalon.phone)}</span>
+                <span className="text-gray-900">{formatPhoneNumber(selectedSalon.phoneNumber)}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">Owner</span>

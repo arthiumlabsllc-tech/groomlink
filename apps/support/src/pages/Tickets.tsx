@@ -1,14 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Icon from '../components/Icon';
 import { api } from '../api';
 import { formatDateTime, getStatusColor, cn } from '../lib';
+
+interface TicketMessage {
+  id: string;
+  content: string;
+  isFromUser: boolean;
+  createdAt: string;
+  sender: {
+    firstName: string;
+    lastName: string;
+  };
+}
 
 interface TicketData {
   id: string;
   subject: string;
   description: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   category: string;
   createdAt: string;
   updatedAt: string;
@@ -18,15 +29,7 @@ interface TicketData {
     lastName: string;
     phoneNumber: string;
   };
-  messages?: {
-    id: string;
-    content: string;
-    createdAt: string;
-    sender: {
-      firstName: string;
-      lastName: string;
-    };
-  }[];
+  messages?: TicketMessage[];
 }
 
 const statusTabs = [
@@ -64,6 +67,9 @@ export default function Tickets() {
   const [selectedTicket, setSelectedTicket] = useState<TicketData | null>(null);
   const [showDetailView, setShowDetailView] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchTickets = async () => {
     setIsLoading(true);
@@ -82,15 +88,74 @@ export default function Tickets() {
     fetchTickets();
   }, [page, selectedStatus]);
 
-  const handleTicketClick = (ticket: TicketData) => {
+  const handleTicketClick = async (ticket: TicketData) => {
     setSelectedTicket(ticket);
     setShowDetailView(true);
+    setActionError(null);
+    // Fetch full ticket detail with messages
+    try {
+      const response = await api.getTicketById(ticket.id);
+      if (response.success && response.data) {
+        setSelectedTicket(response.data as TicketData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch ticket details:', error);
+      // Still show the ticket with basic info from the list
+    }
   };
 
   const handleBackToList = () => {
     setShowDetailView(false);
     setSelectedTicket(null);
+    setNewMessage('');
+    setActionError(null);
   };
+
+  const handleSendMessage = useCallback(async () => {
+    if (!selectedTicket || !newMessage.trim()) return;
+    setIsSending(true);
+    setActionError(null);
+    try {
+      const response = await api.sendTicketMessage(selectedTicket.id, newMessage.trim());
+      if (response.success && response.data) {
+        const sentMessage: TicketMessage = {
+          id: response.data.id,
+          content: response.data.content,
+          isFromUser: response.data.isFromUser,
+          createdAt: response.data.createdAt,
+          sender: response.data.sender,
+        };
+        setSelectedTicket(prev => prev ? {
+          ...prev,
+          status: prev.status === 'OPEN' ? 'IN_PROGRESS' : prev.status,
+          messages: [...(prev.messages || []), sentMessage],
+        } : prev);
+        setNewMessage('');
+      }
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Failed to send message');
+    } finally {
+      setIsSending(false);
+    }
+  }, [selectedTicket, newMessage]);
+
+  const handleUpdateStatus = useCallback(async (newStatus: string) => {
+    if (!selectedTicket) return;
+    setIsUpdatingStatus(true);
+    setActionError(null);
+    try {
+      const response = await api.updateTicketStatus(selectedTicket.id, newStatus);
+      if (response.success) {
+        setSelectedTicket(prev => prev ? { ...prev, status: newStatus as TicketData['status'] } : prev);
+        // Also update the ticket in the list
+        setTickets(prev => prev.map(t => t.id === selectedTicket.id ? { ...t, status: newStatus as TicketData['status'] } : t));
+      }
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Failed to update ticket status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  }, [selectedTicket]);
 
   // Mobile detail view
   if (showDetailView && selectedTicket) {
@@ -196,26 +261,65 @@ export default function Tickets() {
                 placeholder="Type your reply..."
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-ghana-green focus:border-ghana-green transition-all"
               />
-              <button className="bg-ghana-green text-white px-5 py-3 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all flex items-center gap-2 shadow-md shadow-ghana-green/20 btn-ripple">
-                <Icon name="send" size={16} />
+              <button 
+                onClick={handleSendMessage}
+                disabled={isSending || !newMessage.trim()}
+                className="bg-ghana-green text-white px-5 py-3 rounded-xl font-medium hover:bg-support-700 active:bg-support-800 transition-all flex items-center gap-2 shadow-md shadow-ghana-green/20 btn-ripple disabled:opacity-50 disabled:cursor-not-allowed">
+                {isSending ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Icon name="send" size={16} />
+                )}
                 <span className="hidden sm:inline">Send</span>
               </button>
             </div>
             
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 bg-ghana-green text-white rounded-lg font-medium hover:bg-support-700 transition-all text-sm btn-ripple">
-                <Icon name="check_circle" size={16} />
-                Resolve
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-ghana-yellow text-ghana-dark rounded-lg font-semibold hover:bg-yellow-400 transition-all text-sm btn-ripple">
-                <Icon name="error" size={16} />
-                Escalate
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all text-sm btn-ripple">
-                Close Ticket
-              </button>
+              {selectedTicket.status !== 'RESOLVED' && selectedTicket.status !== 'CLOSED' && (
+                <button 
+                  onClick={() => handleUpdateStatus('RESOLVED')}
+                  disabled={isUpdatingStatus}
+                  className="flex items-center gap-2 px-4 py-2 bg-ghana-green text-white rounded-lg font-medium hover:bg-support-700 transition-all text-sm btn-ripple disabled:opacity-50"
+                >
+                  <Icon name="check_circle" size={16} />
+                  Resolve
+                </button>
+              )}
+              {selectedTicket.status !== 'CLOSED' && (
+                <button 
+                  onClick={() => handleUpdateStatus('IN_PROGRESS')}
+                  disabled={isUpdatingStatus}
+                  className="flex items-center gap-2 px-4 py-2 bg-ghana-yellow text-ghana-dark rounded-lg font-semibold hover:bg-yellow-400 transition-all text-sm btn-ripple disabled:opacity-50"
+                >
+                  <Icon name="error" size={16} />
+                  Escalate
+                </button>
+              )}
+              {selectedTicket.status !== 'CLOSED' && (
+                <button 
+                  onClick={() => handleUpdateStatus('CLOSED')}
+                  disabled={isUpdatingStatus}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all text-sm btn-ripple disabled:opacity-50"
+                >
+                  <Icon name="block" size={16} />
+                  Close Ticket
+                </button>
+              )}
+              {selectedTicket.status === 'CLOSED' && (
+                <button 
+                  onClick={() => handleUpdateStatus('OPEN')}
+                  disabled={isUpdatingStatus}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-all text-sm btn-ripple disabled:opacity-50"
+                >
+                  <Icon name="reopen" size={16} />
+                  Reopen
+                </button>
+              )}
             </div>
+            {actionError && (
+              <p className="text-sm text-ghana-red mt-2">{actionError}</p>
+            )}
           </div>
         </div>
       </div>

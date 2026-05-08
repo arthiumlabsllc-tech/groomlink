@@ -163,7 +163,7 @@ export default function Dashboard() {
   ];
 
   const quickStats = [
-    { name: 'Today\'s Signups', value: stats?.todaySignups || 0, icon: 'trending_up', trend: '+12%', trendColor: 'text-ghana-green' },
+    { name: 'Today\'s Signups', value: stats?.todaySignups || 0, icon: 'trending_up', trend: stats?.todaySignups ? `${stats.todaySignups} today` : '0 today', trendColor: 'text-ghana-green' },
     { name: 'Pending Salons', value: stats?.pendingSalons || 0, icon: 'error', trend: 'Needs review', trendColor: 'text-ghana-yellow' },
   ];
 
