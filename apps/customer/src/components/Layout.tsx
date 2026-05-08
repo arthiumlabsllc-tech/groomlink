@@ -15,16 +15,6 @@ export default function Layout() {
         </div>
       </main>
 
-      {/* Footer - Desktop Only */}
-      <footer className="py-3 text-center hidden md:block pb-24">
-        <a
-          href="#"
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          An Arthium Labs Product
-        </a>
-      </footer>
-
       {/* Bottom Navigation - Fixed at bottom (mobile-web style) */}
       <BottomNav />
     </div>

@@ -159,6 +159,11 @@ body {
   }
 }
 
+/* iOS safe area padding for fixed bottom nav */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* ===== Modern 2026 Design System ===== */
 
 /* Shimmer skeleton */
