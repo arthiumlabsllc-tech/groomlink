@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, Animated, Alert, Linking, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from 'react-native-paper';
@@ -18,6 +18,8 @@ interface Props {
 export default function PaymentProcessingScreen({ route }: Props) {
   const { bookingId, reference, provider, checkoutUrl } = route.params;
   const navigation = useNavigation<PaymentProcessingNavProp>();
+  const isDark = useColorScheme() === 'dark';
+  const styles = createStyles(isDark);
   const [status, setStatus] = useState<'polling' | 'success' | 'failed' | 'timeout'>('polling');
   const [attempts, setAttempts] = useState(0);
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -230,10 +232,10 @@ export default function PaymentProcessingScreen({ route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDark ? '#121212' : '#FFFFFF',
   },
   content: {
     flex: 1,
@@ -253,26 +255,26 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: isDark ? '#FFFFFF' : '#111827',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#4B5563',
+    color: isDark ? '#9CA3AF' : '#4B5563',
     textAlign: 'center',
     marginBottom: 8,
   },
   hint: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: isDark ? '#6B7280' : '#9CA3AF',
     textAlign: 'center',
     marginBottom: 32,
   },
   progressContainer: {
     width: '80%',
     height: 4,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: isDark ? '#333333' : '#E5E7EB',
     borderRadius: 2,
     overflow: 'hidden',
   },

@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Appearance } from 'react-native';
 
 interface Props {
   children: ReactNode;
@@ -32,6 +32,9 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   render() {
+    const isDark = Appearance.getColorScheme() === 'dark';
+    const styles = createStyles(isDark);
+
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
@@ -65,10 +68,10 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: isDark ? '#121212' : '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -84,20 +87,20 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: isDark ? '#FFFFFF' : '#111827',
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
     fontSize: 14,
-    color: '#6B7280',
+    color: isDark ? '#9CA3AF' : '#6B7280',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
   },
   errorContainer: {
     maxHeight: 150,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? '#2D1B1B' : '#FEF2F2',
     borderRadius: 8,
     padding: 12,
     marginBottom: 24,
@@ -105,12 +108,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#991B1B',
+    color: isDark ? '#EF4444' : '#991B1B',
     fontFamily: 'monospace',
   },
   stackText: {
     fontSize: 10,
-    color: '#991B1B',
+    color: isDark ? '#EF4444' : '#991B1B',
     fontFamily: 'monospace',
     marginTop: 8,
   },

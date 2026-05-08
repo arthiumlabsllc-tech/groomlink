@@ -13,12 +13,14 @@ import RateBookingScreen from '../screens/main/RateBookingScreen';
 import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import LoadingScreen from '../components/LoadingScreen';
 import { RootStackParamList } from '../types/navigation';
+import { useAppTheme } from '../theme/ThemeContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   const { isLoading, isAuthenticated, pendingBooking, setPendingBooking } = useAuthStore();
   const navigation = useNavigation<any>();
+  const { theme } = useAppTheme();
 
   // After auth modal dismisses, redirect to pending booking if one exists
   useEffect(() => {
@@ -69,8 +71,9 @@ export default function AppNavigator() {
         options={{
           title: 'Booking Details',
           headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
+          headerStyle: { backgroundColor: theme.background },
+          headerTitleStyle: { color: theme.text },
+          headerTintColor: theme.text,
         }}
       />
       <Stack.Screen
@@ -79,8 +82,9 @@ export default function AppNavigator() {
         options={{
           title: 'Check-in Code',
           headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
+          headerStyle: { backgroundColor: theme.background },
+          headerTitleStyle: { color: theme.text },
+          headerTintColor: theme.text,
         }}
       />
       <Stack.Screen
@@ -89,8 +93,9 @@ export default function AppNavigator() {
         options={{
           title: 'Rate Booking',
           headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
+          headerStyle: { backgroundColor: theme.background },
+          headerTitleStyle: { color: theme.text },
+          headerTintColor: theme.text,
         }}
       />
       <Stack.Screen
@@ -99,8 +104,9 @@ export default function AppNavigator() {
         options={{
           title: 'Rate GroomLink',
           headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
-          headerTitleStyle: { color: '#111827' },
+          headerStyle: { backgroundColor: theme.background },
+          headerTitleStyle: { color: theme.text },
+          headerTintColor: theme.text,
         }}
       />
     </Stack.Navigator>
