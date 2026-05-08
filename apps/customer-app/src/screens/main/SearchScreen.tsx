@@ -46,6 +46,18 @@ const SALON_TYPES = [
   { label: 'Beauty', value: 'BEAUTY_SALON' },
 ];
 
+// Service categories for filtering by what salons offer
+const SERVICE_CATEGORIES = [
+  { label: 'All Services', value: '' },
+  { label: 'Haircut', value: 'Haircut' },
+  { label: 'Dreadlocks', value: 'Dreadlocks' },
+  { label: 'Braiding', value: 'Braiding' },
+  { label: 'Beard Trim', value: 'Beard Trim' },
+  { label: 'Nails', value: 'Nails' },
+  { label: 'Makeup', value: 'Makeup' },
+  { label: 'Massage', value: 'Massage' },
+];
+
 const RATING_FILTERS = [
   { label: 'Any Rating', value: 0 },
   { label: '4+ Stars', value: 4 },
@@ -65,12 +77,16 @@ export default function SearchScreen() {
   const initialQuery = route.params?.query || '';
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedType, setSelectedType] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [homeServiceOnly, setHomeServiceOnly] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const filters: SearchFilters = {
     search: searchQuery || undefined,
     type: selectedType || undefined,
+    category: selectedCategory || undefined,
+    homeService: homeServiceOnly || undefined,
     minRating: minRating || undefined,
     limit: 20,
   };
@@ -183,7 +199,7 @@ export default function SearchScreen() {
           renderItem={({ item }) => (
             <Chip
               selected={selectedType === item.value}
-              onPress={() => setSelectedType(item.value)}
+              onPress={() => setSelectedType(selectedType === item.value ? '' : item.value)}
               style={[
                 styles.filterChip,
                 selectedType === item.value && styles.filterChipSelected,
@@ -194,6 +210,38 @@ export default function SearchScreen() {
             </Chip>
           )}
         />
+      </View>
+
+      <View style={styles.filterSection}>
+        <Text variant="labelMedium" style={styles.filterLabel}>Service</Text>
+        <FlatList
+          horizontal
+          data={SERVICE_CATEGORIES}
+          keyExtractor={(item) => item.value || 'all-svc'}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterChips}
+          renderItem={({ item }) => (
+            <Chip
+              selected={selectedCategory === item.value}
+              onPress={() => setSelectedCategory(selectedCategory === item.value ? '' : item.value)}
+              style={[
+                styles.filterChip,
+                selectedCategory === item.value && styles.filterChipSelected,
+              ]}
+              textStyle={selectedCategory === item.value ? styles.filterChipTextSelected : styles.filterChipText}
+            >
+              {item.label}
+            </Chip>
+          )}
+        />
+        <TouchableOpacity
+          style={[styles.homeServiceToggle, homeServiceOnly && styles.homeServiceToggleActive]}
+          onPress={() => setHomeServiceOnly(!homeServiceOnly)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="home-outline" size={16} color={homeServiceOnly ? '#fff' : '#4F46E5'} />
+          <Text style={[styles.homeServiceText, homeServiceOnly && styles.homeServiceTextActive]}>Home Service</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.filterSection}>
@@ -441,5 +489,30 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   retryText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  homeServiceToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+    backgroundColor: COLORS.background,
+    gap: 5,
+  },
+  homeServiceToggleActive: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  homeServiceText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  homeServiceTextActive: {
+    color: '#fff',
   },
 });

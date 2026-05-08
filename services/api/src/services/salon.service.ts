@@ -48,6 +48,8 @@ export interface SalonFilters {
   radius?: number;
   search?: string;
   isFeatured?: boolean;
+  category?: string;
+  homeService?: boolean;
 }
 
 export async function createSalon(ownerId: string, data: CreateSalonData) {
@@ -186,6 +188,16 @@ export async function getSalons(filters: SalonFilters, page: number = 1, limit: 
 
   if (filters.providerCategory) {
     (where as any).providerCategory = filters.providerCategory;
+  }
+
+  // Filter by service category (e.g., "Haircut", "Dreadlocks", "Braiding")
+  if (filters.category) {
+    where.services = {
+      some: {
+        isActive: true,
+        category: { contains: filters.category, mode: 'insensitive' },
+      }
+    };
   }
 
   // Geolocation filter

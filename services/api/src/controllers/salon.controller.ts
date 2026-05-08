@@ -71,6 +71,8 @@ export async function getSalons(req: Request, res: Response): Promise<void> {
       search: req.query.search as string,
       isFeatured: req.query.featured === 'true' ? true : undefined,
       providerCategory: req.query.providerCategory as string || undefined,
+      category: req.query.category as string || undefined,
+      homeService: req.query.homeService === 'true' ? true : undefined,
     };
 
     const { salons, total } = await salonService.getSalons(filters, page, limit);
@@ -357,15 +359,33 @@ interface SalonMapData {
 
 export async function getSalonsForMap(req: Request, res: Response): Promise<void> {
   try {
-    const { lat, lng, radius = 10 } = req.query;
+    const { lat, lng, radius = 10, category, homeService } = req.query;
+    
+    // Build where clause
+    const where: any = { 
+      status: 'APPROVED', 
+      latitude: { not: null },
+      longitude: { not: null }
+    };
+
+    // Filter by provider category (FREELANCER for home service)
+    if (homeService === 'true') {
+      where.providerCategory = 'FREELANCER';
+    }
+
+    // Filter by service category
+    if (category && typeof category === 'string') {
+      where.services = {
+        some: {
+          isActive: true,
+          category: { contains: category, mode: 'insensitive' },
+        }
+      };
+    }
     
     // Get all approved salons with location data
     const salons = await prisma.salon.findMany({
-      where: { 
-        status: 'APPROVED', 
-        latitude: { not: undefined },
-        longitude: { not: undefined }
-      },
+      where,
       select: {
         id: true, businessName: true, type: true,
         latitude: true, longitude: true,
@@ -373,23 +393,42 @@ export async function getSalonsForMap(req: Request, res: Response): Promise<void
         openingTime: true, closingTime: true, workingDays: true,
         city: true, address: true, phoneNumber: true,
         isFeatured: true,
+        providerCategory: true,
+        services: {
+          where: { isActive: true },
+          select: {
+            id: true, name: true, category: true, price: true, duration: true,
+            offersHomeService: true, homeServiceFee: true,
+          },
+          take: 5,
+        },
       }
     });
 
     // If lat/lng provided, filter by radius (Haversine approximation)
-    let filtered: SalonMapData[] = salons;
+    let filtered: any[] = salons;
     if (lat && lng) {
       const latNum = parseFloat(lat as string);
       const lngNum = parseFloat(lng as string);
       const radiusNum = parseFloat(radius as string);
-      filtered = salons.filter((s: SalonMapData) => {
+      filtered = salons.filter((s: any) => {
         if (!s.latitude || !s.longitude) return false;
         const dLat = (s.latitude - latNum) * Math.PI / 180;
         const dLng = (s.longitude - lngNum) * Math.PI / 180;
         const a = Math.sin(dLat/2)**2 + Math.cos(latNum*Math.PI/180) * Math.cos(s.latitude*Math.PI/180) * Math.sin(dLng/2)**2;
         const distance = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        // Attach distance for client use
+        (s as any).distance = Math.round(distance * 10) / 10;
         return distance <= radiusNum;
       });
+    }
+
+    // If homeService filter, also include salons with services that offer home service
+    if (homeService === 'true') {
+      filtered = filtered.filter((s: any) => 
+        s.providerCategory === 'FREELANCER' || 
+        s.services?.some((svc: any) => svc.offersHomeService)
+      );
     }
 
     // Determine open/closed status based on current time
@@ -397,7 +436,7 @@ export async function getSalonsForMap(req: Request, res: Response): Promise<void
     const currentDay = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getDay()];
     const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-    const result = filtered.map((s: SalonMapData) => ({
+    const result = filtered.map((s: any) => ({
       ...s,
       isOpen: s.workingDays?.includes(currentDay) && s.openingTime && s.closingTime && currentTime >= s.openingTime && currentTime <= s.closingTime,
     }));

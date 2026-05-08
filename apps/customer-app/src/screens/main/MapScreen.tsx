@@ -50,6 +50,18 @@ const SALON_TYPES = [
   { label: 'Spa', value: 'SPA' },
 ];
 
+// Service categories for filtering by what salons offer
+const SERVICE_CATEGORIES = [
+  { label: 'All Services', value: '' },
+  { label: 'Haircut', value: 'Haircut' },
+  { label: 'Dreadlocks', value: 'Dreadlocks' },
+  { label: 'Braiding', value: 'Braiding' },
+  { label: 'Beard Trim', value: 'Beard Trim' },
+  { label: 'Nails', value: 'Nails' },
+  { label: 'Makeup', value: 'Makeup' },
+  { label: 'Massage', value: 'Massage' },
+];
+
 const { width, height } = Dimensions.get('window');
 
 const ASPECT_RATIO = width / height;
@@ -94,6 +106,8 @@ export default function MapScreen() {
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [selectedType, setSelectedType] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [homeServiceOnly, setHomeServiceOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [region, setRegion] = useState<Region>(DEFAULT_LOCATION);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -159,8 +173,8 @@ export default function MapScreen() {
 
   // Fetch salons for map
   const { data: salons, isLoading, error, refetch } = useQuery({
-    queryKey: ['salons-map', region.latitude, region.longitude],
-    queryFn: () => salonApi.getSalonsForMap(region.latitude, region.longitude, 10),
+    queryKey: ['salons-map', region.latitude, region.longitude, selectedCategory, homeServiceOnly],
+    queryFn: () => salonApi.getSalonsForMap(region.latitude, region.longitude, 10, selectedCategory || undefined, homeServiceOnly || undefined),
     enabled: !!region,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 2,
@@ -181,18 +195,38 @@ export default function MapScreen() {
     }
   }, [salons]);
 
-  // Filter salons based on selected type
+  // Filter salons based on selected type (salon business type)
   const filteredSalons = React.useMemo(() => {
     if (!salons) return [];
-    if (!selectedType) return salons;
-    return salons.filter((salon: Salon) => {
-      // Check if salon has services that match the type
-      const hasMatchingService = salon.services?.some((service) =>
-        service.category?.toUpperCase().includes(selectedType)
+    let filtered = salons;
+    
+    // Filter by salon business type
+    if (selectedType) {
+      filtered = filtered.filter((salon: Salon) => 
+        (salon as any).type === selectedType
       );
-      return !!hasMatchingService;
-    });
-  }, [salons, selectedType]);
+    }
+    
+    // Client-side category filter (backup if server didn't filter)
+    if (selectedCategory) {
+      filtered = filtered.filter((salon: Salon) => {
+        const hasMatchingService = salon.services?.some((service) =>
+          service.category?.toLowerCase().includes(selectedCategory.toLowerCase())
+        );
+        return !!hasMatchingService;
+      });
+    }
+    
+    // Client-side home service filter (backup if server didn't filter)
+    if (homeServiceOnly) {
+      filtered = filtered.filter((salon: Salon) =>
+        (salon as any).providerCategory === 'FREELANCER' ||
+        salon.services?.some((service: any) => service.offersHomeService)
+      );
+    }
+    
+    return filtered;
+  }, [salons, selectedType, selectedCategory, homeServiceOnly]);
 
   // Check if salon is currently open
   const isSalonOpen = useCallback((salon: Salon): boolean => {
@@ -347,7 +381,7 @@ export default function MapScreen() {
         </View>
       </View>
 
-      {/* Filter Chips */}
+      {/* Filter Chips - Salon Types */}
       <View style={styles.filterContainer}>
         <ScrollView
           horizontal
@@ -358,7 +392,7 @@ export default function MapScreen() {
             <Chip
               key={type.value || 'all'}
               selected={selectedType === type.value}
-              onPress={() => setSelectedType(type.value)}
+              onPress={() => setSelectedType(selectedType === type.value ? '' : type.value)}
               style={[
                 styles.filterChip,
                 selectedType === type.value && styles.filterChipSelected,
@@ -373,6 +407,42 @@ export default function MapScreen() {
             </Chip>
           ))}
         </ScrollView>
+      </View>
+
+      {/* Service Category Chips */}
+      <View style={styles.filterContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterChips}
+        >
+          {SERVICE_CATEGORIES.map((cat) => (
+            <Chip
+              key={cat.value || 'all-svc'}
+              selected={selectedCategory === cat.value}
+              onPress={() => setSelectedCategory(selectedCategory === cat.value ? '' : cat.value)}
+              style={[
+                styles.filterChip,
+                selectedCategory === cat.value && styles.filterChipSelected,
+              ]}
+              textStyle={
+                selectedCategory === cat.value
+                  ? styles.filterChipTextSelected
+                  : styles.filterChipText
+              }
+            >
+              {cat.label}
+            </Chip>
+          ))}
+        </ScrollView>
+        <TouchableOpacity
+          style={[styles.homeServiceToggle, homeServiceOnly && styles.homeServiceToggleActive]}
+          onPress={() => setHomeServiceOnly(!homeServiceOnly)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="home-outline" size={16} color={homeServiceOnly ? '#fff' : '#4F46E5'} />
+          <Text style={[styles.homeServiceText, homeServiceOnly && styles.homeServiceTextActive]}>Home Service</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Map or Fallback */}
@@ -859,5 +929,32 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  homeServiceToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    marginLeft: 12,
+    marginBottom: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+    backgroundColor: COLORS.background,
+    gap: 5,
+  },
+  homeServiceToggleActive: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  homeServiceText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  homeServiceTextActive: {
+    color: '#fff',
   },
 });

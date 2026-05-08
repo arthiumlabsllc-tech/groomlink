@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
-import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +29,18 @@ const createColors = (t: AppTheme) => ({
 
 type NavigationProp = any;
 
+// Service categories that match what salons offer
+const SERVICE_CATEGORIES = [
+  { label: 'All', value: '', icon: 'apps' },
+  { label: 'Haircut', value: 'Haircut', icon: 'cut' },
+  { label: 'Dreadlocks', value: 'Dreadlocks', icon: 'link' },
+  { label: 'Braiding', value: 'Braiding', icon: 'grid' },
+  { label: 'Beard Trim', value: 'Beard Trim', icon: 'happy' },
+  { label: 'Nails', value: 'Nails', icon: 'hand-left' },
+  { label: 'Makeup', value: 'Makeup', icon: 'color-palette' },
+  { label: 'Massage', value: 'Massage', icon: 'water' },
+];
+
 interface LocationState {
   lat: number | null;
   lng: number | null;
@@ -44,6 +56,8 @@ export default function HomeScreen() {
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [homeServiceOnly, setHomeServiceOnly] = useState(false);
   const [location, setLocation] = useState<LocationState>({
     lat: null,
     lng: null,
@@ -86,17 +100,44 @@ export default function HomeScreen() {
   const featuredSalonsList = featuredSalons?.salons || [];
 
   const { data: nearbySalons, isLoading: nearbyLoading, error: nearbyError, refetch: refetchNearby } = useQuery({
-    queryKey: ['nearby-salons', location.lat, location.lng],
+    queryKey: ['nearby-salons', location.lat, location.lng, selectedCategory, homeServiceOnly],
     queryFn: async (): Promise<Salon[]> => {
       if (location.lat && location.lng) {
         return salonApi.getNearbySalons(location.lat, location.lng);
       }
-      // Fallback: fetch all approved salons if no location
-      const result = await salonApi.searchSalons({ limit: 10 });
+      // Fallback: fetch approved salons with category filter
+      const result = await salonApi.searchSalons({ 
+        limit: 10, 
+        category: selectedCategory || undefined,
+        homeService: homeServiceOnly || undefined,
+      });
       return result.salons;
     },
     enabled: !location.permissionDenied || location.lat !== null,
   });
+
+  // Filter nearby salons by category and home service
+  const filteredNearbySalons = useMemo(() => {
+    if (!nearbySalons) return [];
+    let filtered = nearbySalons;
+    
+    if (selectedCategory) {
+      filtered = filtered.filter((salon: Salon) => 
+        salon.services?.some((service) =>
+          service.category?.toLowerCase().includes(selectedCategory.toLowerCase())
+        )
+      );
+    }
+    
+    if (homeServiceOnly) {
+      filtered = filtered.filter((salon: Salon) => 
+        (salon as any).providerCategory === 'FREELANCER' || 
+        salon.services?.some((service) => (service as any).offersHomeService)
+      );
+    }
+    
+    return filtered;
+  }, [nearbySalons, selectedCategory, homeServiceOnly]);
 
   const isLoading = featuredLoading || nearbyLoading;
 
@@ -251,6 +292,39 @@ export default function HomeScreen() {
           />
         </View>
 
+        {/* Service Categories */}
+        <View style={styles.categoriesSection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryChips}
+          >
+            {SERVICE_CATEGORIES.map((cat) => (
+              <Chip
+                key={cat.value || 'all'}
+                selected={selectedCategory === cat.value}
+                onPress={() => setSelectedCategory(selectedCategory === cat.value ? '' : cat.value)}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === cat.value && styles.categoryChipSelected,
+                ]}
+                textStyle={selectedCategory === cat.value ? styles.categoryChipTextSelected : styles.categoryChipText}
+                icon={() => <Ionicons name={cat.icon as any} size={16} color={selectedCategory === cat.value ? '#fff' : COLORS.textSecondary} />}
+              >
+                {cat.label}
+              </Chip>
+            ))}
+          </ScrollView>
+          <TouchableOpacity
+            style={[styles.homeServiceToggle, homeServiceOnly && styles.homeServiceToggleActive]}
+            onPress={() => setHomeServiceOnly(!homeServiceOnly)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="home-outline" size={18} color={homeServiceOnly ? '#fff' : '#4F46E5'} />
+            <Text style={[styles.homeServiceText, homeServiceOnly && styles.homeServiceTextActive]}>Home Service</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Featured Salons */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -283,9 +357,9 @@ export default function HomeScreen() {
             renderLoading()
           ) : nearbyError ? (
             renderError()
-          ) : nearbySalons && nearbySalons.length > 0 ? (
+          ) : filteredNearbySalons && filteredNearbySalons.length > 0 ? (
             <View style={styles.nearbyList}>
-              {nearbySalons.map((salon) => renderSalonCard(salon, false))}
+              {filteredNearbySalons.map((salon) => renderSalonCard(salon, false))}
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -528,5 +602,54 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   emptyText: {
     marginTop: 8,
     color: COLORS.textSecondary,
+  },
+  categoriesSection: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+  },
+  categoryChips: {
+    gap: 8,
+    paddingRight: 16,
+    paddingVertical: 4,
+  },
+  categoryChip: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  categoryChipSelected: {
+    backgroundColor: COLORS.primaryGreen,
+    borderColor: COLORS.primaryGreen,
+  },
+  categoryChipText: {
+    color: COLORS.textSecondary,
+  },
+  categoryChipTextSelected: {
+    color: '#fff',
+  },
+  homeServiceToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+    backgroundColor: COLORS.background,
+    gap: 6,
+  },
+  homeServiceToggleActive: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  homeServiceText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  homeServiceTextActive: {
+    color: '#fff',
   },
 });

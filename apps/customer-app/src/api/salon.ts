@@ -13,6 +13,8 @@ export interface SearchFilters {
   page?: number;
   limit?: number;
   featured?: boolean;
+  category?: string;
+  homeService?: boolean;
 }
 
 export interface SalonSearchParams {
@@ -35,6 +37,8 @@ export const salonApi = {
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.featured !== undefined) params.append('featured', filters.featured.toString());
+    if (filters.category) params.append('category', filters.category);
+    if (filters.homeService) params.append('homeService', filters.homeService.toString());
 
     const response = await apiClient.get(`/salons?${params.toString()}`);
     return {
@@ -92,11 +96,13 @@ export const salonApi = {
   getFeaturedSalons: (limit?: number) => salonApi.searchSalons({ featured: true, limit: limit || 10 }),
 
   // Get salons for map view
-  getSalonsForMap: async (lat?: number, lng?: number, radius?: number): Promise<Salon[]> => {
+  getSalonsForMap: async (lat?: number, lng?: number, radius?: number, category?: string, homeService?: boolean): Promise<Salon[]> => {
     const params = new URLSearchParams();
     if (lat) params.append('lat', lat.toString());
     if (lng) params.append('lng', lng.toString());
     if (radius) params.append('radius', radius.toString());
+    if (category) params.append('category', category);
+    if (homeService) params.append('homeService', homeService.toString());
     const response = await apiClient.get(`/salons/map?${params.toString()}`);
     return response.data.data;
   },
