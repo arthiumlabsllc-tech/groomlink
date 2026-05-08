@@ -32,9 +32,20 @@ type LocationStatus = 'pending' | 'granted' | 'denied' | 'detecting';
 export default function ProfileSetupScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<ProfileSetupRouteProp>();
-  const email = route.params?.email || '';
+  const [email, setEmail] = useState(route.params?.email || '');
   
   const { setUser } = useAuthStore();
+
+  // If email not in route params, try to load from SecureStore (app restart during registration)
+  useEffect(() => {
+    if (!email) {
+      SecureStore.getItemAsync('registrationEmail').then((storedEmail) => {
+        if (storedEmail) {
+          setEmail(storedEmail);
+        }
+      });
+    }
+  }, []);
   const { theme } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
@@ -97,8 +108,9 @@ export default function ProfileSetupScreen() {
   const validatePhoneNumber = (phone: string): boolean => {
     // Remove spaces and dashes
     const cleaned = phone.replace(/[\s-]/g, '');
-    // Check for valid Ghana phone format: 0XX XXX XXXX or +233 XX XXX XXXX
-    const ghanaPattern = /^(0\d{9}|\+233\d{9})$/;
+    // Check for valid Ghana phone format: 0XX XXX XXXX or +233 XX XXX XXXX or bare 9 digits
+    // Since UI shows +233 prefix separately, users may enter just 9 digits (e.g., 241234567)
+    const ghanaPattern = /^(\d{9}|0\d{9}|\+233\d{9})$/;
     return ghanaPattern.test(cleaned);
   };
 
@@ -118,6 +130,10 @@ export default function ProfileSetupScreen() {
 
   const handleSubmit = async () => {
     // Validation
+    if (!email.trim()) {
+      setError('Email is required. Please go back and start again.');
+      return;
+    }
     if (!firstName.trim()) {
       setError('First name is required');
       return;
@@ -131,7 +147,7 @@ export default function ProfileSetupScreen() {
       return;
     }
     if (!validatePhoneNumber(phoneNumber)) {
-      setError('Please enter a valid Ghana phone number (e.g., 024 123 4567)');
+      setError('Please enter a valid Ghana phone number (e.g., 024 123 4567 or 24 123 4567)');
       return;
     }
 
@@ -154,8 +170,9 @@ export default function ProfileSetupScreen() {
       });
 
       if (response.success && response.data?.user) {
-        // Clear the isNewUser flag since registration is complete
+        // Clear registration state since registration is complete
         await SecureStore.deleteItemAsync('isNewUser');
+        await SecureStore.deleteItemAsync('registrationEmail');
         setUser(response.data.user);
         // Dismiss the entire auth modal by resetting to MainTabs
         // navigation.goBack() only pops within AuthNavigator, doesn't dismiss the modal
@@ -238,7 +255,7 @@ export default function ProfileSetupScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoContainer}>
@@ -271,7 +288,7 @@ export default function ProfileSetupScreen() {
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{getInitials()}</Text>
             </View>
-            <TouchableOpacity style={styles.cameraButton}>
+            <TouchableOpacity style={styles.cameraButton} disabled>
               <Ionicons name="camera" size={18} color="#fff" />
             </TouchableOpacity>
           </View>

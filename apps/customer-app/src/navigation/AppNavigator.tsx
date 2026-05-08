@@ -18,9 +18,19 @@ import { useAppTheme } from '../theme/ThemeContext';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { isLoading, isAuthenticated, pendingBooking, setPendingBooking } = useAuthStore();
+  const { isLoading, isAuthenticated, pendingBooking, showAuthModal, setShowAuthModal, setPendingBooking } = useAuthStore();
   const navigation = useNavigation<any>();
   const { theme } = useAppTheme();
+
+  // Show auth modal for new users who need to complete registration
+  useEffect(() => {
+    if (showAuthModal && !isAuthenticated) {
+      setTimeout(() => {
+        navigation.navigate('Auth');
+        setShowAuthModal(false);
+      }, 100);
+    }
+  }, [showAuthModal, isAuthenticated]);
 
   // After auth modal dismisses, redirect to pending booking if one exists
   useEffect(() => {

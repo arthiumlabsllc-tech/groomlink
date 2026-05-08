@@ -51,7 +51,7 @@ export default function OTPScreen() {
   }, [countdown]);
 
   const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) return;
+    if (value.length > 1 || loading) return;
     
     const newOtp = [...otp];
     newOtp[index] = value;
@@ -78,6 +78,7 @@ export default function OTPScreen() {
   };
 
   const handleVerify = async (code: string) => {
+    if (loading) return;
     setLoading(true);
     setError('');
 
@@ -88,16 +89,15 @@ export default function OTPScreen() {
         const { user, isNewUser } = response.data;
         
         if (isNewUser) {
-          // New user - store flag and navigate to ProfileSetup to complete registration
+          // New user - store flag and email, then navigate to ProfileSetup to complete registration
           await SecureStore.setItemAsync('isNewUser', 'true');
+          await SecureStore.setItemAsync('registrationEmail', email);
           navigation.navigate('ProfileSetup', { email });
         } else {
           // Existing user - tokens are already stored in SecureStore by authApi
           // Set user in store which updates isAuthenticated to true
           setUser(user);
           // Dismiss the entire auth modal by resetting to MainTabs
-          // navigation.goBack() only pops within AuthNavigator (OTP->Email),
-          // it doesn't dismiss the modal. We need to reset the root navigator.
           navigation.getParent()?.dispatch(
             CommonActions.reset({
               index: 0,
@@ -105,6 +105,11 @@ export default function OTPScreen() {
             })
           );
         }
+      } else {
+        // API returned success: false with an error message
+        setError(response.message || 'Invalid OTP. Please try again.');
+        setOtp(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid OTP. Please try again.');

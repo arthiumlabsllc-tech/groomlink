@@ -11,9 +11,11 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   pendingBooking: PendingBooking | null;
+  showAuthModal: boolean;
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
   setPendingBooking: (booking: PendingBooking | null) => void;
+  setShowAuthModal: (show: boolean) => void;
   logout: () => void;
 }
 
@@ -22,8 +24,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   isAuthenticated: false,
   pendingBooking: null,
+  showAuthModal: false,
   setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
   setLoading: (loading) => set({ isLoading: loading }),
   setPendingBooking: (booking) => set({ pendingBooking: booking }),
-  logout: () => set({ user: null, isAuthenticated: false, pendingBooking: null }),
+  setShowAuthModal: (show) => set({ showAuthModal: show }),
+  logout: () => set({ user: null, isAuthenticated: false, pendingBooking: null, showAuthModal: false }),
 }));

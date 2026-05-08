@@ -85,7 +85,7 @@ const queryClient = new QueryClient({
 const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 function AppContent() {
-  const { setUser, setLoading, user, isAuthenticated } = useAuthStore();
+  const { setUser, setLoading, setShowAuthModal, user, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -148,8 +148,9 @@ function AppContent() {
       // Check if this is a new user in the registration flow
       const isNewUser = await SecureStore.getItemAsync('isNewUser');
       if (isNewUser === 'true') {
-        console.log('New user detected, skipping profile validation');
+        console.log('New user detected, showing auth modal to complete registration');
         setLoading(false);
+        setShowAuthModal(true);
         return;
       }
 

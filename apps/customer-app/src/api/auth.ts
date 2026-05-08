@@ -82,6 +82,9 @@ export const authApi = {
         await SecureStore.setItemAsync('refreshToken', response.data.data.tokens.refreshToken);
       }
       await SecureStore.setItemAsync('user', JSON.stringify(response.data.data.user));
+    } else if (response.data?.success) {
+      // API reported success but didn't return tokens - this is a server error
+      throw new Error('Registration succeeded but no authentication tokens were received. Please try logging in.');
     }
     return response.data;
   },
@@ -97,6 +100,7 @@ export const authApi = {
     await SecureStore.deleteItemAsync('refreshToken');
     await SecureStore.deleteItemAsync('user');
     await SecureStore.deleteItemAsync('isNewUser');
+    await SecureStore.deleteItemAsync('registrationEmail');
   },
 
   // Get stored user

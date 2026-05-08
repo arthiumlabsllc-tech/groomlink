@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { AuthStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
@@ -35,6 +36,18 @@ export default function EmailScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Check if user is resuming registration (app was closed during profile setup)
+  useEffect(() => {
+    const checkRegistrationState = async () => {
+      const isNewUser = await SecureStore.getItemAsync('isNewUser');
+      const registrationEmail = await SecureStore.getItemAsync('registrationEmail');
+      if (isNewUser === 'true' && registrationEmail) {
+        navigation.replace('ProfileSetup', { email: registrationEmail });
+      }
+    };
+    checkRegistrationState();
+  }, []);
 
   const isValidEmail = (email: string): boolean => {
     return EMAIL_REGEX.test(email.trim());
