@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, Text, HelperText, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
@@ -22,15 +23,28 @@ type ProfileSetupRouteProp = RouteProp<AuthStackParamList, 'ProfileSetup'>;
 export default function ProfileSetupScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ProfileSetupRouteProp>();
-  const { email } = route.params;
+  const routeEmail = route.params?.email;
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  // Use state for email so it can be loaded from SecureStore on app restart
+  const [email, setEmail] = useState(routeEmail || '');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // On mount, if no email from route params, try to load from SecureStore (app restart case)
+  useEffect(() => {
+    if (!routeEmail) {
+      SecureStore.getItemAsync('registrationEmail').then((storedEmail) => {
+        if (storedEmail) {
+          setEmail(storedEmail);
+        }
+      });
+    }
+  }, [routeEmail]);
 
   const formatPhoneNumber = (input: string): string => {
     // Remove all non-digit characters
@@ -96,6 +110,12 @@ export default function ProfileSetupScreen() {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    // Validate email is available
+    if (!email) {
+      setError('Email is missing. Please restart the registration process.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -107,6 +127,9 @@ export default function ProfileSetupScreen() {
         phoneNumber: phoneNumber.trim(),
         role: 'SALON_OWNER',
       });
+
+      // Clear registrationEmail from SecureStore - registration step complete
+      await SecureStore.deleteItemAsync('registrationEmail');
 
       // On success, tokens are stored by the API
       // Navigate to ProviderCategory selection
@@ -294,7 +317,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: '#FCD116',
   },
   stepInactive: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.surfaceVariant,
   },
   stepNumber: {
     color: '#FFFFFF',
@@ -302,13 +325,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 13,
   },
   stepNumberInactive: {
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     fontWeight: 'bold',
     fontSize: 13,
   },
   stepLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   stepLabelActive: {
     color: '#006B3F',
@@ -317,7 +340,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   progressLine: {
     width: 40,
     height: 3,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.border,
     marginHorizontal: 8,
     borderRadius: 2,
     overflow: 'hidden',
@@ -328,7 +351,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   progressLineEmpty: {
     flex: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.border,
   },
   headerSection: {
     alignItems: 'center',

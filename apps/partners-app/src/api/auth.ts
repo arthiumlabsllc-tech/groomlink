@@ -83,6 +83,7 @@ export const authApi = {
     await SecureStore.deleteItemAsync('refreshToken');
     await SecureStore.deleteItemAsync('user');
     await SecureStore.deleteItemAsync('isNewUser');
+    await SecureStore.deleteItemAsync('registrationEmail');
   },
 
   // Get stored user
@@ -108,14 +109,20 @@ export const authApi = {
     role?: string;
   }) => {
     const response = await apiClient.post('/auth/complete-registration', data);
-    if (response.data?.data?.tokens?.accessToken) {
-      await SecureStore.setItemAsync('accessToken', response.data.data.tokens.accessToken);
-      if (response.data.data.tokens.refreshToken) {
-        await SecureStore.setItemAsync('refreshToken', response.data.data.tokens.refreshToken);
+    if (response.data?.success) {
+      const tokens = response.data?.data?.tokens;
+      if (tokens?.accessToken) {
+        await SecureStore.setItemAsync('accessToken', tokens.accessToken);
       }
-      await SecureStore.setItemAsync('user', JSON.stringify(response.data.data.user));
-      // Clear the new user flag since registration is now complete
+      if (tokens?.refreshToken) {
+        await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+      }
+      if (response.data?.data?.user) {
+        await SecureStore.setItemAsync('user', JSON.stringify(response.data.data.user));
+      }
+      // Always clear the new user flag after successful completeRegistration
       await SecureStore.deleteItemAsync('isNewUser');
+      await SecureStore.deleteItemAsync('registrationEmail');
     }
     return response.data;
   },

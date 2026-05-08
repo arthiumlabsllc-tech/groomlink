@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
+import * as SecureStore from 'expo-secure-store';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 
@@ -54,6 +55,8 @@ export default function OTPScreen() {
     
     // Only allow numbers
     if (value && !/^\d$/.test(value)) return;
+    // Guard against changes while loading
+    if (loading) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
@@ -97,12 +100,19 @@ export default function OTPScreen() {
         if (isNewUser) {
           // New user needs to complete profile first, then set up their salon
           // Don't call setUser() yet - keep user in auth flow
+          // Store registration email for app restart resume
+          await SecureStore.setItemAsync('registrationEmail', email);
           navigation.navigate('ProfileSetup', { email });
         } else {
           // Existing user - fully authenticated, store tokens and go to main app
           setUser(user);
           // AppNavigator will automatically redirect to MainNavigator
         }
+      } else {
+        // success=false from API - show the error message
+        setError(response.message || 'Verification failed. Please try again.');
+        setOtp(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
@@ -225,7 +235,7 @@ export default function OTPScreen() {
             </Button>
           ) : (
             <View style={styles.timerContainer}>
-              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <Ionicons name="time-outline" size={16} color={theme.textTertiary} />
               <Text variant="bodyMedium" style={styles.timerText}>
                 Resend code in <Text style={styles.timerCount}>{resendTimer}s</Text>
               </Text>
@@ -236,11 +246,11 @@ export default function OTPScreen() {
         <Button
           mode="text"
           onPress={() => navigation.navigate('Email')}
-          textColor="#6B7280"
+          textColor={theme.textTertiary}
           style={styles.backButton}
           labelStyle={styles.backButtonLabel}
         >
-          <Ionicons name="arrow-back" size={16} color="#6B7280" /> Change Email
+          <Ionicons name="arrow-back" size={16} color={theme.textTertiary} /> Change Email
         </Button>
       </View>
     </KeyboardAvoidingView>

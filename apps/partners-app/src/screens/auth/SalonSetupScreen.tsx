@@ -271,8 +271,12 @@ export default function SalonSetupScreen() {
         salonData.closingTime = closingTime;
         salonData.workingDays = workingDays;
       } else {
-        // Freelancers: pass workingDays, defaults handled by backend
+        // Freelancers: pass workingDays + default opening/closing times
+        // Backend applies defaults but we send them explicitly for clarity
+        salonData.openingTime = '08:00';
+        salonData.closingTime = '18:00';
         salonData.workingDays = workingDays;
+        salonData.address = `${city.trim()}, ${region.trim()}`; // Use city+region as address for freelancers
       }
 
       // Create the salon
@@ -747,7 +751,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   stepLabel: {
     fontSize: 12,
-    color: theme.textSecondary,
+    color: theme.textTertiary,
   },
   stepLabelActive: {
     color: '#006B3F',
@@ -756,7 +760,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   progressLine: {
     width: 30,
     height: 3,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.border,
     marginHorizontal: 6,
     borderRadius: 2,
     overflow: 'hidden',

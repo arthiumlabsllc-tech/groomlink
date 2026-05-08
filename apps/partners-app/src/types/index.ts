@@ -211,6 +211,7 @@ export interface CompletionSettings {
 
 export interface AuthResponse {
   success: boolean;
+  message?: string;
   data: {
     user: User;
     tokens: {

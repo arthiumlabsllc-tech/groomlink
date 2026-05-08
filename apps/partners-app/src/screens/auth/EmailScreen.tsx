@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
@@ -11,6 +12,7 @@ import type { AppTheme } from '../../theme/colors';
 type AuthStackParamList = {
   Email: undefined;
   OTP: { email: string };
+  ProfileSetup: { email: string };
   ProviderCategory: undefined;
   SalonSetup: { providerCategory: string };
 };
@@ -24,6 +26,23 @@ export default function EmailScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Check if user is resuming registration after app restart
+  useEffect(() => {
+    const checkRegistrationResume = async () => {
+      try {
+        const isNewUser = await SecureStore.getItemAsync('isNewUser');
+        const registrationEmail = await SecureStore.getItemAsync('registrationEmail');
+        if (isNewUser === 'true' && registrationEmail) {
+          // User was in the middle of registration - navigate to ProfileSetup
+          navigation.navigate('ProfileSetup', { email: registrationEmail });
+        }
+      } catch (e) {
+        // Ignore errors - just stay on Email screen
+      }
+    };
+    checkRegistrationResume();
+  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -131,7 +150,7 @@ export default function EmailScreen() {
           )}
 
           <View style={styles.footerNote}>
-            <Ionicons name="information-circle-outline" size={16} color="#9CA3AF" />
+            <Ionicons name="information-circle-outline" size={16} color={theme.textTertiary} />
             <Text variant="bodySmall" style={styles.signupNote}>
               New salon owner? We'll help you set up your business after verification
             </Text>

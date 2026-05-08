@@ -219,7 +219,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: '#FCD116',
   },
   stepInactive: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.surfaceVariant,
   },
   stepNumber: {
     color: '#FFFFFF',
@@ -227,13 +227,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 13,
   },
   stepNumberInactive: {
-    color: '#9CA3AF',
+    color: theme.textTertiary,
     fontWeight: 'bold',
     fontSize: 13,
   },
   stepLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textTertiary,
   },
   stepLabelActive: {
     color: '#006B3F',
@@ -242,7 +242,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   progressLine: {
     width: 24,
     height: 3,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.border,
     marginHorizontal: 4,
     borderRadius: 2,
     overflow: 'hidden',
@@ -253,7 +253,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   progressLineEmpty: {
     flex: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.border,
   },
   // Header
   headerSection: {
@@ -307,7 +307,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: theme.border,
     justifyContent: 'center',
     alignItems: 'center',
   },

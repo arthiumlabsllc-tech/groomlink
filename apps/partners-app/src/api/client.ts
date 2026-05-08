@@ -67,6 +67,8 @@ apiClient.interceptors.response.use(
         await SecureStore.deleteItemAsync('accessToken');
         await SecureStore.deleteItemAsync('refreshToken');
         await SecureStore.deleteItemAsync('user');
+        await SecureStore.deleteItemAsync('isNewUser');
+        await SecureStore.deleteItemAsync('registrationEmail');
       }
     }
     
