@@ -493,8 +493,12 @@ model BookingGuest {
   priceAmount         Decimal?  @map("price_amount") @db.Decimal(10, 2)
   specialInstructions String?   @map("special_instructions")
   isChild             Boolean   @default(false) @map("is_child")
+  status              String    @default("PENDING") @map("status") // PENDING, CHECKED_IN, CANCELLED, NO_SHOW
   checkedIn           Boolean   @default(false) @map("checked_in")
   checkedInAt         DateTime? @map("checked_in_at")
+  cancelledAt         DateTime? @map("cancelled_at")
+  cancelledBy         String?   @map("cancelled_by") // userId who cancelled
+  cancelReason        String?   @map("cancel_reason")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
@@ -1273,4 +1277,35 @@ model FeatureUsage {
   @@unique([salonId, featureName, periodStart])
   @@index([salonId])
   @@map("feature_usage")
+}
+
+// ------------------------------------------------------------
+// Security event log (the "security bot" pipeline).
+// Every suspected attack / anomaly is written here, then the
+// alert service broadcasts it to admins via WebSocket and
+// emails HIGH/CRITICAL events.
+// ------------------------------------------------------------
+model SecurityEvent {
+  id          String   @id @default(cuid())
+  eventType   String   @map("event_type") // e.g. BRUTE_FORCE_LOGIN, OTP_BOMB, ROLE_ESCALATION, ...
+  severity    String   // LOW | MEDIUM | HIGH | CRITICAL
+  source      String   @default("app") // app | rate-limit | webhook | middleware | scheduler
+  ipAddress   String?  @map("ip_address")
+  userId      String?  @map("user_id")
+  userEmail   String?  @map("user_email")
+  userAgent   String?  @map("user_agent")
+  endpoint    String?
+  method      String?
+  message     String   @db.Text
+  details     Json?
+  resolved    Boolean  @default(false)
+  resolvedAt  DateTime? @map("resolved_at")
+  resolvedBy  String?  @map("resolved_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([severity, resolved])
+  @@index([eventType, createdAt])
+  @@index([ipAddress])
+  @@map("security_events")
 }

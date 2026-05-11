@@ -11,6 +11,10 @@ import { AuthStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 
+// Theme-aware logo selection
+const LOGO_BLACK = require('../../../assets/logo-full-black.png');
+const LOGO_WHITE = require('../../../assets/logo-full-white.png');
+
 // Design System Colors (theme-aware)
 const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
@@ -46,7 +50,7 @@ export default function ProfileSetupScreen() {
       });
     }
   }, []);
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [firstName, setFirstName] = useState('');
@@ -259,13 +263,11 @@ export default function ProfileSetupScreen() {
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Image
-                source={require('../../../assets/logo-white.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
+            <Image
+              source={isDark ? LOGO_WHITE : LOGO_BLACK}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Progress Indicator */}
@@ -386,22 +388,9 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     alignItems: 'center',
     marginBottom: 24,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primaryGreen,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.primaryGreen,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
   logoImage: {
-    width: 48,
-    height: 48,
+    width: 160,
+    height: 50,
   },
   progressContainer: {
     marginBottom: 32,

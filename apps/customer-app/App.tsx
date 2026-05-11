@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { PaperProvider, DefaultTheme } from 'react-native-paper';
@@ -10,6 +10,7 @@ import { Platform, View } from 'react-native';
 import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import LoadingScreen from './src/components/LoadingScreen';
 import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
 import { notificationApi } from './src/api/notification';
@@ -84,12 +85,22 @@ const queryClient = new QueryClient({
 // Navigation reference accessible outside components for notification deep-linking
 const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
+const MIN_SPLASH_DURATION_MS = 3500; // 3.5 seconds minimum splash time
+
 function AppContent() {
-  const { setUser, setLoading, setShowAuthModal, user, isAuthenticated } = useAuthStore();
+  const { setUser, setLoading, setShowAuthModal, user, isAuthenticated, isLoading } = useAuthStore();
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
 
   useEffect(() => {
+    // Enforce minimum splash duration so salons/barbershops can load in background
+    const timer = setTimeout(() => {
+      setMinSplashElapsed(true);
+    }, MIN_SPLASH_DURATION_MS);
+
     checkAuth();
     setupNotifications();
+
+    return () => clearTimeout(timer);
   }, []);
 
   const setupNotifications = async () => {
@@ -172,6 +183,11 @@ function AppContent() {
       setLoading(false);
     }
   };
+
+  // Show splash screen while auth is initializing OR minimum duration hasn't elapsed
+  if (isLoading || !minSplashElapsed) {
+    return <LoadingScreen />;
+  }
 
   return <AppNavigator />;
 }

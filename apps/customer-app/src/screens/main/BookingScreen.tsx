@@ -294,7 +294,10 @@ export default function BookingScreen() {
       }
     },
     onError: (error: any) => {
-      Alert.alert('Booking Failed', error.response?.data?.message || 'Please try again');
+      const apiError = error.response?.data?.error;
+      const message = apiError?.message || error.response?.data?.message || error.message || 'Please try again';
+      console.error('Booking creation failed:', JSON.stringify(error.response?.data || error.message));
+      Alert.alert('Booking Failed', message);
     },
   });
 

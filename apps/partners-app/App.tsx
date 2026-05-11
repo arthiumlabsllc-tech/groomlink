@@ -127,14 +127,24 @@ function AppInner() {
   );
 }
 
+const MIN_SPLASH_DURATION_MS = 3500; // 3.5 seconds minimum splash time
+
 function AppContent() {
   const { setUser, clearAuth, isAuthenticated, isLoading, setLoading } = useAuthStore();
   const [salonId, setSalonId] = useState<string | null>(null);
   const [salonReady, setSalonReady] = useState(false);
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
 
   useEffect(() => {
+    // Enforce minimum splash duration so shop data can load in background
+    const timer = setTimeout(() => {
+      setMinSplashElapsed(true);
+    }, MIN_SPLASH_DURATION_MS);
+
     checkAuth();
     registerForPushNotificationsAsync();
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Fetch salon when authenticated, reset on logout
@@ -314,7 +324,8 @@ function AppContent() {
     },
   });
 
-  if (isLoading || (isAuthenticated && !salonReady)) {
+  // Show splash screen while auth is initializing, salon is loading, OR minimum duration hasn't elapsed
+  if (isLoading || !minSplashElapsed || (isAuthenticated && !salonReady)) {
     return <LoadingScreen />;
   }
 

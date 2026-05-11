@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import SearchBox from './SearchBox'
 import BottomNav from './BottomNav'
+import TrustBadges from './TrustBadges'
+import FAQ from './FAQ'
+import { useGeolocation, formatDistance } from '../hooks/useGeolocation'
+import { GHANA_CITIES } from '../data/ghanaCities'
 import { HaircutIcon, BarberIcon, NailsIcon, BraidingIcon, MassageIcon, DreadlocksIcon } from './CategoryIcons'
 
 interface Salon {
@@ -17,6 +21,10 @@ interface Salon {
   address?: string
   location?: string
   startingPrice?: number
+  latitude?: number | null
+  longitude?: number | null
+  providerCategory?: string
+  distance?: number
 }
 
 interface Category {
@@ -26,6 +34,97 @@ interface Category {
 }
 
 const API_BASE_URL = 'https://groomlinkgh.com/api'
+const CUSTOMER_APP_URL = 'https://my.groomlinkgh.com'
+
+function MobileCityDiscovery() {
+  const [expandedCity, setExpandedCity] = useState<string | null>(null)
+
+  const toggleCity = (cityName: string) => {
+    setExpandedCity((prev) => (prev === cityName ? null : cityName))
+  }
+
+  const buildExploreUrl = (city: string, area?: string): string => {
+    const base = `${CUSTOMER_APP_URL}/explore`
+    const params = new URLSearchParams()
+    params.set('city', city)
+    if (area) params.set('area', area)
+    return `${base}?${params.toString()}`
+  }
+
+  return (
+    <div className="py-6 px-4">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-1 h-6 bg-[#FCD116] rounded-full" />
+        <h2 className="text-xl font-bold text-brand-text">Explore by City</h2>
+      </div>
+      <div className="space-y-2">
+        {GHANA_CITIES.map((city) => (
+          <div
+            key={city.city}
+            className="border border-gray-200 rounded-xl overflow-hidden bg-white"
+          >
+            <button
+              onClick={() => toggleCity(city.city)}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <img
+                    src={city.image}
+                    alt={city.city}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-brand-text text-sm">{city.city}</p>
+                  <p className="text-[10px] text-gray-500">{city.areas.length} areas</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <a
+                  href={buildExploreUrl(city.city)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[10px] font-medium text-[#006B3F] px-1.5 py-0.5 rounded hover:bg-[#006B3F]/10 transition-colors"
+                >
+                  View All
+                </a>
+                <Icon
+                  name="expand_more"
+                  size={18}
+                  className={`text-gray-400 transition-transform duration-200 ${expandedCity === city.city ? 'rotate-180' : ''}`}
+                />
+              </div>
+            </button>
+
+            {expandedCity === city.city && (
+              <div className="px-3 pb-3">
+                <div className="border-t border-gray-100 pt-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {city.areas.slice(0, 15).map((area) => (
+                      <a
+                        key={area}
+                        href={buildExploreUrl(city.city, area)}
+                        className="px-2 py-1 bg-gray-100 text-gray-700 text-[10px] font-medium rounded-full"
+                      >
+                        {area}
+                      </a>
+                    ))}
+                    {city.areas.length > 15 && (
+                      <span className="px-2 py-1 text-[10px] text-gray-400">
+                        +{city.areas.length - 15} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 const categories: Category[] = [
   { name: 'Hair', icon: <HaircutIcon className="w-7 h-7" />, query: 'Haircut' },
@@ -227,6 +326,233 @@ function SalonListCard({ salon }: { salon: Salon }) {
         </p>
       </div>
     </Link>
+  )
+}
+
+function NearbySalonCard({ salon }: { salon: Salon }) {
+  const formatPrice = (price?: number) => {
+    if (!price || price === 0) return 'Contact for price'
+    return `From GHS ${price}`
+  }
+
+  const imageUrl = getSalonImageUrl(salon)
+  const displayLocation = salon.city || salon.address || salon.location
+
+  return (
+    <Link
+      to={`/salon/${salon.id}`}
+      className="flex-shrink-0 w-[280px] snap-start"
+    >
+      <div className="relative h-[200px] rounded-2xl overflow-hidden mb-3">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={salon.businessName}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#CE1126]/20 to-[#FCD116]/20">
+            <span className="text-4xl font-bold text-[#CE1126]/50">
+              {salon.businessName.charAt(0)}
+            </span>
+          </div>
+        )}
+
+        {/* Distance Badge */}
+        {salon.distance != null && (
+          <div className="absolute top-3 left-3 bg-[#006B3F]/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1">
+            <Icon name="near_me" size={14} className="text-white" filled />
+            <span className="text-white font-bold text-xs">{formatDistance(salon.distance)}</span>
+          </div>
+        )}
+
+        {/* Home Service Badge */}
+        {salon.providerCategory === 'FREELANCER' && (
+          <div className="absolute bottom-3 left-3 bg-[#CE1126]/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1">
+            <Icon name="home" size={14} className="text-white" />
+            <span className="text-white font-bold text-xs">Home Service</span>
+          </div>
+        )}
+
+        {/* Rating Badge */}
+        <div className="absolute top-3 right-3 bg-[#CE1126]/90 backdrop-blur-sm rounded-lg px-2 py-1 flex flex-col items-center">
+          <div className="flex items-center gap-1">
+            <Icon name="star" size={16} className="text-[#FCD116]" filled />
+            <span className="text-white font-bold text-sm">
+              {salon.rating?.toFixed(1) || 'New'}
+            </span>
+          </div>
+          {salon.reviewCount && salon.reviewCount > 0 && (
+            <span className="text-white/70 text-xs">
+              {salon.reviewCount} reviews
+            </span>
+          )}
+        </div>
+      </div>
+
+      <h3 className="font-semibold text-brand-text text-base line-clamp-1">
+        {salon.businessName}
+      </h3>
+      {displayLocation && (
+        <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
+          <Icon name="location_on" size={14} className="flex-shrink-0" />
+          <span className="line-clamp-1">{displayLocation}</span>
+        </div>
+      )}
+      <p className="text-[#CE1126] font-semibold text-sm mt-1">
+        {formatPrice(salon.startingPrice)}
+      </p>
+    </Link>
+  )
+}
+
+function NearbySection() {
+  const { state, data: geoData, request } = useGeolocation()
+  const [salons, setSalons] = useState<Salon[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (state !== 'granted' || !geoData) return
+
+    const fetchNearby = async () => {
+      try {
+        setLoading(true)
+        const params = new URLSearchParams({
+          lat: geoData.latitude.toString(),
+          lng: geoData.longitude.toString(),
+          radius: '10',
+          limit: '10',
+        })
+        const response = await fetch(`${API_BASE_URL}/salons/nearby?${params.toString()}`)
+        if (!response.ok) throw new Error('Failed to fetch')
+        const result = await response.json()
+        const raw = result.data || result.salons || []
+        const mapped = raw.map((s: any) => ({
+          id: s.id,
+          businessName: s.businessName,
+          coverImage: s.coverImage || undefined,
+          logo: s.logo || undefined,
+          images: s.images || undefined,
+          rating: s.rating,
+          reviewCount: s.reviewCount,
+          city: s.city,
+          address: s.address,
+          location: s.city || s.address,
+          latitude: s.latitude,
+          longitude: s.longitude,
+          providerCategory: s.providerCategory,
+          distance: s.distance,
+          startingPrice: s.services?.length
+            ? Math.min(...s.services.map((svc: any) => Number(svc.price)).filter(Boolean))
+            : undefined,
+        })) as Salon[]
+        mapped.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
+        setSalons(mapped)
+      } catch (err) {
+        console.error('Error fetching nearby salons:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchNearby()
+  }, [state, geoData])
+
+  // Location prompt
+  if (state === 'idle') {
+    return (
+      <div className="py-6 px-4">
+        <div className="bg-gradient-to-br from-[#006B3F]/10 to-[#CE1126]/10 border border-[#006B3F]/20 rounded-2xl p-5 text-center">
+          <div className="w-14 h-14 bg-[#006B3F]/15 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Icon name="location_on" size={28} className="text-[#006B3F]" />
+          </div>
+          <h3 className="text-base font-bold text-brand-text mb-1">Find Salons Near You</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Allow location access to discover salons and home service professionals around you.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={request}
+              className="inline-flex items-center justify-center gap-2 bg-[#006B3F] text-white font-bold px-5 py-3 rounded-xl hover:bg-[#006B3F]/90 transition-colors shadow-sm"
+            >
+              <Icon name="my_location" size={18} />
+              Use My Location
+            </button>
+            <Link
+              to="/explore"
+              className="inline-flex items-center justify-center gap-2 text-[#006B3F] font-semibold px-5 py-3 rounded-xl hover:bg-[#006B3F]/10 transition-colors"
+            >
+              Browse All Salons
+              <Icon name="arrow_forward" size={16} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (state === 'requesting') {
+    return (
+      <div className="py-6 px-4">
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="w-10 h-10 border-4 border-[#006B3F]/20 border-t-[#006B3F] rounded-full animate-spin mb-3" />
+          <p className="text-sm text-gray-500">Getting your location...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (state === 'denied' || state === 'error' || state === 'unsupported') {
+    return null
+  }
+
+  if (loading) {
+    return (
+      <div className="py-6">
+        <div className="flex items-center gap-2 mb-4 px-4">
+          <div className="w-1 h-6 bg-[#006B3F] rounded-full" />
+          <h2 className="text-xl font-bold text-brand-text">Salons Near You</h2>
+        </div>
+        <div className="flex gap-4 overflow-x-auto px-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex-shrink-0 w-[280px]">
+              <div className="h-[200px] rounded-2xl bg-[#006B3F]/10 animate-pulse" />
+              <div className="h-4 bg-[#FCD116]/20 rounded mt-3 w-3/4 animate-pulse" />
+              <div className="h-3 bg-gray-200 rounded mt-2 w-1/2 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (salons.length === 0) {
+    return (
+      <div className="py-6 px-4">
+        <div className="text-center py-8 bg-white rounded-2xl border border-gray-100">
+          <Icon name="location_off" size={40} className="text-gray-300 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No salons found nearby.</p>
+          <Link to="/explore" className="mt-2 text-sm font-medium text-[#006B3F] hover:underline inline-block">
+            Explore all salons
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="py-6">
+      <div className="flex items-center gap-2 mb-4 px-4">
+        <div className="w-1 h-6 bg-[#006B3F] rounded-full" />
+        <h2 className="text-xl font-bold text-brand-text">Salons Near You</h2>
+      </div>
+      <div className="flex gap-4 overflow-x-auto px-4 pb-4 snap-x snap-mandatory scrollbar-hide">
+        {salons.map((salon) => (
+          <NearbySalonCard key={salon.id} salon={salon} />
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -855,6 +1181,12 @@ export default function MobileHome() {
       {/* Hero Section */}
       <HeroSection />
 
+      {/* Nearby Salons Section */}
+      <NearbySection />
+
+      {/* City Discovery */}
+      <MobileCityDiscovery />
+
       {/* Recommended Section */}
       <RecommendedSection salons={recommendedSalons} loading={loadingRecommended} />
 
@@ -873,10 +1205,16 @@ export default function MobileHome() {
       {/* Section 4: Testimonials */}
       <TestimonialsSection />
 
-      {/* Section 5: Download App */}
+      {/* Section 5: Trust Badges */}
+      <TrustBadges />
+
+      {/* Section 6: FAQ */}
+      <FAQ />
+
+      {/* Section 7: Download App */}
       <DownloadAppSection />
 
-      {/* Section 6: Mini Footer */}
+      {/* Section 8: Mini Footer */}
       <MiniFooter />
 
       {/* Bottom Navigation */}

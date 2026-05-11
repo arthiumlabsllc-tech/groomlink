@@ -112,34 +112,59 @@ function App() {
           </ProtectedRoute>
         } />
         
-        {/* Protected routes with ProfileSetupGuard */}
-        <Route path="/" element={
-          <ProtectedRoute>
-            <ProfileSetupGuard>
-              <Layout />
-            </ProfileSetupGuard>
-          </ProtectedRoute>
-        }>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="explore" element={<Explore />} />
-          <Route path="bookings" element={<Bookings />} />
-          <Route path="favorites" element={<Favorites />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="rewards" element={<Rewards />} />
-          <Route path="profile" element={<Profile />} />
+        {/* All other routes - inside Layout (Header + BottomNav) */}
+        <Route element={<Layout />}>
+          {/* Public discovery routes */}
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/salon/:id" element={<SalonDetail />} />
+          
+          {/* Protected routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <ProfileSetupGuard>
+                <Dashboard />
+              </ProfileSetupGuard>
+            </ProtectedRoute>
+          } />
+          <Route path="/bookings" element={
+            <ProtectedRoute>
+              <ProfileSetupGuard>
+                <Bookings />
+              </ProfileSetupGuard>
+            </ProtectedRoute>
+          } />
+          <Route path="/favorites" element={
+            <ProtectedRoute>
+              <ProfileSetupGuard>
+                <Favorites />
+              </ProfileSetupGuard>
+            </ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <ProfileSetupGuard>
+                <Notifications />
+              </ProfileSetupGuard>
+            </ProtectedRoute>
+          } />
+          <Route path="/rewards" element={
+            <ProtectedRoute>
+              <ProfileSetupGuard>
+                <Rewards />
+              </ProfileSetupGuard>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfileSetupGuard>
+                <Profile />
+              </ProfileSetupGuard>
+            </ProtectedRoute>
+          } />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
         
-        {/* Salon Detail - Protected but outside Layout for full-width experience */}
-        <Route path="/salon/:id" element={
-          <ProtectedRoute>
-            <ProfileSetupGuard>
-              <SalonDetail />
-            </ProfileSetupGuard>
-          </ProtectedRoute>
-        } />
-        
-        {/* Booking Page - Protected */}
+        {/* Booking Page - Protected, outside Layout */}
         <Route path="/salon/:id/book" element={
           <ProtectedRoute>
             <ProfileSetupGuard>
@@ -148,7 +173,7 @@ function App() {
           </ProtectedRoute>
         } />
         
-        {/* Payment Callback - Protected */}
+        {/* Payment Callback - Protected, outside Layout */}
         {/* Hubtel mobile money flow: polls for payment confirmation after USSD/STK prompt */}
         <Route path="/payment/callback" element={
           <ProtectedRoute>

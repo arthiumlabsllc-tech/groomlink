@@ -3,6 +3,7 @@ import multer from 'multer';
 import * as adminController from '../controllers/admin.controller';
 import * as supportTicketController from '../controllers/support-ticket.controller';
 import * as sponsorshipController from '../controllers/sponsorship.controller';
+import * as securityController from '../controllers/security.controller';
 import { authenticateToken, requireAdminOrHigher, requireSuperAdmin } from '../middleware/auth';
 import { salonStorage } from '../config/cloudinary';
 
@@ -115,5 +116,11 @@ router.post('/sponsored-salons', authenticateToken, requireAdminOrHigher, sponso
 router.delete('/sponsored-salons/:id', authenticateToken, requireAdminOrHigher, sponsorshipController.removeSponsoredSalon);
 router.get('/sponsored-salons', authenticateToken, requireAdminOrHigher, sponsorshipController.getSponsoredSalons);
 router.get('/sponsorship-packages', authenticateToken, requireAdminOrHigher, sponsorshipController.getPackages);
+
+// Security events (platform "security bot" dashboard)
+router.get('/security/events', authenticateToken, requireAdminOrHigher, securityController.listEvents);
+router.get('/security/stats', authenticateToken, requireAdminOrHigher, securityController.getStats);
+router.patch('/security/events/:id/resolve', authenticateToken, requireAdminOrHigher, securityController.resolveEvent);
+router.patch('/security/events/:id/reopen', authenticateToken, requireAdminOrHigher, securityController.reopenEvent);
 
 export default router;

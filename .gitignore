@@ -92,26 +92,58 @@ android-sdk/
 .gradle/
 
 # ===== SENSITIVE FILES - KEEP LOCAL ONLY =====
-# VPS deployment scripts (contain server credentials)
+# VPS deployment, verification, debugging scripts (may contain server credentials)
+# Block all operational Python scripts at repo root (they commonly contain IPs/passwords)
+deploy_*.py
+deploy-*.py
+verify_*.py
+verify-*.py
+fix_*.py
+fix-*.py
+check_*.py
+check-*.py
+diagnose_*.py
+inspect_*.py
+rotate_*.py
+run_*.py
+run-*.py
+test_*.py
+force_*.py
+hard_*.py
+site_*.py
+find_*.py
+get_*.py
+read_*.py
+restart_*.py
+reload_*.py
+resume_*.py
+rebuild_*.py
+debug_*.py
+ioc_*.py
+diff_*.py
+parse_*.py
+ssh_*.py
+scp_*.py
+sync_*.py
+cleanup_*.py
+# Shell / PowerShell ops scripts
+deploy-*.sh
+deploy_*.sh
+deploy.sh
+backup.sh
+setup-vps.sh
+hostinger-deploy.sh
+ssh_to_vps.exp
+*.ps1
+# Misc logs & one-off SQL
+*.log
+platform-feedback-migration.sql
+# Legacy explicit entries kept for safety
 deploy-api-to-vps.py
 deploy-feedback-system.py
 deploy-to-vps.sh
 deploy-api.sh
 deploy-sms.sh
-deploy.sh
-hostinger-deploy.sh
-setup-vps.sh
-backup.sh
-ssh_to_vps.exp
-ssh_vps.py
-run_on_vps.py
-run_migration_on_vps.py
-scp_file.py
-sync_to_vps.py
-check_vps.py
-deploy_*.py
-deploy-landing-*.sh
-platform-feedback-migration.sql
 hostinger-setup.md
 
 # Python virtual env

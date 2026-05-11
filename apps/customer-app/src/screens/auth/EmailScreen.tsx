@@ -10,6 +10,10 @@ import { AuthStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 
+// Theme-aware logo selection
+const LOGO_BLACK = require('../../../assets/logo-full-black.png');
+const LOGO_WHITE = require('../../../assets/logo-full-white.png');
+
 // Design System Colors (theme-aware)
 const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
@@ -30,12 +34,15 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function EmailScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Select logo based on theme
+  const logoSource = isDark ? LOGO_WHITE : LOGO_BLACK;
 
   // Check if user is resuming registration (app was closed during profile setup)
   useEffect(() => {
@@ -83,13 +90,11 @@ export default function EmailScreen() {
         <View style={styles.content}>
           {/* Logo Section */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Image
-                source={require('../../../assets/logo-white.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
+            <Image
+              source={logoSource}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             <View style={styles.logoAccent} />
           </View>
 
@@ -165,22 +170,9 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     alignItems: 'center',
     marginBottom: 32,
   },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.primaryGreen,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.primaryGreen,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
   logoImage: {
-    width: 60,
-    height: 60,
+    width: 180,
+    height: 56,
   },
   logoAccent: {
     width: 40,

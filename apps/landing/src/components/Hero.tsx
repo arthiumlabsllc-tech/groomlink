@@ -52,15 +52,15 @@ export default function Hero() {
             </span>
           </div>
           
-          {/* Headline */}
+          {/* Headline - clearer value prop */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-display leading-tight mb-6 animate-fade-in-up">
-            Book Top Barbers & Salons in Ghana.{' '}
-            <span className="text-brand-gold">Instantly.</span>
+            Find Trusted Barbers, Hairstylists & Beauty Pros{' '}
+            <span className="text-brand-gold">Near You.</span>
           </h1>
           
-          {/* Subheadline */}
+          {/* Subheadline - explains both sides */}
           <p className="text-lg sm:text-xl text-white/80 mb-8 max-w-xl animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Discover and book trusted grooming services near you. Free, fast, and easy.
+            Ghana's #1 platform to discover, compare, and book barbers, salons, makeup artists, and beauty professionals — or list your business and grow your clientele.
           </p>
 
           {/* Search Box */}
@@ -68,20 +68,43 @@ export default function Hero() {
             <SearchBox variant="desktop" />
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <a 
-              href="https://my.groomlinkgh.com/login" 
-              className="btn-primary text-center text-lg px-8 py-4 min-h-12 w-full sm:w-auto"
-            >
-              Download the App
-            </a>
+          {/* Specific CTA Buttons - clearer actions */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-12 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <Link 
               to="/explore" 
-              className="btn-outline-white text-center text-lg px-8 py-4 min-h-12 w-full sm:w-auto"
+              className="btn-primary text-center text-base px-6 py-3.5 min-h-12 w-full sm:w-auto inline-flex items-center justify-center gap-2"
             >
-              Find a Salon
+              <Icon name="search" size={20} />
+              Find a Professional
             </Link>
+            <a 
+              href="https://partners.groomlinkgh.com" 
+              className="bg-white/10 backdrop-blur-sm border border-white/30 text-white text-center text-base px-6 py-3.5 min-h-12 w-full sm:w-auto rounded-xl hover:bg-white/20 transition-all inline-flex items-center justify-center gap-2 font-medium"
+            >
+              <Icon name="storefront" size={20} />
+              List Your Business
+            </a>
+            <a 
+              href="https://my.groomlinkgh.com/login" 
+              className="btn-outline-white text-center text-base px-6 py-3.5 min-h-12 w-full sm:w-auto inline-flex items-center justify-center gap-2"
+            >
+              <Icon name="phone_android" size={20} />
+              Get the App
+            </a>
+          </div>
+
+          {/* Quick action pills */}
+          <div className="flex flex-wrap gap-2 mb-10 animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+            <span className="text-white/60 text-sm mr-2 self-center">Popular:</span>
+            {['Book a Barber', 'Find a Hairstylist', 'Makeup Artists', 'Nail Techs', 'Spa & Massage'].map((tag) => (
+              <Link
+                key={tag}
+                to="/explore"
+                className="bg-white/10 hover:bg-white/20 text-white/90 text-sm px-4 py-1.5 rounded-full transition-all border border-white/10 hover:border-white/30"
+              >
+                {tag}
+              </Link>
+            ))}
           </div>
 
           {/* App Store Badges */}

@@ -83,12 +83,13 @@ export async function verifyOTP(phoneNumber: string, code: string): Promise<bool
  * Create OTP for email verification
  */
 export async function createEmailOTP(email: string): Promise<string> {
+  const normalizedEmail = email.trim().toLowerCase();
   const code = generateOTP();
   const expiresAt = new Date(Date.now() + EMAIL_OTP_EXPIRY_MINUTES * 60 * 1000);
 
-  // Invalidate any existing OTPs for this email
+  // Invalidate any existing OTPs for this email (case-insensitive via normalization)
   await prisma.otp.updateMany({
-    where: { email },
+    where: { email: normalizedEmail },
     data: { verified: true }, // Mark as used
   });
 
@@ -96,13 +97,13 @@ export async function createEmailOTP(email: string): Promise<string> {
   await prisma.otp.create({
     data: {
       phoneNumber: '', // Not used for email OTPs
-      email,
+      email: normalizedEmail,
       code,
       expiresAt,
     },
   });
 
-  logger.info(`OTP generated for email ${email}`);
+  logger.info(`OTP generated for email ${normalizedEmail}`);
   return code;
 }
 
@@ -110,10 +111,15 @@ export async function createEmailOTP(email: string): Promise<string> {
  * Verify email OTP
  */
 export async function verifyEmailOTP(email: string, code: string): Promise<boolean> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedCode = code.trim();
+
+  // Find the most recent unverified, unexpired OTP for this email.
+  // We intentionally do NOT filter by `code` here so that a wrong-code attempt
+  // still finds the OTP row and increments its attempts counter.
   const otp = await prisma.otp.findFirst({
     where: {
-      email,
-      code,
+      email: normalizedEmail,
       verified: false,
       expiresAt: {
         gt: new Date(),
@@ -125,19 +131,22 @@ export async function verifyEmailOTP(email: string, code: string): Promise<boole
   });
 
   if (!otp) {
+    logger.warn(`No active OTP found for email ${normalizedEmail}`);
     return false;
   }
 
   if (otp.attempts >= MAX_ATTEMPTS) {
+    logger.warn(`Max OTP attempts reached for email ${normalizedEmail}`);
     return false;
   }
 
-  if (otp.code !== code) {
-    // Increment attempts
+  if (otp.code !== normalizedCode) {
+    // Increment attempts on wrong code
     await prisma.otp.update({
       where: { id: otp.id },
       data: { attempts: { increment: 1 } },
     });
+    logger.warn(`Invalid OTP code for email ${normalizedEmail} (attempt ${otp.attempts + 1}/${MAX_ATTEMPTS})`);
     return false;
   }
 

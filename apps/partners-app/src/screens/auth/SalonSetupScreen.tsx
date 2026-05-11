@@ -265,8 +265,8 @@ export default function SalonSetupScreen() {
       // Business-specific fields
       if (!isFreelancer) {
         salonData.address = address.trim();
-        salonData.latitude = latitude!;
-        salonData.longitude = longitude!;
+        salonData.latitude = latitude ?? 5.6037; // Default to Accra if not detected
+        salonData.longitude = longitude ?? -0.1870;
         salonData.openingTime = openingTime;
         salonData.closingTime = closingTime;
         salonData.workingDays = workingDays;
@@ -277,6 +277,8 @@ export default function SalonSetupScreen() {
         salonData.closingTime = '18:00';
         salonData.workingDays = workingDays;
         salonData.address = `${city.trim()}, ${region.trim()}`; // Use city+region as address for freelancers
+        salonData.latitude = latitude ?? 5.6037; // Default to Accra
+        salonData.longitude = longitude ?? -0.1870;
       }
 
       // Create the salon

@@ -29,7 +29,7 @@
       "autoIncrement": true,
       "node": "18.19.0",
       "cache": {
-        "key": "v4-clean-manifest-build"
+        "key": "v5-16kb-fix-gl-logo"
       }
     }
   },

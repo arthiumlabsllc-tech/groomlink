@@ -101,6 +101,7 @@ export interface Guest {
   guestAgeGroup?: string;
   isChild?: boolean;
   specialInstructions?: string;
+  status?: 'PENDING' | 'CHECKED_IN' | 'CANCELLED' | 'NO_SHOW';
   checkedIn?: boolean;
   service: {
     id: string;

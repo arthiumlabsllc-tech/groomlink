@@ -66,13 +66,20 @@ export default function QRScannerScreen() {
     },
     onSuccess: (data) => {
       setIsProcessing(false);
-      queryClient.invalidateQueries({ queryKey: ['booking', data.id] });
+
+      // API returns { booking: { id, customer, service, ... }, queuePosition, message }
+      const booking = data.booking || data;
+      const customerName = booking.customer ? `${booking.customer.firstName} ${booking.customer.lastName}`.trim() : 'Customer';
+      const serviceName = booking.service?.name || 'Service';
+      const queuePos = data.queuePosition || booking.queuePosition;
+
+      queryClient.invalidateQueries({ queryKey: ['booking', booking.id] });
       queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
       queryClient.invalidateQueries({ queryKey: ['queue'] });
-      
+
       Alert.alert(
         'Check-in Successful',
-        `Customer: ${data.customer.firstName} ${data.customer.lastName}\nService: ${data.service.name}${data.queuePosition ? `\nQueue Position: #${data.queuePosition}` : ''}`,
+        `${customerName} checked in for ${serviceName}${queuePos ? `\nQueue Position: #${queuePos}` : ''}`,
         [
           {
             text: 'OK',

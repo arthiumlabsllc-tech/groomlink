@@ -7,8 +7,29 @@ export interface CheckinParams {
   bookingId?: string;
 }
 
-export interface CheckinResponse extends Booking {
-  queuePosition?: number;
+export interface CheckinResponse {
+  booking: {
+    id: string;
+    reference: string;
+    status: string;
+    checkedIn: boolean;
+    checkedInAt: string | null;
+    checkinCode: string | null;
+    queuePosition: number | null;
+    customer: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      phoneNumber: string | null;
+    };
+    service: {
+      id: string;
+      name: string;
+      duration: number;
+    };
+  };
+  queuePosition: number;
+  message: string;
 }
 
 export interface SalonBookingsParams {
@@ -88,6 +109,18 @@ export const bookingsApi = {
   // Check-in by QR code or check-in code
   checkinByQR: async (params: CheckinParams): Promise<CheckinResponse> => {
     const response = await apiClient.post('/bookings/checkin-by-qr', params);
+    return response.data.data;
+  },
+
+  // Check in a specific guest in a group booking
+  checkInGuest: async (guestId: string): Promise<any> => {
+    const response = await apiClient.put(`/bookings/guest/${guestId}/checkin`);
+    return response.data.data;
+  },
+
+  // Mark a guest as no-show
+  markGuestNoShow: async (guestId: string): Promise<any> => {
+    const response = await apiClient.put(`/bookings/guest/${guestId}/no-show`);
     return response.data.data;
   },
 };

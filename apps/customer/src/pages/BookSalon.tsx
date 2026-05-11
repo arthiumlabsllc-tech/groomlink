@@ -373,7 +373,7 @@ export default function BookSalon() {
 
       const response = await bookingApi.createBooking(bookingData);
       
-      // Initialize payment via Hubtel
+      // Initialize payment via Paystack
       setInitializingPayment(true);
       const paymentResponse = await paymentApi.initialize({
         bookingId: response.id,
@@ -382,9 +382,20 @@ export default function BookSalon() {
         phoneNumber: `+233${phoneNumber.replace(/\s/g, '').replace(/\D/g, '')}`,
       });
       
-      // Navigate to the payment polling page with the client reference
-      // Hubtel flow: customer gets USSD/STK prompt on phone, we poll for confirmation
-      navigate(`/payment/callback?reference=${paymentResponse.clientReference}`);
+      if (!paymentResponse.success) {
+        toast.error(paymentResponse.message || 'Payment initialization failed');
+        return;
+      }
+
+      // Paystack flow: redirect to checkout page where user enters phone & approves MoMo
+      if (paymentResponse.checkout_url) {
+        // Redirect to Paystack checkout - after payment, Paystack redirects to our callback
+        // which then redirects to /payment/callback with the reference for final confirmation
+        window.location.href = paymentResponse.checkout_url;
+      } else {
+        // Fallback: go to polling screen (for providers that send prompt directly)
+        navigate(`/payment/callback?reference=${paymentResponse.reference}`);
+      }
       
     } catch (err: any) {
       const message = err.response?.data?.error?.message || 'Failed to create booking';
@@ -1504,6 +1515,25 @@ export default function BookSalon() {
               )}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Pay Securely With */}
+      <div className="text-center py-3">
+        <p className="text-xs text-gray-400 mb-2">Pay securely with</p>
+        <div className="flex flex-wrap justify-center items-center gap-2">
+          {['MTN MoMo', 'Vodafone Cash', 'AirtelTigo Money'].map((method) => (
+            <span
+              key={method}
+              className="px-2.5 py-1 bg-gray-100 rounded-md text-[10px] font-medium text-gray-600 border border-gray-200"
+            >
+              {method}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-gray-400">
+          <Icon name="lock" size={10} className="text-green-600" />
+          <span>End-to-end encrypted by Paystack</span>
         </div>
       </div>
 

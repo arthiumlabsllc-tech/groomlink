@@ -121,6 +121,7 @@ export interface Booking {
     guestAgeGroup?: string;
     isChild?: boolean;
     specialInstructions?: string;
+    status?: 'PENDING' | 'CHECKED_IN' | 'CANCELLED' | 'NO_SHOW';
     checkedIn?: boolean;
     serviceId?: string;
     service?: { id: string; name: string; price: number | string; duration?: number };

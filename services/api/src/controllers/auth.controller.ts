@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { successResponse, errorResponse } from '../utils/response';
 import * as authService from '../services/auth.service';
 import { RoleMismatchError } from '../services/auth.service';
+import * as securityAlert from '../services/security-alert.service';
 import { z } from 'zod';
 
 const phoneSchema = z.object({
@@ -30,17 +31,17 @@ const loginSchema = z.object({
 });
 
 const emailSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  email: z.string().trim().toLowerCase().pipe(z.string().email('Invalid email format')),
 });
 
 const verifyEmailOTPSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  code: z.string().length(6, 'OTP must be 6 digits'),
+  email: z.string().trim().toLowerCase().pipe(z.string().email('Invalid email format')),
+  code: z.string().trim().length(6, 'OTP must be 6 digits'),
   role: z.enum(['CUSTOMER', 'SALON_OWNER']).optional(),
 });
 
 const completeRegistrationSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  email: z.string().trim().toLowerCase().pipe(z.string().email('Invalid email format')),
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   phoneNumber: z.string().regex(/^\+233[0-9]{9}$/, 'Invalid phone number format. Use +233XXXXXXXXX').optional(),
@@ -55,6 +56,8 @@ const completeRegistrationSchema = z.object({
 export async function requestOTP(req: Request, res: Response): Promise<void> {
   try {
     const { phoneNumber } = phoneSchema.parse(req.body);
+    // Count every request for this IP – raise OTP_BOMB at thresholds.
+    securityAlert.recordOtpRequest({ identifier: phoneNumber, req }).catch(() => undefined);
     await authService.requestOTP(phoneNumber);
     successResponse(res, { message: 'OTP sent successfully' });
   } catch (error) {
@@ -74,6 +77,7 @@ export async function verifyOTP(req: Request, res: Response): Promise<void> {
     if (result) {
       successResponse(res, result);
     } else {
+      securityAlert.recordOtpFailure({ identifier: phoneNumber, req }).catch(() => undefined);
       errorResponse(res, 'INVALID_OTP', 'Invalid or expired OTP', 400);
     }
   } catch (error) {
@@ -109,6 +113,12 @@ export async function login(req: Request, res: Response): Promise<void> {
       errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
       return;
     }
+    // Record failed login for brute-force detection
+    securityAlert.recordFailedLogin({
+      identifier: (req.body && (req.body.phoneNumber || req.body.email)) || 'unknown',
+      reason: (error as Error).message,
+      req,
+    }).catch(() => undefined);
     errorResponse(res, 'LOGIN_FAILED', (error as Error).message, 401);
   }
 }
@@ -144,6 +154,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
 export async function requestEmailOTP(req: Request, res: Response): Promise<void> {
   try {
     const { email } = emailSchema.parse(req.body);
+    securityAlert.recordOtpRequest({ identifier: email, req }).catch(() => undefined);
     await authService.requestEmailOTP(email);
     successResponse(res, { message: 'OTP sent successfully to your email' });
   } catch (error) {
@@ -163,6 +174,7 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
     if (result) {
       successResponse(res, result);
     } else {
+      securityAlert.recordOtpFailure({ identifier: email, req }).catch(() => undefined);
       errorResponse(res, 'INVALID_OTP', 'Invalid or expired OTP', 400);
     }
   } catch (error) {

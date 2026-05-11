@@ -9,9 +9,10 @@ set -e
 echo "=== GroomLink Secure Build Script ==="
 echo ""
 
-# Configuration
-VPS_HOST="187.124.210.205"
-VPS_USER="root"
+# Configuration - set VPS_HOST via environment variable before running:
+#   export VPS_HOST="<your-vps-ip>"
+VPS_HOST="${VPS_HOST:?Error: VPS_HOST environment variable is required. Run: export VPS_HOST=<ip>}"
+VPS_USER="${VPS_USER:-root}"
 
 # Step 1: Fetch Google Maps API Key from VPS
 echo "Step 1: Fetching Google Maps API Key from VPS..."

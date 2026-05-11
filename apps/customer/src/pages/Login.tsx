@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Icon from '../components/Icon';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/auth';
@@ -9,8 +9,12 @@ type Step = 'email' | 'otp';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { requestOTP, verifyOTP, isAuthenticated } = useAuthStore();
   const isDark = useDarkMode();
+  
+  // Read redirect URL from query params
+  const redirectPath = searchParams.get('redirect') || '/dashboard';
   
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -23,9 +27,9 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, redirectPath]);
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -109,7 +113,7 @@ export default function Login() {
         navigate('/profile/setup', { state: { email } });
       } else {
         toast.success('Login successful!');
-        navigate('/dashboard');
+        navigate(redirectPath, { replace: true });
       }
     } catch (error: any) {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Invalid OTP');
@@ -147,24 +151,22 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Desktop Left Panel - Brand Side */}
-      <div className="hidden md:flex md:w-[60%] bg-gradient-to-br from-gray-900 via-[#1a0a0b] to-gray-900 relative overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Abstract shapes with Ghana colors */}
-          <div className="absolute top-20 left-10 w-64 h-64 bg-[#CE1126]/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-10 w-80 h-80 bg-[#FCD116]/5 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/3 w-48 h-48 bg-[#006B3F]/10 rounded-full blur-3xl" />
-          
-          {/* Subtle grid pattern */}
-          <div 
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                               linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-              backgroundSize: '60px 60px'
-            }}
-          />
-        </div>
+      <div className="hidden md:flex md:w-[60%] bg-gradient-to-br from-[#006B3F] via-[#006B3F]/95 to-[#004d2e] relative overflow-hidden">
+        {/* Decorative diagonal stripes */}
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 20px,
+              rgba(255,255,255,0.3) 20px,
+              rgba(255,255,255,0.3) 22px
+            )`
+          }}
+        />
+        {/* Subtle radial glow */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#FCD116]/5 rounded-full translate-y-1/3 -translate-x-1/4" />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
@@ -188,9 +190,9 @@ export default function Login() {
           </div>
 
           {/* Trust Stats */}
-          <div className="flex items-center gap-6 text-white/80 text-sm">
+          <div className="flex items-center gap-6 text-white/90 text-sm">
             <div className="flex items-center gap-2">
-              <Icon name="store" size={18} className="text-[#CE1126]" />
+              <Icon name="store" size={18} className="text-[#FCD116]" />
               <span>1,500+ Salons</span>
             </div>
             <div className="w-1 h-1 rounded-full bg-white/30" />
@@ -210,7 +212,7 @@ export default function Login() {
       {/* Right Panel - Form Side */}
       <div className="w-full md:w-[40%] bg-white md:bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
         {/* Mobile Background */}
-        <div className="absolute inset-0 md:hidden bg-gradient-to-br from-[#CE1126]/5 via-white to-[#FCD116]/10" />
+        <div className="absolute inset-0 md:hidden bg-gradient-to-br from-[#006B3F]/[0.03] via-white to-[#FCD116]/[0.06]" />
         
         {/* Mobile Logo */}
         <div className="md:hidden absolute top-8 left-0 right-0 flex justify-center z-10">

@@ -3,9 +3,12 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import HowItWorks from './components/HowItWorks'
-import FeaturedSalons from './components/FeaturedSalons'
+import NearbySalons from './components/NearbySalons'
+import CityDiscovery from './components/CityDiscovery'
 import PopularCategories from './components/PopularCategories'
 import Testimonials from './components/Testimonials'
+import TrustBadges from './components/TrustBadges'
+import FAQ from './components/FAQ'
 import ForSalonOwners from './components/ForSalonOwners'
 import Footer from './components/Footer'
 import MobileHome from './components/MobileHome'
@@ -87,10 +90,13 @@ function DesktopLanding() {
       <main>
         <Hero />
         <HowItWorks />
-        <FeaturedSalons />
+        <NearbySalons />
+        <CityDiscovery />
         <PopularCategories />
+        <TrustBadges />
         <Testimonials />
         <ForSalonOwners />
+        <FAQ />
       </main>
       <Footer />
       <FloatingPartnerBanner />

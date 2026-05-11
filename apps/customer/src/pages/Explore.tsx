@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import apiClient, { salonApi } from '../lib/api'
 import MapView from '../components/MapView'
@@ -99,7 +99,13 @@ type DisplayMode = 'grid' | 'list' | 'map'
 
 export default function Explore() {
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Read city/area from URL on mount
+  const urlCity = searchParams.get('city') || ''
+  const urlArea = searchParams.get('area') || ''
+
+  const [searchQuery, setSearchQuery] = useState(urlArea)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [displayMode, setDisplayMode] = useState<DisplayMode>('grid')
   const [salons, setSalons] = useState<Salon[]>([])
@@ -111,7 +117,7 @@ export default function Explore() {
   const limit = 12
 
   // Debounced search
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState(urlArea)
 
   // Near Me state
   const [locationMode, setLocationMode] = useState<LocationMode>('all')
@@ -123,7 +129,7 @@ export default function Explore() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery)
-      setPage(1) // Reset to first page on search change
+      setPage(1)
     }, 300)
     return () => clearTimeout(timer)
   }, [searchQuery])
@@ -160,6 +166,9 @@ export default function Explore() {
         if (debouncedSearch) {
           params.search = debouncedSearch
         }
+        if (urlCity) {
+          params.city = urlCity
+        }
         if (selectedCategory) {
           params.type = selectedCategory
         }
@@ -179,7 +188,7 @@ export default function Explore() {
     } finally {
       setLoading(false)
     }
-  }, [debouncedSearch, selectedCategory, page, limit, locationMode, userLocation, selectedRadius])
+  }, [debouncedSearch, selectedCategory, page, limit, locationMode, userLocation, selectedRadius, urlCity])
 
   useEffect(() => {
     fetchSalons()
@@ -459,6 +468,46 @@ export default function Explore() {
           </button>
         ))}
       </div>
+
+      {/* Active City/Area Filter Badge */}
+      {(urlCity || urlArea) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {urlCity && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#006B3F]/10 text-[#006B3F] rounded-full text-sm font-medium">
+              <Icon name="location_on" size={14} />
+              <span>{urlCity}</span>
+              <button
+                onClick={() => {
+                  const newParams = new URLSearchParams(searchParams)
+                  newParams.delete('city')
+                  setSearchParams(newParams)
+                }}
+                className="ml-1 p-0.5 hover:bg-[#006B3F]/20 rounded-full transition-colors"
+              >
+                <Icon name="close" size={14} />
+              </button>
+            </div>
+          )}
+          {urlArea && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#CE1126]/10 text-[#CE1126] rounded-full text-sm font-medium">
+              <Icon name="near_me" size={14} />
+              <span>{urlArea}</span>
+              <button
+                onClick={() => {
+                  const newParams = new URLSearchParams(searchParams)
+                  newParams.delete('area')
+                  setSearchParams(newParams)
+                  setSearchQuery('')
+                  setDebouncedSearch('')
+                }}
+                className="ml-1 p-0.5 hover:bg-[#CE1126]/20 rounded-full transition-colors"
+              >
+                <Icon name="close" size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Location mode indicator */}
       {locationMode === 'nearby' && userLocation && (

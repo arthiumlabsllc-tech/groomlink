@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Alert, Linking, useColorScheme } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Animated, Alert, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from 'react-native-paper';
@@ -7,6 +7,7 @@ import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { paymentApi } from '../../api/payment';
 import { RootStackParamList } from '../../types/navigation';
+import PaystackWebViewModal from '../../components/PaystackWebViewModal';
 
 type PaymentProcessingRouteProp = RouteProp<RootStackParamList, 'PaymentProcessing'>;
 type PaymentProcessingNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -22,8 +23,9 @@ export default function PaymentProcessingScreen({ route }: Props) {
   const styles = createStyles(isDark);
   const [status, setStatus] = useState<'polling' | 'success' | 'failed' | 'timeout'>('polling');
   const [attempts, setAttempts] = useState(0);
+  const [showWebView, setShowWebView] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
-  const MAX_POLL_ATTEMPTS = 30; // ~90 seconds (3s intervals)
+  const MAX_POLL_ATTEMPTS = 60; // ~180 seconds (3s intervals) - increased for mobile money
 
   // Spin animation
   useEffect(() => {
@@ -93,6 +95,26 @@ export default function PaymentProcessingScreen({ route }: Props) {
     return () => clearInterval(interval);
   }, [status, reference, bookingId, navigation]);
 
+  const handleOpenWebView = useCallback(() => {
+    if (checkoutUrl) {
+      setShowWebView(true);
+    }
+  }, [checkoutUrl]);
+
+  const handlePaymentComplete = useCallback((_reference: string) => {
+    // Close the WebView - the polling mechanism will detect the success
+    setShowWebView(false);
+  }, []);
+
+  const handlePaymentFailed = useCallback((_reference: string) => {
+    // Close the WebView - the polling mechanism will detect the failure
+    setShowWebView(false);
+  }, []);
+
+  const handleWebViewClose = useCallback(() => {
+    setShowWebView(false);
+  }, []);
+
   const getProviderLabel = () => {
     switch (provider) {
       case 'MTN_MOMO': return 'MTN Mobile Money';
@@ -122,6 +144,7 @@ export default function PaymentProcessingScreen({ route }: Props) {
   };
 
   return (
+    <>
     <SafeAreaView style={styles.container}>
       {status === 'polling' && (
         <View style={styles.content}>
@@ -134,13 +157,13 @@ export default function PaymentProcessingScreen({ route }: Props) {
           </Text>
           <Text style={styles.hint}>
             {checkoutUrl
-              ? 'Tap "Complete Payment" below to finish payment on the secure checkout page'
+              ? 'Tap "Complete Payment" below to finish payment in the secure checkout'
               : 'Please approve the payment prompt on your phone'}
           </Text>
           {checkoutUrl && (
             <Button
               mode="contained"
-              onPress={() => Linking.openURL(checkoutUrl)}
+              onPress={handleOpenWebView}
               buttonColor="#006B3F"
               style={styles.actionButton}
             >
@@ -228,7 +251,19 @@ export default function PaymentProcessingScreen({ route }: Props) {
           </View>
         </View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+
+      {/* Paystack Inline WebView Modal */}
+      {checkoutUrl && (
+        <PaystackWebViewModal
+          visible={showWebView}
+          checkoutUrl={checkoutUrl}
+          onClose={handleWebViewClose}
+          onPaymentComplete={handlePaymentComplete}
+          onPaymentFailed={handlePaymentFailed}
+        />
+      )}
+    </>
   );
 }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
 import apiClient, { queueApi, QueueStatus, MyQueuePosition, favoritesApi, salonApi, Review, waitlistApi, WaitlistEntry } from '../lib/api'
+import { useAuthStore } from '../store/auth'
 
 // Types
 interface ServiceLocal {
@@ -37,9 +38,9 @@ interface Salon {
   description: string | null
   type: string
   status: string
-  phoneNumber: string
+  phoneNumber: string | null
   email: string | null
-  address: string
+  address: string | null
   city: string
   region: string
   latitude: number | null
@@ -56,6 +57,8 @@ interface Salon {
   acceptsWalkIns: boolean
   rating: number
   reviewCount: number
+  providerCategory?: string
+  serviceAreas?: string[]
   services?: ServiceLocal[]
   workers?: Worker[]
   reviews?: Review[]
@@ -127,6 +130,7 @@ const formatDuration = (minutes: number): string => {
 export default function SalonDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [salon, setSalon] = useState<Salon | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -290,6 +294,11 @@ export default function SalonDetail() {
   const toggleFavorite = async () => {
     if (!id || favoriteLoading) return
 
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(`/salon/${id}`)}`)
+      return
+    }
+
     setFavoriteLoading(true)
     try {
       if (isFavorited && favoriteId) {
@@ -305,7 +314,7 @@ export default function SalonDetail() {
       }
     } catch (err: any) {
       if (err.response?.status === 401) {
-        alert('Please log in to save favorites')
+        navigate(`/login?redirect=${encodeURIComponent(`/salon/${id}`)}`)
       } else {
         alert('Failed to update favorite. Please try again.')
       }
@@ -332,6 +341,11 @@ export default function SalonDetail() {
 
   const handleJoinQueue = async () => {
     if (!id) return
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(`/salon/${id}`)}`)
+      setShowJoinModal(false)
+      return
+    }
     setJoiningQueue(true)
     try {
       await queueApi.joinQueue({
@@ -419,6 +433,10 @@ export default function SalonDetail() {
   }
 
   const handleBookNow = () => {
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(`/salon/${id}/book`)}`)
+      return
+    }
     navigate(`/salon/${id}/book`)
   }
 
@@ -614,7 +632,7 @@ export default function SalonDetail() {
           <div className="card-v2 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
             <div className="space-y-3">
-              {salon.phoneNumber && (
+              {salon.phoneNumber ? (
                 <a
                   href={`tel:${salon.phoneNumber}`}
                   className="flex items-center gap-3 text-gray-600 hover:text-ghana-green transition-colors"
@@ -622,8 +640,17 @@ export default function SalonDetail() {
                   <Icon name="call" size={20} className="text-ghana-green" />
                   <span>{salon.phoneNumber}</span>
                 </a>
+              ) : (
+                <div className="flex items-center gap-3 text-gray-400">
+                  <Icon name="call" size={20} />
+                  <span className="text-sm">
+                    {isAuthenticated
+                      ? 'Book a service to reveal contact number'
+                      : 'Log in and book to reveal contact number'}
+                  </span>
+                </div>
               )}
-              {salon.email && (
+              {salon.email ? (
                 <a
                   href={`mailto:${salon.email}`}
                   className="flex items-center gap-3 text-gray-600 hover:text-ghana-green transition-colors"
@@ -631,18 +658,80 @@ export default function SalonDetail() {
                   <Icon name="mail" size={20} className="text-ghana-green" />
                   <span>{salon.email}</span>
                 </a>
+              ) : (
+                <div className="flex items-center gap-3 text-gray-400">
+                  <Icon name="mail" size={20} />
+                  <span className="text-sm">Email hidden until booking</span>
+                </div>
               )}
-              <div className="flex items-start gap-3 text-gray-600">
-                <Icon name="location_on" size={20} className="text-ghana-green flex-shrink-0 mt-0.5" />
-                <div>
-                  <p>{salon.address || 'Address not available'}</p>
-                  {(salon.city || salon.region) && (
-                    <p className="text-gray-500">
-                      {salon.city}{salon.city && salon.region ? ', ' : ''}{salon.region}
+
+              {/* Location display */}
+              {salon.providerCategory === 'FREELANCER' ? (
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3 text-gray-600">
+                    <Icon name="location_on" size={20} className="text-ghana-green flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Mobile Service Provider</p>
+                      <p className="text-sm text-gray-500">
+                        Serves: {salon.city}{salon.city && salon.region ? ', ' : ''}{salon.region}
+                      </p>
+                    </div>
+                  </div>
+                  {salon.serviceAreas && salon.serviceAreas.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pl-8">
+                      {salon.serviceAreas.map((area) => (
+                        <span
+                          key={area}
+                          className="px-2 py-0.5 bg-[#006B3F]/10 text-[#006B3F] text-xs font-medium rounded-full"
+                        >
+                          {area}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {salon.address && (
+                    <p className="text-xs text-gray-400 pl-8">
+                      Exact address shared after booking confirmation
                     </p>
                   )}
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3 text-gray-600">
+                    <Icon name="location_on" size={20} className="text-ghana-green flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p>{salon.address || 'Address not available'}</p>
+                      {(salon.city || salon.region) && (
+                        <p className="text-gray-500">
+                          {salon.city}{salon.city && salon.region ? ', ' : ''}{salon.region}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {salon.address && salon.latitude && salon.longitude && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${salon.latitude},${salon.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white text-sm font-medium rounded-xl hover:bg-[#005a35] transition-colors ml-8"
+                    >
+                      <Icon name="directions" size={16} />
+                      Get Directions
+                    </a>
+                  )}
+                  {salon.address && (!salon.latitude || !salon.longitude) && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(salon.address + ' ' + salon.city)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#006B3F] text-white text-sm font-medium rounded-xl hover:bg-[#005a35] transition-colors ml-8"
+                    >
+                      <Icon name="directions" size={16} />
+                      Get Directions
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -806,7 +895,13 @@ export default function SalonDetail() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setShowJoinModal(true)}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        navigate(`/login?redirect=${encodeURIComponent(`/salon/${id}`)}`)
+                        return
+                      }
+                      setShowJoinModal(true)
+                    }}
                     className="w-full py-3 bg-ghana-green text-white font-medium rounded-lg hover:bg-ghana-green/90 transition-colors flex items-center justify-center gap-2"
                   >
                     <Icon name="group" size={20} />

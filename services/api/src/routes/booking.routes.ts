@@ -33,6 +33,12 @@ router.get('/group/:groupRef', authenticateToken, bookingController.getGroupBook
 // Guest check-in (for salon owners)
 router.put('/guest/:guestId/checkin', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), bookingController.checkInGuestHandler);
 
+// Guest cancel (for booking owner - customer)
+router.put('/guest/:guestId/cancel', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.cancelGuestHandler);
+
+// Guest no-show (for salon owner)
+router.put('/guest/:guestId/no-show', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), bookingController.markGuestNoShowHandler);
+
 // Routes with :id parameter (catch-all) - must be after all specific named routes
 router.get('/:id', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.getBookingById);
 

@@ -32,6 +32,8 @@ export default function PaymentCallback() {
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const reference = searchParams.get('reference');
+  const callbackStatus = searchParams.get('status'); // 'success' or 'failed' from backend redirect
+  const errorParam = searchParams.get('error');
 
   const handlePaymentResult = useCallback(async (result: any, ref: string) => {
     if (result.success) {
@@ -114,9 +116,32 @@ export default function PaymentCallback() {
   }, []);
 
   useEffect(() => {
+    // Handle direct error from backend callback redirect (no reference)
+    if (!reference && errorParam) {
+      setStatus('failed');
+      setMessage(
+        errorParam === 'missing_reference' ? 'Payment reference not found. Please try again.' :
+        errorParam === 'payment_not_found' ? 'Payment record not found. Please contact support.' :
+        errorParam === 'callback_error' ? 'An error occurred while processing your payment. Please check your bookings.' :
+        'Payment failed. Please try again.'
+      );
+      return;
+    }
+
     if (!reference) {
       setStatus('failed');
       setMessage('Invalid payment reference. Please try again.');
+      return;
+    }
+
+    // If backend already confirmed success/failed, set status immediately
+    if (callbackStatus === 'success') {
+      setStatus('success');
+      setMessage('Your payment has been processed successfully!');
+      // Still poll to get full payment details
+    } else if (callbackStatus === 'failed') {
+      setStatus('failed');
+      setMessage(errorParam === 'verification_failed' ? 'Payment verification failed. Please try again.' : 'Payment failed.');
       return;
     }
 
@@ -168,7 +193,7 @@ export default function PaymentCallback() {
     return () => {
       clearAllTimers();
     };
-  }, [reference, handlePaymentResult]);
+  }, [reference, callbackStatus, errorParam, handlePaymentResult]);
 
   const clearAllTimers = () => {
     if (pollingRef.current) {

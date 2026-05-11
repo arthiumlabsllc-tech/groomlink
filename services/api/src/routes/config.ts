@@ -9,8 +9,9 @@ const router = Router();
  */
 router.get('/', (req: Request, res: Response) => {
   const config = {
-    // Google Maps - Required for map functionality
-    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    // Google Maps - client-facing WEB key (referrer-restricted). Falls back to
+    // GOOGLE_MAPS_API_KEY for backward-compat on envs that haven't split keys.
+    googleMapsApiKey: process.env.GOOGLE_MAPS_WEB_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '',
     
     // API URLs
     apiBaseUrl: process.env.API_BASE_URL || 'https://groomlinkgh.com/api',

@@ -534,6 +534,23 @@ export default function BookingDetailScreen() {
                   <View style={styles.groupMembersList}>
                     {booking.guests.map((guest: any, index: number) => {
                       const guestService = guest.service || (booking.services || []).find((s: any) => s.id === guest.serviceId);
+                      const guestStatus = guest.status || (guest.checkedIn ? 'CHECKED_IN' : 'PENDING');
+                      const canCancel = guestStatus === 'PENDING' && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED';
+
+                      const getStatusBadge = () => {
+                        switch (guestStatus) {
+                          case 'CHECKED_IN':
+                            return { icon: 'checkmark-circle', color: COLORS.primaryGreen, label: 'Checked In', bgColor: '#E8F5E9' };
+                          case 'CANCELLED':
+                            return { icon: 'close-circle', color: '#EF4444', label: 'Cancelled', bgColor: '#FEE2E2' };
+                          case 'NO_SHOW':
+                            return { icon: 'alert-circle', color: '#F59E0B', label: 'No Show', bgColor: '#FEF3C7' };
+                          default:
+                            return { icon: 'time-outline', color: COLORS.textSecondary, label: 'Pending', bgColor: theme.surface };
+                        }
+                      };
+                      const statusBadge = getStatusBadge();
+
                       return (
                         <View key={guest.id || index} style={styles.groupMemberCard}>
                           <View style={styles.memberHeader}>
@@ -551,12 +568,42 @@ export default function BookingDetailScreen() {
                                 {guestService?.name || 'Service'}
                               </Text>
                             </View>
-                            {guest.checkedIn && (
-                              <View style={styles.checkedInBadge}>
-                                <Ionicons name="checkmark-circle" size={14} color={COLORS.primaryGreen} />
-                                <Text style={styles.checkedInText}>In</Text>
+                            <View style={styles.memberStatusContainer}>
+                              <View style={[styles.statusBadge, { backgroundColor: statusBadge.bgColor }]}>
+                                <Ionicons name={statusBadge.icon as any} size={12} color={statusBadge.color} />
+                                <Text style={[styles.statusBadgeText, { color: statusBadge.color }]}>{statusBadge.label}</Text>
                               </View>
-                            )}
+                              {canCancel && (
+                                <TouchableOpacity
+                                  style={styles.cancelGuestButton}
+                                  onPress={() => {
+                                    Alert.alert(
+                                      'Cancel Guest',
+                                      `Remove ${guest.guestName} from this group booking?`,
+                                      [
+                                        { text: 'Keep', style: 'cancel' },
+                                        {
+                                          text: 'Cancel Guest',
+                                          style: 'destructive',
+                                          onPress: async () => {
+                                            try {
+                                              await bookingApi.cancelGuest(guest.id);
+                                              queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+                                              queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                                              Alert.alert('Guest Cancelled', `${guest.guestName} has been removed from the booking.`);
+                                            } catch (error: any) {
+                                              Alert.alert('Error', error.response?.data?.message || 'Failed to cancel guest.');
+                                            }
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }}
+                                >
+                                  <Ionicons name="close" size={14} color="#EF4444" />
+                                </TouchableOpacity>
+                              )}
+                            </View>
                           </View>
                           {guest.staff && (
                             <View style={styles.memberStaffRow}>
@@ -1416,6 +1463,28 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     fontSize: 11,
     color: COLORS.primaryGreen,
     fontWeight: '600',
+  },
+  memberStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 3,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cancelGuestButton: {
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
   },
   memberStaffRow: {
     flexDirection: 'row',

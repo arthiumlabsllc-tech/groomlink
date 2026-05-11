@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 
-const testimonials = [
+const customerTestimonials = [
   {
     id: 1,
     name: 'Kwame Asante',
@@ -44,10 +44,46 @@ const testimonials = [
   },
 ]
 
+const ownerTestimonials = [
+  {
+    id: 6,
+    name: 'Nana Afia',
+    location: 'Accra - Nana\'s Beauty Lounge',
+    rating: 5,
+    quote: 'Since joining GroomLink, my bookings have increased by 40%. The dashboard makes it so easy to manage my schedule.',
+    initials: 'NA',
+  },
+  {
+    id: 7,
+    name: 'Kwesi Boateng',
+    location: 'Kumasi - Fresh Cuts Barbershop',
+    rating: 5,
+    quote: 'I love getting paid directly to my MTN Mobile Money. No more chasing clients for payment. Game changer!',
+    initials: 'KB',
+  },
+  {
+    id: 8,
+    name: 'Ama Serwaa',
+    location: 'Takoradi - Serwaa Braids',
+    rating: 5,
+    quote: 'As a freelancer, GroomLink helped me find clients I never would have reached. My calendar is now fully booked!',
+    initials: 'AS',
+  },
+  {
+    id: 9,
+    name: 'Yaw Osei',
+    location: 'Cape Coast - Royal Grooming',
+    rating: 5,
+    quote: 'The verification process gave my business credibility. Customers trust us more because we are on GroomLink.',
+    initials: 'YO',
+  },
+]
+
 export default function Testimonials() {
   const sectionRef = useRef<HTMLElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const [activeTab, setActiveTab] = useState<'customer' | 'owner'>('customer')
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
 
@@ -68,6 +104,8 @@ export default function Testimonials() {
 
     return () => observer.disconnect()
   }, [])
+
+  const testimonials = activeTab === 'customer' ? customerTestimonials : ownerTestimonials
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -103,10 +141,10 @@ export default function Testimonials() {
         <div className={`flex flex-col md:flex-row md:items-end md:justify-between mb-12 gap-6 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold text-brand-text mb-4">
-              What Our Customers Say
+              {activeTab === 'customer' ? 'What Our Customers Say' : 'What Salon Owners Say'}
             </h2>
             <p className="text-gray-600 text-lg">
-              Join 10,000+ happy customers who trust GroomLink
+              {activeTab === 'customer' ? 'Join 10,000+ happy customers who trust GroomLink' : 'Join 1,500+ professionals growing with GroomLink'}
             </p>
           </div>
           
@@ -139,13 +177,40 @@ export default function Testimonials() {
           </div>
         </div>
 
+        <div className={`flex justify-center mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+          <div className="bg-brand-surface rounded-2xl p-1.5 shadow-sm border border-gray-200 inline-flex">
+            <button
+              onClick={() => setActiveTab('customer')}
+              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                activeTab === 'customer'
+                  ? 'bg-brand-primary text-white shadow-md'
+                  : 'text-gray-600 hover:text-brand-text'
+              }`}
+            >
+              <Icon name="person" size={18} />
+              Customer Stories
+            </button>
+            <button
+              onClick={() => setActiveTab('owner')}
+              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                activeTab === 'owner'
+                  ? 'bg-brand-secondary text-white shadow-md'
+                  : 'text-gray-600 hover:text-brand-text'
+              }`}
+            >
+              <Icon name="storefront" size={18} />
+              Salon Owner Stories
+            </button>
+          </div>
+        </div>
+
         {/* Testimonials Carousel */}
         <div
           ref={scrollRef}
           className={`flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {testimonials.map((testimonial, index) => (
+          {testimonials.map((testimonial: typeof testimonials[0], index: number) => (
             <div
               key={testimonial.id}
               className="flex-shrink-0 w-[300px] sm:w-[350px] snap-start"
@@ -192,7 +257,7 @@ export default function Testimonials() {
 
         {/* Mobile Scroll Indicator */}
         <div className="flex md:hidden justify-center gap-2 mt-6">
-          {testimonials.map((_, index) => (
+          {testimonials.map((_item: typeof testimonials[0], index: number) => (
             <div
               key={index}
               className="w-2 h-2 rounded-full bg-gray-300"

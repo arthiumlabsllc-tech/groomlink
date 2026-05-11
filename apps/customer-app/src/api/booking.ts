@@ -151,4 +151,10 @@ export const bookingApi = {
     });
     return response.data.data;
   },
+
+  // Cancel a guest from a group booking (customer only)
+  cancelGuest: async (guestId: string, reason?: string): Promise<any> => {
+    const response = await apiClient.put(`/bookings/guest/${guestId}/cancel`, { reason });
+    return response.data.data;
+  },
 };

@@ -152,6 +152,20 @@ export async function getSalonById(id: string) {
   return salon;
 }
 
+export async function hasUserBookedSalon(userId: string, salonId: string): Promise<boolean> {
+  const booking = await prisma.booking.findFirst({
+    where: {
+      customerId: userId,
+      salonId,
+      status: {
+        in: ['CONFIRMED', 'COMPLETED', 'IN_PROGRESS'],
+      },
+    },
+    select: { id: true },
+  });
+  return !!booking;
+}
+
 export async function getSalons(filters: SalonFilters, page: number = 1, limit: number = 20) {
   const where: Prisma.SalonWhereInput = {
     status: SalonStatus.APPROVED, // Only show approved salons

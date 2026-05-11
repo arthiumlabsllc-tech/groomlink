@@ -1,23 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Image,
   Animated,
   StyleSheet,
   Text,
-  Dimensions,
 } from 'react-native';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Brand illustrations – randomly pick one per mount
-const ILLUSTRATIONS = [
-  require('../../assets/loading-barber-01-splash.png'),
-  require('../../assets/loading-barber-02-splash.png'),
-  require('../../assets/loading-salon-01-splash.png'),
-  require('../../assets/loading-salon-02-splash.png'),
-  require('../../assets/loading-salon-03-splash.png'),
-];
+// Partners app: barber-themed splash – green/dark background with white logo
+const SPLASH_ILLUSTRATION = require('../../assets/loading-barber-01-splash.png');
+const LOGO = require('../../assets/logo-full-white.png');
 
 /** Custom dot-dot-dot loading animation */
 function LoadingDots() {
@@ -84,34 +76,38 @@ function LoadingDots() {
 }
 
 export default function LoadingScreen() {
-  // Pick a random illustration once per mount
-  const [illustrationSource] = useState(
-    () => ILLUSTRATIONS[Math.floor(Math.random() * ILLUSTRATIONS.length)]
-  );
-
   const illustrationOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const dotsOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Fade-in the illustration
     Animated.timing(illustrationOpacity, {
       toValue: 1,
-      duration: 1000,
+      duration: 800,
       useNativeDriver: true,
     }).start();
 
-    // Subtle fade-in for the tagline and dots
-    Animated.timing(textOpacity, {
+    // Fade-in the logo
+    Animated.timing(logoOpacity, {
       toValue: 1,
       duration: 600,
+      delay: 400,
+      useNativeDriver: true,
+    }).start();
+
+    // Fade-in the loading dots
+    Animated.timing(dotsOpacity, {
+      toValue: 1,
+      duration: 500,
       delay: 800,
       useNativeDriver: true,
     }).start();
-  }, [illustrationOpacity, textOpacity]);
+  }, [illustrationOpacity, logoOpacity, dotsOpacity]);
 
   return (
     <View style={styles.container}>
-      {/* Brand illustration - covers full screen */}
+      {/* Full-screen brand illustration */}
       <Animated.View
         style={[
           styles.illustrationWrapper,
@@ -119,18 +115,23 @@ export default function LoadingScreen() {
         ]}
       >
         <Image
-          source={illustrationSource}
+          source={SPLASH_ILLUSTRATION}
           style={styles.illustration}
           resizeMode="cover"
         />
       </Animated.View>
 
-      {/* Bottom overlay with tagline and dots */}
-      <Animated.View style={[styles.bottomOverlay, { opacity: textOpacity }]}>
-        <Text style={styles.tagline}>Manage Your Salon</Text>
-        <View style={styles.dotsWrapper}>
+      {/* Bottom section: logo + loading dots */}
+      <Animated.View style={[styles.bottomSection, { opacity: logoOpacity }]}>
+        <Image
+          source={LOGO}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Animated.View style={[styles.dotsWrapper, { opacity: dotsOpacity }]}>
           <LoadingDots />
-        </View>
+        </Animated.View>
+        <Text style={styles.loadingText}>Loading your shop...</Text>
       </Animated.View>
     </View>
   );
@@ -139,7 +140,7 @@ export default function LoadingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1a3c2a',
   },
   illustrationWrapper: {
     ...StyleSheet.absoluteFillObject,
@@ -148,25 +149,23 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  bottomOverlay: {
+  bottomSection: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingBottom: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    paddingTop: 20,
+    paddingBottom: 50,
+    paddingTop: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.0)',
   },
-  tagline: {
-    color: '#006B3F',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    marginBottom: 16,
+  logo: {
+    width: 160,
+    height: 50,
+    marginBottom: 20,
   },
   dotsWrapper: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -174,10 +173,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#006B3F',
-    marginHorizontal: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 5,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    opacity: 0.8,
   },
 });

@@ -100,8 +100,9 @@ export const salonValidations = {
     body('address').optional().trim().isLength({ max: 200 }).withMessage('Address must be at most 200 characters'),
     body('city').trim().isLength({ min: 2, max: 50 }).withMessage('City must be 2-50 characters'),
     body('region').trim().isLength({ min: 2, max: 50 }).withMessage('Region must be 2-50 characters'),
-    commonValidations.latitude,
-    commonValidations.longitude,
+    // Latitude/longitude optional for freelancers (no physical location)
+    body('latitude').optional().isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
+    body('longitude').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180'),
     // openingTime and closingTime are optional for freelancers (validated in controller)
     body('openingTime').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Opening time must be in HH:mm format'),
     body('closingTime').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Closing time must be in HH:mm format'),

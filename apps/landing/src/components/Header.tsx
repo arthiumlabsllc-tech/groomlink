@@ -65,7 +65,7 @@ export default function Header({ scrolled }: HeaderProps) {
           {/* Logo */}
           <a href="/" className="flex items-center">
             <img 
-              src="/logo-full-black.png" 
+              src={isDark ? '/logo-full-white.png' : '/logo-full-black.png'} 
               alt="GroomLink" 
               className="h-10 md:h-14 w-auto"
             />

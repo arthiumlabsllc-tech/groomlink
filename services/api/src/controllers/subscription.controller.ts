@@ -177,6 +177,10 @@ export async function handleSubscriptionWebhook(req: Request, res: Response): Pr
 
         if (signature !== expectedSignature) {
           logger.warn('Hubtel subscription webhook: invalid signature');
+          try {
+            const { recordBadWebhookSignature } = await import('../services/security-alert.service');
+            recordBadWebhookSignature({ provider: 'Hubtel', reason: 'HMAC mismatch', req }).catch(() => undefined);
+          } catch (_) { /* ignore */ }
           res.status(200).json({ received: true, processed: false });
           return;
         }

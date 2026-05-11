@@ -136,7 +136,7 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-40 h-14">
       <div className="flex items-center justify-between h-full px-4 max-w-7xl mx-auto">
         {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-2 transition-all duration-200 hover:opacity-80">
+        <Link to={isAuthenticated ? "/dashboard" : "/explore"} className="flex items-center gap-2 transition-all duration-200 hover:opacity-80">
           <img 
             src={isDark ? "/logo-white.png" : "/logo-black.png"} 
             alt="GroomLink" 
@@ -146,96 +146,109 @@ export default function Header() {
 
         {/* Right Side */}
         <div className="flex items-center gap-2 relative">
-          {/* Notifications */}
-          <button 
-            ref={bellRef}
-            onClick={toggleDropdown}
-            className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-full transition-all duration-200"
-          >
-            <Icon name="notifications" size={20} />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 bg-[#CE1126] text-white text-xs font-medium rounded-full flex items-center justify-center px-1">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </button>
-
-          {/* Notification Dropdown */}
-          {isDropdownOpen && (
-            <div 
-              ref={dropdownRef}
-              className="absolute right-0 top-full mt-2 w-80 sm:w-96 card-v2 shadow-elevated overflow-hidden z-50 animate-scale-in"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-900">Notifications</h3>
+          {isAuthenticated ? (
+            <>
+              {/* Notifications */}
+              <button 
+                ref={bellRef}
+                onClick={toggleDropdown}
+                className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-full transition-all duration-200"
+              >
+                <Icon name="notifications" size={20} />
                 {unreadCount > 0 && (
-                  <button
-                    onClick={handleMarkAllAsRead}
-                    className="text-xs text-gray-500 hover:text-[#CE1126] transition-all duration-200"
-                  >
-                    Mark all read
-                  </button>
+                  <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 bg-[#CE1126] text-white text-xs font-medium rounded-full flex items-center justify-center px-1">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 )}
-              </div>
+              </button>
 
-              {/* Content */}
-              <div className="max-h-[300px] overflow-y-auto">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="w-6 h-6 border-2 border-[#CE1126] border-t-transparent rounded-full animate-spin" />
+              {/* Notification Dropdown */}
+              {isDropdownOpen && (
+                <div 
+                  ref={dropdownRef}
+                  className="absolute right-0 top-full mt-2 w-80 sm:w-96 card-v2 shadow-elevated overflow-hidden z-50 animate-scale-in"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-900">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-xs text-gray-500 hover:text-[#CE1126] transition-all duration-200"
+                      >
+                        Mark all read
+                      </button>
+                    )}
                   </div>
-                ) : notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                    <Icon name="notifications_off" size={40} className="mb-2 text-gray-300" />
-                    <p className="text-sm">No notifications yet</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-100">
-                    {notifications.slice(0, 5).map((notification) => (
-                      <NotificationItem 
-                        key={notification.id} 
-                        notification={notification} 
-                        onMarkRead={markAsRead}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* Footer - View All Link */}
-              {notifications.length > 0 && (
-                <div className="border-t border-gray-100 bg-gray-50/50">
-                  <Link
-                    to="/notifications"
-                    onClick={closeDropdown}
-                    className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-gray-600 hover:text-[#CE1126] hover:bg-gray-100 transition-all duration-200"
-                  >
-                    See all
-                    <Icon name="arrow_forward" size={14} />
-                  </Link>
+                  {/* Content */}
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-[#CE1126] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                        <Icon name="notifications_off" size={40} className="mb-2 text-gray-300" />
+                        <p className="text-sm">No notifications yet</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100">
+                        {notifications.slice(0, 5).map((notification) => (
+                          <NotificationItem 
+                            key={notification.id} 
+                            notification={notification} 
+                            onMarkRead={markAsRead}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer - View All Link */}
+                  {notifications.length > 0 && (
+                    <div className="border-t border-gray-100 bg-gray-50/50">
+                      <Link
+                        to="/notifications"
+                        onClick={closeDropdown}
+                        className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-gray-600 hover:text-[#CE1126] hover:bg-gray-100 transition-all duration-200"
+                      >
+                        See all
+                        <Icon name="arrow_forward" size={14} />
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* User Avatar */}
-          <Link 
-            to="/profile" 
-            className="p-1 rounded-full transition-all duration-200 hover:ring-2 hover:ring-gray-200"
-          >
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-              {user?.avatar ? (
-                <img 
-                  src={user.avatar} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Icon name="person" size={16} className="text-gray-500" />
-              )}
-            </div>
-          </Link>
+              {/* User Avatar */}
+              <Link 
+                to="/profile" 
+                className="p-1 rounded-full transition-all duration-200 hover:ring-2 hover:ring-gray-200"
+              >
+                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                  {user?.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Icon name="person" size={16} className="text-gray-500" />
+                  )}
+                </div>
+              </Link>
+            </>
+          ) : (
+            /* Log In Button for guests */
+            <Link 
+              to="/login"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#CE1126] text-white text-sm font-medium rounded-full hover:bg-[#a80e1f] transition-all duration-200"
+            >
+              <Icon name="login" size={16} />
+              <span>Log In</span>
+            </Link>
+          )}
         </div>
       </div>
     </header>

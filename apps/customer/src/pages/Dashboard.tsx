@@ -1,13 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import Icon from '../components/Icon'
-import apiClient from '../lib/api'
+import apiClient, { salonApi } from '../lib/api'
 import { bookingApi } from '../lib/api'
 import { useAuthStore } from '../store/auth'
 import SalonCard from '../components/SalonCard'
 import LiveBookingCounter from '../components/LiveBookingCounter'
 import CityDiscovery from '../components/CityDiscovery'
+import { useGeolocation } from '../hooks/useGeolocation'
 
 // Types
 interface Salon {
@@ -23,6 +24,7 @@ interface Salon {
   providerCategory?: string
   priceFrom?: number
   nextAvailable?: string
+  distance?: number
 }
 
 interface SalonsResponse {
@@ -334,6 +336,174 @@ function RecommendedSection() {
   )
 }
 
+// ─── Nearby Salons Section ─────────────────────────────────────────
+function NearbySalonsSection() {
+  const navigate = useNavigate()
+  const { state, data: geoData, request } = useGeolocation()
+  const [homeServiceOnly, setHomeServiceOnly] = useState(false)
+
+  const { data: salons, isLoading } = useQuery({
+    queryKey: ['nearby-salons', geoData?.latitude, geoData?.longitude, homeServiceOnly],
+    queryFn: async () => {
+      if (!geoData) return []
+      const res = await salonApi.getNearbySalons(geoData.latitude, geoData.longitude, 10, 1, 12)
+      const list = res.data || []
+      // Compute priceFrom from services if available
+      return list.map((s: any) => ({
+        id: s.id,
+        businessName: s.businessName,
+        type: s.type,
+        rating: s.rating,
+        reviewCount: s.reviewCount,
+        city: s.city,
+        logo: s.logo,
+        images: s.images || [],
+        isSponsored: s.isSponsored,
+        providerCategory: s.providerCategory,
+        distance: s.distance,
+        priceFrom: s.services?.length
+          ? Math.min(...s.services.map((svc: any) => Number(svc.price)).filter(Boolean))
+          : undefined,
+      })) as Salon[]
+    },
+    enabled: state === 'granted' && geoData != null,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const filteredSalons = useMemo(() => {
+    if (!salons) return []
+    if (!homeServiceOnly) return salons
+    return salons.filter((s) => s.providerCategory === 'FREELANCER')
+  }, [salons, homeServiceOnly])
+
+  // Location prompt state
+  if (state === 'idle') {
+    return (
+      <div className="space-y-3">
+        <SectionHeader title="Salons near you" />
+        <div className="bg-gradient-to-br from-green-50 to-red-50 border border-green-200 rounded-2xl p-5 text-center">
+          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Icon name="location_on" size={28} className="text-green-600" />
+          </div>
+          <h3 className="text-base font-bold text-gray-900 mb-1">Find Salons Near You</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Allow location access to discover salons and home service professionals around you.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+            <button
+              onClick={request}
+              className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-green-700 transition-colors shadow-sm"
+            >
+              <Icon name="my_location" size={18} />
+              Use My Location
+            </button>
+            <button
+              onClick={() => navigate('/explore')}
+              className="inline-flex items-center gap-2 text-green-700 font-medium px-5 py-2.5 rounded-xl hover:bg-green-50 transition-colors"
+            >
+              Browse All Salons
+              <Icon name="arrow_forward" size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Requesting state
+  if (state === 'requesting') {
+    return (
+      <div className="space-y-3">
+        <SectionHeader title="Salons near you" />
+        <div className="flex flex-col items-center justify-center py-10">
+          <div className="w-10 h-10 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mb-3" />
+          <p className="text-sm text-gray-500">Getting your location...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Denied / error / unsupported — fall back to popular
+  if (state === 'denied' || state === 'error' || state === 'unsupported') {
+    return <PopularNearYouSection />
+  }
+
+  // Loading nearby salons
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <SectionHeader title="Salons near you" onAction={() => navigate('/explore')} />
+        <HorizontalScroll>
+          {[1, 2, 3].map((i) => (
+            <SalonCardSkeleton key={i} />
+          ))}
+        </HorizontalScroll>
+      </div>
+    )
+  }
+
+  // Empty state
+  if (!filteredSalons || filteredSalons.length === 0) {
+    return (
+      <div className="space-y-3">
+        <SectionHeader title="Salons near you" />
+        <div className="text-center py-8 bg-white rounded-2xl border border-gray-100">
+          <Icon name="location_off" size={40} className="text-gray-300 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">
+            {homeServiceOnly
+              ? 'No home service professionals found nearby.'
+              : 'No salons found nearby.'}
+          </p>
+          <button
+            onClick={() => navigate('/explore')}
+            className="mt-3 text-sm font-medium text-green-600 hover:underline"
+          >
+            Explore all salons
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-gray-900">Salons near you</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setHomeServiceOnly(false)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              !homeServiceOnly
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setHomeServiceOnly(true)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1 ${
+              homeServiceOnly
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Icon name="home" size={12} />
+            Home Service
+          </button>
+        </div>
+      </div>
+      <HorizontalScroll>
+        {filteredSalons.map((salon) => (
+          <div key={salon.id} className="min-w-[260px] flex-shrink-0 snap-start card-v2 overflow-hidden img-zoom">
+            <SalonCard {...salon} variant="vertical" />
+          </div>
+        ))}
+      </HorizontalScroll>
+    </div>
+  )
+}
+
 // ─── Popular Near You Section ──────────────────────────────────────
 function PopularNearYouSection() {
   const navigate = useNavigate()
@@ -429,9 +599,14 @@ export default function Dashboard() {
         <HeroSection />
       </div>
 
+      {/* Nearby Salons */}
+      <div className="fade-section">
+        <NearbySalonsSection />
+      </div>
+
       {/* City Discovery Chips */}
       <div className="fade-section">
-        <CityDiscovery variant="chips" />
+        <CityDiscovery variant="accordion" />
       </div>
 
       {/* Category Grid */}

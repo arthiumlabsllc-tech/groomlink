@@ -15,6 +15,8 @@ import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { initializeSocket } from './config/socket';
 import { maintenanceCheck } from './middleware/maintenance';
+import { securityProbe } from './middleware/securityProbe';
+import { recordSecurityEvent } from './services/security-alert.service';
 import { initScheduler } from './jobs/scheduler';
 
 // Load environment variables
@@ -99,6 +101,14 @@ const limiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => {
     logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
+    // Fire a security event (deduped inside the service to avoid flooding).
+    recordSecurityEvent({
+      eventType: 'RATE_LIMIT_HIT',
+      severity: 'LOW',
+      source: 'rate-limit',
+      message: `Global rate limit exceeded from ${req.ip}`,
+      req,
+    }).catch(() => undefined);
     res.status(429).json({
       success: false,
       error: {
@@ -115,6 +125,22 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20, // Increased from 5 to 20 for testing
   message: 'Too many authentication attempts, please try again later.',
+  handler: (req, res) => {
+    recordSecurityEvent({
+      eventType: 'AUTH_RATE_LIMIT_HIT',
+      severity: 'MEDIUM',
+      source: 'rate-limit',
+      message: `Auth rate limit exceeded from ${req.ip}`,
+      req,
+    }).catch(() => undefined);
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Too many authentication attempts, please try again later.',
+      },
+    });
+  },
 });
 app.use('/api/auth/otp', authLimiter);
 app.use('/api/auth/login', authLimiter);
@@ -127,6 +153,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Also serve uploads under /api path for email template compatibility
 app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Suspicious-request detector (runs after body parsing so it can inspect JSON bodies)
+app.use(securityProbe);
 
 // Logging
 app.use(morgan('dev', {

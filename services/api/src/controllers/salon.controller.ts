@@ -3,6 +3,7 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import * as salonService from '../services/salon.service';
 import prisma from '../config/database';
 import { AuthenticatedRequest } from '../types';
+import { verifyToken } from '../utils/jwt';
 import { z } from 'zod';
 
 // Define SalonType enum locally
@@ -132,7 +133,32 @@ export async function getSalonById(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    successResponse(res, salon);
+    // Check if user is authenticated and has booked this salon
+    let canSeeContact = false;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      try {
+        const decoded = verifyToken(token);
+        const userId = decoded.userId || (decoded as any).id;
+        if (userId && userId !== 'pending') {
+          canSeeContact = await salonService.hasUserBookedSalon(userId, id);
+        }
+      } catch {
+        // Invalid token - treat as anonymous
+      }
+    }
+
+    // Strip sensitive contact info if user hasn't booked
+    const salonResponse = {
+      ...salon,
+      phoneNumber: canSeeContact ? salon.phoneNumber : null,
+      email: canSeeContact ? salon.email : null,
+      // For freelancers, hide exact address until booked (show serviceAreas instead)
+      address: canSeeContact || salon.providerCategory !== 'FREELANCER' ? salon.address : null,
+    };
+
+    successResponse(res, salonResponse);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }

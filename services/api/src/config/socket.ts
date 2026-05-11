@@ -23,6 +23,15 @@ export function initializeSocket(server: HttpServer): SocketIOServer {
       logger.info(`Socket ${socket.id} joined user room: ${userId}`);
     });
 
+    // Join the admin security broadcast room. Clients should only emit this
+    // when their authenticated user is ADMIN/SUPER_ADMIN; the server-side
+    // admin API is still the final authority (this room only receives events,
+    // it cannot be used to modify data).
+    socket.on('join:admin', () => {
+      socket.join('role:admin');
+      logger.info(`Socket ${socket.id} joined role:admin room`);
+    });
+
     // Join salon room for salon owners
     socket.on('join:salon', (salonId: string) => {
       socket.join(`salon:${salonId}`);

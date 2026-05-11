@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import {
   Text,
@@ -163,6 +164,56 @@ export default function BookingDetailScreen() {
 
   const handleCheckIn = () => {
     navigation.navigate('QRScanner', { bookingId });
+  };
+
+  const handleGuestCheckIn = (guestId: string, guestName: string) => {
+    Alert.alert(
+      'Check In Guest',
+      `Confirm that ${guestName} has arrived and is ready for their service?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Check In',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await bookingsApi.checkInGuest(guestId);
+              queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+              queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+              queryClient.invalidateQueries({ queryKey: ['queue'] });
+              Alert.alert('Guest Checked In', `${guestName} has been checked in successfully.`);
+            } catch (error: any) {
+              Alert.alert('Check-in Failed', error.response?.data?.message || 'Failed to check in guest.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleGuestNoShow = (guestId: string, guestName: string) => {
+    Alert.alert(
+      'Mark as No-Show',
+      `Mark ${guestName} as no-show? This means they did not arrive for their appointment.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark No-Show',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await bookingsApi.markGuestNoShow(guestId);
+              queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+              queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+              queryClient.invalidateQueries({ queryKey: ['queue'] });
+              Alert.alert('Guest Marked No-Show', `${guestName} has been marked as no-show.`);
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.message || 'Failed to mark guest as no-show.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const isAppointmentTimePassed = () => {
@@ -616,8 +667,8 @@ export default function BookingDetailScreen() {
         {booking.isGroupBooking && booking.guests && booking.guests.length > 0 && (
           <Surface style={[styles.section, styles.groupSection]} elevation={0}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="people" size={20} color="#7C3AED" />
-              <Text variant="titleMedium" style={[styles.sectionTitle, styles.groupTitle]}>
+              <Ionicons name="people" size={20} color={theme.accent} />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
                 Group Members ({booking.guests.length})
               </Text>
             </View>
@@ -637,28 +688,64 @@ export default function BookingDetailScreen() {
                         </Chip>
                       )}
                     </View>
-                    {guest.checkedIn ? (
-                      <View style={styles.checkInBadge}>
-                        <Ionicons name="checkmark" size={12} color="#10B981" />
-                        <Text style={styles.checkInText}>Checked In</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.pendingBadge}>
-                        <Ionicons name="time-outline" size={12} color="#6B7280" />
-                        <Text style={styles.pendingText}>Pending</Text>
-                      </View>
-                    )}
+                    {(() => {
+                      const guestStatus = guest.status || (guest.checkedIn ? 'CHECKED_IN' : 'PENDING');
+                      switch (guestStatus) {
+                        case 'CHECKED_IN':
+                          return (
+                            <View style={styles.checkInBadge}>
+                              <Ionicons name="checkmark" size={12} color={theme.success} />
+                              <Text style={styles.checkInText}>Checked In</Text>
+                            </View>
+                          );
+                        case 'CANCELLED':
+                          return (
+                            <View style={[styles.checkInBadge, { backgroundColor: '#FEE2E2' }]}>
+                              <Ionicons name="close-circle" size={12} color="#EF4444" />
+                              <Text style={[styles.checkInText, { color: '#EF4444' }]}>Cancelled</Text>
+                            </View>
+                          );
+                        case 'NO_SHOW':
+                          return (
+                            <View style={[styles.checkInBadge, { backgroundColor: '#FEF3C7' }]}>
+                              <Ionicons name="alert-circle" size={12} color="#F59E0B" />
+                              <Text style={[styles.checkInText, { color: '#F59E0B' }]}>No Show</Text>
+                            </View>
+                          );
+                        default: // PENDING
+                          return (
+                            <View style={styles.guestActionsRow}>
+                              <TouchableOpacity
+                                style={styles.guestCheckInButton}
+                                onPress={() => handleGuestCheckIn(guest.id, guest.guestName)}
+                                activeOpacity={0.7}
+                              >
+                                <Ionicons name="checkmark-circle-outline" size={14} color="#fff" />
+                                <Text style={styles.guestCheckInButtonText}>Check In</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.guestNoShowButton}
+                                onPress={() => handleGuestNoShow(guest.id, guest.guestName)}
+                                activeOpacity={0.7}
+                              >
+                                <Ionicons name="alert-circle-outline" size={14} color="#F59E0B" />
+                                <Text style={styles.guestNoShowButtonText}>No Show</Text>
+                              </TouchableOpacity>
+                            </View>
+                          );
+                      }
+                    })()}
                   </View>
                   <View style={styles.guestDetails}>
                     <View style={styles.guestDetailItem}>
-                      <Ionicons name="cut-outline" size={14} color="#6B7280" />
+                      <Ionicons name="cut-outline" size={14} color={theme.textSecondary} />
                       <Text style={styles.guestDetailText} numberOfLines={1}>
                         {guest.service?.name}
                       </Text>
                     </View>
                     {guest.staff && (
                       <View style={styles.guestDetailItem}>
-                        <Ionicons name="person-outline" size={14} color="#6B7280" />
+                        <Ionicons name="person-outline" size={14} color={theme.textSecondary} />
                         <Text style={styles.guestDetailText} numberOfLines={1}>
                           {guest.staff.fullName}
                         </Text>
@@ -666,7 +753,7 @@ export default function BookingDetailScreen() {
                     )}
                     {guest.guestPhone && (
                       <View style={styles.guestDetailItem}>
-                        <Ionicons name="call-outline" size={14} color="#6B7280" />
+                        <Ionicons name="call-outline" size={14} color={theme.textSecondary} />
                         <Text style={styles.guestDetailText}>{guest.guestPhone}</Text>
                       </View>
                     )}
@@ -1003,7 +1090,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   ratingMax: {
     fontSize: 20,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginRight: 12,
   },
   stars: {
@@ -1011,7 +1098,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: 2,
   },
   reviewComment: {
-    color: '#374151',
+    color: theme.text,
     fontStyle: 'italic',
     marginTop: 8,
     lineHeight: 22,
@@ -1069,9 +1156,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   // Escrow styles
   escrowSection: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: theme.border,
   },
   escrowRow: {
     flexDirection: 'row',
@@ -1094,17 +1181,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   escrowTotalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#BFDBFE',
+    borderTopColor: theme.border,
     paddingTop: 10,
     marginTop: 6,
   },
   escrowTotalLabel: {
-    color: '#1E40AF',
+    color: theme.accent,
     fontWeight: '600',
     fontSize: 14,
   },
   escrowTotalValue: {
-    color: '#1E40AF',
+    color: theme.accent,
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -1125,7 +1212,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#BFDBFE',
+    borderTopColor: theme.border,
   },
   refundText: {
     fontSize: 13,
@@ -1133,22 +1220,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   // Group booking styles
   groupSection: {
-    backgroundColor: '#FAF5FF',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: theme.border,
   },
   groupTitle: {
-    color: '#7C3AED',
+    color: theme.accent,
   },
   guestsList: {
     gap: 10,
   },
   guestCard: {
-    backgroundColor: theme.surface,
+    backgroundColor: theme.background,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: theme.border,
   },
   guestHeader: {
     flexDirection: 'row',
@@ -1166,12 +1253,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E9D5FF',
+    backgroundColor: theme.accentBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   guestNumberText: {
-    color: '#7C3AED',
+    color: theme.accent,
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -1201,6 +1288,41 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 11,
     color: theme.success,
     fontWeight: '500',
+  },
+  guestCheckInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  guestCheckInButtonText: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  guestActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  guestNoShowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  guestNoShowButtonText: {
+    fontSize: 11,
+    color: '#F59E0B',
+    fontWeight: '600',
   },
   pendingBadge: {
     flexDirection: 'row',

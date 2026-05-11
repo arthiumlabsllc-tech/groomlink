@@ -13,6 +13,7 @@ import logger from '../config/logger';
 import axios from 'axios';
 import { verifyPaymentWithHubtel } from '../services/payment.service';
 import * as escrowService from '../services/escrow.service';
+import * as securityAlert from '../services/security-alert.service';
 import { paymentProviderRegistry } from '../services/payment-provider.registry';
 import { uploadService } from '../services/upload.service';
 import * as notificationService from '../services/notification.service';
@@ -583,6 +584,15 @@ export async function createAdmin(req: AuthenticatedRequest, res: Response): Pro
 
     // Send welcome email
     await sendWelcomeEmail(data.email, data.firstName);
+
+    // Fire CRITICAL security alert for new admin creation
+    securityAlert.recordAdminCreated({
+      newAdminId: user.id,
+      newAdminEmail: user.email,
+      newAdminRole: user.role,
+      performedBy: req.user?.id,
+      req,
+    }).catch(() => undefined);
 
     successResponse(res, {
       ...user,
@@ -1612,8 +1622,9 @@ export async function getPublicSiteSettings(req: AuthenticatedRequest, res: Resp
       phoneNumber: settings.phoneNumber,
       address: settings.address,
       maintenanceMode: settings.maintenanceMode,
-      // Google Maps API key (client-side key, safe to expose publicly)
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+      // Google Maps client-facing WEB key (referrer-restricted). Falls back
+      // to GOOGLE_MAPS_API_KEY for envs that haven't split keys yet.
+      googleMapsApiKey: process.env.GOOGLE_MAPS_WEB_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '',
     };
 
     successResponse(res, publicSettings);

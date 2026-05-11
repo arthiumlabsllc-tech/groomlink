@@ -19,6 +19,7 @@ import { SubscriptionOverview } from './pages/SubscriptionOverview';
 import { SubscriptionPlans } from './pages/SubscriptionPlans';
 import { SubscriptionInvoices } from './pages/SubscriptionInvoices';
 import Feedback from './pages/Feedback';
+import { Security } from './pages/Security';
 import { Login } from './pages/Login';
 import NotFound from './pages/NotFound';
 import { useAuth } from './hooks';
@@ -214,6 +215,14 @@ function AppRoutes() {
           element={
             <PermissionGuard pageId="feedback">
               <Feedback />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="security" 
+          element={
+            <PermissionGuard pageId="security">
+              <Security />
             </PermissionGuard>
           } 
         />

@@ -1306,8 +1306,161 @@ export async function getGroupBooking(groupBookingRef: string) {
  * Check in a guest for a group booking
  */
 export async function checkInGuest(guestId: string) {
+  // Verify the guest exists and is not already checked in or cancelled
+  const guest = await prisma.bookingGuest.findUnique({
+    where: { id: guestId },
+  });
+
+  if (!guest) {
+    throw new Error('Guest not found');
+  }
+
+  if (guest.status === 'CHECKED_IN') {
+    throw new Error('Guest is already checked in');
+  }
+
+  if (guest.status === 'CANCELLED') {
+    throw new Error('Cannot check in a cancelled guest');
+  }
+
+  if (guest.status === 'NO_SHOW') {
+    throw new Error('Cannot check in a guest marked as no-show');
+  }
+
   return prisma.bookingGuest.update({
     where: { id: guestId },
-    data: { checkedIn: true, checkedInAt: new Date() },
+    data: { status: 'CHECKED_IN', checkedIn: true, checkedInAt: new Date() },
   });
+}
+
+/**
+ * Cancel a guest from a group booking
+ * Only the booking owner (customer) can cancel a guest
+ */
+export async function cancelGuest(
+  guestId: string,
+  cancelledByUserId: string,
+  reason?: string
+) {
+  // Verify the guest exists
+  const guest = await prisma.bookingGuest.findUnique({
+    where: { id: guestId },
+    include: {
+      booking: {
+        select: { id: true, customerId: true, status: true },
+      },
+    },
+  });
+
+  if (!guest) {
+    throw new Error('Guest not found');
+  }
+
+  // Verify the user is the booking owner
+  if (guest.booking.customerId !== cancelledByUserId) {
+    throw new Error('Only the booking owner can cancel a guest');
+  }
+
+  // Verify the booking is still active
+  if (guest.booking.status === 'CANCELLED' || guest.booking.status === 'COMPLETED') {
+    throw new Error('Cannot cancel a guest from a cancelled or completed booking');
+  }
+
+  // Verify the guest is not already checked in, cancelled, or no-show
+  if (guest.status === 'CHECKED_IN') {
+    throw new Error('Cannot cancel a guest who is already checked in');
+  }
+
+  if (guest.status === 'CANCELLED') {
+    throw new Error('Guest is already cancelled');
+  }
+
+  if (guest.status === 'NO_SHOW') {
+    throw new Error('Cannot cancel a guest marked as no-show');
+  }
+
+  const updatedGuest = await prisma.bookingGuest.update({
+    where: { id: guestId },
+    data: {
+      status: 'CANCELLED',
+      cancelledAt: new Date(),
+      cancelledBy: cancelledByUserId,
+      cancelReason: reason || null,
+    },
+  });
+
+  // Update the booking's totalPeople count if applicable
+  const remainingGuests = await prisma.bookingGuest.count({
+    where: {
+      bookingId: guest.bookingId,
+      status: { notIn: ['CANCELLED'] },
+    },
+  });
+
+  // If all guests are cancelled, update totalPeople to reflect only the main customer
+  await prisma.booking.update({
+    where: { id: guest.bookingId },
+    data: { totalPeople: remainingGuests + 1 }, // +1 for the main booker
+  });
+
+  logger.info(`Guest ${guestId} cancelled by user ${cancelledByUserId}`);
+
+  return updatedGuest;
+}
+
+/**
+ * Mark a guest as no-show
+ * Only salon owners can mark a guest as no-show
+ */
+export async function markGuestNoShow(
+  guestId: string,
+  markedByUserId: string
+) {
+  // Verify the guest exists
+  const guest = await prisma.bookingGuest.findUnique({
+    where: { id: guestId },
+    include: {
+      booking: {
+        select: { id: true, salon: { select: { ownerId: true } }, status: true },
+      },
+    },
+  });
+
+  if (!guest) {
+    throw new Error('Guest not found');
+  }
+
+  // Verify the user is the salon owner
+  if (guest.booking.salon.ownerId !== markedByUserId) {
+    throw new Error('Only the salon owner can mark a guest as no-show');
+  }
+
+  // Verify the guest is still pending
+  if (guest.status !== 'PENDING') {
+    throw new Error(`Cannot mark a guest with status '${guest.status}' as no-show. Only PENDING guests can be marked.`);
+  }
+
+  const updatedGuest = await prisma.bookingGuest.update({
+    where: { id: guestId },
+    data: {
+      status: 'NO_SHOW',
+    },
+  });
+
+  // Update the booking's totalPeople count
+  const remainingGuests = await prisma.bookingGuest.count({
+    where: {
+      bookingId: guest.bookingId,
+      status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+    },
+  });
+
+  await prisma.booking.update({
+    where: { id: guest.bookingId },
+    data: { totalPeople: remainingGuests + 1 }, // +1 for the main booker
+  });
+
+  logger.info(`Guest ${guestId} marked as no-show by salon owner ${markedByUserId}`);
+
+  return updatedGuest;
 }

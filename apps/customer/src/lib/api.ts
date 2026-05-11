@@ -455,8 +455,11 @@ export const bookingApi = {
 
 // Payment types
 export interface PaymentInitializeResponse {
-  clientReference: string;
-  hubtelTransactionId: string;
+  success: boolean;
+  reference: string;
+  message: string;
+  checkout_url?: string;
+  access_code?: string;
 }
 
 export interface PaymentVerifyResponse {

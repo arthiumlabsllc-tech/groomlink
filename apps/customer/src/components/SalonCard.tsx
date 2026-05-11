@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
+import { formatDistance } from '../hooks/useGeolocation'
 
 interface SalonCardProps {
   id: string
@@ -14,6 +15,7 @@ interface SalonCardProps {
   providerCategory?: string
   priceFrom?: number
   nextAvailable?: string
+  distance?: number
   variant?: 'horizontal' | 'vertical'
 }
 
@@ -30,6 +32,7 @@ export default function SalonCard({
   providerCategory,
   priceFrom,
   nextAvailable,
+  distance,
   variant = 'vertical'
 }: SalonCardProps) {
   const navigate = useNavigate()
@@ -58,6 +61,11 @@ export default function SalonCard({
               Sponsored
             </span>
           )}
+          {distance != null && (
+            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-green-600 text-white">
+              {formatDistance(distance)}
+            </span>
+          )}
         </div>
         
         {/* Content */}
@@ -81,6 +89,14 @@ export default function SalonCard({
               <Icon name="location_on" size={12} className="flex-shrink-0" />
               <span className="truncate">{city}</span>
             </div>
+            {providerCategory === 'FREELANCER' && (
+              <div className="flex items-center gap-1 mt-1">
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded">
+                  <Icon name="home" size={10} />
+                  Home Service
+                </span>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center justify-between mt-1">
@@ -114,10 +130,23 @@ export default function SalonCard({
           alt={businessName}
           className="w-full h-full object-cover"
         />
-        {isSponsored && (
-          <span className="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded bg-ghana-gold text-ghana-red border border-ghana-gold flex items-center gap-1">
-            <Icon name="star" size={12} filled className="text-yellow-400" />
-            Sponsored
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {isSponsored && (
+            <span className="px-2 py-1 text-xs font-medium rounded bg-ghana-gold text-ghana-red border border-ghana-gold flex items-center gap-1">
+              <Icon name="star" size={12} filled className="text-yellow-400" />
+              Sponsored
+            </span>
+          )}
+          {providerCategory === 'FREELANCER' && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100">
+              <Icon name="home" size={10} />
+              Home Service
+            </span>
+          )}
+        </div>
+        {distance != null && (
+          <span className="absolute bottom-2 right-2 px-2 py-1 text-xs font-bold rounded bg-green-600 text-white shadow-sm">
+            {formatDistance(distance)}
           </span>
         )}
       </div>

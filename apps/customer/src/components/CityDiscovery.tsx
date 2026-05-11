@@ -1,61 +1,98 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
-import apiClient from '../lib/api'
-
-interface City {
-  name: string
-  salonCount: number
-  image: string
-}
-
-interface CitiesResponse {
-  success: boolean
-  data: City[]
-}
-
-const DEFAULT_CITIES: City[] = [
-  { name: 'Accra', salonCount: 0, image: 'https://images.unsplash.com/photo-1576487503230-b6dc3ad12eea?w=300&h=200&fit=crop' },
-  { name: 'Kumasi', salonCount: 0, image: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=300&h=200&fit=crop' },
-  { name: 'Takoradi', salonCount: 0, image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=300&h=200&fit=crop' },
-  { name: 'Tamale', salonCount: 0, image: 'https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?w=300&h=200&fit=crop' },
-  { name: 'Cape Coast', salonCount: 0, image: 'https://images.unsplash.com/photo-1544212281-43271b247165?w=300&h=200&fit=crop' },
-  { name: 'Tema', salonCount: 0, image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=300&h=200&fit=crop' },
-]
-
-async function fetchCities(): Promise<City[]> {
-  try {
-    const response = await apiClient.get<CitiesResponse>('/discover/cities')
-    const apiCities = response.data.data || []
-    
-    // Merge with default cities to ensure we have images
-    return DEFAULT_CITIES.map(defaultCity => {
-      const apiCity = apiCities.find(c => c.name === defaultCity.name)
-      return {
-        ...defaultCity,
-        salonCount: apiCity?.salonCount || 0
-      }
-    })
-  } catch (error) {
-    // Return default cities if API fails
-    return DEFAULT_CITIES
-  }
-}
+import { GHANA_CITIES, type CityArea } from '../data/ghanaCities'
 
 interface CityDiscoveryProps {
-  variant?: 'chips' | 'grid'
+  variant?: 'chips' | 'grid' | 'accordion'
 }
 
 export default function CityDiscovery({ variant = 'chips' }: CityDiscoveryProps) {
   const navigate = useNavigate()
-  const { data: cities, isLoading } = useQuery({
-    queryKey: ['discover-cities'],
-    queryFn: fetchCities,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  const [expandedCity, setExpandedCity] = useState<string | null>(null)
 
   const handleCityClick = (cityName: string) => {
     navigate(`/explore?city=${encodeURIComponent(cityName)}`)
+  }
+
+  const handleAreaClick = (cityName: string, areaName: string) => {
+    navigate(`/explore?city=${encodeURIComponent(cityName)}&area=${encodeURIComponent(areaName)}`)
+  }
+
+  const toggleCity = (cityName: string) => {
+    setExpandedCity((prev) => (prev === cityName ? null : cityName))
+  }
+
+  if (variant === 'accordion') {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">Explore by City & Area</h2>
+        <div className="space-y-2">
+          {GHANA_CITIES.map((city) => (
+            <div
+              key={city.city}
+              className="border border-gray-200 rounded-xl overflow-hidden bg-white"
+            >
+              {/* City Header */}
+              <button
+                onClick={() => toggleCity(city.city)}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <img
+                      src={city.image}
+                      alt={city.city}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-brand-text text-sm">{city.city}</p>
+                    <p className="text-xs text-gray-500">{city.areas.length} areas</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCityClick(city.city)
+                    }}
+                    className="text-xs font-medium text-[#006B3F] hover:underline px-2 py-1 rounded-md hover:bg-[#006B3F]/10 transition-colors"
+                  >
+                    View All
+                  </span>
+                  <Icon
+                    name="expand_more"
+                    size={20}
+                    className={`text-gray-400 transition-transform duration-200 ${expandedCity === city.city ? 'rotate-180' : ''}`}
+                  />
+                </div>
+              </button>
+
+              {/* Areas Grid */}
+              {expandedCity === city.city && (
+                <div className="px-4 pb-4">
+                  <div className="border-t border-gray-100 pt-3">
+                    <div className="flex flex-wrap gap-2">
+                      {city.areas.map((area) => (
+                        <button
+                          key={area}
+                          onClick={() => handleAreaClick(city.city, area)}
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-[#006B3F]/10 text-gray-700 hover:text-[#006B3F] text-xs font-medium rounded-full transition-colors"
+                        >
+                          {area}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (variant === 'chips') {
@@ -63,26 +100,16 @@ export default function CityDiscovery({ variant = 'chips' }: CityDiscoveryProps)
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-gray-900">Popular Cities</h2>
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {isLoading ? (
-            // Loading skeleton
-            [1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 w-24 h-10 bg-gray-200 rounded-full animate-pulse"
-              />
-            ))
-          ) : (
-            cities?.map((city) => (
-              <button
-                key={city.name}
-                onClick={() => handleCityClick(city.name)}
-                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:border-ghana-red hover:text-ghana-red transition-colors shadow-sm"
-              >
-                <Icon name="location_on" size={16} />
-                {city.name}
-              </button>
-            ))
-          )}
+          {GHANA_CITIES.map((city) => (
+            <button
+              key={city.city}
+              onClick={() => handleCityClick(city.city)}
+              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:border-[#CE1126] hover:text-[#CE1126] transition-colors shadow-sm"
+            >
+              <Icon name="location_on" size={16} />
+              {city.city}
+            </button>
+          ))}
         </div>
       </div>
     )
@@ -93,36 +120,25 @@ export default function CityDiscovery({ variant = 'chips' }: CityDiscoveryProps)
     <div className="space-y-3">
       <h2 className="text-lg font-semibold text-gray-900">Discover by City</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {isLoading ? (
-          // Loading skeleton
-          [1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="h-24 bg-gray-200 rounded-xl animate-pulse"
+        {GHANA_CITIES.map((city) => (
+          <button
+            key={city.city}
+            onClick={() => handleCityClick(city.city)}
+            className="relative h-24 rounded-xl overflow-hidden group"
+          >
+            <img
+              src={city.image}
+              alt={city.city}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
-          ))
-        ) : (
-          cities?.map((city) => (
-            <button
-              key={city.name}
-              onClick={() => handleCityClick(city.name)}
-              className="relative h-24 rounded-xl overflow-hidden group"
-            >
-              <img
-                src={city.image}
-                alt={city.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-                <p className="font-semibold text-white text-sm">{city.name}</p>
-                <p className="text-xs text-white/80">
-                  {city.salonCount > 0 ? `${city.salonCount} salons` : 'Explore'}
-                </p>
-              </div>
-            </button>
-          ))
-        )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+              <p className="font-semibold text-white text-sm">{city.city}</p>
+              <p className="text-xs text-white/80">{city.areas.length} areas</p>
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   )

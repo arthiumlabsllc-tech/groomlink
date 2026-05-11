@@ -415,7 +415,58 @@ export async function checkInGuestHandler(req: AuthenticatedRequest, res: Respon
     const guest = await bookingService.checkInGuest(guestId);
     successResponse(res, guest);
   } catch (error) {
-    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 400);
+  }
+}
+
+/**
+ * Cancel a guest from a group booking
+ * Customer only (the booking owner)
+ */
+export async function cancelGuestHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { guestId } = req.params;
+    const { reason } = req.body || {};
+
+    if (!guestId) {
+      errorResponse(res, 'MISSING_PARAMS', 'Guest ID is required', 400);
+      return;
+    }
+
+    const guest = await bookingService.cancelGuest(guestId, req.user.id, reason);
+    successResponse(res, guest);
+  } catch (error) {
+    errorResponse(res, 'CANCEL_FAILED', (error as Error).message, 400);
+  }
+}
+
+/**
+ * Mark a guest as no-show
+ * Salon owner only
+ */
+export async function markGuestNoShowHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { guestId } = req.params;
+
+    if (!guestId) {
+      errorResponse(res, 'MISSING_PARAMS', 'Guest ID is required', 400);
+      return;
+    }
+
+    const guest = await bookingService.markGuestNoShow(guestId, req.user.id);
+    successResponse(res, guest);
+  } catch (error) {
+    errorResponse(res, 'NOSHOW_FAILED', (error as Error).message, 400);
   }
 }
 

@@ -37,6 +37,7 @@ const trustSafetyNavItems = [
   { path: '/escrow', label: 'Escrow', icon: 'account_balance_wallet', pageId: 'escrow' },
   { path: '/cancellations', label: 'Cancellations', icon: 'cancel', pageId: 'cancellations' },
   { path: '/no-shows', label: 'No-Shows', icon: 'person_remove', pageId: 'no-shows' },
+  { path: '/security', label: 'Security', icon: 'shield', pageId: 'security' },
 ];
 
 // Policy nav item

@@ -16,7 +16,7 @@ export default {
     splash: {
       image: "./assets/loading-salon-02-splash.png",
       resizeMode: "cover",
-      backgroundColor: "#FFFFFF"
+      backgroundColor: "#FAF6F0"
     },
     assetBundlePatterns: [
       "**/*"
@@ -39,6 +39,17 @@ export default {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"
       },
+      intentFilters: [
+        {
+          action: "VIEW",
+          data: [
+            {
+              scheme: "groomlink"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       permissions: [
         "INTERNET",
         "ACCESS_NETWORK_STATE",

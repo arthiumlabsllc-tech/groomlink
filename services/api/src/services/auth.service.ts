@@ -341,19 +341,22 @@ export async function logout(userId: string): Promise<void> {
  * Request OTP for email verification
  */
 export async function requestEmailOTP(email: string): Promise<void> {
+  // Normalize email to prevent case-sensitivity mismatches between request/verify
+  const normalizedEmail = email.trim().toLowerCase();
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!emailRegex.test(normalizedEmail)) {
     throw new Error('Invalid email format');
   }
 
-  const otp = await createEmailOTP(email);
-  logger.info(`Email OTP requested for ${email}`);
+  const otp = await createEmailOTP(normalizedEmail);
+  logger.info(`Email OTP requested for ${normalizedEmail}`);
 
   // Send OTP via email (don't await - let it happen in background)
   // If email fails, the OTP is still in the database and can be retrieved
-  sendEmailOTP(email, otp).catch((error) => {
-    logger.error(`Failed to send OTP email to ${email}:`, error);
+  sendEmailOTP(normalizedEmail, otp).catch((error) => {
+    logger.error(`Failed to send OTP email to ${normalizedEmail}:`, error);
   });
 }
 
@@ -415,15 +418,18 @@ function isAdminRole(role: UserRole): boolean {
  * @param requestedRole - Optional role to assign to new users (defaults to CUSTOMER)
  */
 export async function verifyEmailOTPAndLogin(email: string, code: string, requestedRole?: UserRole): Promise<EmailOTPVerifyResponse | null> {
+  // Normalize email to match what was stored during OTP request
+  const normalizedEmail = email.trim().toLowerCase();
+
   // First verify the OTP
-  const isValid = await verifyEmailOTP(email, code);
+  const isValid = await verifyEmailOTP(normalizedEmail, code);
   if (!isValid) {
     return null;
   }
 
   // Find the user by email
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
   });
 
   // Determine the role for new users - use requested role or default to CUSTOMER
@@ -434,7 +440,7 @@ export async function verifyEmailOTPAndLogin(email: string, code: string, reques
     // Return a temporary verification token for registration with the requested role
     const tempToken = generateToken({
       userId: 'pending',
-      phoneNumber: email, // Use email as identifier for pending users
+      phoneNumber: normalizedEmail, // Use email as identifier for pending users
       role: newUserRole,
     });
     
@@ -444,7 +450,7 @@ export async function verifyEmailOTPAndLogin(email: string, code: string, reques
         phoneNumber: null,
         firstName: '',
         lastName: '',
-        email,
+        email: normalizedEmail,
         role: newUserRole,
         isVerified: true,
       },
@@ -540,11 +546,13 @@ export interface CompleteRegistrationResponse {
  * This creates the user record and returns valid tokens
  */
 export async function completeRegistration(data: CompleteRegistrationData): Promise<CompleteRegistrationResponse> {
-  const { email, firstName, lastName, phoneNumber, latitude, longitude, address, city, region, role = UserRole.CUSTOMER } = data;
+  const { email: rawEmail, firstName, lastName, phoneNumber, latitude, longitude, address, city, region, role = UserRole.CUSTOMER } = data;
+  // Normalize email to match OTP storage and prevent duplicate accounts from case differences
+  const email = rawEmail.trim().toLowerCase();
 
   // Check if email is banned
   const bannedEmail = await prisma.bannedEmail.findUnique({
-    where: { email: email.toLowerCase() },
+    where: { email },
   });
   if (bannedEmail) {
     throw new Error('This email address has been blocked from registration');

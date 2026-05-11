@@ -204,6 +204,14 @@ export async function handlePaystackWebhook(req: Request, res: Response): Promis
 
     // Process the webhook through the payment service
     const result = await paymentService.handlePaystackWebhook(rawBody, headers);
+
+    // Raise a HIGH security alert if signature verification failed
+    if (!result.success && /signature/i.test(result.message || '')) {
+      try {
+        const { recordBadWebhookSignature } = await import('../services/security-alert.service');
+        recordBadWebhookSignature({ provider: 'Paystack', reason: result.message, req }).catch(() => undefined);
+      } catch (_) { /* ignore */ }
+    }
     
     // Always return 200 to prevent Paystack retries
     res.status(200).json({ received: true, processed: result.success });
@@ -220,8 +228,8 @@ export async function handlePaystackCallback(req: AuthenticatedRequest | Request
     const { reference, trxref } = req.query;
     
     if (!reference && !trxref) {
-      // Redirect to frontend with error
-      res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=missing_reference`);
+      // Redirect to frontend payment callback with error
+      res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?error=missing_reference`);
       return;
     }
     
@@ -233,7 +241,7 @@ export async function handlePaystackCallback(req: AuthenticatedRequest | Request
     const payment = await paymentService.findPaymentByReference(paymentReference);
     
     if (!payment) {
-      res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=payment_not_found`);
+      res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?error=payment_not_found&reference=${paymentReference}`);
       return;
     }
 
@@ -241,21 +249,21 @@ export async function handlePaystackCallback(req: AuthenticatedRequest | Request
     const result = await paymentService.verifyAndCompletePayment(payment.id, paymentReference);
     
     if (result.success) {
-      // Redirect to success page with booking details
+      // Redirect to the payment callback page with reference - the frontend will poll and show success
       const bookingRef = result.bookingReference || payment.bookingId;
       res.redirect(
-        `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/success?reference=${bookingRef}&amount=${result.amountPaid || 0}`
+        `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?reference=${paymentReference}&status=success&bookingRef=${bookingRef}&amount=${result.amountPaid || 0}`
       );
     } else {
-      // Redirect to failure page
+      // Redirect to payment callback with failure info
       res.redirect(
-        `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=verification_failed&reference=${paymentReference}`
+        `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?reference=${paymentReference}&status=failed&error=verification_failed`
       );
     }
   } catch (error) {
     logger.error('Paystack callback error:', error);
     res.redirect(
-      `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/failed?error=callback_error`
+      `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?error=callback_error`
     );
   }
 }
