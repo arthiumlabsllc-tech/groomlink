@@ -242,7 +242,9 @@ class ApiClient {
         category: string;
         createdAt: string;
         updatedAt: string;
-        user: { id: string; firstName: string; lastName: string; phoneNumber: string };
+        user: { id: string; firstName: string; lastName: string; phoneNumber: string } | null;
+        guestName: string | null;
+        guestEmail: string | null;
         assignedTo?: { id: string; firstName: string; lastName: string } | null;
         messages: { id: string; content: string; isFromUser: boolean; createdAt: string; sender: { firstName: string; lastName: string } }[];
       };

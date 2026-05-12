@@ -154,6 +154,8 @@ export async function getTicketById(req: AuthenticatedRequest, res: Response): P
       createdAt: ticket.createdAt.toISOString(),
       updatedAt: ticket.updatedAt.toISOString(),
       user: ticket.user,
+      guestName: ticket.guestName,
+      guestEmail: ticket.guestEmail,
       assignedTo: ticket.assignedTo,
       messages: formattedMessages,
     });
