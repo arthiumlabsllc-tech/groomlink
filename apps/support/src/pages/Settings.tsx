@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
-import Icon from '../components/Icon';
 
 interface UserProfile {
   id: string;
