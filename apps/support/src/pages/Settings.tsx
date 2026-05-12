@@ -79,20 +79,24 @@ export default function Settings() {
       const formData = new FormData();
       formData.append('avatar', file);
 
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://groomlinkgh.com/api'}/uploads/avatar`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
 
       const json = await res.json();
       if (json.success) {
-        setUser(prev => prev ? { ...prev, avatar: json.data.url } : null);
+        setUser(prev => prev ? { ...prev, avatar: json.data.avatar } : null);
         showMessage('success', 'Avatar updated successfully');
+        // Reload profile to refresh data
+        await loadProfile();
       } else {
-        showMessage('error', json.message || 'Upload failed');
+        showMessage('error', json.error?.message || 'Upload failed');
+        console.error('Upload error:', json);
       }
     } catch (error) {
       console.error('Avatar upload failed:', error);
