@@ -11,6 +11,7 @@ import Customers from './pages/Customers';
 import Users from './pages/Users';
 import Salons from './pages/Salons';
 import Tickets from './pages/Tickets';
+import LiveChat from './pages/LiveChat';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -64,6 +65,13 @@ function AppRoutes() {
         <ProtectedRoute>
           <Layout>
             <Tickets />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/live-chat" element={
+        <ProtectedRoute>
+          <Layout>
+            <LiveChat />
           </Layout>
         </ProtectedRoute>
       } />

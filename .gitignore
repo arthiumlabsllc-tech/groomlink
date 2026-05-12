@@ -126,6 +126,8 @@ ssh_*.py
 scp_*.py
 sync_*.py
 cleanup_*.py
+build_*.py
+build-*.py
 # Shell / PowerShell ops scripts
 deploy-*.sh
 deploy_*.sh

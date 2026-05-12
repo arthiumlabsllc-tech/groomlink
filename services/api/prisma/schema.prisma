@@ -862,6 +862,15 @@ enum SupportTicketPriority {
   URGENT
 }
 
+enum TicketSource {
+  LANDING
+  CUSTOMER_WEB
+  CUSTOMER_APP
+  PARTNERS_WEB
+  PARTNERS_APP
+  OTHER
+}
+
 model UserActivity {
   id         String   @id @default(cuid())
   userId     String
@@ -906,23 +915,35 @@ model SupportTicket {
   status      SupportTicketStatus   @default(OPEN)
   priority    SupportTicketPriority @default(MEDIUM)
   category    String?
+  source      TicketSource          @default(OTHER)
+
+  // Guest fields (used when userId is null - landing-page anonymous visitors)
+  guestEmail String? @map("guest_email")
+  guestName  String? @map("guest_name")
+
+  // Unread counters for live chat
+  unreadByAgent Int @default(0) @map("unread_by_agent")
+  unreadByUser  Int @default(0) @map("unread_by_user")
 
   // Relations
-  userId       String          @map("user_id")
-  user         User            @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?         @map("user_id")
+  user         User?           @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
   assignedToId String?         @map("assigned_to_id")
   assignedTo   User?           @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
   messages     TicketMessage[]
 
   // Timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
 
   @@index([userId])
   @@index([assignedToId])
   @@index([status])
   @@index([priority])
   @@index([createdAt])
+  @@index([lastMessageAt])
+  @@index([source, status])
   @@map("support_tickets")
 }
 
@@ -934,11 +955,13 @@ model TicketMessage {
   // Relations
   ticketId String        @map("ticket_id")
   ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  senderId String        @map("sender_id")
-  sender   User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  // senderId is nullable to support guest visitors (no User row)
+  senderId String?       @map("sender_id")
+  sender   User?         @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   // Timestamps
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  readAt    DateTime? @map("read_at")
 
   @@index([ticketId])
   @@index([senderId])

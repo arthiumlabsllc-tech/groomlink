@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import { useSalon } from '../store/SalonContext';
 import { api } from '../lib/api';
+import ChatWidget from './ChatWidget';
 
 // Icon name mappings for navigation
 const navIcons: Record<string, string> = {
@@ -475,6 +476,9 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         }`}
         onClick={() => setSidebarOpen(false)}
       />
+
+      {/* Live Chat Widget */}
+      <ChatWidget />
     </div>
   )
 }

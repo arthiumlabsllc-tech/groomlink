@@ -275,6 +275,38 @@ class ApiClient {
     });
   }
 
+  // Live chat (live conversation list + read tracking)
+  async getLiveChatThreads(params: { source?: string; status?: string; q?: string } = {}) {
+    const search = new URLSearchParams();
+    if (params.source) search.append('source', params.source);
+    if (params.status) search.append('status', params.status);
+    if (params.q) search.append('q', params.q);
+    return this.request<{
+      success: boolean;
+      data: Array<{
+        id: string;
+        subject: string;
+        status: string;
+        source: string;
+        unreadByAgent: number;
+        unreadByUser: number;
+        lastMessageAt: string;
+        createdAt: string;
+        guestName?: string | null;
+        guestEmail?: string | null;
+        user?: { id: string; firstName: string; lastName: string; email: string } | null;
+        lastMessage?: { content: string; isFromUser: boolean; createdAt: string } | null;
+      }>;
+    }>(`/support/chat/threads${search.toString() ? `?${search}` : ''}`);
+  }
+
+  async markThreadRead(id: string) {
+    return this.request<{ success: boolean }>(`/support/chat/threads/${id}/read`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
   // Dashboard stats - uses support/stats endpoint (SUPPORT+ role)
   async getStats() {
     return this.request<{ 

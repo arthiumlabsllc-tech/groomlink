@@ -6,10 +6,11 @@ import { cn } from '../lib';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: 'home', group: 'Main' },
+  { name: 'Live Chat', href: '/live-chat', icon: 'chat', group: 'Support' },
+  { name: 'Tickets', href: '/tickets', icon: 'confirmation_number', group: 'Support' },
   { name: 'Customers', href: '/customers', icon: 'group', group: 'Management' },
   { name: 'Users', href: '/users', icon: 'group', group: 'Management' },
   { name: 'Salons', href: '/salons', icon: 'store', group: 'Management' },
-  { name: 'Tickets', href: '/tickets', icon: 'confirmation_number', group: 'Support' },
 ];
 
 export default function Sidebar() {

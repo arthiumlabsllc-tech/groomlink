@@ -1,9 +1,12 @@
 import { Outlet } from 'react-router-dom'
 import Header from './Header'
 import BottomNav from './BottomNav'
+import ChatWidget from './ChatWidget'
+import { useAuthStore } from '../store/auth'
 
 export default function Layout() {
   const isImpersonating = !!localStorage.getItem('is_impersonating')
+  const isAuthenticated = !!useAuthStore((state) => state.token)
 
   const handleEndImpersonation = () => {
     const logId = localStorage.getItem('impersonation_log_id')
@@ -51,6 +54,9 @@ export default function Layout() {
 
       {/* Bottom Navigation - Fixed at bottom (mobile-web style) */}
       <BottomNav />
+
+      {/* Live Chat Widget - Only show for authenticated users */}
+      {isAuthenticated && <ChatWidget />}
     </div>
   )
 }

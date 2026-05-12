@@ -11,7 +11,7 @@ interface TicketMessage {
   sender: {
     firstName: string;
     lastName: string;
-  };
+  } | null;
 }
 
 interface TicketData {
@@ -28,7 +28,9 @@ interface TicketData {
     firstName: string;
     lastName: string;
     phoneNumber: string;
-  };
+  } | null;
+  guestName?: string;
+  guestEmail?: string;
   messages?: TicketMessage[];
 }
 
@@ -201,14 +203,20 @@ export default function Tickets() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-ghana-green to-support-700 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-sm">
-                  {selectedTicket.user.firstName?.charAt(0)}{selectedTicket.user.lastName?.charAt(0)}
+                  {selectedTicket.user
+                    ? `${selectedTicket.user.firstName?.charAt(0)}${selectedTicket.user.lastName?.charAt(0)}`
+                    : (selectedTicket.guestName?.charAt(0) || 'G')}
                 </span>
               </div>
               <div>
                 <p className="font-medium text-gray-900">
-                  {selectedTicket.user.firstName} {selectedTicket.user.lastName}
+                  {selectedTicket.user
+                    ? `${selectedTicket.user.firstName} ${selectedTicket.user.lastName}`
+                    : (selectedTicket.guestName || 'Guest Visitor')}
                 </p>
-                <p className="text-sm text-gray-500">{selectedTicket.user.phoneNumber}</p>
+                <p className="text-sm text-gray-500">
+                  {selectedTicket.user?.phoneNumber || selectedTicket.guestEmail || 'No contact info'}
+                </p>
               </div>
               <div className="ml-auto text-sm text-gray-400">
                 {formatDateTime(selectedTicket.createdAt)}
@@ -236,7 +244,7 @@ export default function Tickets() {
               <div key={msg.id} className="flex gap-3">
                 <div className="w-8 h-8 bg-ghana-green rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white font-semibold text-xs">
-                    {msg.sender.firstName?.charAt(0)}
+                    {msg.sender?.firstName?.charAt(0) || (msg.isFromUser ? 'U' : 'A')}
                   </span>
                 </div>
                 <div className="flex-1">
@@ -244,7 +252,7 @@ export default function Tickets() {
                     <p className="text-gray-700">{msg.content}</p>
                   </div>
                   <p className="text-xs text-gray-400 mt-1 ml-1">
-                    {msg.sender.firstName} • {formatDateTime(msg.createdAt)}
+                    {msg.sender ? `${msg.sender.firstName}` : (msg.isFromUser ? 'User' : 'Agent')} • {formatDateTime(msg.createdAt)}
                   </p>
                 </div>
               </div>
@@ -414,10 +422,14 @@ export default function Tickets() {
                       <div className="flex items-center gap-1.5">
                         <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
                           <span className="text-xs font-medium text-gray-600">
-                            {ticket.user.firstName?.charAt(0)}
+                            {ticket.user ? ticket.user.firstName?.charAt(0) : 'G'}
                           </span>
                         </div>
-                        <span className="font-medium text-gray-700">{ticket.user.firstName} {ticket.user.lastName}</span>
+                        <span className="font-medium text-gray-700">
+                          {ticket.user
+                            ? `${ticket.user.firstName} ${ticket.user.lastName}`
+                            : (ticket.guestName || 'Guest')}
+                        </span>
                       </div>
                       <span className="text-gray-300">•</span>
                       <div className="flex items-center gap-1">

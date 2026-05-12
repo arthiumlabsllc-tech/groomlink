@@ -1160,3 +1160,63 @@ export async function verifyEmailConfig(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Send an email notification when a support agent replies via live chat
+ * and the user is offline. Lets them know there's a new reply waiting.
+ */
+export async function sendChatReplyEmail(
+  to: string,
+  recipientName: string | null | undefined,
+  ticketSubject: string,
+  agentName: string,
+  messagePreview: string
+): Promise<boolean> {
+  const subject = `New reply from GroomLink Support: ${ticketSubject}`;
+  const greeting = recipientName ? `Hi ${recipientName},` : 'Hello,';
+  const safePreview = (messagePreview || '').slice(0, 500);
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New reply from GroomLink Support</title>
+</head>
+<body style="margin:0;padding:0;font-family:'Inter','Segoe UI',-apple-system,sans-serif;background-color:#eef1f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0f766e,#10b981);padding:28px 32px;color:#ffffff;">
+              <h1 style="margin:0;font-size:20px;font-weight:600;">GroomLink Support</h1>
+              <p style="margin:4px 0 0;font-size:14px;opacity:0.9;">You have a new reply</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;color:#0f172a;font-size:15px;line-height:1.6;">
+              <p style="margin:0 0 12px;">${greeting}</p>
+              <p style="margin:0 0 16px;"><strong>${agentName}</strong> from the support team replied to your ticket
+              <em>"${ticketSubject}"</em>:</p>
+              <div style="background:#f1f5f9;border-left:3px solid #10b981;padding:14px 16px;border-radius:8px;color:#1e293b;white-space:pre-wrap;">${safePreview}</div>
+              <p style="margin:24px 0 0;">Reply directly inside the GroomLink app or website to continue the conversation.</p>
+              <p style="margin:24px 0 0;color:#64748b;font-size:13px;">If you no longer need help, you can safely ignore this email.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px;background:#f8fafc;color:#64748b;font-size:12px;text-align:center;">
+              &copy; ${new Date().getFullYear()} GroomLink Ghana &middot; Support Team
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  return sendTransactionalEmail(to, subject, html);
+}

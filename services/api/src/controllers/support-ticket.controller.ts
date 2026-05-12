@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { SupportTicketStatus, SupportTicketPriority } from '@prisma/client';
 import { z } from 'zod';
+import * as chatService from '../services/chat.service';
 
 const updateStatusSchema = z.object({
   status: z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']),
@@ -210,16 +211,18 @@ export async function updateTicketStatus(req: AuthenticatedRequest, res: Respons
       },
     });
 
-    // Create notification for user
-    await prisma.notification.create({
-      data: {
-        userId: ticket.userId,
-        type: 'SYSTEM',
-        title: 'Support Ticket Updated',
-        message: `Your support ticket "${ticket.subject}" status has been updated to ${status.replace('_', ' ')}`,
-        data: { ticketId: ticket.id },
-      },
-    });
+    // Create notification for user (skip for guest tickets)
+    if (ticket.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: ticket.userId,
+          type: 'SYSTEM',
+          title: 'Support Ticket Updated',
+          message: `Your support ticket "${ticket.subject}" status has been updated to ${status.replace('_', ' ')}`,
+          data: { ticketId: ticket.id },
+        },
+      });
+    }
 
     // Format messages to match frontend expectations
     const formattedMessages = ticket.messages.map(message => ({
@@ -269,15 +272,7 @@ export async function sendTicketMessage(req: AuthenticatedRequest, res: Response
     // Check if ticket exists
     const ticket = await prisma.supportTicket.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      select: { id: true },
     });
 
     if (!ticket) {
@@ -285,51 +280,21 @@ export async function sendTicketMessage(req: AuthenticatedRequest, res: Response
       return;
     }
 
-    // Create the message
-    const message = await prisma.ticketMessage.create({
-      data: {
-        ticketId: id,
-        senderId,
-        content,
-        isFromUser: false,
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+    // Route through the central chat service so the message is broadcast to
+    // the ticket room, the user room, the support room, and triggers the
+    // offline-email fallback. The service also handles status promotion,
+    // unread counters, and the customer Notification row.
+    const message = await chatService.appendMessage({
+      ticketId: id,
+      content,
+      isFromUser: false,
+      senderId,
     });
 
-    // Update ticket status to IN_PROGRESS if it's OPEN
-    if (ticket.status === 'OPEN') {
-      await prisma.supportTicket.update({
-        where: { id },
-        data: { status: 'IN_PROGRESS' },
-      });
-    }
+    // Mark messages from the user as read by the agent.
+    await chatService.markRead(id, true);
 
-    // Create notification for user
-    await prisma.notification.create({
-      data: {
-        userId: ticket.userId,
-        type: 'SYSTEM',
-        title: 'New Support Message',
-        message: `You have a new message on your support ticket "${ticket.subject}"`,
-        data: { ticketId: ticket.id },
-      },
-    });
-
-    successResponse(res, {
-      id: message.id,
-      content: message.content,
-      isFromUser: message.isFromUser,
-      createdAt: message.createdAt.toISOString(),
-      sender: message.sender,
-    });
+    successResponse(res, chatService.formatMessage(message));
   } catch (error) {
     errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
   }
@@ -384,8 +349,8 @@ export async function assignTicket(req: AuthenticatedRequest, res: Response): Pr
       },
     });
 
-    // Create notification for user if assigned
-    if (assignedToId) {
+    // Create notification for user if assigned (skip for guest tickets)
+    if (assignedToId && ticket.userId) {
       await prisma.notification.create({
         data: {
           userId: ticket.userId,

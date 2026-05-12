@@ -6,6 +6,26 @@ import * as queueService from '../services/queue.service';
 
 let io: SocketIOServer;
 
+// Track online presence: userId -> count of connected sockets
+const onlineUsers = new Map<string, number>();
+
+function addOnlineUser(userId: string) {
+  onlineUsers.set(userId, (onlineUsers.get(userId) || 0) + 1);
+}
+
+function removeOnlineUser(userId: string) {
+  const count = onlineUsers.get(userId) || 0;
+  if (count <= 1) {
+    onlineUsers.delete(userId);
+  } else {
+    onlineUsers.set(userId, count - 1);
+  }
+}
+
+export function isUserOnline(userId: string): boolean {
+  return onlineUsers.has(userId);
+}
+
 export function initializeSocket(server: HttpServer): SocketIOServer {
   io = new SocketIOServer(server, {
     cors: {
@@ -20,7 +40,31 @@ export function initializeSocket(server: HttpServer): SocketIOServer {
     // Join user-specific room for targeted notifications
     socket.on('join:user', (userId: string) => {
       socket.join(`user:${userId}`);
+      (socket.data as any).userId = userId;
+      addOnlineUser(userId);
       logger.info(`Socket ${socket.id} joined user room: ${userId}`);
+    });
+
+    // Join the support agent broadcast room. Clients should only emit this
+    // when their authenticated user has SUPPORT_AGENT/ADMIN role; the
+    // server-side support API enforces authorization on actual mutations.
+    socket.on('join:support', () => {
+      socket.join('support');
+      logger.info(`Socket ${socket.id} joined support room`);
+    });
+
+    // Join a specific live-chat ticket room (subscribed to its message stream)
+    socket.on('join:ticket', (ticketId: string) => {
+      if (typeof ticketId === 'string' && ticketId.length > 0) {
+        socket.join(`ticket:${ticketId}`);
+        logger.info(`Socket ${socket.id} joined ticket room: ${ticketId}`);
+      }
+    });
+
+    socket.on('leave:ticket', (ticketId: string) => {
+      if (typeof ticketId === 'string' && ticketId.length > 0) {
+        socket.leave(`ticket:${ticketId}`);
+      }
     });
 
     // Join the admin security broadcast room. Clients should only emit this
@@ -187,6 +231,8 @@ export function initializeSocket(server: HttpServer): SocketIOServer {
     });
 
     socket.on('disconnect', () => {
+      const uid = (socket.data as any)?.userId as string | undefined;
+      if (uid) removeOnlineUser(uid);
       logger.info(`Socket disconnected: ${socket.id}`);
     });
   });
@@ -316,5 +362,23 @@ export function emitNewBooking(salonId: string, booking: any) {
 export function emitBookingCountUpdate(count: number) {
   if (io) {
     io.emit('booking:count_update', { count });
+  }
+}
+
+// ============================================================
+// Live Chat helpers
+// ============================================================
+
+// Broadcast to all connected support agents (joined via 'join:support')
+export function emitToSupport(event: string, data: any) {
+  if (io) {
+    io.to('support').emit(event, data);
+  }
+}
+
+// Broadcast to everyone subscribed to a specific ticket thread
+export function emitToTicket(ticketId: string, event: string, data: any) {
+  if (io) {
+    io.to(`ticket:${ticketId}`).emit(event, data);
   }
 }

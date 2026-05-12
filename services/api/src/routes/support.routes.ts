@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as adminController from '../controllers/admin.controller';
 import * as supportTicketController from '../controllers/support-ticket.controller';
+import * as chatService from '../services/chat.service';
 import { authenticateToken, requireSupportOrHigher } from '../middleware/auth';
 
 const router = Router();
@@ -176,5 +177,74 @@ router.put('/tickets/:id/status', authenticateToken, requireSupportOrHigher, sup
 router.post('/tickets/:id/messages', authenticateToken, requireSupportOrHigher, supportTicketController.sendTicketMessage);
 router.get('/tickets/:id/messages', authenticateToken, requireSupportOrHigher, supportTicketController.getTicketMessages);
 router.put('/tickets/:id/assign', authenticateToken, requireSupportOrHigher, supportTicketController.assignTicket);
+
+// Live chat thread list (sorted by lastMessageAt) for the agent dashboard
+router.get('/chat/threads', authenticateToken, requireSupportOrHigher, async (req, res) => {
+  try {
+    const prisma = (await import('../config/database')).default;
+    const { source, status, q } = req.query as Record<string, string | undefined>;
+
+    const where: any = {};
+    if (source && source !== 'ALL') where.source = source;
+    if (status && status !== 'ALL') where.status = status;
+    if (q && q.trim()) {
+      const term = q.trim();
+      where.OR = [
+        { subject: { contains: term, mode: 'insensitive' } },
+        { guestName: { contains: term, mode: 'insensitive' } },
+        { guestEmail: { contains: term, mode: 'insensitive' } },
+        { user: { firstName: { contains: term, mode: 'insensitive' } } },
+        { user: { lastName: { contains: term, mode: 'insensitive' } } },
+        { user: { email: { contains: term, mode: 'insensitive' } } },
+      ];
+    }
+
+    const tickets = await prisma.supportTicket.findMany({
+      where,
+      orderBy: { lastMessageAt: 'desc' },
+      take: 100,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: tickets.map((t) => ({
+        id: t.id,
+        subject: t.subject,
+        status: t.status,
+        source: t.source,
+        unreadByAgent: t.unreadByAgent,
+        unreadByUser: t.unreadByUser,
+        lastMessageAt: t.lastMessageAt.toISOString(),
+        createdAt: t.createdAt.toISOString(),
+        guestName: t.guestName,
+        guestEmail: t.guestEmail,
+        user: t.user,
+        lastMessage: t.messages[0]
+          ? {
+              content: t.messages[0].content,
+              isFromUser: t.messages[0].isFromUser,
+              createdAt: t.messages[0].createdAt.toISOString(),
+            }
+          : null,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: (error as Error).message });
+  }
+});
+
+// Mark a thread read on the agent side (resets unreadByAgent counter)
+router.post('/chat/threads/:id/read', authenticateToken, requireSupportOrHigher, async (req, res) => {
+  try {
+    await chatService.markRead(req.params.id, true);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: (error as Error).message });
+  }
+});
 
 export default router;

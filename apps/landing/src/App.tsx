@@ -13,6 +13,7 @@ import ForSalonOwners from './components/ForSalonOwners'
 import Footer from './components/Footer'
 import MobileHome from './components/MobileHome'
 import LoadingScreen from './components/LoadingScreen'
+import ChatWidget from './components/ChatWidget'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 import DataDeletion from './pages/DataDeletion'
@@ -136,6 +137,7 @@ function App() {
           <Route path="/for-salon-owners" element={<PartnerWithUs />} />
         </Routes>
       </Suspense>
+      <ChatWidget />
     </BrowserRouter>
   )
 }

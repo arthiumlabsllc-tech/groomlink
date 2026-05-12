@@ -22,6 +22,7 @@ import insightsRoutes from './insights.routes';
 import subscriptionRoutes from './subscription.routes';
 import platformRoutes from './platformFeedback';
 import configRoutes from './config';
+import customerChatRoutes from './customer-chat.routes';
 
 const router: RouterType = Router();
 
@@ -32,6 +33,9 @@ router.get('/health', (req, res) => {
 
 // Public config endpoint (no auth required)
 router.use('/config', configRoutes);
+
+// Live chat (customer-facing + guest) - MUST be before /support to avoid route conflicts
+router.use('/', customerChatRoutes);
 
 // API routes
 router.use('/auth', authRoutes);
