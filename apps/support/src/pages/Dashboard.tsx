@@ -171,26 +171,26 @@ export default function Dashboard() {
     switch (priority) {
       case 'HIGH':
       case 'URGENT':
-        return 'bg-ghana-red/10 text-ghana-red border border-ghana-red/20';
+        return 'bg-ghana-red/10 dark:bg-ghana-red/20 text-ghana-red dark:text-red-300 border border-ghana-red/20 dark:border-red-800';
       case 'MEDIUM':
-        return 'bg-ghana-yellow/10 text-yellow-700 border border-ghana-yellow/30';
+        return 'bg-ghana-yellow/10 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border border-ghana-yellow/30 dark:border-yellow-800';
       case 'LOW':
-        return 'bg-ghana-green/10 text-ghana-green border border-ghana-green/20';
+        return 'bg-ghana-green/10 dark:bg-green-900/20 text-ghana-green dark:text-green-300 border border-ghana-green/20 dark:border-green-800';
       default:
-        return 'bg-gray-100 text-gray-700 border border-gray-200';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700';
     }
   };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'CUSTOMER':
-        return 'bg-blue-50 text-blue-700 border border-blue-200';
+        return 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
       case 'SALON_OWNER':
-        return 'bg-purple-50 text-purple-700 border border-purple-200';
+        return 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800';
       case 'SUPPORT':
-        return 'bg-ghana-green/10 text-ghana-green border border-ghana-green/20';
+        return 'bg-ghana-green/10 dark:bg-green-900/20 text-ghana-green dark:text-green-300 border border-ghana-green/20 dark:border-green-800';
       default:
-        return 'bg-gray-50 text-gray-700 border border-gray-200';
+        return 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700';
     }
   };
 
@@ -198,10 +198,10 @@ export default function Dashboard() {
     <div className="space-y-4 sm:space-y-6 page-enter">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-heading">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white font-heading">
           {getTimeGreeting()} 👋
         </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">Here's what's happening on the platform today.</p>
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Here's what's happening on the platform today.</p>
       </div>
 
       {/* Stat Cards */}
@@ -217,8 +217,8 @@ export default function Dashboard() {
                 <Icon name={stat.icon} size={20} />
               </div>
               <div>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wide">{stat.name}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{stat.name}</p>
               </div>
             </div>
           </Link>
@@ -234,14 +234,14 @@ export default function Dashboard() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <Icon name={stat.icon} size={16} className="text-gray-600" />
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <Icon name={stat.icon} size={16} className="text-gray-600 dark:text-gray-400" />
                 </div>
-                <span className="text-sm font-medium text-gray-600">{stat.name}</span>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.name}</span>
               </div>
               <span className={`text-sm font-semibold ${stat.trendColor}`}>{stat.trend}</span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-3">{stat.value}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stat.value}</p>
           </div>
         ))}
       </FadeSection>
@@ -251,38 +251,38 @@ export default function Dashboard() {
         {/* Recent Users */}
         <FadeSection>
           <div className="card-v2 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 font-heading">Recent Users</h2>
-                <Link to="/users" className="text-sm text-ghana-green hover:text-support-700 font-medium transition-colors">
+                <h2 className="font-semibold text-gray-900 dark:text-white font-heading">Recent Users</h2>
+                <Link to="/users" className="text-sm text-ghana-green hover:text-support-700 dark:hover:text-green-400 font-medium transition-colors">
                   View all
                 </Link>
               </div>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {recentUsers.length > 0 ? (
                 recentUsers.map((user: any) => (
-                  <div key={user.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                  <div key={user.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 font-semibold text-sm">
+                      <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 dark:text-gray-300 font-semibold text-sm">
                           {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 dark:text-white">
                           {user.firstName} {user.lastName}
                         </p>
-                        <p className="text-sm text-gray-500">{user.phoneNumber}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.phoneNumber}</p>
                       </div>
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getRoleBadge(user.role)}`}>
-                      {user.role}
+                      {user.role?.replace('_', ' ')}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">No recent users</div>
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">No recent users</div>
               )}
             </div>
           </div>
@@ -291,18 +291,18 @@ export default function Dashboard() {
         {/* Recent Tickets */}
         <FadeSection>
           <div className="card-v2 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 font-heading">Recent Tickets</h2>
-                <Link to="/tickets" className="text-sm text-ghana-green hover:text-support-700 font-medium transition-colors">
+                <h2 className="font-semibold text-gray-900 dark:text-white font-heading">Recent Tickets</h2>
+                <Link to="/tickets" className="text-sm text-ghana-green hover:text-support-700 dark:hover:text-green-400 font-medium transition-colors">
                   View all
                 </Link>
               </div>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {recentTickets.length > 0 ? (
                 recentTickets.map((ticket: any) => (
-                  <div key={ticket.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                  <div key={ticket.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className={`w-2.5 h-2.5 rounded-full ${
                         ticket.priority === 'HIGH' || ticket.priority === 'URGENT' ? 'bg-ghana-red' :
@@ -310,8 +310,8 @@ export default function Dashboard() {
                         'bg-ghana-green'
                       }`}></div>
                       <div>
-                        <p className="font-medium text-gray-900">{ticket.subject}</p>
-                        <p className="text-sm text-gray-500">{ticket.user?.firstName} • {ticket.createdAt}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{ticket.subject}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{ticket.user?.firstName} • {ticket.createdAt}</p>
                       </div>
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityBadge(ticket.priority)}`}>
@@ -320,7 +320,7 @@ export default function Dashboard() {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">No recent tickets</div>
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">No recent tickets</div>
               )}
             </div>
           </div>
