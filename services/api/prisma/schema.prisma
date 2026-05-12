@@ -152,6 +152,7 @@ model User {
   policiesUpdated         PlatformPolicy[]      @relation("PolicyUpdatedBy")
   completionReminders     CompletionReminder[]
   sponsoredSalons         SponsoredSalon[]
+  agentSettings           AgentSettings?
 
   // No-show tracking
   noShowCount       Int       @default(0) @map("no_show_count")
@@ -1331,4 +1332,48 @@ model SecurityEvent {
   @@index([eventType, createdAt])
   @@index([ipAddress])
   @@map("security_events")
+}
+
+// Agent settings for support dashboard
+model AgentSettings {
+  id                   String        @id @default(uuid())
+  userId               String        @unique @map("user_id")
+  emailNotifications   Boolean       @default(true) @map("email_notifications")
+  soundNotifications   Boolean       @default(true) @map("sound_notifications")
+  desktopNotifications Boolean       @default(true) @map("desktop_notifications")
+  status               AgentStatus   @default(ONLINE)
+  awayMessage          String?       @map("away_message") @db.VarChar(500)
+  autoAssign           Boolean       @default(true) @map("auto_assign")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("agent_settings")
+}
+
+enum AgentStatus {
+  ONLINE
+  AWAY
+  OFFLINE
+}
+
+// FAQ Bot for automated responses
+model FAQBot {
+  id          String   @id @default(uuid())
+  keyword     String   @unique
+  patterns    String[]
+  response    String   @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  priority    Int      @default(0)
+  category    String   @default("general")
+  usageCount  Int      @default(0) @map("usage_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, priority])
+  @@index([category])
+  @@map("faq_bot")
 }

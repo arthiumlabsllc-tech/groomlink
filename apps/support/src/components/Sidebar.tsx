@@ -11,6 +11,7 @@ const navigation = [
   { name: 'Customers', href: '/customers', icon: 'group', group: 'Management' },
   { name: 'Users', href: '/users', icon: 'group', group: 'Management' },
   { name: 'Salons', href: '/salons', icon: 'store', group: 'Management' },
+  { name: 'Settings', href: '/settings', icon: 'settings', group: 'Account' },
 ];
 
 export default function Sidebar() {

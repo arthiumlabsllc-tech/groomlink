@@ -348,6 +348,90 @@ class ApiClient {
       meta: { page: number; limit: number; total: number; totalPages: number };
     }>(`/users?${params}`);
   }
+
+  // Agent Settings API methods
+  async getAgentProfile() {
+    return this.request<{
+      success: boolean;
+      data: {
+        user: {
+          id: string;
+          firstName: string;
+          lastName: string;
+          email: string | null;
+          avatar: string | null;
+          role: string;
+          status: string;
+        };
+        settings: {
+          emailNotifications: boolean;
+          soundNotifications: boolean;
+          desktopNotifications: boolean;
+          status: 'ONLINE' | 'AWAY' | 'OFFLINE';
+          awayMessage: string | null;
+          autoAssign: boolean;
+        };
+      };
+    }>('/support/me/profile');
+  }
+
+  async updateAgentProfile(data: { firstName?: string; lastName?: string; avatar?: string }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        user: {
+          id: string;
+          firstName: string;
+          lastName: string;
+          email: string | null;
+          avatar: string | null;
+          role: string;
+        };
+      };
+    }>('/support/me/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAgentSettings(data: {
+    emailNotifications?: boolean;
+    soundNotifications?: boolean;
+    desktopNotifications?: boolean;
+    autoAssign?: boolean;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        settings: {
+          id: string;
+          emailNotifications: boolean;
+          soundNotifications: boolean;
+          desktopNotifications: boolean;
+          autoAssign: boolean;
+        };
+      };
+    }>('/support/me/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAgentStatus(data: { status: 'ONLINE' | 'AWAY' | 'OFFLINE'; awayMessage?: string | null }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        settings: {
+          id: string;
+          status: 'ONLINE' | 'AWAY' | 'OFFLINE';
+          awayMessage: string | null;
+        };
+      };
+    }>('/support/me/status', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const api = new ApiClient();

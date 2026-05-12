@@ -245,3 +245,57 @@ export function formatTicketForAgents(ticket: any) {
     messages: ticket.messages ? ticket.messages.map(formatMessage) : undefined,
   };
 }
+
+/**
+ * getBotResponse
+ *
+ * Matches visitor message against FAQ patterns and returns automated response.
+ * Also handles escalation to human agents when visitor requests help.
+ */
+export async function getBotResponse(message: string, ticketId?: string): Promise<{ response: string | null; shouldEscalate: boolean }> {
+  try {
+    const faqs = await prisma.fAQBot.findMany({
+      where: { isActive: true },
+      orderBy: { priority: 'desc' },
+    });
+
+    const lowerMessage = message.toLowerCase();
+
+    for (const faq of faqs) {
+      for (const pattern of faq.patterns) {
+        if (lowerMessage.includes(pattern.toLowerCase())) {
+          // Increment usage count
+          await prisma.fAQBot.update({
+            where: { id: faq.id },
+            data: { usageCount: { increment: 1 } },
+          });
+
+          // Check if this should trigger escalation to human agent
+          const shouldEscalate = faq.keyword === 'support';
+
+          if (shouldEscalate && ticketId) {
+            // Mark ticket for human escalation
+            await prisma.supportTicket.update({
+              where: { id: ticketId },
+              data: { priority: 'HIGH', status: 'OPEN' },
+            });
+
+            // Notify agents
+            emitToSupport('chat:escalation', { 
+              ticketId, 
+              reason: 'customer_requested_human',
+              message: faq.response 
+            });
+          }
+
+          return { response: faq.response, shouldEscalate };
+        }
+      }
+    }
+
+    return { response: null, shouldEscalate: false };
+  } catch (error) {
+    logger.error('Bot response failed', { error });
+    return { response: null, shouldEscalate: false };
+  }
+}

@@ -178,6 +178,12 @@ router.post('/tickets/:id/messages', authenticateToken, requireSupportOrHigher, 
 router.get('/tickets/:id/messages', authenticateToken, requireSupportOrHigher, supportTicketController.getTicketMessages);
 router.put('/tickets/:id/assign', authenticateToken, requireSupportOrHigher, supportTicketController.assignTicket);
 
+// Agent settings routes
+router.get('/me/profile', authenticateToken, requireSupportOrHigher, supportTicketController.getAgentProfile);
+router.put('/me/profile', authenticateToken, requireSupportOrHigher, supportTicketController.updateAgentProfile);
+router.put('/me/settings', authenticateToken, requireSupportOrHigher, supportTicketController.updateAgentSettings);
+router.post('/me/status', authenticateToken, requireSupportOrHigher, supportTicketController.updateAgentStatus);
+
 // Live chat thread list (sorted by lastMessageAt) for the agent dashboard
 router.get('/chat/threads', authenticateToken, requireSupportOrHigher, async (req, res) => {
   try {

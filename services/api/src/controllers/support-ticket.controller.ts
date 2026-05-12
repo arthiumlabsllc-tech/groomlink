@@ -440,3 +440,134 @@ export async function getTicketMessages(req: AuthenticatedRequest, res: Response
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }
+
+// Get current agent's profile with settings
+export async function getAgentProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        avatar: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    if (!user) {
+      errorResponse(res, 'NOT_FOUND', 'User not found', 404);
+      return;
+    }
+
+    const settings = await prisma.agentSettings.findUnique({
+      where: { userId },
+    });
+
+    successResponse(res, {
+      user,
+      settings: settings || {
+        emailNotifications: true,
+        soundNotifications: true,
+        desktopNotifications: true,
+        status: 'ONLINE',
+        awayMessage: null,
+        autoAssign: true,
+      },
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Update agent profile (firstName, lastName, avatar)
+export async function updateAgentProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { firstName, lastName, avatar } = req.body;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
+        ...(avatar !== undefined && { avatar }),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        avatar: true,
+        role: true,
+      },
+    });
+
+    successResponse(res, { user: updatedUser });
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Update agent notification settings
+export async function updateAgentSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { emailNotifications, soundNotifications, desktopNotifications, autoAssign } = req.body;
+
+    const settings = await prisma.agentSettings.upsert({
+      where: { userId },
+      create: {
+        userId,
+        emailNotifications: emailNotifications ?? true,
+        soundNotifications: soundNotifications ?? true,
+        desktopNotifications: desktopNotifications ?? true,
+        autoAssign: autoAssign ?? true,
+      },
+      update: {
+        ...(emailNotifications !== undefined && { emailNotifications }),
+        ...(soundNotifications !== undefined && { soundNotifications }),
+        ...(desktopNotifications !== undefined && { desktopNotifications }),
+        ...(autoAssign !== undefined && { autoAssign }),
+      },
+    });
+
+    successResponse(res, { settings });
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Update agent status (online/away/offline)
+export async function updateAgentStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { status, awayMessage } = req.body;
+
+    if (!['ONLINE', 'AWAY', 'OFFLINE'].includes(status)) {
+      errorResponse(res, 'INVALID_STATUS', 'Status must be ONLINE, AWAY, or OFFLINE', 400);
+      return;
+    }
+
+    const settings = await prisma.agentSettings.upsert({
+      where: { userId },
+      create: {
+        userId,
+        status,
+        awayMessage: awayMessage || null,
+      },
+      update: {
+        status,
+        ...(awayMessage !== undefined && { awayMessage }),
+      },
+    });
+
+    successResponse(res, { settings });
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}

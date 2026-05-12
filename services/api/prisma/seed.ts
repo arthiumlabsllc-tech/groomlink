@@ -889,6 +889,69 @@ async function main() {
   console.log('   Customer 4: abena.osei@gmail.com');
   console.log('   Customer 5: yaw.darko@gmail.com');
   console.log('='.repeat(60));
+
+  // Seed FAQ Bot data
+  console.log('\n🤖 Seeding FAQ Bot...');
+  const faqData = [
+    {
+      keyword: 'hours',
+      patterns: ['hours', 'open', 'close', 'time', 'schedule', 'when'],
+      response: 'Our partner salons typically operate Monday-Saturday, 8AM-8PM. Sunday hours vary by location. You can check specific salon hours on their profile page!',
+      priority: 10,
+      category: 'general',
+    },
+    {
+      keyword: 'pricing',
+      patterns: ['price', 'cost', 'how much', 'pricing', 'rates', 'fee'],
+      response: 'Pricing varies by salon and service. You can browse salons and see their exact prices before booking. We also offer special discounts for first-time customers!',
+      priority: 10,
+      category: 'pricing',
+    },
+    {
+      keyword: 'booking',
+      patterns: ['book', 'appointment', 'reserve', 'schedule', 'how to book'],
+      response: 'To book an appointment: 1) Browse salons near you, 2) Select a service, 3) Choose your preferred time, 4) Confirm your booking. You\'ll receive a confirmation instantly!',
+      priority: 10,
+      category: 'booking',
+    },
+    {
+      keyword: 'location',
+      patterns: ['where', 'location', 'address', 'near me', 'find', 'closest'],
+      response: 'We have partner salons across Ghana! Enable location access or enter your city to see salons near you. You can also browse by region using our search filters.',
+      priority: 8,
+      category: 'general',
+    },
+    {
+      keyword: 'payment',
+      patterns: ['payment', 'pay', 'mobile money', 'momo', 'card', 'cash'],
+      response: 'We accept Mobile Money (MTN, Vodafone, AirtelTigo), Visa/Mastercard, and cash at some salons. All online payments are secure and processed through our trusted payment partners.',
+      priority: 9,
+      category: 'payment',
+    },
+    {
+      keyword: 'cancel',
+      patterns: ['cancel', 'refund', 'change', 'reschedule', 'modify'],
+      response: 'You can cancel or reschedule bookings from your account under "My Bookings". Cancellation policies vary by salon. Please contact us directly if you need assistance with a specific booking.',
+      priority: 9,
+      category: 'support',
+    },
+    {
+      keyword: 'support',
+      patterns: ['help', 'support', 'contact', 'talk', 'human', 'agent'],
+      response: 'I\'m connecting you with a support agent now. They\'ll be with you shortly! In the meantime, feel free to describe your issue so they can assist you faster.',
+      priority: 5,
+      category: 'support',
+    },
+  ];
+
+  for (const faq of faqData) {
+    await prisma.fAQBot.upsert({
+      where: { keyword: faq.keyword },
+      update: faq,
+      create: faq,
+    });
+  }
+  console.log(`   ✅ Seeded ${faqData.length} FAQ entries`);
 }
 
 main()
