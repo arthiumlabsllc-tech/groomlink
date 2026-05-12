@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 // - First message collects name + optional email and creates a guest ticket.
 // - Token + ticketId persisted in localStorage so refreshes resume the chat.
 // - Polls /api/guest/support/tickets/:id every 3s while open.
+// - Plays notification sound when agent replies.
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL ||
@@ -15,6 +16,39 @@ const API_BASE =
     : 'https://groomlinkgh.com/api');
 
 const STORAGE_KEY = 'groomlink_chat_landing';
+
+// Notification sound utility (inline to avoid extra files)
+let audioContext: AudioContext | null = null;
+function playNotificationSound() {
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } catch (e) {
+    console.warn('Notification sound failed:', e);
+  }
+}
+
+function initAudio() {
+  if (!audioContext) {
+    try {
+      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch (e) {
+      console.warn('Audio init failed:', e);
+    }
+  }
+}
 
 interface ChatMessage {
   id: string;
@@ -75,6 +109,12 @@ export default function ChatWidget() {
       setName(s.guestName || '');
       setEmail(s.guestEmail || '');
     }
+    // Initialize audio on first user interaction
+    const init = () => {
+      initAudio();
+      document.removeEventListener('click', init);
+    };
+    document.addEventListener('click', init);
   }, []);
 
   // Poll for new messages while session exists
@@ -101,10 +141,16 @@ export default function ChatWidget() {
         if (!cancelled && json.success && Array.isArray(json.data?.messages)) {
           const newMsgs: ChatMessage[] = json.data.messages;
           setMessages((prev) => {
-            // Bump unread count if new agent messages arrived while closed
-            if (!open && newMsgs.length > prev.length) {
-              const added = newMsgs.slice(prev.length).filter((m) => !m.isFromUser).length;
-              if (added > 0) setUnread((u) => u + added);
+            // Play sound and bump unread if new agent messages arrived
+            if (newMsgs.length > prev.length) {
+              const added = newMsgs.slice(prev.length).filter((m) => !m.isFromUser);
+              if (added.length > 0) {
+                // Play notification sound for agent replies
+                playNotificationSound();
+                if (!open) {
+                  setUnread((u) => u + added.length);
+                }
+              }
             }
             return newMsgs;
           });
