@@ -18,6 +18,7 @@ import { maintenanceCheck } from './middleware/maintenance';
 import { securityProbe } from './middleware/securityProbe';
 import { recordSecurityEvent } from './services/security-alert.service';
 import { initScheduler } from './jobs/scheduler';
+import { loginBruteForceLimiter, supportLoginLimiter } from './middleware/brute-force.middleware';
 
 // Load environment variables
 dotenv.config();
@@ -26,21 +27,31 @@ const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
+// Security middleware - Enhanced Helmet configuration
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
+      imgSrc: ["'self'", 'data:', 'https:', 'https://res.cloudinary.com'],
+      connectSrc: ["'self'", 'https://groomlinkgh.com'],
+      fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
     },
   },
   hsts: {
-    maxAge: 31536000,
+    maxAge: 31536000, // 1 year
     includeSubDomains: true,
     preload: true,
   },
+  crossOriginEmbedderPolicy: false, // Allow embedding resources
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  noSniff: true,
+  xssFilter: true,
 }));
 
 // CORS configuration

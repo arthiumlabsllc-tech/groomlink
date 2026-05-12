@@ -197,7 +197,7 @@ function PlanCard({
         </div>
         {isYearly && plan.priceYearlyGhs ? (
           <p className="text-xs text-ghana-green font-medium mt-1">
-            ₵{plan.priceYearlyGhs}/year — Save 15%
+            ₵{plan.priceYearlyGhs}/year- Save 15%
           </p>
         ) : null}
       </div>
@@ -294,7 +294,7 @@ export default function PricingPage() {
         // Redirect to Hubtel payment page
         window.location.href = result.checkoutUrl
       } else {
-        // Free plan or no checkout needed — refresh status
+        // Free plan or no checkout needed- refresh status
         navigate('/pricing')
         window.location.reload()
       }

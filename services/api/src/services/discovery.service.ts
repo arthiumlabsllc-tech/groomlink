@@ -216,7 +216,7 @@ export async function getBrandedPage(slug: string) {
     return null;
   }
 
-  // Only return published pages (unless it's the salon owner viewing — handled at controller level)
+  // Only return published pages (unless it's the salon owner viewing- handled at controller level)
   if (!brandedPage.isPublished) {
     return null;
   }
@@ -283,7 +283,7 @@ export async function upsertBrandedPage(salonId: string, data: UpsertBrandedPage
     if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
 
-    // Handle slug update — if provided, ensure uniqueness
+    // Handle slug update- if provided, ensure uniqueness
     if (data.slug !== undefined) {
       const newSlug = slugify(data.slug);
       // Check if slug is being changed and if it's unique

@@ -209,7 +209,7 @@ export default function DashboardScreen() {
         renderItem={renderBookingItem}
         ListHeaderComponent={
           <>
-            {/* Header — like MTN's "Y'ello Isaac!" */}
+            {/* Header- like MTN's "Y'ello Isaac!" */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <Image
@@ -239,7 +239,7 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Subscription Card — like MTN's "Loyalty Points" */}
+            {/* Subscription Card- like MTN's "Loyalty Points" */}
             <SubscriptionStatusCard />
 
             {/* Overview Section Header */}
@@ -250,7 +250,7 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Stats Grid — like MTN's "Balances" Airtime/Data cards */}
+            {/* Stats Grid- like MTN's "Balances" Airtime/Data cards */}
             <View style={styles.statsGrid}>
               {/* Today's Bookings */}
               <View style={styles.statsCard}>
@@ -303,7 +303,7 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* Quick Actions — like MTN's "Digital Services" horizontal scroll */}
+            {/* Quick Actions- like MTN's "Digital Services" horizontal scroll */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Quick Actions</Text>
             </View>

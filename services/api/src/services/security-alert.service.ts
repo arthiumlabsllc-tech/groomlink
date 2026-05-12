@@ -225,7 +225,7 @@ export async function recordSecurityEvent(input: RecordEventInput): Promise<void
         const recipients = await getAdminRecipients();
         if (recipients.length > 0) {
           const html = renderEmail({ ...input, ...data, id: event.id, createdAt: event.createdAt });
-          const subject = `[${data.severity}] GroomLink Security Alert — ${data.eventType}`;
+          const subject = `[${data.severity}] GroomLink Security Alert- ${data.eventType}`;
           // Send in parallel; don't await the inner sends to block callers
           await Promise.all(recipients.map((to) =>
             sendTransactionalEmail(to, subject, html).catch((e) =>

@@ -430,7 +430,7 @@ class HubtelPaymentProvider {
     phoneNumber?: string
   ): Promise<PaymentResult> {
     try {
-      // Amount in GHS (cedis) — NOT pesewas
+      // Amount in GHS (cedis)- NOT pesewas
       const channel = this.getChannel(provider);
 
       // Ensure phone number has +233 prefix

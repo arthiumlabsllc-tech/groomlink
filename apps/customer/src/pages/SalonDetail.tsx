@@ -614,7 +614,7 @@ export default function SalonDetail() {
             <Icon name="schedule" size={20} className="text-ghana-green" />
           </div>
           <div>
-            <p className="text-sm font-medium text-ghana-green">Book anytime, 24/7 — even when salons are closed</p>
+            <p className="text-sm font-medium text-ghana-green">Book anytime, 24/7- even when salons are closed</p>
             <p className="text-xs text-gray-600">Your appointment will be confirmed when the salon opens</p>
           </div>
         </div>

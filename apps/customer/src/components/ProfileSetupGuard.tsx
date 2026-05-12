@@ -39,7 +39,7 @@ export function ProfileSetupGuard({ children }: { children: React.ReactNode }) {
     return <Navigate to="/profile/setup" replace />;
   }
 
-  // Profile is complete — check onboarding
+  // Profile is complete- check onboarding
   const needsOnboarding = user?.onboardingComplete === false;
 
   if (needsOnboarding) {
@@ -51,6 +51,6 @@ export function ProfileSetupGuard({ children }: { children: React.ReactNode }) {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // User has a complete profile and finished onboarding — allow normal access
+  // User has a complete profile and finished onboarding- allow normal access
   return <>{children}</>;
 }

@@ -45,7 +45,7 @@ export default function BrandedPageManager() {
         }
       } catch (err: any) {
         console.error('Error fetching branded page:', err)
-        // If 404, it just means no branded page exists yet — that's fine
+        // If 404, it just means no branded page exists yet- that's fine
         if (!err?.message?.includes('404') && !err?.message?.includes('Not Found')) {
           setError('Failed to load branded page settings')
         }

@@ -60,7 +60,7 @@ export default function Hero() {
           
           {/* Subheadline - explains both sides */}
           <p className="text-lg sm:text-xl text-white/80 mb-8 max-w-xl animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Ghana's #1 platform to discover, compare, and book barbers, salons, makeup artists, and beauty professionals — or list your business and grow your clientele.
+            Ghana's #1 platform to discover, compare, and book barbers, salons, makeup artists, and beauty professionals - or list your business and grow your clientele.
           </p>
 
           {/* Search Box */}

@@ -1377,3 +1377,23 @@ model FAQBot {
   @@index([category])
   @@map("faq_bot")
 }
+
+// Audit logs for security tracking
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?  @map("user_id")
+  action       String   @db.VarChar(100)
+  resourceType String?  @map("resource_type") @db.VarChar(50)
+  resourceId   String?  @map("resource_id")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent") @db.Text
+  details      Json?
+  level        String   @default("INFO") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([level])
+  @@map("audit_logs")
+}

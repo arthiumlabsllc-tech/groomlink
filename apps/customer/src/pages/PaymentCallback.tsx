@@ -112,7 +112,7 @@ export default function PaymentCallback() {
       setStatus('failed');
       setMessage(result.message || 'Payment failed. Please try again.');
     }
-    // If result is not success and not failed, it's still pending — continue polling
+    // If result is not success and not failed, it's still pending- continue polling
   }, []);
 
   useEffect(() => {
@@ -158,7 +158,7 @@ export default function PaymentCallback() {
         const result = await paymentApi.verify({ reference });
         
         if (result.success) {
-          // Payment confirmed — stop polling
+          // Payment confirmed- stop polling
           clearAllTimers();
           handlePaymentResult(result, reference);
         } else if (result.status === 'FAILED') {
@@ -168,7 +168,7 @@ export default function PaymentCallback() {
         }
         // Otherwise still pending, continue polling
       } catch (error: any) {
-        // If it's a 404 or similar, payment might not be processed yet — keep polling
+        // If it's a 404 or similar, payment might not be processed yet- keep polling
         // Only stop on explicit failure
         if (error.response?.status === 400 || error.response?.status === 402) {
           clearAllTimers();

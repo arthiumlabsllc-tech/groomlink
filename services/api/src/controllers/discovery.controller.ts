@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 /**
  * GET /api/discover/new-salons
- * Public — Get salons joined in the last 30 days
+ * Public- Get salons joined in the last 30 days
  */
 export async function getNewSalons(req: Request, res: Response): Promise<void> {
   try {
@@ -21,7 +21,7 @@ export async function getNewSalons(req: Request, res: Response): Promise<void> {
 
 /**
  * GET /api/discover/by-city/:city
- * Public — Get salons filtered by city
+ * Public- Get salons filtered by city
  */
 export async function getSalonsByCity(req: Request, res: Response): Promise<void> {
   try {
@@ -39,7 +39,7 @@ export async function getSalonsByCity(req: Request, res: Response): Promise<void
 
 /**
  * GET /api/discover/cities
- * Public — Get distinct cities with salon counts
+ * Public- Get distinct cities with salon counts
  */
 export async function getCities(req: Request, res: Response): Promise<void> {
   try {
@@ -52,7 +52,7 @@ export async function getCities(req: Request, res: Response): Promise<void> {
 
 /**
  * GET /api/discover/bookings-today
- * Public — Get today's booking count (live counter)
+ * Public- Get today's booking count (live counter)
  */
 export async function getBookingsToday(req: Request, res: Response): Promise<void> {
   try {
@@ -65,7 +65,7 @@ export async function getBookingsToday(req: Request, res: Response): Promise<voi
 
 /**
  * GET /api/discover/branded-page/my?salonId=xxx
- * Auth required, salon owner only — Get own branded page (includes unpublished)
+ * Auth required, salon owner only- Get own branded page (includes unpublished)
  */
 export async function getMyBrandedPage(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -110,7 +110,7 @@ export async function getMyBrandedPage(req: AuthenticatedRequest, res: Response)
 
 /**
  * GET /api/discover/branded-page/:slug
- * Public — Get branded page by slug
+ * Public- Get branded page by slug
  */
 export async function getBrandedPage(req: Request, res: Response): Promise<void> {
   try {
@@ -144,7 +144,7 @@ const upsertBrandedPageSchema = z.object({
 
 /**
  * PUT /api/discover/branded-page
- * Auth required, salon owner only — Create or update branded page
+ * Auth required, salon owner only- Create or update branded page
  */
 export async function updateBrandedPage(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {

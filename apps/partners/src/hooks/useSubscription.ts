@@ -151,7 +151,7 @@ export function useFeatureCheck(feature: string) {
 }
 
 /**
- * Subscribe to a plan — returns checkout URL for payment
+ * Subscribe to a plan- returns checkout URL for payment
  */
 export async function subscribeToPlan(
   planSlug: string,

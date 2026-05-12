@@ -6,7 +6,7 @@
 :root { color-scheme: light dark; }
 input, textarea, select { color-scheme: light dark; }
 
-/* Dark mode overrides (surgical — keeps brand colors intact, flips neutral Tailwind classes) */
+/* Dark mode overrides (surgical- keeps brand colors intact, flips neutral Tailwind classes) */
 @media (prefers-color-scheme: dark) {
   body { background-color: #0F1419 !important; color: #F3F4F6 !important; }
   /* Surfaces */

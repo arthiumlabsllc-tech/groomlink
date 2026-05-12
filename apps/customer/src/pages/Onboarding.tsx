@@ -57,7 +57,7 @@ function StepIndicator({ step, total }: { step: number; total: number }) {
 }
 
 /* ────────────────────────────────────────────
-   Step 1 — Category Selection
+   Step 1- Category Selection
    ──────────────────────────────────────────── */
 function CategoryStep({
   selected,
@@ -141,7 +141,7 @@ function CategoryStep({
 }
 
 /* ────────────────────────────────────────────
-   Step 2 — Location Permission
+   Step 2- Location Permission
    ──────────────────────────────────────────── */
 function LocationStep({
   onEnable,
@@ -195,7 +195,7 @@ function LocationStep({
 }
 
 /* ────────────────────────────────────────────
-   Step 3 — Recommendations
+   Step 3- Recommendations
    ──────────────────────────────────────────── */
 function RecommendationsStep({
   salons,
@@ -228,7 +228,7 @@ function RecommendationsStep({
         </div>
       ) : salons.length === 0 ? (
         <div className="py-8 text-gray-400">
-          <p className="text-sm">No matching salons yet — but we're growing!</p>
+          <p className="text-sm">No matching salons yet- but we're growing!</p>
         </div>
       ) : (
         <div className="w-full max-w-sm space-y-3 mb-6 max-h-[340px] overflow-y-auto pr-1">
@@ -340,7 +340,7 @@ export default function Onboarding() {
     });
   }, []);
 
-  /* Step 1 — Save preferences and advance */
+  /* Step 1- Save preferences and advance */
   const handleCategoryContinue = async () => {
     setIsSavingPrefs(true);
     try {
@@ -360,7 +360,7 @@ export default function Onboarding() {
     }
   };
 
-  /* Step 2 — Geolocation */
+  /* Step 2- Geolocation */
   const handleEnableLocation = () => {
     if (!navigator.geolocation) {
       toast.error('Geolocation is not supported by your browser');
@@ -378,14 +378,14 @@ export default function Onboarding() {
           });
           toast.success('Location updated!');
         } catch {
-          // Non-critical — still advance
+          // Non-critical- still advance
         } finally {
           setIsGettingLocation(false);
           setStep(2);
         }
       },
       () => {
-        // User denied or error — skip silently
+        // User denied or error- skip silently
         setIsGettingLocation(false);
         setStep(2);
       },
@@ -393,12 +393,12 @@ export default function Onboarding() {
     );
   };
 
-  /* Step 2 — Skip location */
+  /* Step 2- Skip location */
   const handleSkipLocation = () => {
     setStep(2);
   };
 
-  /* Step 3 — Fetch recommendations when step becomes 2 */
+  /* Step 3- Fetch recommendations when step becomes 2 */
   useEffect(() => {
     if (step !== 2) return;
 
@@ -421,7 +421,7 @@ export default function Onboarding() {
     };
   }, [step]);
 
-  /* Step 3 — Complete onboarding */
+  /* Step 3- Complete onboarding */
   const handleFinish = async () => {
     setIsFinishing(true);
     try {

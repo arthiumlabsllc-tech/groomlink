@@ -778,7 +778,7 @@ function ForSalonOwnersSection() {
         href="https://partners.groomlinkgh.com"
         className="block w-full bg-white text-[#006B3F] font-bold py-4 px-6 rounded-xl text-center hover:bg-gray-100 transition-colors"
       >
-        List Your Salon — It's Free
+        List Your Salon- It's Free
       </a>
     </section>
   )

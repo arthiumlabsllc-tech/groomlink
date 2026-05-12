@@ -660,12 +660,12 @@ export function Settings() {
                   {paymentFormData.isPaymentTestMode ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                       <Icon name="check_circle" size={12} />
-                      TEST MODE — No real charges
+                      TEST MODE- No real charges
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#CE1126]/10 text-[#CE1126]">
                       <Icon name="warning" size={12} />
-                      LIVE MODE — Real payments will be processed
+                      LIVE MODE- Real payments will be processed
                     </span>
                   )}
                 </div>

@@ -132,11 +132,11 @@ export default function PartnerWithUs() {
 
   const faqs = [
     { question: 'What is GroomLink?', answer: 'GroomLink is Ghana\'s leading salon and barbershop booking platform. We connect customers with the best salons and barbershops across the country, making it easy to discover, book, and pay for grooming services online.' },
-    { question: 'How does the marketplace help me?', answer: 'We connect you with thousands of customers actively searching for grooming services in your area. Your salon gets visibility across our app, website, and social media channels — bringing you bookings you would never get on your own.' },
-    { question: 'What is online booking?', answer: 'Customers can book your services 24/7 from their phone — no more phone tag or WhatsApp back-and-forth. They see your availability in real-time and book instantly. You get notified immediately of every new booking.' },
+    { question: 'How does the marketplace help me?', answer: 'We connect you with thousands of customers actively searching for grooming services in your area. Your salon gets visibility across our app, website, and social media channels- bringing you bookings you would never get on your own.' },
+    { question: 'What is online booking?', answer: 'Customers can book your services 24/7 from their phone- no more phone tag or WhatsApp back-and-forth. They see your availability in real-time and book instantly. You get notified immediately of every new booking.' },
     { question: 'Who is GroomLink for?', answer: 'GroomLink is for salon owners, barbershop owners, hairstylists, nail technicians, and any grooming professional in Ghana who wants to grow their business with modern booking technology.' },
     { question: 'How do I get paid?', answer: 'Payments go directly to your mobile money account (MTN MoMo, Vodafone Cash, AirtelTigo Money) immediately after you complete a service. No waiting days or weeks for your money.' },
-    { question: 'Is there a contract?', answer: 'No! GroomLink is free to join with no contracts or commitments. You can deactivate your listing at any time. We only earn when you earn — a small commission on completed bookings.' },
+    { question: 'Is there a contract?', answer: 'No! GroomLink is free to join with no contracts or commitments. You can deactivate your listing at any time. We only earn when you earn- a small commission on completed bookings.' },
   ]
 
   const testimonials = [
@@ -177,7 +177,7 @@ export default function PartnerWithUs() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="https://partners.groomlinkgh.com" className="inline-flex items-center justify-center gap-2 bg-[#CE1126] text-white font-bold py-4 px-8 rounded-xl hover:bg-[#a80e1f] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-lg">
-                Start Free Now — No Credit Card Required
+                Start Free Now- No Credit Card Required
               </a>
               <button onClick={scrollToHowItWorks} className="inline-flex items-center justify-center gap-2 bg-white text-[#006B3F] font-semibold py-4 px-8 rounded-xl hover:bg-gray-50 transition-all duration-300 border-2 border-[#006B3F]/20">
                 See How It Works

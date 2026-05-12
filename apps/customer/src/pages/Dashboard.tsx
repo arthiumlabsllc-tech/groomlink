@@ -35,7 +35,7 @@ interface SalonsResponse {
   }
 }
 
-// Categories data — distinct soft pastel backgrounds with Material Symbols
+// Categories data- distinct soft pastel backgrounds with Material Symbols
 const CATEGORIES = [
   { name: 'Haircut', icon: 'content_cut', bg: 'bg-blue-50', iconColor: 'text-blue-500', ring: 'ring-blue-100' },
   { name: 'Beard Trim', icon: 'auto_fix_high', bg: 'bg-amber-50', iconColor: 'text-amber-500', ring: 'ring-amber-100' },
@@ -423,7 +423,7 @@ function NearbySalonsSection() {
     )
   }
 
-  // Denied / error / unsupported — fall back to popular
+  // Denied / error / unsupported- fall back to popular
   if (state === 'denied' || state === 'error' || state === 'unsupported') {
     return <PopularNearYouSection />
   }

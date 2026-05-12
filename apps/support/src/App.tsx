@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import { useImpersonation } from './hooks/useImpersonation';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
 import Login from './pages/Login';
@@ -16,6 +17,9 @@ import Settings from './pages/Settings';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  
+  // Enable session timeout for authenticated users
+  useSessionTimeout();
   
   if (isLoading) {
     return <LoadingScreen />;

@@ -7,7 +7,7 @@ import logger from '../config/logger';
 import crypto from 'crypto';
 
 /**
- * GET /api/subscription/plans — PUBLIC
+ * GET /api/subscription/plans- PUBLIC
  * Get all active subscription plans
  */
 export async function getPlans(req: Request, res: Response): Promise<void> {
@@ -20,7 +20,7 @@ export async function getPlans(req: Request, res: Response): Promise<void> {
 }
 
 /**
- * GET /api/subscription/status — SALON_OWNER authenticated
+ * GET /api/subscription/status- SALON_OWNER authenticated
  * Get the current subscription status for the authenticated salon owner
  */
 export async function getSubscriptionStatusHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -44,7 +44,7 @@ export async function getSubscriptionStatusHandler(req: AuthenticatedRequest, re
 }
 
 /**
- * POST /api/subscription/subscribe — SALON_OWNER authenticated
+ * POST /api/subscription/subscribe- SALON_OWNER authenticated
  * Subscribe the salon to a plan
  */
 export async function subscribeToPlanHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -75,7 +75,7 @@ export async function subscribeToPlanHandler(req: AuthenticatedRequest, res: Res
 }
 
 /**
- * POST /api/subscription/cancel — SALON_OWNER authenticated
+ * POST /api/subscription/cancel- SALON_OWNER authenticated
  * Cancel the salon's active subscription
  */
 export async function cancelSubscriptionHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -100,7 +100,7 @@ export async function cancelSubscriptionHandler(req: AuthenticatedRequest, res: 
 }
 
 /**
- * GET /api/subscription/invoices — SALON_OWNER authenticated
+ * GET /api/subscription/invoices- SALON_OWNER authenticated
  * Get invoices for the salon's subscription
  */
 export async function getInvoicesHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -128,7 +128,7 @@ export async function getInvoicesHandler(req: AuthenticatedRequest, res: Respons
 }
 
 /**
- * GET /api/subscription/check-feature — authenticated
+ * GET /api/subscription/check-feature- authenticated
  * Check if the salon has access to a specific feature
  */
 export async function checkFeatureHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -158,7 +158,7 @@ export async function checkFeatureHandler(req: AuthenticatedRequest, res: Respon
 }
 
 /**
- * POST /api/webhooks/hubtel/subscription — PUBLIC (webhook)
+ * POST /api/webhooks/hubtel/subscription- PUBLIC (webhook)
  * Handle Hubtel subscription payment webhook
  */
 export async function handleSubscriptionWebhook(req: Request, res: Response): Promise<void> {

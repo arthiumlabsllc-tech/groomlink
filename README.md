@@ -8,7 +8,7 @@ A full-stack booking platform connecting customers with salons, barbershops, and
 
 GroomLink Ghana is a multi-tenant marketplace platform that enables customers to discover, book, and pay for grooming services while providing salon owners with powerful management tools. The platform supports both brick-and-mortar businesses and freelance/home-service providers, with integrated mobile money and card payments tailored for the Ghanaian market.
 
-**Monorepo structure** — pnpm workspaces managing 10 apps + 1 API service + shared packages.
+**Monorepo structure**- pnpm workspaces managing 10 apps + 1 API service + shared packages.
 
 ---
 
@@ -57,15 +57,15 @@ GroomLink Ghana is a multi-tenant marketplace platform that enables customers to
 - **node-cron** for scheduled jobs
 
 ### Database
-- **PostgreSQL 15** — primary data store
-- **Redis 7** — caching, sessions, rate limiting
+- **PostgreSQL 15**- primary data store
+- **Redis 7**- caching, sessions, rate limiting
 
 ### Infrastructure
-- **Docker** & **Docker Compose** — containerized deployment
-- **Nginx** — reverse proxy with SSL termination
-- **Let's Encrypt** — automated TLS certificates
-- **Cloudinary** — image & asset storage
-- **GitHub Actions** — CI/CD pipelines
+- **Docker** & **Docker Compose**- containerized deployment
+- **Nginx**- reverse proxy with SSL termination
+- **Let's Encrypt**- automated TLS certificates
+- **Cloudinary**- image & asset storage
+- **GitHub Actions**- CI/CD pipelines
 
 ---
 
@@ -80,8 +80,8 @@ GroomLink Ghana is a multi-tenant marketplace platform that enables customers to
 - Auto-cancellation for unpaid bookings
 
 ### Payment Processing
-- **Hubtel** — mobile money (MTN, Vodafone, AirtelTigo)
-- **Paystack** — cards + mobile money
+- **Hubtel**- mobile money (MTN, Vodafone, AirtelTigo)
+- **Paystack**- cards + mobile money
 - Admin-configurable gateway toggle per salon
 - Escrow payment protection for customers
 - Automatic payouts to salon owners
@@ -94,8 +94,8 @@ GroomLink Ghana is a multi-tenant marketplace platform that enables customers to
 - Dashboard analytics & revenue tracking
 
 ### Provider Categories
-- **Business** — traditional salon/barbershop with physical location
-- **Freelancer** — independent professionals offering home service
+- **Business**- traditional salon/barbershop with physical location
+- **Freelancer**- independent professionals offering home service
 - Category-specific onboarding & profile flows
 
 ### Location Services
@@ -274,14 +274,14 @@ The production stack runs **8 containerized services** behind an Nginx reverse p
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Nginx (:80/:443) — SSL termination & routing       │
+│  Nginx (:80/:443)- SSL termination & routing       │
 ├──────────┬──────────┬──────────┬────────────────────┤
 │ Landing  │ Admin    │ Partners │ Customer            │
 │ :8081    │ :8080    │ :8082    │ :8084               │
 ├──────────┴──────────┴──────────┴────────────────────┤
 │  Support (:8083)                                    │
 ├─────────────────────────────────────────────────────┤
-│  API Server (:3000) — Express + Prisma + Socket.io  │
+│  API Server (:3000)- Express + Prisma + Socket.io  │
 ├────────────────────┬────────────────────────────────┤
 │  PostgreSQL 15     │  Redis 7                        │
 │  (persistent vol)  │  (persistent vol)               │
@@ -360,10 +360,10 @@ GroomLink supports a **dual-provider payment architecture** designed for the Gha
 - Callback at `/api/payments/callback/paystack`
 
 ### Architecture
-- **Admin-configurable gateway** — toggle providers per salon via admin dashboard
-- **Escrow protection** — payments held in escrow until service completion
-- **Auto-payouts** — automatic settlement to salon owner accounts
-- **Webhook verification** — HMAC signature validation for both providers
+- **Admin-configurable gateway**- toggle providers per salon via admin dashboard
+- **Escrow protection**- payments held in escrow until service completion
+- **Auto-payouts**- automatic settlement to salon owner accounts
+- **Webhook verification**- HMAC signature validation for both providers
 
 ---
 
@@ -384,4 +384,4 @@ GroomLink supports a **dual-provider payment architecture** designed for the Gha
 
 ## License
 
-Proprietary — &copy; Arthium Labs LLC. All rights reserved.
+Proprietary- &copy; Arthium Labs LLC. All rights reserved.
