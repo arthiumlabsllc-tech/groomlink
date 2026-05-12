@@ -250,7 +250,7 @@ export function formatTicketForAgents(ticket: any) {
  * getBotResponse
  *
  * Matches visitor message against FAQ patterns and returns automated response.
- * Also handles escalation to human agents when visitor requests help.
+ * Also handles escalation to human agents when visitor requests help or when no match is found.
  */
 export async function getBotResponse(message: string, ticketId?: string): Promise<{ response: string | null; shouldEscalate: boolean }> {
   try {
@@ -293,7 +293,24 @@ export async function getBotResponse(message: string, ticketId?: string): Promis
       }
     }
 
-    return { response: null, shouldEscalate: false };
+    // No match found - escalate to human agent
+    if (ticketId) {
+      await prisma.supportTicket.update({
+        where: { id: ticketId },
+        data: { priority: 'HIGH', status: 'OPEN' },
+      });
+
+      emitToSupport('chat:escalation', { 
+        ticketId, 
+        reason: 'no_bot_match',
+        message: `Visitor message: "${message}"` 
+      });
+    }
+
+    return { 
+      response: "I'm not sure I understand that question. Let me connect you with a support agent who can help you better. Please hold on...", 
+      shouldEscalate: true 
+    };
   } catch (error) {
     logger.error('Bot response failed', { error });
     return { response: null, shouldEscalate: false };

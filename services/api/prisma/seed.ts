@@ -936,6 +936,27 @@ async function main() {
       category: 'support',
     },
     {
+      keyword: 'register_customer',
+      patterns: ['register as customer', 'customer registration', 'sign up customer', 'create customer account', 'customer account', 'register customer'],
+      response: 'Want to join GroomLink as a customer? Great choice! Click here to create your account: https://my.groomlinkgh.com/register\n\nYou\'ll be able to browse salons, book appointments, and manage your grooming needs all in one place!',
+      priority: 10,
+      category: 'registration',
+    },
+    {
+      keyword: 'register_freelancer',
+      patterns: ['register as freelancer', 'freelancer registration', 'sign up freelancer', 'mobile groom', 'freelance groomer', 'freelancer account', 'register freelancer'],
+      response: 'Ready to grow your grooming business as a freelancer? Join us at: https://partners.groomlinkgh.com/register\n\nYou\'ll get your own profile, manage bookings, and reach more customers across Ghana!',
+      priority: 10,
+      category: 'registration',
+    },
+    {
+      keyword: 'register_business',
+      patterns: ['register as business', 'business registration', 'sign up salon', 'salon owner', 'business owner', 'register salon', 'shop owner', 'register business', 'own a salon', 'own a shop'],
+      response: 'Looking to register your salon or grooming business? Sign up here: https://partners.groomlinkgh.com/register\n\nGet your business listed, manage appointments, attract more customers, and grow your brand with GroomLink Ghana!',
+      priority: 10,
+      category: 'registration',
+    },
+    {
       keyword: 'support',
       patterns: ['help', 'support', 'contact', 'talk', 'human', 'agent'],
       response: 'I\'m connecting you with a support agent now. They\'ll be with you shortly! In the meantime, feel free to describe your issue so they can assist you faster.',
