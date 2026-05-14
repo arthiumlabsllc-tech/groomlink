@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import Header from './Header'
 import BottomNav from './BottomNav'
 import ChatWidget from './ChatWidget'
+import Icon from './Icon'
 import { useAuthStore } from '../store/auth'
 
 export default function Layout() {
@@ -29,14 +30,14 @@ export default function Layout() {
       {isImpersonating && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-black px-4 py-2 flex items-center justify-between text-sm font-medium">
           <div className="flex items-center gap-2">
-            <span className="material-icons text-base">visibility</span>
+            <Icon name="visibility" size={16} />
             <span>You are impersonating this account. All actions are logged.</span>
           </div>
           <button 
             onClick={handleEndImpersonation}
             className="bg-black text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-gray-800 transition-colors flex items-center gap-1.5"
           >
-            <span className="material-icons text-base">logout</span>
+            <Icon name="logout" size={16} />
             Return to Support
           </button>
         </div>

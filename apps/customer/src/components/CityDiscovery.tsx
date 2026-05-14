@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
-import { GHANA_CITIES, type CityArea } from '../data/ghanaCities'
+import { GHANA_CITIES } from '../data/ghanaCities'
 
 interface CityDiscoveryProps {
   variant?: 'chips' | 'grid' | 'accordion'
