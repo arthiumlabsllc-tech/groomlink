@@ -10,9 +10,13 @@ export interface SponsoredSalon {
   salon: {
     id: string;
     businessName: string;
-    logoUrl: string | null;
-    address: string;
-    city: string;
+    // Backend returns `logo` (Salon.logo column). Keep this field name aligned.
+    logo: string | null;
+    address: string | null;
+    city: string | null;
+    region?: string | null;
+    rating?: number | null;
+    reviewCount?: number | null;
   };
   sponsorType: SponsorType;
   durationHours: number;
@@ -48,9 +52,9 @@ export interface SponsorshipPackage {
 export interface SalonSearchResult {
   id: string;
   businessName: string;
-  logoUrl: string | null;
-  address: string;
-  city: string;
+  logo: string | null;
+  address: string | null;
+  city: string | null;
   status: string;
 }
 
@@ -140,13 +144,28 @@ export function getSponsorTypeColor(type: SponsorType): string {
   return colors[type] || 'bg-gray-100 text-gray-800';
 }
 
+// Backend `paginatedResponse` envelope: { success, data: [...], meta: {page,limit,total,totalPages} }.
+// We remap `meta` -> `pagination` so the existing UI (`pagination.totalPages`) keeps working.
+function toPaginated(payload: any): PaginatedSponsoredSalons {
+  const meta = payload?.meta || {};
+  return {
+    data: Array.isArray(payload?.data) ? payload.data : [],
+    pagination: {
+      page: Number(meta.page) || 1,
+      limit: Number(meta.limit) || 20,
+      total: Number(meta.total) || 0,
+      totalPages: Number(meta.totalPages) || 1,
+    },
+  };
+}
+
 export const sponsoredSalonsApi = {
   // Get all sponsored salons with pagination
   getAll: async (page: number = 1, limit: number = 20, status?: 'active' | 'expired'): Promise<PaginatedSponsoredSalons> => {
     const response = await apiClient.get('/admin/sponsored-salons', {
       params: { page, limit, status },
     });
-    return response.data;
+    return toPaginated(response.data);
   },
 
   // Get active sponsored salons
@@ -154,7 +173,7 @@ export const sponsoredSalonsApi = {
     const response = await apiClient.get('/admin/sponsored-salons', {
       params: { page, limit, status: 'active' },
     });
-    return response.data;
+    return toPaginated(response.data);
   },
 
   // Create new sponsored salon

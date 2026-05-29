@@ -112,6 +112,9 @@ export default function SalonSetupScreen() {
   // Service Areas (freelancers only)
   const [serviceAreasText, setServiceAreasText] = useState('');
 
+  // GhanaPost GPS Code (optional, both types)
+  const [ghanaPostGPS, setGhanaPostGPS] = useState('');
+
   // Section 3: Business Hours
   const [openingTime, setOpeningTime] = useState('08:00');
   const [closingTime, setClosingTime] = useState('18:00');
@@ -260,6 +263,7 @@ export default function SalonSetupScreen() {
         region: region.trim(),
         description: description.trim() || undefined,
         serviceAreas,
+        ghanaPostGPS: ghanaPostGPS.trim().toUpperCase() || undefined,
       };
 
       // Business-specific fields
@@ -582,6 +586,35 @@ export default function SalonSetupScreen() {
                 )}
               </View>
             )}
+          </Surface>
+
+          {/* GhanaPost GPS Code */}
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="navigate" size={20} color="#006B3F" />
+              <Text variant="titleMedium" style={styles.sectionTitle}>GhanaPost GPS Code</Text>
+              <Text variant="bodySmall" style={{ color: theme.textSecondary, fontStyle: 'italic', marginLeft: 'auto' }}>Optional</Text>
+            </View>
+            <Divider style={styles.sectionDivider} />
+            <TextInput
+              label="GPS Code"
+              value={ghanaPostGPS}
+              onChangeText={(v) => setGhanaPostGPS(v.toUpperCase())}
+              style={styles.input}
+              mode="outlined"
+              outlineColor={theme.border}
+              activeOutlineColor="#006B3F"
+              textColor={theme.text}
+              placeholderTextColor={theme.textSecondary}
+              placeholder="e.g., GA-184-9524"
+              left={<TextInput.Icon icon="map-marker-check" color={theme.textSecondary} />}
+              theme={{ roundness: 10 }}
+              autoCapitalize="characters"
+              maxLength={20}
+            />
+            <Text variant="bodySmall" style={styles.fieldHint}>
+              Your GhanaPost digital address code (optional). Open the GhanaPostGPS app to find your unique code.
+            </Text>
           </Surface>
 
           {/* Section 3: Business Hours / Availability */}

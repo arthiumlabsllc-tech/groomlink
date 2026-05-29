@@ -262,11 +262,11 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a2e] transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo Section */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/10">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/logo-white.png" 
-              alt="GroomLink" 
-              className="h-8 w-auto"
+              src="/logo-full-white.png" 
+              alt="GroomLink Partners" 
+              className="h-7 w-auto"
             />
             <span className="text-ghana-gold text-[10px] font-semibold uppercase tracking-wider">Partners</span>
           </Link>
@@ -276,7 +276,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}>
+        <nav className="flex-1 min-h-0 overflow-y-auto py-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}>
           {navGroups.map((group, groupIdx) => (
             <div key={group.label} className={groupIdx > 0 ? 'mt-4' : ''}>
               <div className="px-4 mb-1.5">
@@ -307,7 +307,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         </nav>
 
         {/* Salon Info & Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-[#151525]">
+        <div className="flex-shrink-0 p-4 border-t border-white/10 bg-[#151525]">
           {needsSetup && (
             <Link
               to="/settings"

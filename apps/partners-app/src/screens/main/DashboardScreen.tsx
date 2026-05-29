@@ -213,7 +213,7 @@ export default function DashboardScreen() {
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <Image
-                  source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
+                  source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
                   style={styles.headerLogo}
                   resizeMode="contain"
                 />
@@ -430,7 +430,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: 12,
   },
   headerLogo: {
-    width: 36,
+    width: 120,
     height: 36,
   },
   greeting: {

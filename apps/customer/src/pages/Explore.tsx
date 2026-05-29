@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import apiClient, { salonApi } from '../lib/api'
 import MapView from '../components/MapView'
+import { findNearestGhanaLocation, isWithinGhana, isAccuracyAcceptable } from '../lib/ghanaLocations'
 
 // Types
 interface Salon {
@@ -217,9 +218,37 @@ export default function Explore() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        
+        console.log(`[Explore] GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}, Accuracy: ${accuracy}m`);
+        
+        // Validate if coordinates are within Ghana
+        if (!isWithinGhana(latitude, longitude)) {
+          console.log('[Explore] Location outside Ghana');
+          setLocationError('Location appears to be outside Ghana. Showing all salons instead.');
+          setLocationMode('all');
+          setGettingLocation(false);
+          return;
+        }
+        
+        // Check GPS accuracy
+        if (!isAccuracyAcceptable(accuracy)) {
+          console.log(`[Explore] Poor GPS accuracy: ${accuracy}m`);
+          setLocationError('GPS accuracy is too low. Showing all salons instead.');
+          setLocationMode('all');
+          setGettingLocation(false);
+          return;
+        }
+        
+        // Find nearest Ghana location for logging
+        const nearestLocation = findNearestGhanaLocation(latitude, longitude, 20);
+        if (nearestLocation) {
+          console.log(`[Explore] Detected: ${nearestLocation.city}, ${nearestLocation.region}`);
+        }
+        
         setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lat: latitude,
+          lng: longitude,
         })
         setLocationMode('nearby')
         setGettingLocation(false)
@@ -243,8 +272,8 @@ export default function Explore() {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000, // Cache location for 5 minutes
+        timeout: 15000,
+        maximumAge: 0, // Don't cache - always get fresh location
       }
     )
   }, [locationMode])

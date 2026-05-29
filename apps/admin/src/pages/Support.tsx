@@ -3,6 +3,28 @@ import Icon from '../components/Icon';
 import LoadingScreen from '../components/LoadingScreen';
 import { useTickets, useTicket, useUpdateTicketStatus, useSendTicketMessage } from '../hooks';
 import { formatDate } from '../lib/utils';
+import type { SupportTicket, SupportMessage } from '../api/support';
+
+// Tickets can be opened by guests (no User row) — fall back to guestName.
+// Returns a safe display name and a single-character avatar initial.
+function getRequesterDisplay(ticket: Pick<SupportTicket, 'user' | 'guestName' | 'guestEmail'> | null | undefined): { name: string; initial: string; isGuest: boolean } {
+  if (!ticket) return { name: '', initial: '?', isGuest: false };
+  if (ticket.user) {
+    const first = ticket.user.firstName || '';
+    const last = ticket.user.lastName || '';
+    const full = `${first} ${last}`.trim() || 'User';
+    const initial = (first || last || 'U').charAt(0).toUpperCase();
+    return { name: full, initial, isGuest: false };
+  }
+  const guest = ticket.guestName || ticket.guestEmail || 'Guest';
+  return { name: guest, initial: (guest.charAt(0) || 'G').toUpperCase(), isGuest: true };
+}
+
+// Sender on a TicketMessage is null for guest-authored messages.
+function getSenderInitial(msg: SupportMessage, fallback: string = 'U'): string {
+  const c = msg.sender?.firstName?.charAt(0) || msg.sender?.lastName?.charAt(0);
+  return (c || fallback || '?').toUpperCase();
+}
 
 export function Support() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -142,6 +164,7 @@ export function Support() {
           <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
             {tickets.map((ticket) => {
               const priorityStyle = getPriorityStyle(ticket.priority);
+              const requester = getRequesterDisplay(ticket);
               return (
                 <button
                   key={ticket.id}
@@ -153,7 +176,12 @@ export function Support() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-800 truncate">{ticket.subject}</p>
-                      <p className="text-sm text-gray-500 mt-1">{ticket.user.firstName} {ticket.user.lastName}</p>
+                      <p className="text-sm text-gray-500 mt-1 truncate">
+                        {requester.name}
+                        {requester.isGuest && (
+                          <span className="ml-1 text-xs text-gray-400">(Guest)</span>
+                        )}
+                      </p>
                     </div>
                     <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${priorityStyle.dot}`}></span>
@@ -179,12 +207,15 @@ export function Support() {
               <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white font-semibold">
-                    {selectedTicket.user.firstName[0]}
+                    {getRequesterDisplay(selectedTicket).initial}
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">{selectedTicket.subject}</h3>
                     <p className="text-sm text-gray-500">
-                      {selectedTicket.user.firstName} {selectedTicket.user.lastName}
+                      {getRequesterDisplay(selectedTicket).name}
+                      {getRequesterDisplay(selectedTicket).isGuest && (
+                        <span className="ml-1 text-xs text-gray-400">(Guest)</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -218,7 +249,7 @@ export function Support() {
                     {msg.isFromUser ? (
                       <>
                         <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
-                          {msg.sender.firstName[0]}
+                          {getSenderInitial(msg, getRequesterDisplay(selectedTicket).initial)}
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-none p-4 max-w-[70%] shadow-sm hover:shadow-md transition-shadow duration-200">
                           <p className="text-sm text-gray-800">{msg.content}</p>
@@ -285,6 +316,7 @@ export function Support() {
             <div className="divide-y divide-gray-100">
               {tickets.map((ticket) => {
                 const priorityStyle = getPriorityStyle(ticket.priority);
+                const requester = getRequesterDisplay(ticket);
                 return (
                   <button
                     key={ticket.id}
@@ -297,7 +329,12 @@ export function Support() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800">{ticket.subject}</p>
-                        <p className="text-sm text-gray-500 mt-1">{ticket.user.firstName} {ticket.user.lastName}</p>
+                        <p className="text-sm text-gray-500 mt-1 truncate">
+                          {requester.name}
+                          {requester.isGuest && (
+                            <span className="ml-1 text-xs text-gray-400">(Guest)</span>
+                          )}
+                        </p>
                       </div>
                       <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${priorityStyle.dot}`}></span>
@@ -330,7 +367,10 @@ export function Support() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-gray-800 truncate">{selectedTicket?.subject}</h3>
                 <p className="text-sm text-gray-500 truncate">
-                  {selectedTicket?.user.firstName} {selectedTicket?.user.lastName}
+                  {getRequesterDisplay(selectedTicket).name}
+                  {getRequesterDisplay(selectedTicket).isGuest && (
+                    <span className="ml-1 text-xs text-gray-400">(Guest)</span>
+                  )}
                 </p>
               </div>
               {selectedTicket?.status !== 'RESOLVED' && (
@@ -361,7 +401,7 @@ export function Support() {
                     {msg.isFromUser ? (
                       <>
                         <div className="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">
-                          {msg.sender.firstName[0]}
+                          {getSenderInitial(msg, getRequesterDisplay(selectedTicket).initial)}
                         </div>
                         <div className="bg-white border border-gray-100 rounded-xl rounded-tl-none p-3 max-w-[80%] shadow-sm hover:shadow-md transition-shadow duration-200">
                           <p className="text-sm text-gray-800">{msg.content}</p>

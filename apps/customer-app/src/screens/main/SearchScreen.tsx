@@ -153,7 +153,7 @@ export default function SearchScreen() {
         </View>
       </Card.Content>
     </Card>
-  ), [navigation]);
+  ), [navigation, styles, COLORS]);
 
   const renderEmptyState = () => {
     if (isLoading) return null;

@@ -4,12 +4,14 @@ export type SalonType = 'BARBERSHOP' | 'HAIR_SALON' | 'BEAUTY_SALON' | 'NAIL_SAL
 export type SalonStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 export type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type BusinessType = 'INDIVIDUAL' | 'REGISTERED_COMPANY';
+export type ProviderCategory = 'BUSINESS' | 'FREELANCER';
 
 export interface Salon {
   id: string;
   businessName: string;
   description: string | null;
   type: SalonType;
+  providerCategory: ProviderCategory;
   status: SalonStatus;
   phoneNumber: string;
   email: string | null;
@@ -113,9 +115,10 @@ export interface SalonDetails extends Salon {
 export interface CreateSalonData {
   businessName: string;
   type: SalonType;
+  providerCategory: ProviderCategory;
   phoneNumber: string;
   email?: string;
-  address: string;
+  address?: string;
   city: string;
   region: string;
   openingTime: string;
@@ -123,6 +126,9 @@ export interface CreateSalonData {
   workingDays: string[];
   description?: string;
   ownerEmail?: string;
+  ownerFirstName?: string;
+  ownerLastName?: string;
+  ownerPhoneNumber?: string;
   latitude?: number;
   longitude?: number;
   hasParking?: boolean;

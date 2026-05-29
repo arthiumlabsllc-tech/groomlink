@@ -4,7 +4,6 @@ import Header from './components/Header'
 import Hero from './components/Hero'
 import HowItWorks from './components/HowItWorks'
 import NearbySalons from './components/NearbySalons'
-import CityDiscovery from './components/CityDiscovery'
 import PopularCategories from './components/PopularCategories'
 import Testimonials from './components/Testimonials'
 import TrustBadges from './components/TrustBadges'
@@ -21,6 +20,9 @@ import Register from './pages/Register'
 import SalonDetail from './pages/SalonDetail'
 import Explore from './pages/Explore'
 import PartnerWithUs from './pages/PartnerWithUs'
+import Support from './pages/Support'
+import About from './pages/About'
+import ComingSoon from './pages/ComingSoon'
 
 /* Floating Partner CTA for desktop - slides in after scrolling */
 function FloatingPartnerBanner() {
@@ -92,7 +94,6 @@ function DesktopLanding() {
         <Hero />
         <HowItWorks />
         <NearbySalons />
-        <CityDiscovery />
         <PopularCategories />
         <TrustBadges />
         <Testimonials />
@@ -135,6 +136,16 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/partners" element={<PartnerWithUs />} />
           <Route path="/for-salon-owners" element={<PartnerWithUs />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/contact" element={<Support />} />
+          <Route path="/help" element={<Support />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/careers" element={<ComingSoon />} />
+          <Route path="/blog" element={<ComingSoon />} />
+          <Route path="/press" element={<ComingSoon />} />
+          <Route path="/download" element={<ComingSoon />} />
+          <Route path="/app" element={<ComingSoon />} />
+          <Route path="/get-app" element={<ComingSoon />} />
         </Routes>
       </Suspense>
       <ChatWidget />

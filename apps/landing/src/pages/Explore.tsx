@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import BottomNav from '../components/BottomNav'
+import LocationPicker from '../components/LocationPicker'
+import { useSavedLocation, appendLocationParams } from '../hooks/useSavedLocation'
 import { HaircutIcon, BarberIcon, NailsIcon, BraidingIcon, MassageIcon, DreadlocksIcon } from '../components/CategoryIcons'
 
 interface Salon {
@@ -138,6 +140,7 @@ export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState(initialCategory)
   const [sortBy, setSortBy] = useState<'default' | 'rating' | 'price'>('default')
+  const savedLocation = useSavedLocation()
 
   const fetchSalons = useCallback(async () => {
     setLoading(true)
@@ -148,6 +151,7 @@ export default function Explore() {
       if (searchQuery) params.set('search', searchQuery)
       if (activeCategory) params.set('category', activeCategory)
       if (sortBy === 'rating') params.set('sort', 'rating')
+      appendLocationParams(params, savedLocation)
 
       const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
       if (!response.ok) throw new Error('Failed to fetch salons')
@@ -176,7 +180,7 @@ export default function Explore() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, activeCategory, sortBy])
+  }, [searchQuery, activeCategory, sortBy, savedLocation])
 
   useEffect(() => {
     fetchSalons()
@@ -204,9 +208,12 @@ export default function Explore() {
       {/* Header */}
       <div className="bg-gradient-to-b from-[#1a0a0b] via-[#2d1215] to-[#1a1a1a] pt-6 pb-4 px-4 sticky top-0 z-40">
         {/* Title */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-1 h-6 bg-[#CE1126] rounded-full" />
-          <h1 className="text-xl font-bold text-white">Explore Salons</h1>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-1 h-6 bg-[#CE1126] rounded-full flex-shrink-0" />
+            <h1 className="text-xl font-bold text-white truncate">Explore Salons</h1>
+          </div>
+          <LocationPicker variant="hero" autoPrompt={false} className="flex-shrink-0" />
         </div>
 
         {/* Search Bar */}
@@ -316,7 +323,9 @@ export default function Explore() {
             <p className="text-gray-500 text-sm mb-4">
               {searchQuery || activeCategory
                 ? 'Try adjusting your search or filters'
-                : 'Check back soon for new salons'}
+                : savedLocation
+                  ? <>No salons in <span className="font-semibold">{savedLocation.label}</span> yet. Try a nearby city.</>
+                  : 'Check back soon for new salons'}
             </p>
             {(searchQuery || activeCategory) && (
               <button

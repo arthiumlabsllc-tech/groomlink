@@ -32,6 +32,8 @@ export function Settings() {
     siteName: '',
     email: '',
     phoneNumber: '',
+    whatsappNumber: '',
+    backupPhoneNumber: '',
     address: '',
     logoUrl: '',
   });
@@ -58,6 +60,9 @@ export function Settings() {
     hubtelMerchantAccountId: '',
     paystackPublicKey: '',
     paystackSecretKey: '',
+    thetellerApiKey: '',
+    thetellerApiUser: '',
+    thetellerMerchantId: '',
     isPaymentTestMode: true,
     transactionFeePercent: 1.95,
   });
@@ -76,6 +81,8 @@ export function Settings() {
         siteName: settings.siteName || '',
         email: settings.email || '',
         phoneNumber: settings.phoneNumber || '',
+        whatsappNumber: (settings as any).whatsappNumber || '',
+        backupPhoneNumber: (settings as any).backupPhoneNumber || '',
         address: settings.address || '',
         logoUrl: settings.logoUrl || '',
       });
@@ -102,6 +109,9 @@ export function Settings() {
         hubtelMerchantAccountId: paymentSettings.hubtelMerchantAccountId || '',
         paystackPublicKey: paymentSettings.paystackPublicKey || '',
         paystackSecretKey: paymentSettings.paystackSecretKey || '',
+        thetellerApiKey: (paymentSettings as any).thetellerApiKey || '',
+        thetellerApiUser: (paymentSettings as any).thetellerApiUser || '',
+        thetellerMerchantId: (paymentSettings as any).thetellerMerchantId || '',
         isPaymentTestMode: paymentSettings.isPaymentTestMode ?? true,
         transactionFeePercent: paymentSettings.transactionFeePercent ?? 1.95,
       });
@@ -198,6 +208,18 @@ export function Settings() {
       }
     }
 
+    if (paymentFormData.paymentGateway === 'theteller') {
+      const hasApiKey = paymentFormData.thetellerApiKey.trim().length > 0;
+      const hasApiUser = paymentFormData.thetellerApiUser.trim().length > 0;
+      const hasMerchantId = paymentFormData.thetellerMerchantId.trim().length > 0;
+      const hasExistingTheTeller = (providerStatus?.providers as any)?.theteller?.configured;
+
+      if (!hasExistingTheTeller && (!hasApiKey || !hasApiUser || !hasMerchantId)) {
+        setPaymentError('TheTeller API Key, API User, and Merchant ID are required to use TheTeller as the payment gateway.');
+        return;
+      }
+    }
+
     try {
       await updatePaymentSettings.mutateAsync({
         paymentGateway: paymentFormData.paymentGateway,
@@ -206,6 +228,9 @@ export function Settings() {
         hubtelMerchantAccountId: paymentFormData.hubtelMerchantAccountId || null,
         paystackPublicKey: paymentFormData.paystackPublicKey || null,
         paystackSecretKey: paymentFormData.paystackSecretKey || null,
+        thetellerApiKey: paymentFormData.thetellerApiKey || null,
+        thetellerApiUser: paymentFormData.thetellerApiUser || null,
+        thetellerMerchantId: paymentFormData.thetellerMerchantId || null,
         isPaymentTestMode: paymentFormData.isPaymentTestMode,
         transactionFeePercent: paymentFormData.transactionFeePercent,
       });
@@ -349,7 +374,7 @@ export function Settings() {
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <Icon name="call" size={14} className="text-gray-400" />
-                  Phone Number
+                  Phone Number (Primary)
                 </label>
                 <input
                   type="tel"
@@ -358,6 +383,39 @@ export function Settings() {
                   className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
                   placeholder="+233 XX XXX XXXX"
                 />
+                <p className="mt-1 text-xs text-gray-500">Main calling number displayed on support page</p>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366" className="flex-shrink-0">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                  </svg>
+                  WhatsApp Number
+                </label>
+                <input
+                  type="tel"
+                  value={formData.whatsappNumber}
+                  onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/30 transition-all duration-200 text-sm sm:text-base"
+                  placeholder="+233 XX XXX XXXX"
+                />
+                <p className="mt-1 text-xs text-gray-500">WhatsApp Business number for messaging (can be different from calling number)</p>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <Icon name="phone_in_talk" size={14} className="text-gray-400" />
+                  Backup Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={formData.backupPhoneNumber}
+                  onChange={(e) => setFormData({ ...formData, backupPhoneNumber: e.target.value })}
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm sm:text-base"
+                  placeholder="+233 XX XXX XXXX"
+                />
+                <p className="mt-1 text-xs text-gray-500">Secondary calling number (optional)</p>
               </div>
 
               <div>
@@ -722,6 +780,16 @@ export function Settings() {
                           : 'Not Configured'}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">TheTeller Credentials</span>
+                      <span className={`text-sm font-medium ${
+                        (providerStatus.providers as any).theteller?.configured ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {(providerStatus.providers as any).theteller?.configured
+                          ? `Configured (${(providerStatus.providers as any).theteller.source})`
+                          : 'Not Configured'}
+                      </span>
+                    </div>
                   </div>
                   {paymentFormData.paymentGateway === 'hubtel' && !providerStatus.providers.hubtel.configured && (
                     <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
@@ -733,6 +801,12 @@ export function Settings() {
                     <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
                       <Icon name="error" size={14} className="inline mr-1" />
                       Paystack credentials are required to use Paystack as the payment gateway.
+                    </div>
+                  )}
+                  {paymentFormData.paymentGateway === 'theteller' && !(providerStatus.providers as any).theteller?.configured && (
+                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                      <Icon name="error" size={14} className="inline mr-1" />
+                      TheTeller credentials are required to use TheTeller as the payment gateway.
                     </div>
                   )}
                 </div>
@@ -750,18 +824,21 @@ export function Settings() {
                 >
                   <option value="hubtel">Hubtel (Mobile Money)</option>
                   <option value="paystack">Paystack (Cards + Mobile Money)</option>
+                  <option value="theteller">TheTeller (Cards + All Mobile Money Networks)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   {paymentFormData.paymentGateway === 'hubtel' 
                     ? 'Best for: Mobile Money payments with instant payouts'
-                    : 'Best for: Card payments, bank transfers, and wider payment support'}
+                    : paymentFormData.paymentGateway === 'paystack'
+                    ? 'Best for: Card payments, bank transfers, and wider payment support'
+                    : 'Best for: All Ghana mobile money networks + cards (MTN, Vodafone, AirtelTigo, G-Money, Visa, Mastercard)'}
                 </p>
               </div>
 
               {/* API Credentials Section */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  {paymentFormData.paymentGateway === 'hubtel' ? 'Hubtel' : 'Paystack'} API Credentials
+                  {paymentFormData.paymentGateway === 'hubtel' ? 'Hubtel' : paymentFormData.paymentGateway === 'paystack' ? 'Paystack' : 'TheTeller'} API Credentials
                 </h3>
 
                 {/* Hubtel Configuration Section */}
@@ -977,6 +1054,136 @@ export function Settings() {
                             <li>Configure webhook URL: <code className="bg-blue-100 px-1 rounded">https://groomlinkgh.com/api/payments/webhook/paystack</code></li>
                             <li>Use test keys (pk_test/sk_test) for development</li>
                             <li>Switch to live keys (pk_live/sk_live) when ready for production</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TheTeller Configuration Section */}
+                {paymentFormData.paymentGateway === 'theteller' && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-4">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                      </svg>
+                      TheTeller Configuration
+                    </h3>
+
+                    {/* TheTeller API Key */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        API Key
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type={showSecretKey ? 'text' : 'password'}
+                          value={paymentFormData.thetellerApiKey || ''}
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, thetellerApiKey: e.target.value })}
+                          className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                          placeholder="your-theteller-api-key"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecretKey(!showSecretKey)}
+                          className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 transition-colors"
+                          title="Toggle visibility"
+                        >
+                          {showSecretKey ? <Icon name="visibility_off" size={18} /> : <Icon name="visibility" size={18} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(paymentFormData.thetellerApiKey || '', 'thetellerApiKey')}
+                          disabled={!paymentFormData.thetellerApiKey}
+                          className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          {copiedField === 'thetellerApiKey' ? (
+                            <Icon name="check" size={18} className="text-green-500" />
+                          ) : (
+                            <Icon name="content_copy" size={18} className="text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Get from: <a href="https://portal.theteller.net" target="_blank" rel="noopener noreferrer" className="text-[#006B3F] hover:underline">TheTeller Dashboard → Settings → API Keys</a>
+                      </p>
+                    </div>
+
+                    {/* TheTeller API User */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        API User
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={paymentFormData.thetellerApiUser || ''}
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, thetellerApiUser: e.target.value })}
+                          className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                          placeholder="your-theteller-api-user"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(paymentFormData.thetellerApiUser || '', 'thetellerApiUser')}
+                          disabled={!paymentFormData.thetellerApiUser}
+                          className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          {copiedField === 'thetellerApiUser' ? (
+                            <Icon name="check" size={18} className="text-green-500" />
+                          ) : (
+                            <Icon name="content_copy" size={18} className="text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* TheTeller Merchant ID */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Merchant ID
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={paymentFormData.thetellerMerchantId || ''}
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, thetellerMerchantId: e.target.value })}
+                          className="flex-1 px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 font-mono text-sm"
+                          placeholder="your-theteller-merchant-id"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(paymentFormData.thetellerMerchantId || '', 'thetellerMerchantId')}
+                          disabled={!paymentFormData.thetellerMerchantId}
+                          className="px-3 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          {copiedField === 'thetellerMerchantId' ? (
+                            <Icon name="check" size={18} className="text-green-500" />
+                          ) : (
+                            <Icon name="content_copy" size={18} className="text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Your unique merchant identifier from TheTeller
+                      </p>
+                    </div>
+
+                    {/* TheTeller Info Box */}
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <Icon name="info" size={20} className="text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-green-800">
+                          <p className="font-medium mb-1">TheTeller Setup Tips:</p>
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            <li>Supports all Ghana mobile money networks (MTN, Vodafone, AirtelTigo, G-Money)</li>
+                            <li>Accepts Visa, Mastercard, UnionPay, and Tela cards</li>
+                            <li>Configure webhook URL: <code className="bg-green-100 px-1 rounded">https://groomlinkgh.com/api/payments/webhook/theteller</code></li>
+                            <li>Contact TheTeller support for test credentials</li>
+                            <li>Lower fees than Paystack for mobile money transactions</li>
                           </ul>
                         </div>
                       </div>

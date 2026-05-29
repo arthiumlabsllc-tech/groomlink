@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Icon from '../components/Icon';
+import { MTNLogo, VodafoneLogo, AirtelTigoLogo } from '../components/PaymentLogos';
 import apiClient, { bookingApi, paymentApi, queueApi, QueueStatus, BookingGuest, NoShowStatus, waitlistApi, WaitlistEntry } from '../lib/api';
 
 // Types
@@ -1261,40 +1262,22 @@ export default function BookSalon() {
       id: 'MTN_MOMO' as PaymentProvider,
       name: 'MTN Mobile Money',
       description: 'Pay with MTN MoMo',
-      color: 'bg-[#FFCC00]',
-      textColor: 'text-gray-900',
       borderColor: 'border-[#FFCC00]',
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-[#FFCC00] flex items-center justify-center font-bold text-gray-900 text-xs">
-          MTN
-        </div>
-      ),
+      icon: <MTNLogo size={48} />,
     },
     {
       id: 'VODAFONE_CASH' as PaymentProvider,
       name: 'Vodafone Cash',
       description: 'Pay with Vodafone Cash',
-      color: 'bg-[#E60000]',
-      textColor: 'text-white',
       borderColor: 'border-[#E60000]',
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-[#E60000] flex items-center justify-center font-bold text-white text-xs">
-          VOD
-        </div>
-      ),
+      icon: <VodafoneLogo size={48} />,
     },
     {
       id: 'AIRTELTIGO_MONEY' as PaymentProvider,
       name: 'AirtelTigo Money',
       description: 'Pay with AirtelTigo',
-      color: 'bg-gradient-to-r from-[#E60000] to-[#0066CC]',
-      textColor: 'text-white',
       borderColor: 'border-[#0066CC]',
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#E60000] to-[#0066CC] flex items-center justify-center font-bold text-white text-xs">
-          AT
-        </div>
-      ),
+      icon: <AirtelTigoLogo size={48} />,
     },
   ];
 
@@ -1520,18 +1503,22 @@ export default function BookSalon() {
 
       {/* Pay Securely With */}
       <div className="text-center py-3">
-        <p className="text-xs text-gray-400 mb-2">Pay securely with</p>
-        <div className="flex flex-wrap justify-center items-center gap-2">
-          {['MTN MoMo', 'Vodafone Cash', 'AirtelTigo Money'].map((method) => (
-            <span
-              key={method}
-              className="px-2.5 py-1 bg-gray-100 rounded-md text-[10px] font-medium text-gray-600 border border-gray-200"
-            >
-              {method}
-            </span>
-          ))}
+        <p className="text-xs text-gray-400 mb-3">Pay securely with</p>
+        <div className="flex justify-center items-center gap-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <MTNLogo size={32} />
+            <span className="text-xs font-semibold text-gray-700">MTN MoMo</span>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <VodafoneLogo size={32} />
+            <span className="text-xs font-semibold text-gray-700">Vodafone Cash</span>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <AirtelTigoLogo size={32} />
+            <span className="text-xs font-semibold text-gray-700">AirtelTigo</span>
+          </div>
         </div>
-        <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-gray-400">
+        <div className="flex items-center justify-center gap-1 mt-3 text-[10px] text-gray-400">
           <Icon name="lock" size={10} className="text-green-600" />
           <span>End-to-end encrypted by Paystack</span>
         </div>

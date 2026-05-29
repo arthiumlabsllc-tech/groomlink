@@ -221,6 +221,15 @@ export async function getBrandedPage(slug: string) {
     return null;
   }
 
+  // Hide branded pages whose underlying salon is not APPROVED (suspended/rejected/pending)
+  const salonStatus = await prisma.salon.findUnique({
+    where: { id: brandedPage.salonId },
+    select: { status: true },
+  });
+  if (!salonStatus || salonStatus.status !== SalonStatus.APPROVED) {
+    return null;
+  }
+
   return brandedPage;
 }
 

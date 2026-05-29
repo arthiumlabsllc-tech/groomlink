@@ -5,6 +5,7 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import {
   Text,
@@ -62,7 +63,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function BookingsScreen() {
   const navigation = useNavigation<any>();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { isAuthenticated, logout } = useAuthStore();
@@ -344,6 +345,13 @@ export default function BookingsScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header */}
       <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Image
+            source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+        </View>
         <Text variant="headlineSmall" style={styles.headerTitle}>My Bookings</Text>
       </View>
 
@@ -408,6 +416,16 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   header: {
     padding: 16,
     backgroundColor: COLORS.cardBackground,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerLogo: {
+    width: 100,
+    height: 30,
   },
   headerTitle: {
     fontWeight: 'bold',

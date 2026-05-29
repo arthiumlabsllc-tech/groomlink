@@ -14,7 +14,7 @@ import {
   Cell,
 } from 'recharts';
 import Icon from '../components/Icon';
-import { useDashboardStats, useDashboardMetrics, useRecentActivities, useComprehensiveRevenueStats, useHubtelBalance, useSystemMonitoring } from '../hooks';
+import { useDashboardStats, useDashboardMetrics, useRecentActivities, useComprehensiveRevenueStats, useGatewayBalance, useSystemMonitoring } from '../hooks';
 import LoadingScreen from '../components/LoadingScreen';
 import { formatCurrency } from '../lib/utils';
 
@@ -422,7 +422,7 @@ export function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics(period);
   const { data: revenueStats, isLoading: revenueStatsLoading } = useComprehensiveRevenueStats();
-  const { data: hubtelBalance, isLoading: hubtelBalanceLoading } = useHubtelBalance();
+  const { data: gatewayBalance, isLoading: gatewayBalanceLoading } = useGatewayBalance();
   const greeting = useGreeting();
   
   useFadeSection();
@@ -485,9 +485,17 @@ export function Dashboard() {
   const pendingPayouts = revenueStats?.pendingPayouts || 0;
   const completedPayouts = revenueStats?.completedPayouts || 0;
 
-  // Get Hubtel balance (GHS)
-  const ghsBalance = hubtelBalance?.balances?.find(b => b.currency === 'GHS');
-  const hubtelBalanceAmount = ghsBalance?.balance || 0;
+  // Active gateway balance (Paystack or Hubtel — driven by admin Settings → Payment)
+  const ghsBalance = gatewayBalance?.balances?.find(b => b.currency === 'GHS');
+  const gatewayBalanceAmount = ghsBalance?.balance || 0;
+  const activeGatewayName = gatewayBalance?.provider === 'paystack'
+    ? 'Paystack'
+    : gatewayBalance?.provider === 'hubtel'
+      ? 'Hubtel'
+      : 'Gateway';
+  const gatewayBalanceSubtitle = gatewayBalanceLoading
+    ? 'Loading...'
+    : (gatewayBalance?.note ? gatewayBalance.note : 'real-time');
 
   const salonStatusData = [
     { name: 'Approved', value: (stats?.stats as { approvedSalons?: number })?.approvedSalons || 0, color: GHANA_COLORS.green },
@@ -549,9 +557,9 @@ export function Dashboard() {
   // Financial stats cards
   const financialStatsCards = [
     {
-      title: 'Hubtel Balance',
-      value: formatCurrency(hubtelBalanceAmount),
-      subtitle: hubtelBalanceLoading ? 'Loading...' : 'real-time',
+      title: `${activeGatewayName} Balance`,
+      value: formatCurrency(gatewayBalanceAmount),
+      subtitle: gatewayBalanceSubtitle,
       icon: 'account_balance_wallet',
       borderColor: 'border-l-purple-500',
       iconBg: 'bg-purple-50',

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as userController from '../controllers/user.controller';
 import { authenticateToken, requireRole, requireAdminOrHigher } from '../middleware/auth';
 import { UserRole } from '../middleware/auth';
+import { requirePermission } from '../middleware/permission';
 import upload from '../middleware/upload';
 
 const router = Router();
@@ -41,8 +42,8 @@ router.get('/', authenticateToken, requireAdminOrHigher, userController.getAllUs
 router.put('/:id/status', authenticateToken, requireAdminOrHigher, userController.updateUserStatus);
 router.delete('/:id', authenticateToken, requireAdminOrHigher, userController.adminDeleteUser);
 
-// Support staff management (ADMIN and SUPER_ADMIN)
-router.post('/support-staff', authenticateToken, requireAdminOrHigher, userController.createSupportStaff);
-router.get('/support-staff', authenticateToken, requireAdminOrHigher, userController.getSupportStaff);
+// Support staff management (requires 'support-staff' permission)
+router.post('/support-staff', authenticateToken, requireAdminOrHigher, requirePermission('support-staff'), userController.createSupportStaff);
+router.get('/support-staff', authenticateToken, requireAdminOrHigher, requirePermission('support-staff'), userController.getSupportStaff);
 
 export default router;

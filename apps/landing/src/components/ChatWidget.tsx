@@ -117,6 +117,16 @@ export default function ChatWidget() {
     document.addEventListener('click', init);
   }, []);
 
+  // Listen for external requests to open the chat (e.g. from Support page "Start Live Chat" button)
+  useEffect(() => {
+    const handler = () => {
+      setOpen(true);
+      setUnread(0);
+    };
+    window.addEventListener('chat:open', handler);
+    return () => window.removeEventListener('chat:open', handler);
+  }, []);
+
   // Poll for new messages while session exists
   useEffect(() => {
     if (!session) return;
@@ -272,7 +282,7 @@ export default function ChatWidget() {
       {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#006B3F] hover:bg-[#005232] text-white shadow-2xl flex items-center justify-center transition-all hover:scale-105 md:bottom-8 md:right-8"
+        className="fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full bg-[#006B3F] hover:bg-[#005232] text-white shadow-2xl flex items-center justify-center transition-all hover:scale-105 md:bottom-8 md:right-8"
         aria-label={open ? 'Close support chat' : 'Open support chat'}
       >
         {open ? (
@@ -294,7 +304,7 @@ export default function ChatWidget() {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-24 right-4 z-50 w-[calc(100%-2rem)] max-w-sm md:right-8 md:bottom-28 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200" style={{ height: '520px', maxHeight: '80vh' }}>
+        <div className="fixed bottom-44 right-4 z-50 w-[calc(100%-2rem)] max-w-sm md:right-8 md:bottom-28 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200" style={{ height: '520px', maxHeight: '80vh' }}>
           {/* Header */}
           <div className="bg-gradient-to-r from-[#006B3F] to-[#004d2d] text-white px-4 py-3 flex items-center justify-between">
             <div>

@@ -44,12 +44,12 @@ const createColors = (t: AppTheme) => ({
 });
 
 // App version from expo config
-const APP_VERSION = Constants.expoConfig?.version || Constants.manifest?.version || '1.0.0';
+const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { user, setUser, logout, isAuthenticated } = useAuthStore();
@@ -271,6 +271,14 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={styles.profileHeader}>
+          {/* GroomLink Logo */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
           <View style={styles.avatarContainer}>
             {profileImage ? (
               <Image source={{ uri: profileImage }} style={styles.profileImage} />
@@ -526,6 +534,13 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 4,
+  },
+  logoContainer: {
+    marginBottom: 16,
+  },
+  logoImage: {
+    width: 140,
+    height: 40,
   },
   avatarContainer: {
     position: 'relative',

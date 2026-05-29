@@ -107,6 +107,20 @@ router.post(
 );
 
 /**
+ * @route POST /api/uploads/branded-page/:salonId/logo
+ * @desc Upload a branded-page logo (separate from the salon's main logo).
+ *       Writes to brandedPage.logoUrl — never touches salon.logo.
+ * @access Private (Salon owner only)
+ */
+router.post(
+  '/branded-page/:salonId/logo',
+  requireRole('SALON_OWNER', 'ADMIN'),
+  uploadSalon.single('logo'),
+  handleMulterError,
+  uploadController.uploadBrandedPageLogo.bind(uploadController)
+);
+
+/**
  * @route POST /api/uploads/salon/:salonId/cover
  * @desc Upload salon cover image
  * @access Private (Salon owner only)

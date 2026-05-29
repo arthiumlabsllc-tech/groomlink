@@ -14,6 +14,9 @@ export interface AdminUser {
   email: string | null;
   role: 'ADMIN' | 'SUPER_ADMIN' | 'SUPPORT' | 'SALON_OWNER' | 'CUSTOMER';
   isVerified: boolean;
+  permissions?: {
+    pages: string[];
+  } | null;
 }
 
 export interface EmailOTPRequest {

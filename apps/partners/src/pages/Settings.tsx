@@ -97,6 +97,7 @@ export default function Settings() {
     bufferTimeMinutes: 0,
     operatingModel: 'APPOINTMENTS_ONLY' as 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED',
     serviceAreas: '' as string, // Comma-separated for freelancers
+    ghanaPostGPS: '', // Optional GhanaPost GPS code
   })
 
   // Image upload state
@@ -205,7 +206,8 @@ export default function Settings() {
             maxConcurrentClients: salonData.maxConcurrentClients || 1,
             totalChairs: salonData.totalChairs || 1,
             bufferTimeMinutes: salonData.bufferTimeMinutes || 0,
-            operatingModel: salonData.operatingModel || 'APPOINTMENTS_ONLY'
+            operatingModel: salonData.operatingModel || 'APPOINTMENTS_ONLY',
+            ghanaPostGPS: (salonData as any).ghanaPostGPS || '',
           }))
         } else {
           // No salon found - this is a new partner
@@ -350,6 +352,7 @@ export default function Settings() {
           phoneNumber: formData.phoneNumber,
           email: formData.email || undefined,
           serviceAreas,
+          ghanaPostGPS: formData.ghanaPostGPS.trim() || undefined,
         }
 
         // Business-specific fields
@@ -403,6 +406,7 @@ export default function Settings() {
           region: formData.region,
           phoneNumber: formData.phoneNumber,
           email: formData.email,
+          ghanaPostGPS: formData.ghanaPostGPS.trim() || undefined,
           openingTime: getOpeningTime(formData.businessHours),
           closingTime: getClosingTime(formData.businessHours),
           workingDays: getWorkingDays(formData.businessHours),
@@ -974,6 +978,28 @@ export default function Settings() {
                     required
                   />
                 </div>
+              </div>
+
+              {/* GhanaPost GPS Code */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  GhanaPost GPS Code
+                  <span className="ml-2 text-xs font-normal text-gray-400">(Optional)</span>
+                </label>
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  </svg>
+                  <input
+                    type="text"
+                    className="input-field pl-10 uppercase"
+                    placeholder="e.g., GA-184-9524"
+                    value={formData.ghanaPostGPS}
+                    onChange={(e) => setFormData({ ...formData, ghanaPostGPS: e.target.value.toUpperCase() })}
+                    maxLength={20}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-400">Your GhanaPost digital address code. Open the GhanaPostGPS app to find yours.</p>
               </div>
 
               {/* Phone Number */}

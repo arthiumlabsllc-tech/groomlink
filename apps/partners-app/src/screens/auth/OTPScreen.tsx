@@ -161,7 +161,7 @@ export default function OTPScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
-            source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
+            source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -272,7 +272,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   logoImage: {
-    width: 48,
+    width: 160,
     height: 48,
   },
   title: {

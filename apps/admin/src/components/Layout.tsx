@@ -57,13 +57,32 @@ export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
 
-  // All admin users (ADMIN and SUPER_ADMIN) have access to all pages
-  // No page-level permission filtering needed
-  const filteredNavItems = navItems;
+  // Check if user has permission for a specific page
+  const hasPermission = (pageId: string): boolean => {
+    // SUPER_ADMIN has access to everything
+    if (user?.role === 'SUPER_ADMIN') return true;
+    
+    // If no permissions object or empty pages array, deny access
+    if (!user?.permissions?.pages || user.permissions.pages.length === 0) {
+      return false;
+    }
+    
+    // Check if page is in user's allowed pages
+    return user.permissions.pages.includes(pageId);
+  };
+
+  // Filter navigation items based on user permissions
+  const filteredNavItems = navItems.filter(item => hasPermission(item.pageId));
   
-  // Show admin management to all admin users
-  // The backend will protect SUPER_ADMIN accounts from modification
-  const showAdminNav = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  // Show admin management only to SUPER_ADMIN
+  const showAdminNav = user?.role === 'SUPER_ADMIN' && hasPermission('admins');
+  
+  // Filter Trust & Safety items
+  const filteredTrustSafetyItems = trustSafetyNavItems.filter(item => hasPermission(item.pageId));
+  
+  // Check individual permissions for policy and settings
+  const showPolicy = hasPermission('policies');
+  const showSettings = hasPermission('settings');
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -193,12 +212,12 @@ export function Layout() {
           })}
 
           {/* Trust & Safety Section */}
-          {isSidebarOpen && (
+          {isSidebarOpen && filteredTrustSafetyItems.length > 0 && (
             <div className="px-4 pt-6 pb-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Trust & Safety</p>
             </div>
           )}
-          {trustSafetyNavItems.map((item) => {
+          {filteredTrustSafetyItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -218,7 +237,7 @@ export function Layout() {
           })}
 
           {/* Policies Link */}
-          {(() => {
+          {showPolicy && (() => {
             const isActive = location.pathname === policyNavItem.path;
             return (
               <Link
@@ -238,12 +257,14 @@ export function Layout() {
         </nav>
 
         {/* Settings Link */}
-        {isSidebarOpen && (
-          <div className="px-4 pt-2 pb-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Configuration</p>
-          </div>
-        )}
-        <div className="p-4 border-t border-gray-700/50">
+        {showSettings && (
+          <>
+            {isSidebarOpen && (
+              <div className="px-4 pt-2 pb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Configuration</p>
+              </div>
+            )}
+            <div className="p-4 border-t border-gray-700/50">
           {(() => {
             const isActive = location.pathname === settingsNavItem.path;
             return (
@@ -261,7 +282,9 @@ export function Layout() {
               </Link>
             );
           })()}
-        </div>
+          </div>
+          </>
+        )}
 
         {/* User Section & Logout */}
         <div className="p-4 border-t border-gray-700/50">

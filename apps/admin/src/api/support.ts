@@ -9,12 +9,15 @@ export interface SupportTicket {
   category: string;
   createdAt: string;
   updatedAt: string;
+  // Tickets opened by guest visitors (landing-page chat) have user=null and use guestName/guestEmail.
   user: {
     id: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-  };
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber: string | null;
+  } | null;
+  guestName?: string | null;
+  guestEmail?: string | null;
   messages: SupportMessage[];
 }
 
@@ -23,11 +26,12 @@ export interface SupportMessage {
   content: string;
   isFromUser: boolean;
   createdAt: string;
+  // sender is null for guest-authored messages (no User row).
   sender: {
     id: string;
-    firstName: string;
-    lastName: string;
-  };
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
 }
 
 export interface PaginatedTickets {

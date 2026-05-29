@@ -80,6 +80,19 @@ export interface HubtelBalance {
   rawBalance: number;
 }
 
+export interface GatewayBalance {
+  currency: string;
+  balance: number;
+  rawBalance: number;
+}
+
+export interface GatewayBalanceResponse {
+  provider: 'paystack' | 'hubtel' | null;
+  balances: GatewayBalance[];
+  fetchedAt: string;
+  note?: string;
+}
+
 export interface ChartDataPoint {
   date: string;
   value: number;
@@ -149,9 +162,15 @@ export const dashboardApi = {
     return response.data.data;
   },
 
-  // Get Hubtel balance
+  // Get Hubtel balance (legacy — kept for back-compat)
   getHubtelBalance: async (): Promise<{ balances: HubtelBalance[]; fetchedAt: string }> => {
     const response = await apiClient.get('/admin/hubtel-balance');
+    return response.data.data;
+  },
+
+  // Get the currently active gateway's balance (Paystack or Hubtel based on admin Settings)
+  getGatewayBalance: async (): Promise<GatewayBalanceResponse> => {
+    const response = await apiClient.get('/admin/gateway-balance');
     return response.data.data;
   },
 };

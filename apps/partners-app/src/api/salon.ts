@@ -17,6 +17,7 @@ export interface CreateSalonData {
   workingDays?: string[];
   description?: string;
   serviceAreas?: string[];
+  ghanaPostGPS?: string;
 }
 
 export const salonApi = {

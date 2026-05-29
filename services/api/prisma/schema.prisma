@@ -65,6 +65,7 @@ enum PaymentProvider {
   AIRTELTIGO_MONEY
   CASH
   PAYSTACK // Paystack (supports cards + mobile money)
+  THETELLER // TheTeller (supports cards + mobile money: MTN, Vodafone, AirtelTigo, G-Money)
 }
 
 enum NotificationType {
@@ -789,6 +790,8 @@ model SiteSettings {
   footerLogoUrl         String?  @map("footer_logo_url") // Footer logo
   email                 String?
   phoneNumber           String?
+  whatsappNumber        String?  @map("whatsapp_number")
+  backupPhoneNumber     String?  @map("backup_phone_number")
   address               String?
   maintenanceMode       Boolean  @default(false)
   maintenanceMsg        String?
@@ -799,6 +802,9 @@ model SiteSettings {
   hubtelApiId           String?  @map("hubtel_api_id")
   hubtelApiSecret       String?  @map("hubtel_api_secret")
   hubtelMerchantAccountId String? @map("hubtel_merchant_account_id")
+  thetellerApiKey       String?  @map("theteller_api_key")
+  thetellerApiUser      String?  @map("theteller_api_user")
+  thetellerMerchantId   String?  @map("theteller_merchant_id")
   isPaymentTestMode     Boolean  @default(true)
   transactionFeePercent Decimal? @db.Decimal(5, 2)
   updatedAt             DateTime @updatedAt

@@ -68,3 +68,15 @@ export function useHubtelBalance() {
     staleTime: 60 * 1000, // 1 minute
   });
 }
+
+/**
+ * Fetches the currently active payment gateway's balance.
+ * Auto-routes to Paystack or Hubtel based on admin Settings → Payment.
+ */
+export function useGatewayBalance() {
+  return useQuery({
+    queryKey: [DASHBOARD_KEY, 'gateway', 'balance'],
+    queryFn: () => dashboardApi.getGatewayBalance(),
+    staleTime: 60 * 1000, // 1 minute
+  });
+}

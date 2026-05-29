@@ -732,6 +732,8 @@ const siteSettingsSchema = z.object({
     z.string().email().optional()
   ),
   phoneNumber: z.string().optional(),
+  whatsappNumber: z.string().optional(),
+  backupPhoneNumber: z.string().optional(),
   address: z.string().optional(),
   logoUrl: z.preprocess(
     (val) => (val === '' ? undefined : val),
@@ -742,6 +744,8 @@ const siteSettingsSchema = z.object({
   // Convert undefined back to null for database nullable fields
   email: data.email ?? null,
   logoUrl: data.logoUrl ?? null,
+  whatsappNumber: data.whatsappNumber ?? null,
+  backupPhoneNumber: data.backupPhoneNumber ?? null,
 }));
 
 // Payment Settings Schema
@@ -1135,28 +1139,75 @@ export async function unbanUser(req: AuthenticatedRequest, res: Response): Promi
 
 // Salon Management (Admin)
 const adminCreateSalonSchema = z.object({
-  businessName: z.string().min(2),
+  businessName: z.string().min(2, 'Business name must be at least 2 characters'),
   type: z.enum(['BARBERSHOP', 'HAIR_SALON', 'PEDICURE_SALON', 'NAIL_SALON', 'SPA', 'BEAUTY_SALON']),
-  phoneNumber: z.string(),
-  address: z.string(),
-  city: z.string(),
-  region: z.string(),
-  latitude: z.number(),
-  longitude: z.number(),
-  openingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
-  closingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
-  workingDays: z.array(z.string()),
+  providerCategory: z.enum(['BUSINESS', 'FREELANCER']).optional().default('BUSINESS'),
+  phoneNumber: z.string().min(7, 'Valid phone number required'),
+  address: z.string().optional(),
+  city: z.string().min(1, 'City is required'),
+  region: z.string().min(1, 'Region is required'),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  openingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Opening time must be in HH:mm format'),
+  closingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Closing time must be in HH:mm format'),
+  workingDays: z.array(z.string()).min(1, 'Select at least one working day'),
   description: z.string().optional(),
-  email: z.string().email().optional(),
-  website: z.string().url().optional(),
+  email: z.string().email('Invalid email format').optional().or(z.literal('')),
+  website: z.string().url('Invalid website URL').optional().or(z.literal('')),
   ownerId: z.string().optional(),
-});
+  ownerEmail: z.string().email('Invalid owner email format').optional().or(z.literal('')),
+  ownerFirstName: z.string().optional(),
+  ownerLastName: z.string().optional(),
+  ownerPhoneNumber: z.string().optional(),
+}).refine(
+  (data) => data.providerCategory === 'FREELANCER' || (!!data.address && data.address.trim().length > 0),
+  { message: 'Address is required for business salons', path: ['address'] }
+);
 
 export async function adminCreateSalon(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const data = adminCreateSalonSchema.parse(req.body);
+    const isFreelancer = data.providerCategory === 'FREELANCER';
 
     let ownerId = data.ownerId;
+
+    // If ownerEmail provided (and no ownerId), look up existing user or create a new partner
+    if (!ownerId && data.ownerEmail) {
+      const existingUser = await prisma.user.findUnique({ where: { email: data.ownerEmail } });
+      if (existingUser) {
+        ownerId = existingUser.id;
+      } else if (data.ownerFirstName && data.ownerLastName) {
+        // Create a new partner account for the salon owner
+        if (data.ownerPhoneNumber) {
+          const phoneClash = await prisma.user.findUnique({ where: { phoneNumber: data.ownerPhoneNumber } });
+          if (phoneClash) {
+            errorResponse(res, 'PHONE_EXISTS', 'A user already exists with this phone number', 400);
+            return;
+          }
+        }
+        const newUser = await prisma.user.create({
+          data: {
+            email: data.ownerEmail,
+            firstName: data.ownerFirstName,
+            lastName: data.ownerLastName,
+            phoneNumber: data.ownerPhoneNumber || null,
+            role: UserRole.SALON_OWNER,
+            status: UserStatus.ACTIVE,
+            isVerified: true,
+          }
+        });
+        ownerId = newUser.id;
+        logger.info(`Admin ${req.user!.id} created new partner user ${newUser.id} for salon onboarding`);
+      } else {
+        errorResponse(
+          res,
+          'OWNER_NOT_FOUND',
+          'No user found with this email. Provide owner first name and last name to create a new partner account.',
+          400
+        );
+        return;
+      }
+    }
 
     // If ownerId provided, verify it exists
     if (ownerId) {
@@ -1167,33 +1218,49 @@ export async function adminCreateSalon(req: AuthenticatedRequest, res: Response)
       }
     }
 
+    // Apply freelancer-friendly defaults so the form can omit address / coords
+    const finalAddress = (data.address && data.address.trim().length > 0)
+      ? data.address.trim()
+      : (isFreelancer ? `${data.city}, ${data.region}` : '');
+
     const salon = await prisma.salon.create({
       data: {
         businessName: data.businessName,
         type: data.type as any,
+        providerCategory: data.providerCategory as any,
         phoneNumber: data.phoneNumber,
-        address: data.address,
+        address: finalAddress,
         city: data.city,
         region: data.region,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude: typeof data.latitude === 'number' ? data.latitude : null,
+        longitude: typeof data.longitude === 'number' ? data.longitude : null,
         openingTime: data.openingTime,
         closingTime: data.closingTime,
         workingDays: data.workingDays,
         description: data.description,
-        email: data.email,
-        website: data.website,
+        email: data.email || null,
+        website: data.website || null,
         status: SalonStatus.APPROVED,
         ownerId: ownerId || req.user!.id,
-      }
+        // Freelancer-specific defaults
+        acceptsWalkIns: isFreelancer ? false : true,
+        maxConcurrentClients: 1,
+        totalChairs: 1,
+        operatingModel: 'appointment_only',
+      } as any
     });
 
+    logger.info(`Admin ${req.user!.id} created salon ${salon.id} (${data.providerCategory}) for owner ${salon.ownerId}`);
     successResponse(res, salon, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      const firstError = error.errors[0];
+      const fieldPath = firstError.path.join('.');
+      const message = fieldPath ? `${fieldPath}: ${firstError.message}` : firstError.message;
+      errorResponse(res, 'VALIDATION_ERROR', message, 400);
       return;
     }
+    logger.error('Admin create salon error:', error);
     errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
   }
 }
@@ -1796,6 +1863,170 @@ export async function getRevenueStats(req: AuthenticatedRequest, res: Response):
 // ===========================================
 
 /**
+ * Get the active payment gateway's account balance.
+ * GET /admin/gateway-balance
+ *
+ * Reads SiteSettings.paymentGateway and returns the balance for that gateway.
+ * - Paystack: queries https://api.paystack.co/balance
+ * - Hubtel: queries merchant balance API (returns empty list with note when unavailable)
+ * - None configured: returns empty list with provider:null and a note (HTTP 200)
+ *
+ * Returning HTTP 200 with an empty payload (rather than 400) prevents the admin
+ * dashboard from crashing/log-spamming when the active gateway has no balance API.
+ */
+export async function getGatewayBalanceHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    let settings;
+    try {
+      settings = await prisma.siteSettings.findUnique({
+        where: { id: 'default' },
+      });
+    } catch (dbError: any) {
+      logger.error('Database error fetching site settings', { error: dbError.message });
+      // Return graceful fallback instead of 500
+      successResponse(res, {
+        provider: null,
+        balances: [],
+        fetchedAt: new Date().toISOString(),
+        note: 'Database unavailable. Check database connection.',
+      });
+      return;
+    }
+
+    const activeGateway = settings?.paymentGateway || 'paystack';
+
+    // ---- Paystack ----
+    if (activeGateway === 'paystack') {
+      const secretKey = (settings as any)?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+      if (!secretKey) {
+        successResponse(res, {
+          provider: 'paystack',
+          balances: [],
+          fetchedAt: new Date().toISOString(),
+          note: 'Paystack secret key not configured. Set it in Settings → Payment.',
+        });
+        return;
+      }
+
+      try {
+        const response = await axios.get('https://api.paystack.co/balance', {
+          headers: { Authorization: `Bearer ${secretKey}` },
+          timeout: 10000,
+        });
+
+        // Paystack response shape: { status, message, data: [{ currency, balance }] }
+        // balance is in subunits (pesewas for GHS) — convert to GHS.
+        const rawBalances = Array.isArray(response.data?.data) ? response.data.data : [];
+        const balances = rawBalances.map((b: any) => ({
+          currency: b.currency || 'GHS',
+          balance: typeof b.balance === 'number' ? b.balance / 100 : 0,
+          rawBalance: b.balance ?? 0,
+        }));
+
+        successResponse(res, {
+          provider: 'paystack',
+          balances,
+          fetchedAt: new Date().toISOString(),
+        });
+        return;
+      } catch (apiError: any) {
+        logger.warn('Paystack balance fetch failed', {
+          status: apiError.response?.status,
+          message: apiError.message,
+        });
+        successResponse(res, {
+          provider: 'paystack',
+          balances: [],
+          fetchedAt: new Date().toISOString(),
+          note: apiError.response?.status === 401
+            ? 'Paystack secret key is invalid. Update it in Settings → Payment.'
+            : 'Paystack balance API unavailable. Check Paystack dashboard.',
+        });
+        return;
+      }
+    }
+
+    // ---- Hubtel ----
+    if (activeGateway === 'hubtel') {
+      const apiId = (settings as any)?.hubtelApiId || process.env.HUBTEL_API_ID;
+      const apiSecret = (settings as any)?.hubtelApiSecret || process.env.HUBTEL_API_SECRET;
+
+      if (!apiId || !apiSecret) {
+        successResponse(res, {
+          provider: 'hubtel',
+          balances: [],
+          fetchedAt: new Date().toISOString(),
+          note: 'Hubtel credentials not configured. Set them in Settings → Payment.',
+        });
+        return;
+      }
+
+      const encoded = Buffer.from(`${apiId}:${apiSecret}`).toString('base64');
+      try {
+        const response = await axios.get('https://api.hubtel.com/v1/merchantaccount/balance', {
+          headers: { Authorization: `Basic ${encoded}`, 'Content-Type': 'application/json' },
+          timeout: 10000,
+        });
+        successResponse(res, {
+          provider: 'hubtel',
+          balances: response.data?.Data || response.data || [],
+          fetchedAt: new Date().toISOString(),
+        });
+        return;
+      } catch (apiError: any) {
+        logger.warn('Hubtel balance endpoint unavailable', {
+          status: apiError.response?.status,
+          message: apiError.message,
+        });
+        successResponse(res, {
+          provider: 'hubtel',
+          balances: [],
+          fetchedAt: new Date().toISOString(),
+          note: 'Hubtel balance API unavailable. Check your Hubtel dashboard for account balance.',
+        });
+        return;
+      }
+    }
+
+    // ---- TheTeller ----
+    if (activeGateway === 'theteller') {
+      const apiKey = (settings as any)?.thetellerApiKey || process.env.THETELLER_API_KEY;
+      
+      if (!apiKey) {
+        successResponse(res, {
+          provider: 'theteller',
+          balances: [],
+          fetchedAt: new Date().toISOString(),
+          note: 'TheTeller credentials not configured. Set them in Settings → Payment.',
+        });
+        return;
+      }
+
+      // TheTeller doesn't have a dedicated balance endpoint
+      // Return helpful message directing admin to TheTeller dashboard
+      successResponse(res, {
+        provider: 'theteller',
+        balances: [],
+        fetchedAt: new Date().toISOString(),
+        note: 'TheTeller balance API not available. Check your TheTeller dashboard at https://portal.theteller.net for account balance.',
+      });
+      return;
+    }
+
+    // Unknown / unconfigured gateway
+    successResponse(res, {
+      provider: null,
+      balances: [],
+      fetchedAt: new Date().toISOString(),
+      note: `Unknown payment gateway: ${activeGateway}`,
+    });
+  } catch (error) {
+    logger.error('Failed to fetch gateway balance', { error: (error as Error).message });
+    errorResponse(res, 'FETCH_FAILED', 'Failed to fetch gateway balance', 500);
+  }
+}
+
+/**
  * Get Hubtel account balance
  * GET /admin/hubtel-balance
  *
@@ -1823,7 +2054,14 @@ export async function getHubtelBalanceHandler(req: AuthenticatedRequest, res: Re
     });
 
     if (!apiId || !apiSecret) {
-      errorResponse(res, 'NOT_CONFIGURED', 'Hubtel API credentials not configured. Please set up Hubtel keys in Settings.', 400);
+      // Return graceful empty response (HTTP 200) so admin dashboards on the legacy
+      // endpoint don't render 400s when Hubtel isn't the active gateway yet.
+      successResponse(res, {
+        provider: 'hubtel',
+        balances: [],
+        fetchedAt: new Date().toISOString(),
+        note: 'Hubtel API credentials not configured. Set them in Settings → Payment.',
+      });
       return;
     }
 
@@ -2766,7 +3004,8 @@ export async function testPaymentConnection(req: AuthenticatedRequest, res: Resp
       return;
     }
 
-    const activeGateway = settings.paymentGateway || 'hubtel';
+    // Default to Paystack — it's the primary gateway for GroomLink (per SiteSettings @default).
+    const activeGateway = settings.paymentGateway || 'paystack';
 
     if (activeGateway === 'hubtel') {
       const apiId = (settings as any)?.hubtelApiId || process.env.HUBTEL_API_ID;

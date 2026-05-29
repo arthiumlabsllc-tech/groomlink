@@ -225,9 +225,14 @@ function SectionHeader({
 }
 
 // ─── Horizontal Scroll Container ───────────────────────────────────
+// Mobile/tablet: horizontal flex with edge-to-edge scroll.
+// Desktop (lg:+): switches to a 4-column responsive grid so the salon
+// rails fill the wider viewport instead of remaining a narrow scroll.
+// The arbitrary child selectors override the min-w-[260px] / flex-shrink-0
+// applied to children (kept for the mobile horizontal-scroll case).
 function HorizontalScroll({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 scroll-smooth-x pb-2 -mx-4 px-4">
+    <div className="flex gap-3 scroll-smooth-x pb-2 -mx-4 px-4 lg:grid lg:grid-cols-3 xl:grid-cols-4 lg:gap-5 lg:mx-0 lg:px-0 lg:overflow-visible [&>*]:lg:min-w-0">
       {children}
     </div>
   )

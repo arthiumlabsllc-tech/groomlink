@@ -109,6 +109,7 @@ export const salonValidations = {
     body('workingDays').optional().isArray().withMessage('Working days must be an array'),
     body('serviceAreas').optional().isArray().withMessage('Service areas must be an array'),
     body('providerCategory').optional().isIn(['BUSINESS', 'FREELANCER']).withMessage('Invalid provider category'),
+    body('ghanaPostGPS').optional().trim().isLength({ max: 20 }).withMessage('GhanaPost GPS code must be at most 20 characters'),
   ]),
 
   updateSalon: validate([
@@ -118,6 +119,7 @@ export const salonValidations = {
     body('latitude').optional().isFloat({ min: -90, max: 90 }),
     body('longitude').optional().isFloat({ min: -180, max: 180 }),
     body('operatingHours').optional().isObject().withMessage('Operating hours must be an object'),
+    body('ghanaPostGPS').optional().trim().isLength({ max: 20 }).withMessage('GhanaPost GPS code must be at most 20 characters'),
   ]),
 
   searchSalons: validate([

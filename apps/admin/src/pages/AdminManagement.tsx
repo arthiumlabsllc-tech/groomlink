@@ -10,10 +10,48 @@ const AVAILABLE_PAGES = [
   { id: 'users', label: 'Users' },
   { id: 'transactions', label: 'Transactions' },
   { id: 'promotions', label: 'Promotions' },
+  { id: 'sponsored-salons', label: 'Sponsored Salons' },
+  { id: 'subscriptions', label: 'Subscriptions' },
+  { id: 'feedback', label: 'Feedback' },
   { id: 'support', label: 'Support' },
   { id: 'support-staff', label: 'Support Staff' },
+  { id: 'escrow', label: 'Escrow' },
+  { id: 'cancellations', label: 'Cancellations' },
+  { id: 'no-shows', label: 'No-Shows' },
+  { id: 'security', label: 'Security' },
+  { id: 'policies', label: 'Policies' },
   { id: 'settings', label: 'Settings' },
+  { id: 'admins', label: 'Admin Management' },
 ];
+
+// Quick permission presets for common admin roles
+const PERMISSION_PRESETS = {
+  'full-access': {
+    label: 'Full Access',
+    description: 'All pages except Admin Management',
+    pages: AVAILABLE_PAGES.filter(p => p.id !== 'admins').map(p => p.id),
+  },
+  'operations': {
+    label: 'Operations Manager',
+    description: 'Salons, Users, Transactions, Support',
+    pages: ['dashboard', 'salons', 'users', 'transactions', 'support'],
+  },
+  'support-only': {
+    label: 'Support Staff',
+    description: 'Support, Support Staff, Users (view only)',
+    pages: ['dashboard', 'support', 'support-staff', 'users'],
+  },
+  'financial': {
+    label: 'Financial Manager',
+    description: 'Transactions, Escrow, Subscriptions, Sponsored Salons',
+    pages: ['dashboard', 'transactions', 'escrow', 'subscriptions', 'sponsored-salons', 'cancellations'],
+  },
+  'security': {
+    label: 'Security Team',
+    description: 'Security, Cancellations, No-Shows, Users',
+    pages: ['dashboard', 'security', 'cancellations', 'no-shows', 'users'],
+  },
+};
 
 export function AdminManagement() {
   const { user: currentUser } = useAuth();
@@ -512,6 +550,29 @@ export function AdminManagement() {
                     {formData.pages.length === AVAILABLE_PAGES.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
+                
+                {/* Quick Permission Presets */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2">Quick Presets:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(PERMISSION_PRESETS).map(([key, preset]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, pages: preset.pages })}
+                        className={`px-3 py-1.5 text-xs rounded-lg border-2 transition-all ${
+                          JSON.stringify(formData.pages) === JSON.stringify(preset.pages)
+                            ? 'border-[#006B3F] bg-[#006B3F] text-white'
+                            : 'border-gray-200 text-gray-600 hover:border-[#006B3F] hover:text-[#006B3F]'
+                        }`}
+                        title={preset.description}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-2">
                   {AVAILABLE_PAGES.map((page) => (
                     <label
@@ -600,6 +661,29 @@ export function AdminManagement() {
                     {formData.pages.length === AVAILABLE_PAGES.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
+                
+                {/* Quick Permission Presets */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2">Quick Presets:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(PERMISSION_PRESETS).map(([key, preset]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, pages: preset.pages })}
+                        className={`px-3 py-1.5 text-xs rounded-lg border-2 transition-all ${
+                          JSON.stringify(formData.pages) === JSON.stringify(preset.pages)
+                            ? 'border-[#006B3F] bg-[#006B3F] text-white'
+                            : 'border-gray-200 text-gray-600 hover:border-[#006B3F] hover:text-[#006B3F]'
+                        }`}
+                        title={preset.description}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-2">
                   {AVAILABLE_PAGES.map((page) => (
                     <label

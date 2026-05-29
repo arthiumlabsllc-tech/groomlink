@@ -2,28 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Admin Dashboard Theme - Auto Dark/Light Mode */
 /* Color scheme supports both light and dark, driven by device preference */
 :root { color-scheme: light dark; }
 input, textarea, select { color-scheme: light dark; }
 
-/* Dark mode overrides (surgical- keeps brand colors intact, flips neutral Tailwind classes) */
+/* Dark mode overrides (comprehensive - all elements must adapt) */
 @media (prefers-color-scheme: dark) {
   body { background-color: #0F1419 !important; color: #F3F4F6 !important; }
-  /* Surfaces */
+  
+  /* ===== SURFACES & BACKGROUNDS ===== */
   .bg-white { background-color: #1A1F2E !important; }
   .bg-gray-50 { background-color: #232937 !important; }
   .bg-gray-100 { background-color: #2A2F3E !important; }
-  /* Text */
+  .bg-gray-200 { background-color: #374151 !important; }
+  .bg-gray-50\/50 { background-color: rgba(35, 41, 55, 0.5) !important; }
+  
+  /* Brand color backgrounds */
+  .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+  .bg-purple-50 { background-color: rgba(168, 85, 247, 0.1) !important; }
+  .bg-\[\#006B3F\]\/10 { background-color: rgba(0, 107, 63, 0.2) !important; }
+  .bg-\[\#FCD116\]\/20 { background-color: rgba(252, 209, 22, 0.15) !important; }
+  .bg-\[\#CE1126\]\/10 { background-color: rgba(206, 17, 38, 0.2) !important; }
+  
+  /* Hover states */
+  .hover\:bg-gray-50:hover { background-color: #2A2F3E !important; }
+  .hover\:bg-gray-100:hover { background-color: #374151 !important; }
+  .hover\:bg-\[\#006B3F\]\/10:hover { background-color: rgba(0, 107, 63, 0.3) !important; }
+  .hover\:bg-\[\#CE1126\]\/10:hover { background-color: rgba(206, 17, 38, 0.3) !important; }
+  .hover\:bg-\[\#FCD116\]\/20:hover { background-color: rgba(252, 209, 22, 0.25) !important; }
+  
+  /* ===== TEXT COLORS ===== */
   .text-\[\#1A1A1A\], .text-\[\#1a1a1a\] { color: #F3F4F6 !important; }
   .text-gray-900 { color: #F3F4F6 !important; }
   .text-gray-800 { color: #E5E7EB !important; }
   .text-gray-700 { color: #D1D5DB !important; }
   .text-gray-600, .text-gray-500 { color: #9CA3AF !important; }
-  /* Borders */
+  .text-blue-500 { color: #60A5FA !important; }
+  .text-purple-500 { color: #C084FC !important; }
+  
+  /* Hover text */
+  .hover\:text-gray-600:hover { color: #D1D5DB !important; }
+  .hover\:text-\[\#006B3F\]:hover { color: #00A86B !important; }
+  .hover\:text-\[\#005a35\]:hover { color: #00A86B !important; }
+  .hover\:text-\[\#CE1126\]:hover { color: #FF4757 !important; }
+  
+  /* ===== BORDERS ===== */
   .border-gray-100 { border-color: #2A2F3E !important; }
   .border-gray-200 { border-color: #374151 !important; }
   .border-gray-300 { border-color: #4B5563 !important; }
-  /* Inputs */
+  .border-gray-700\/50 { border-color: rgba(55, 65, 81, 0.5) !important; }
+  
+  /* Hover borders */
+  .hover\:border-\[\#006B3F\]:hover { border-color: #00A86B !important; }
+  
+  /* ===== SHADOWS ===== */
+  .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important; }
+  .shadow-card { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important; }
+  .shadow-elevated { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important; }
+  .shadow-lg { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important; }
+  .shadow-md { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important; }
+  .shadow-green-500\/20 { box-shadow: 0 2px 8px rgba(0, 107, 63, 0.3) !important; }
+  
+  /* ===== INPUTS & FORMS ===== */
   input, textarea, select {
     background-color: #1F2937 !important;
     color: #F9FAFB !important;
@@ -31,6 +72,39 @@ input, textarea, select { color-scheme: light dark; }
   }
   input::placeholder, textarea::placeholder { color: #9CA3AF !important; }
   .placeholder-gray-400::placeholder, .placeholder-gray-500::placeholder { color: #9CA3AF !important; }
+  
+  /* ===== LOADING STATES ===== */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #2A2F3E 25%, #374151 50%, #2A2F3E 75%) !important;
+  }
+  
+  /* ===== GLASS EFFECTS ===== */
+  .glass {
+    background: rgba(26, 31, 46, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  /* ===== NAVIGATION & TABS ===== */
+  .tab-pill-inactive {
+    background-color: #2A2F3E !important;
+    color: #9CA3AF !important;
+  }
+  .tab-pill-inactive:hover {
+    background-color: #374151 !important;
+  }
+  
+  /* Toggle switch */
+  .toggle-switch-off {
+    background-color: #4B5563 !important;
+  }
+  
+  /* ===== TABLES ===== */
+  tr:hover {
+    background-color: rgba(42, 47, 62, 0.5) !important;
+  }
+  
+  /* ===== MODALS & OVERLAYS ===== */
+  .shadow-elevated { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important; }
 }
 
 :root {

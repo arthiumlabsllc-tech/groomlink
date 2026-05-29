@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { findNearestGhanaLocation, isWithinGhana, isAccuracyAcceptable, getAccuracyLevel } from '../../utils/ghanaLocations';
 
 // Theme-aware logo selection
 const LOGO_BLACK = require('../../../assets/logo-full-black.png');
@@ -66,6 +67,8 @@ export default function ProfileSetupScreen() {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [region, setRegion] = useState('');
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [showManualLocation, setShowManualLocation] = useState(false);
 
   useEffect(() => {
     requestLocationPermission();
@@ -81,31 +84,82 @@ export default function ProfileSetupScreen() {
         return;
       }
 
+      // Get location with high accuracy
       const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.Highest,
       });
       
-      setLatitude(location.coords.latitude);
-      setLongitude(location.coords.longitude);
+      const { latitude: lat, longitude: lng, accuracy } = location.coords;
+      setLatitude(lat);
+      setLongitude(lng);
+      setGpsAccuracy(accuracy);
 
-      // Reverse geocode to get address details
+      console.log(`[Location] GPS Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}, Accuracy: ${accuracy}m`);
+
+      // Validate if coordinates are within Ghana
+      if (!isWithinGhana(lat, lng)) {
+        console.log('[Location] Coordinates outside Ghana, using manual entry');
+        setLocationStatus('denied');
+        setShowManualLocation(true);
+        return;
+      }
+
+      // Check GPS accuracy (accuracy is always a number from getCurrentPositionAsync)
+      if (accuracy && !isAccuracyAcceptable(accuracy)) {
+        console.log(`[Location] Poor GPS accuracy: ${accuracy}m, using manual entry`);
+        setLocationStatus('denied');
+        setShowManualLocation(true);
+        return;
+      }
+
+      // Method 1: Use Ghana location database (most accurate for Ghana)
+      const nearestLocation = findNearestGhanaLocation(lat, lng, 20); // 20km radius
+      
+      if (nearestLocation) {
+        console.log(`[Location] Found in Ghana database: ${nearestLocation.city}, ${nearestLocation.region}`);
+        setCity(nearestLocation.city);
+        setRegion(nearestLocation.region);
+        setAddress(`${nearestLocation.city}, ${nearestLocation.region}`);
+        setLocationStatus('granted');
+        return;
+      }
+
+      // Method 2: Fallback to reverse geocoding (if not in database)
+      console.log('[Location] Not in database, trying reverse geocoding...');
       const addresses = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        latitude: lat,
+        longitude: lng,
       });
 
       if (addresses && addresses.length > 0) {
         const addr = addresses[0];
-        const formattedAddress = [addr.street, addr.city].filter(Boolean).join(', ');
-        setAddress(formattedAddress);
-        setCity(addr.city || '');
-        setRegion(addr.region || '');
+        console.log('[Location] Reverse geocode result:', addr);
+        
+        // Use subregion or city, prioritizing more specific location
+        const detectedCity = addr.subregion || addr.city || addr.district || '';
+        const detectedRegion = addr.region || '';
+        
+        // Only use if it's a valid Ghana location
+        if (detectedCity && detectedRegion) {
+          const formattedAddress = [addr.street, detectedCity].filter(Boolean).join(', ');
+          setAddress(formattedAddress);
+          setCity(detectedCity);
+          setRegion(detectedRegion);
+          setLocationStatus('granted');
+        } else {
+          console.log('[Location] Reverse geocoding incomplete, using manual entry');
+          setShowManualLocation(true);
+          setLocationStatus('denied');
+        }
+      } else {
+        console.log('[Location] No reverse geocode results, using manual entry');
+        setShowManualLocation(true);
+        setLocationStatus('denied');
       }
-      
-      setLocationStatus('granted');
     } catch (err) {
-      console.log('Location error:', err);
+      console.log('[Location] Error detecting location:', err);
       setLocationStatus('denied');
+      setShowManualLocation(true);
     }
   };
 
@@ -348,6 +402,43 @@ export default function ProfileSetupScreen() {
           </View>
           {renderLocationSection()}
 
+          {/* Manual Location Input - shown when auto-detection fails */}
+          {showManualLocation && (
+            <View style={styles.manualLocationContainer}>
+              <Text style={styles.manualLocationTitle}>Enter Your Location</Text>
+              <Text style={styles.manualLocationSubtitle}>We couldn't detect your location accurately</Text>
+              <TextInput
+                label="City"
+                value={city}
+                onChangeText={setCity}
+                style={styles.input}
+                mode="outlined"
+                outlineColor={COLORS.border}
+                activeOutlineColor={COLORS.primaryGreen}
+                textColor={COLORS.textPrimary}
+                placeholderTextColor={COLORS.textSecondary}
+                placeholder="e.g., Koforidua"
+              />
+              <TextInput
+                label="Region"
+                value={region}
+                onChangeText={setRegion}
+                style={styles.input}
+                mode="outlined"
+                outlineColor={COLORS.border}
+                activeOutlineColor={COLORS.primaryGreen}
+                textColor={COLORS.textPrimary}
+                placeholderTextColor={COLORS.textSecondary}
+                placeholder="e.g., Eastern"
+              />
+              {gpsAccuracy && (
+                <Text style={styles.accuracyText}>
+                  GPS Accuracy: {gpsAccuracy.toFixed(0)}m ({getAccuracyLevel(gpsAccuracy)})
+                </Text>
+              )}
+            </View>
+          )}
+
           {error ? (
             <HelperText type="error" visible={true} style={styles.errorText}>
               {error}
@@ -555,6 +646,31 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   locationButtonContent: {
     paddingVertical: 4,
+  },
+  manualLocationContainer: {
+    backgroundColor: '#FFF3CD',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#FFC107',
+  },
+  manualLocationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#856404',
+    marginBottom: 4,
+  },
+  manualLocationSubtitle: {
+    fontSize: 13,
+    color: '#856404',
+    marginBottom: 16,
+  },
+  accuracyText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
   },
   errorText: {
     textAlign: 'center',

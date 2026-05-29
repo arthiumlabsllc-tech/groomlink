@@ -134,6 +134,87 @@ class UploadController {
   }
 
   /**
+   * Upload a branded-page logo (separate from the salon's main logo).
+   * POST /api/uploads/branded-page/:salonId/logo
+   *
+   * This endpoint uploads to Cloudinary and persists the URL ONLY on the
+   * BrandedPage record — it must NEVER touch `salon.logo`. A dedicated
+   * endpoint is required because the previous implementation re-used
+   * uploadSalonLogo, which silently overwrote the salon's main logo and
+   * deleted the old file from Cloudinary.
+   */
+  async uploadBrandedPageLogo(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { salonId } = req.params;
+      const file = req.file as MulterFile;
+
+      if (!file) {
+        errorResponse(res, 'UPLOAD_FAILED', 'No file uploaded. Ensure the field name is "logo"', 400);
+        return;
+      }
+
+      if (!file.path) {
+        errorResponse(res, 'UPLOAD_FAILED', 'File upload to Cloudinary failed. Check Cloudinary credentials and configuration.', 400);
+        return;
+      }
+
+      // Verify ownership of the salon
+      const salon = await prisma.salon.findFirst({
+        where: { id: salonId, ownerId: req.user?.id },
+        select: { id: true },
+      });
+
+      if (!salon) {
+        errorResponse(res, 'NOT_FOUND', 'Salon not found or unauthorized', 404);
+        return;
+      }
+
+      // Look up the existing branded-page logo so we can delete it from
+      // Cloudinary after we persist the new URL. This is the ONLY delete
+      // allowed here — do not touch the salon's main logo.
+      const existing = await prisma.brandedPage.findUnique({
+        where: { salonId },
+        select: { logoUrl: true },
+      });
+
+      // Upsert the branded-page record with the new logo URL. We use upsert
+      // so the first-time flow (no branded page yet) also works. Required
+      // fields on create: salonId + a slug. If no branded page exists yet
+      // we fall back to a slug derived from the salon id to keep the schema
+      // happy; the user can customize it later via the regular update flow.
+      await prisma.brandedPage.upsert({
+        where: { salonId },
+        create: {
+          salonId,
+          slug: `salon-${salonId.slice(0, 8)}`,
+          logoUrl: file.path,
+        },
+        update: {
+          logoUrl: file.path,
+        },
+      });
+
+      // Best-effort delete of the previous branded-page logo from Cloudinary.
+      if (existing?.logoUrl) {
+        const publicId = uploadService.extractPublicId(existing.logoUrl);
+        if (publicId) {
+          uploadService.deleteImage(publicId).catch(() => {});
+        }
+      }
+
+      successResponse(res, {
+        logo: file.path,
+        publicId: file.filename,
+        thumbnail: uploadService.getThumbnailUrl(file.filename || ''),
+        message: 'Branded page logo uploaded successfully',
+      });
+    } catch (error) {
+      console.error('Upload branded page logo error:', error);
+      errorResponse(res, 'UPLOAD_FAILED', 'Failed to upload branded page logo', 500);
+    }
+  }
+
+  /**
    * Upload salon cover image
    * POST /api/uploads/salon/:salonId/cover
    */

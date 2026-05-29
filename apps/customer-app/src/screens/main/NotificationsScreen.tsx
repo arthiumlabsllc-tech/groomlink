@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Text,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -87,7 +88,7 @@ function getNotificationIcon(type: NotificationType): { name: string; color: str
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<any>();
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const { setNotifications, markAsRead, markAllAsRead, notifications: localNotifications } = useNotificationStore();
@@ -191,7 +192,11 @@ export default function NotificationsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Image
+          source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
         <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllButton}>
           <Text style={styles.markAllText}>Mark All Read</Text>
         </TouchableOpacity>
@@ -230,9 +235,15 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     backgroundColor: COLORS.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    gap: 8,
   },
   backButton: {
     padding: 4,
+  },
+  headerLogo: {
+    width: 100,
+    height: 28,
+    flex: 1,
   },
   headerTitle: {
     fontSize: 18,

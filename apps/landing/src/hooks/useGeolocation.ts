@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { isWithinGhana, isAccuracyAcceptable } from '../data/ghanaCities'
 
 type GeolocationState = 'idle' | 'requesting' | 'granted' | 'denied' | 'error' | 'unsupported'
 
@@ -18,7 +19,7 @@ interface UseGeolocationReturn {
 }
 
 const CACHE_KEY = 'groomlink_location'
-const CACHE_TTL_MS = 30 * 60 * 1000 // 30 minutes
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes (reduced for fresher data)
 
 function loadCached(): GeolocationData | null {
   try {
@@ -26,6 +27,11 @@ function loadCached(): GeolocationData | null {
     if (!raw) return null
     const parsed = JSON.parse(raw) as GeolocationData
     if (Date.now() - parsed.timestamp > CACHE_TTL_MS) {
+      localStorage.removeItem(CACHE_KEY)
+      return null
+    }
+    // Validate cached data is still acceptable
+    if (!isAccuracyAcceptable(parsed.accuracy)) {
       localStorage.removeItem(CACHE_KEY)
       return null
     }
@@ -77,15 +83,38 @@ export function useGeolocation(): UseGeolocationReturn {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const { latitude, longitude, accuracy } = position.coords
+        
+        // Validate coordinates are within Ghana
+        if (!isWithinGhana(latitude, longitude)) {
+          setState('error')
+          setError('Location appears to be outside Ghana. Please enable accurate location services.')
+          console.warn('[Geolocation] Coordinates outside Ghana:', { latitude, longitude })
+          return
+        }
+        
+        // Validate GPS accuracy
+        if (!isAccuracyAcceptable(accuracy)) {
+          setState('error')
+          setError(`GPS accuracy is too low (${Math.round(accuracy)}m). Please try again in an open area.`)
+          console.warn('[Geolocation] Poor accuracy:', accuracy)
+          return
+        }
+        
         const loc: GeolocationData = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
+          latitude,
+          longitude,
+          accuracy,
           timestamp: Date.now(),
         }
         saveCached(loc)
         setData(loc)
         setState('granted')
+        console.log('[Geolocation] Location detected successfully:', {
+          latitude,
+          longitude,
+          accuracy: `${Math.round(accuracy)}m`
+        })
       },
       (err) => {
         let message = 'Unable to retrieve your location'
@@ -106,9 +135,9 @@ export function useGeolocation(): UseGeolocationReturn {
         setError(message)
       },
       {
-        enableHighAccuracy: false,
+        enableHighAccuracy: true, // Changed to true for better accuracy
         timeout: 15000,
-        maximumAge: 60000,
+        maximumAge: 0, // Changed to 0 to disable caching and get fresh data
       }
     )
   }, [])

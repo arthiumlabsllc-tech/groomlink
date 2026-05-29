@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Icon from '../components/Icon';
 import {
   useSponsoredSalons,
@@ -35,15 +35,25 @@ const DURATION_UNITS: { value: DurationUnit; label: string }[] = [
 
 export function SponsoredSalons() {
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<'active' | 'expired' | 'all'>('active');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [selectedSponsorshipId, setSelectedSponsorshipId] = useState<string | null>(null);
 
-  const { data: sponsorshipsData, isLoading } = useSponsoredSalons(page, 20);
+  const { data: sponsorshipsData, isLoading } = useSponsoredSalons(
+    page,
+    20,
+    statusFilter === 'all' ? undefined : statusFilter
+  );
   const removeSponsorship = useRemoveSponsoredSalon();
 
   const sponsorships = sponsorshipsData?.data || [];
   const totalPages = sponsorshipsData?.pagination?.totalPages || 1;
+
+  const handleStatusChange = (next: 'active' | 'expired' | 'all') => {
+    setStatusFilter(next);
+    setPage(1);
+  };
 
   const handleRemove = async () => {
     if (!selectedSponsorshipId) return;
@@ -76,8 +86,30 @@ export function SponsoredSalons() {
 
       {/* Active Sponsorships List */}
       <div className="card-v2 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Active Sponsorships</h2>
+        <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {statusFilter === 'active'
+              ? 'Active Sponsorships'
+              : statusFilter === 'expired'
+              ? 'Expired Sponsorships'
+              : 'All Sponsorships'}
+          </h2>
+          {/* Status Tabs */}
+          <div className="inline-flex bg-gray-100 rounded-lg p-1 self-start sm:self-auto">
+            {(['active', 'expired', 'all'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => handleStatusChange(s)}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                  statusFilter === s
+                    ? 'bg-white text-[#006B3F] shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {s === 'active' ? 'Active' : s === 'expired' ? 'Expired' : 'All'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {isLoading ? (
@@ -131,9 +163,9 @@ export function SponsoredSalons() {
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                            {sponsorship.salon.logoUrl ? (
+                            {sponsorship.salon.logo ? (
                               <img
-                                src={sponsorship.salon.logoUrl}
+                                src={sponsorship.salon.logo}
                                 alt={sponsorship.salon.businessName}
                                 className="w-10 h-10 rounded-lg object-cover"
                               />
@@ -180,8 +212,8 @@ export function SponsoredSalons() {
                       <td className="px-6 py-4">
                         <div className="flex items-center text-sm text-gray-900">
                           <Icon name="credit_card" className="w-4 h-4 mr-1.5 text-gray-400" size={16} />
-                          {sponsorship.amountPaid
-                            ? formatCurrency(sponsorship.amountPaid)
+                          {sponsorship.amountPaid != null && Number(sponsorship.amountPaid) > 0
+                            ? formatCurrency(Number(sponsorship.amountPaid))
                             : 'Free'}
                         </div>
                       </td>
@@ -218,9 +250,9 @@ export function SponsoredSalons() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center">
                       <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                        {sponsorship.salon.logoUrl ? (
+                        {sponsorship.salon.logo ? (
                           <img
-                            src={sponsorship.salon.logoUrl}
+                            src={sponsorship.salon.logo}
                             alt={sponsorship.salon.businessName}
                             className="w-12 h-12 rounded-lg object-cover"
                           />
@@ -267,8 +299,8 @@ export function SponsoredSalons() {
                     </div>
                     <div className="flex items-center text-gray-600">
                       <Icon name="credit_card" className="w-4 h-4 mr-1.5 text-gray-400" size={16} />
-                      {sponsorship.amountPaid
-                        ? formatCurrency(sponsorship.amountPaid)
+                      {sponsorship.amountPaid != null && Number(sponsorship.amountPaid) > 0
+                        ? formatCurrency(Number(sponsorship.amountPaid))
                         : 'Free'}
                     </div>
                   </div>
@@ -515,9 +547,9 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                         className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center border-b border-gray-100 last:border-0"
                       >
                         <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          {salon.logoUrl ? (
+                          {salon.logo ? (
                             <img
-                              src={salon.logoUrl}
+                              src={salon.logo}
                               alt={salon.businessName}
                               className="w-10 h-10 rounded-lg object-cover"
                             />
@@ -548,9 +580,9 @@ function AddSponsoredSalonModal({ onClose }: AddSponsoredSalonModalProps) {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-center">
                     <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                      {selectedSalon.logoUrl ? (
+                      {selectedSalon.logo ? (
                         <img
-                          src={selectedSalon.logoUrl}
+                          src={selectedSalon.logo}
                           alt={selectedSalon.businessName}
                           className="w-12 h-12 rounded-lg object-cover"
                         />

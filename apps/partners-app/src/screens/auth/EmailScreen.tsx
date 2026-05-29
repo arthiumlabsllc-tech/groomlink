@@ -77,14 +77,11 @@ export default function EmailScreen() {
         <View style={styles.content}>
           {/* Logo Section */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Image
-                source={require('../../../assets/logo-white.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-            <View style={styles.logoAccent} />
+            <Image
+              source={require('../../../assets/logo-full-black.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
 
           <Text variant="headlineMedium" style={styles.title}>
@@ -181,36 +178,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 24,
-    position: 'relative',
-  },
-  logoCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#006B3F',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#006B3F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    marginBottom: 32,
   },
   logoImage: {
-    width: 52,
-    height: 52,
-  },
-  logoAccent: {
-    position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FCD116',
-    right: '32%',
-    top: 0,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    width: 180,
+    height: 56,
   },
   title: {
     textAlign: 'center',

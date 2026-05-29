@@ -98,12 +98,20 @@ function AppContent() {
     }, MIN_SPLASH_DURATION_MS);
 
     checkAuth();
-    setupNotifications();
 
-    return () => clearTimeout(timer);
+    // Setup notifications and store cleanup function
+    let notificationCleanup: (() => void) | undefined;
+    setupNotifications().then((cleanup) => {
+      notificationCleanup = cleanup;
+    });
+
+    return () => {
+      clearTimeout(timer);
+      notificationCleanup?.();
+    };
   }, []);
 
-  const setupNotifications = async () => {
+  const setupNotifications = async (): Promise<() => void> => {
     // Register for push notifications
     await registerForPushNotificationsAsync();
 

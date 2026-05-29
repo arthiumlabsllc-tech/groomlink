@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Icon from './Icon'
 import { useDarkMode } from '../hooks/useDarkMode'
+import RoleSelectorModal from './RoleSelectorModal'
 
 interface HeaderProps {
   scrolled: boolean
@@ -9,7 +10,13 @@ interface HeaderProps {
 export default function Header({ scrolled }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [roleModalOpen, setRoleModalOpen] = useState(false)
   const isDark = useDarkMode()
+
+  const openRoleModal = () => {
+    setRoleModalOpen(true)
+    setMobileMenuOpen(false)
+  }
 
   // Close mobile menu on resize
   useEffect(() => {
@@ -82,18 +89,18 @@ export default function Header({ scrolled }: HeaderProps) {
                 {link.name}
               </a>
             ))}
-            <a
-              href="https://my.groomlinkgh.com/login"
+            <button
+              onClick={openRoleModal}
               className="text-brand-text font-medium hover:text-brand-primary transition-colors"
             >
-              Login/Signup
-            </a>
-            <a
-              href="https://my.groomlinkgh.com/login"
+              Log In / Sign Up
+            </button>
+            <button
+              onClick={openRoleModal}
               className="btn-primary text-sm"
             >
-              Download App
-            </a>
+              Get Started
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -127,23 +134,30 @@ export default function Header({ scrolled }: HeaderProps) {
                 {link.name}
               </a>
             ))}
+            <button
+              onClick={openRoleModal}
+              className="block w-full text-left text-brand-text font-medium py-2 hover:text-brand-primary transition-colors"
+            >
+              Log In / Sign Up
+            </button>
+            {/* Dedicated partner login for mobile — visible safety net */}
             <a
-              href="https://my.groomlinkgh.com/login"
-              className="block text-brand-text font-medium py-2 hover:text-brand-primary transition-colors"
+              href="https://partners.groomlinkgh.com/login"
+              className="block text-brand-text/70 text-sm py-2 hover:text-brand-primary transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Login/Signup
+              Salon Owner / Freelancer Login
             </a>
-            <a
-              href="https://my.groomlinkgh.com/login"
-              className="block btn-primary text-center text-sm mt-4"
-              onClick={() => setMobileMenuOpen(false)}
+            <button
+              onClick={openRoleModal}
+              className="block w-full btn-primary text-center text-sm mt-4"
             >
-              Download App
-            </a>
+              Get Started
+            </button>
           </div>
         </div>
       </nav>
+      <RoleSelectorModal open={roleModalOpen} onClose={() => setRoleModalOpen(false)} />
     </header>
   )
 }

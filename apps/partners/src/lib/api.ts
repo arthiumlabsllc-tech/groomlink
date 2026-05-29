@@ -304,7 +304,7 @@ class ApiClient {
     }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -438,6 +438,7 @@ class ApiClient {
     description?: string;
     email?: string;
     serviceAreas?: string[];
+    ghanaPostGPS?: string;
     hasParking?: boolean;
     hasWifi?: boolean;
     hasAC?: boolean;
@@ -582,11 +583,11 @@ class ApiClient {
 
   // Completion settings
   async getCompletionSettings(salonId: string) {
-    return this.request<{ success: boolean; data: CompletionSettings }>(`/salon/${salonId}/completion-settings`);
+    return this.request<{ success: boolean; data: CompletionSettings }>(`/salons/${salonId}/completion-settings`);
   }
 
   async updateCompletionSettings(salonId: string, settings: CompletionSettings) {
-    return this.request<{ success: boolean; data: CompletionSettings }>(`/salon/${salonId}/completion-settings`, {
+    return this.request<{ success: boolean; data: CompletionSettings }>(`/salons/${salonId}/completion-settings`, {
       method: 'PUT',
       body: JSON.stringify(settings),
     });
@@ -785,7 +786,10 @@ class ApiClient {
     const formData = new FormData();
     formData.append('logo', file);
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${this.baseUrl}/uploads/salon/${salonId}/logo`, {
+    // IMPORTANT: hit the dedicated branded-page endpoint — not the salon
+    // main-logo endpoint — otherwise the salon's main logo gets overwritten
+    // and the old file is deleted from Cloudinary.
+    const response = await fetch(`${this.baseUrl}/uploads/branded-page/${salonId}/logo`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: formData,

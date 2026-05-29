@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from './Icon'
 import { useDarkMode } from '../hooks/useDarkMode'
+import { useSavedLocation, appendLocationParams } from '../hooks/useSavedLocation'
 
 interface Salon {
   id: string
@@ -24,6 +25,7 @@ export default function FeaturedSalons() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const isDark = useDarkMode()
+  const savedLocation = useSavedLocation()
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -47,7 +49,10 @@ export default function FeaturedSalons() {
     const fetchSalons = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`${API_BASE_URL}/salons?limit=6`)
+        const params = new URLSearchParams()
+        params.set('limit', '6')
+        appendLocationParams(params, savedLocation)
+        const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
         if (!response.ok) {
           throw new Error('Failed to fetch salons')
         }
@@ -66,7 +71,7 @@ export default function FeaturedSalons() {
     }
 
     fetchSalons()
-  }, [])
+  }, [savedLocation])
 
   const formatPrice = (price?: number) => {
     if (!price || price === 0) return 'Contact for price'
@@ -82,7 +87,9 @@ export default function FeaturedSalons() {
             Featured Salons & Barbershops
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Discover top-rated salons and barbershops near you
+            {savedLocation
+              ? <>Top-rated salons and barbershops in <span className="font-semibold text-[#CE1126]">{savedLocation.label}</span></>
+              : 'Discover top-rated salons and barbershops near you'}
           </p>
         </div>
 
@@ -114,7 +121,11 @@ export default function FeaturedSalons() {
         {/* Empty State */}
         {!loading && !error && salons.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-gray-500 mb-4">No salons available at the moment.</p>
+            <p className="text-gray-500 mb-4">
+              {savedLocation
+                ? <>No salons found in <span className="font-semibold">{savedLocation.label}</span> yet.</>
+                : 'No salons available at the moment.'}
+            </p>
             <Link
               to="/explore"
               className="text-brand-primary hover:underline font-medium"

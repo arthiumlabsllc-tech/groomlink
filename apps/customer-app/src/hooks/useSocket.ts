@@ -15,17 +15,18 @@ interface UseSocketOptions {
   onNotification?: (data: any) => void;
 }
 
-interface SocketEvents {
-  'slot:updated': (data: { salonId: string; date: string }) => void;
-  'booking:confirmed': (data: { bookingId: string }) => void;
-  'booking:rejected': (data: { bookingId: string; reason?: string }) => void;
-  'notification:created': (data: any) => void;
-}
-
 export function useSocket(options: UseSocketOptions = {}) {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  // Store callbacks in refs to avoid recreating the socket on every render
+  const callbacksRef = useRef(options);
+  callbacksRef.current = options;
+
+  // Store salonId and userId as refs to track changes without triggering reconnect
+  const salonIdRef = useRef(options.salonId);
+  const userIdRef = useRef(options.userId);
 
   const connect = useCallback(async () => {
     if (socketRef.current?.connected) return;
@@ -39,11 +40,20 @@ export function useSocket(options: UseSocketOptions = {}) {
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
       });
 
       socketRef.current.on('connect', () => {
         console.log('Socket connected');
         setIsConnected(true);
+
+        // Join rooms on connect/reconnect
+        if (userIdRef.current && socketRef.current) {
+          socketRef.current.emit('join:user', userIdRef.current);
+        }
+        if (salonIdRef.current && socketRef.current) {
+          socketRef.current.emit('join:salon', { salonId: salonIdRef.current });
+        }
       });
 
       socketRef.current.on('disconnect', () => {
@@ -55,16 +65,6 @@ export function useSocket(options: UseSocketOptions = {}) {
         console.log('Socket connection error:', error.message);
         setIsConnected(false);
       });
-
-      // Join user-specific room for notifications
-      if (options.userId) {
-        socketRef.current.emit('join:user', options.userId);
-      }
-
-      // Join salon room if provided
-      if (options.salonId) {
-        socketRef.current.emit('join:salon', { salonId: options.salonId });
-      }
 
       // Listen for notification events
       socketRef.current.on('notification:created', (notification) => {
@@ -81,33 +81,26 @@ export function useSocket(options: UseSocketOptions = {}) {
           trigger: null,
         }).catch((e: any) => console.log('Failed to show local notification:', e));
 
-        options.onNotification?.(notification);
+        callbacksRef.current.onNotification?.(notification);
       });
 
-      // Set up event listeners
-      if (options.onSlotUpdated) {
-        socketRef.current.on('slot:updated', (data) => {
-          setLastUpdate(new Date());
-          options.onSlotUpdated?.(data);
-        });
-      }
+      // Set up event listeners using ref-based callbacks (stable references)
+      socketRef.current.on('slot:updated', (data) => {
+        setLastUpdate(new Date());
+        callbacksRef.current.onSlotUpdated?.(data);
+      });
 
-      // Enhance booking events to also add to notification store
-      if (options.onBookingConfirmed) {
-        socketRef.current.on('booking:confirmed', (data) => {
-          options.onBookingConfirmed?.(data);
-        });
-      }
+      socketRef.current.on('booking:confirmed', (data) => {
+        callbacksRef.current.onBookingConfirmed?.(data);
+      });
 
-      if (options.onBookingRejected) {
-        socketRef.current.on('booking:rejected', (data) => {
-          options.onBookingRejected?.(data);
-        });
-      }
+      socketRef.current.on('booking:rejected', (data) => {
+        callbacksRef.current.onBookingRejected?.(data);
+      });
     } catch (error) {
       console.error('Failed to connect socket:', error);
     }
-  }, [options]);
+  }, []); // No dependencies - connect is stable
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
@@ -141,27 +134,38 @@ export function useSocket(options: UseSocketOptions = {}) {
     }
   }, []);
 
-  // Auto-connect on mount if salonId is provided
+  // Connect on mount, disconnect on unmount (runs only once)
   useEffect(() => {
     connect();
-
     return () => {
       disconnect();
     };
   }, [connect, disconnect]);
 
-  // Join salon room when salonId changes
+  // Handle salonId changes - join/leave rooms without reconnecting
   useEffect(() => {
-    if (options.salonId && isConnected) {
-      joinSalonRoom(options.salonId);
-    }
+    const prevSalonId = salonIdRef.current;
+    salonIdRef.current = options.salonId;
 
-    return () => {
-      if (options.salonId) {
-        leaveSalonRoom(options.salonId);
+    if (isConnected && socketRef.current?.connected) {
+      // Leave old room
+      if (prevSalonId && prevSalonId !== options.salonId) {
+        leaveSalonRoom(prevSalonId);
       }
-    };
+      // Join new room
+      if (options.salonId && options.salonId !== prevSalonId) {
+        joinSalonRoom(options.salonId);
+      }
+    }
   }, [options.salonId, isConnected, joinSalonRoom, leaveSalonRoom]);
+
+  // Handle userId changes
+  useEffect(() => {
+    userIdRef.current = options.userId;
+    if (options.userId && isConnected && socketRef.current?.connected) {
+      joinUserRoom(options.userId);
+    }
+  }, [options.userId, isConnected, joinUserRoom]);
 
   return {
     isConnected,

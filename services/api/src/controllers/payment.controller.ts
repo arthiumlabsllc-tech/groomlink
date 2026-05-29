@@ -267,3 +267,83 @@ export async function handlePaystackCallback(req: AuthenticatedRequest | Request
     );
   }
 }
+
+// TheTeller webhook endpoint
+export async function handleTheTellerWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    const rawBody = JSON.stringify(req.body);
+    const headers = req.headers as Record<string, string>;
+
+    logger.info('TheTeller webhook received', {
+      body: req.body,
+    });
+
+    // Process the webhook through the payment service
+    const result = await paymentService.handleTheTellerWebhook(rawBody, headers);
+
+    // Always return 200 to prevent TheTeller retries
+    res.status(200).json({ received: true, processed: result.success });
+  } catch (error) {
+    // Log error but still return 200 to prevent TheTeller retries
+    logger.error('TheTeller webhook error:', error);
+    res.status(200).json({ received: true, processed: false });
+  }
+}
+
+// TheTeller callback endpoint (redirect after payment)
+export async function handleTheTellerCallback(req: AuthenticatedRequest | Request, res: Response): Promise<void> {
+  try {
+    const { transaction_id, status, code, reason } = req.query;
+    
+    if (!transaction_id) {
+      // Redirect to frontend payment callback with error
+      res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?error=missing_reference`);
+      return;
+    }
+
+    const paymentReference = transaction_id as string;
+    const paymentStatus = status as string;
+    
+    logger.info('TheTeller callback received', { 
+      transaction_id: paymentReference,
+      status: paymentStatus,
+      code,
+      reason,
+    });
+
+    // Check if payment was successful
+    if (paymentStatus === 'successful' || paymentStatus === 'SUCCESS' || code === '000') {
+      // Find payment by reference
+      const payment = await paymentService.findPaymentByReference(paymentReference);
+      
+      if (!payment) {
+        res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?error=payment_not_found&reference=${paymentReference}`);
+        return;
+      }
+
+      // Verify and complete payment
+      const result = await paymentService.verifyAndCompletePayment(payment.id, paymentReference);
+      
+      if (result.success) {
+        const bookingRef = result.bookingReference || payment.bookingId;
+        res.redirect(
+          `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?reference=${paymentReference}&status=success&bookingRef=${bookingRef}&amount=${result.amountPaid || 0}`
+        );
+      } else {
+        res.redirect(
+          `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?reference=${paymentReference}&status=failed&error=verification_failed`
+        );
+      }
+    } else {
+      // Payment failed or pending
+      res.redirect(
+        `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?reference=${paymentReference}&status=failed&error=${encodeURIComponent(reason as string || 'payment_failed')}`
+      );
+    }
+  } catch (error) {
+    logger.error('TheTeller callback error:', error);
+    res.redirect(
+      `${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?error=callback_error`
+    );
+  }
+}

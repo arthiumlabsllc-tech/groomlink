@@ -98,8 +98,18 @@ export default function SalonDetailScreen() {
     queryFn: () => reviewApi.getSalonReviews(salonId),
   });
 
-  // Fetch queue data
+  // Fetch queue data (only when authenticated)
   const fetchQueueData = useCallback(async () => {
+    if (!isAuthenticated) {
+      // Only fetch public queue status, skip personal position
+      try {
+        const status = await queueApi.getSalonQueue(salonId);
+        setQueueStatus(status);
+      } catch (err) {
+        // Silent fail for public queue
+      }
+      return;
+    }
     setQueueLoading(true);
     try {
       const [status, position] = await Promise.all([
@@ -113,7 +123,7 @@ export default function SalonDetailScreen() {
     } finally {
       setQueueLoading(false);
     }
-  }, [salonId]);
+  }, [salonId, isAuthenticated]);
 
   useEffect(() => {
     fetchQueueData();

@@ -21,6 +21,7 @@ import { salonApi } from '../../api/salon';
 import { Salon } from '../../types';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { isWithinGhana } from '../../utils/ghanaLocations';
 
 // Use OpenStreetMap tiles (free, no API key required)
 // react-native-maps uses Apple Maps on iOS and Google Maps on Android by default
@@ -142,9 +143,23 @@ export default function MapScreen() {
       if (status === 'granted') {
         setLocationPermission(true);
         const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+          accuracy: Location.Accuracy.High,
         });
         const { latitude, longitude } = location.coords;
+        
+        // Validate coordinates are within Ghana
+        if (!isWithinGhana(latitude, longitude)) {
+          console.log('[MapScreen] Location outside Ghana, using default');
+          setRegion(DEFAULT_LOCATION);
+          setLocationPermission(false);
+          Alert.alert(
+            'Location Outside Ghana',
+            'Your location appears to be outside Ghana. Using Accra as default location.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+        
         setUserLocation({ latitude, longitude });
         setRegion({
           latitude,
@@ -152,6 +167,7 @@ export default function MapScreen() {
           latitudeDelta: LATITUDE_DELTA,
           longitudeDelta: LONGITUDE_DELTA,
         });
+        console.log(`[MapScreen] Location set: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
       } else {
         Alert.alert(
           'Location Permission Required',
@@ -160,7 +176,7 @@ export default function MapScreen() {
         );
       }
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error('[MapScreen] Error getting location:', error);
       setRegion(DEFAULT_LOCATION);
       setLocationPermission(false);
       Alert.alert(

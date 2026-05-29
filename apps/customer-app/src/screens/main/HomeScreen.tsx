@@ -13,6 +13,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { findNearestGhanaLocation, isWithinGhana } from '../../utils/ghanaLocations';
 
 // Design System Colors (theme-aware)
 const createColors = (t: AppTheme) => ({
@@ -78,15 +79,27 @@ export default function HomeScreen() {
       }
 
       const position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.High,
       });
+      
+      const { latitude: lat, longitude: lng } = position.coords;
+      
+      // Validate coordinates are within Ghana
+      if (!isWithinGhana(lat, lng)) {
+        console.log('[HomeScreen] Location outside Ghana, using default');
+        setLocation(prev => ({ ...prev, permissionDenied: true }));
+        return;
+      }
+      
       setLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
+        lat,
+        lng,
         permissionDenied: false,
       });
+      
+      console.log(`[HomeScreen] Location set: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
     } catch (error) {
-      console.log('Location permission error:', error);
+      console.log('[HomeScreen] Location permission error:', error);
       setLocation(prev => ({ ...prev, permissionDenied: true }));
     }
   };
@@ -247,7 +260,7 @@ export default function HomeScreen() {
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
               <Image
-                source={isDark ? require('../../../assets/logo-white.png') : require('../../../assets/logo-black.png')}
+                source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
                 style={styles.headerLogo}
                 resizeMode="contain"
               />
@@ -401,7 +414,7 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     gap: 12,
   },
   headerLogo: {
-    width: 36,
+    width: 120,
     height: 36,
   },
   greetingLabel: {

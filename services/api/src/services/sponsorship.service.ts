@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { Prisma } from '@prisma/client';
 
 export interface AddSponsoredSalonData {
   salonId: string;
@@ -8,6 +9,24 @@ export interface AddSponsoredSalonData {
   amountPaid?: number;
   packageId?: string;
   adminId?: string;
+}
+
+// Decimal columns from Prisma serialize as strings in JSON. Coerce to number
+// for the API response so the admin UI can call formatCurrency() / arithmetic
+// without runtime type juggling.
+function toNumber(value: Prisma.Decimal | number | string | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return value;
+  const n = Number(value.toString());
+  return Number.isFinite(n) ? n : null;
+}
+
+function serializeSponsorship<T extends { amountPaid: any }>(s: T): T & { amountPaid: number | null } {
+  return { ...s, amountPaid: toNumber(s.amountPaid) };
+}
+
+function serializePackage<T extends { priceGhs: any }>(p: T): T & { priceGhs: number } {
+  return { ...p, priceGhs: toNumber(p.priceGhs) ?? 0 };
 }
 
 export interface SponsorshipPackage {
@@ -41,6 +60,17 @@ export async function addSponsoredSalon(data: AddSponsoredSalonData) {
     throw new Error('Salon not found');
   }
 
+  // Guard: prevent multiple concurrent active sponsorships for the same salon
+  // (the Salon row only stores ONE isSponsored flag + priority, so two active
+  // SponsoredSalon rows would silently overwrite each other).
+  const existingActive = await prisma.sponsoredSalon.findFirst({
+    where: { salonId, isActive: true },
+    select: { id: true, endTime: true },
+  });
+  if (existingActive) {
+    throw new Error('This salon already has an active sponsorship. Remove it first before adding a new one.');
+  }
+
   // Calculate end time
   const startTime = new Date();
   const calculatedEndTime = endTime || new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
@@ -56,49 +86,51 @@ export async function addSponsoredSalon(data: AddSponsoredSalonData) {
     }
   }
 
-  // Create sponsored salon record
-  const sponsoredSalon = await prisma.sponsoredSalon.create({
-    data: {
-      salonId,
-      durationHours,
-      startTime,
-      endTime: calculatedEndTime,
-      amountPaid: amountPaid ? String(amountPaid) : '0',
-      isActive: true,
-      priority,
-      createdById: adminId,
-    },
-    include: {
-      salon: {
-        select: {
-          id: true,
-          businessName: true,
-          city: true,
-          region: true,
+  // Create + flag salon atomically so the two rows can never drift
+  const [sponsoredSalon] = await prisma.$transaction([
+    prisma.sponsoredSalon.create({
+      data: {
+        salonId,
+        durationHours,
+        startTime,
+        endTime: calculatedEndTime,
+        amountPaid: amountPaid != null ? new Prisma.Decimal(amountPaid) : null,
+        isActive: true,
+        priority,
+        createdById: adminId,
+      },
+      include: {
+        salon: {
+          select: {
+            id: true,
+            businessName: true,
+            city: true,
+            region: true,
+            address: true,
+            logo: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
         },
       },
-      createdBy: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-        },
+    }),
+    prisma.salon.update({
+      where: { id: salonId },
+      data: {
+        isSponsored: true,
+        sponsorshipPriority: priority,
+        sponsorshipExpiresAt: calculatedEndTime,
       },
-    },
-  });
-
-  // Update salon sponsorship status
-  await prisma.salon.update({
-    where: { id: salonId },
-    data: {
-      isSponsored: true,
-      sponsorshipPriority: priority,
-      sponsorshipExpiresAt: calculatedEndTime,
-    },
-  });
+    }),
+  ]);
 
   logger.info(`Sponsored salon added: ${salonId} for ${durationHours} hours, expires at ${calculatedEndTime.toISOString()}`);
-  return sponsoredSalon;
+  return serializeSponsorship(sponsoredSalon);
 }
 
 /**
@@ -122,82 +154,99 @@ export async function removeSponsoredSalon(sponsorshipId: string) {
 
   const now = new Date();
 
-  // Mark sponsorship as inactive
-  const updatedSponsorship = await prisma.sponsoredSalon.update({
-    where: { id: sponsorshipId },
-    data: {
-      isActive: false,
-      endTime: now,
-    },
-    include: {
-      salon: {
-        select: {
-          id: true,
-          businessName: true,
-          city: true,
-          region: true,
-        },
+  // Atomic: deactivate sponsorship + clear salon flags together
+  const [updatedSponsorship] = await prisma.$transaction([
+    prisma.sponsoredSalon.update({
+      where: { id: sponsorshipId },
+      data: {
+        isActive: false,
+        endTime: now,
       },
-    },
-  });
-
-  // Update salon sponsorship status
-  await prisma.salon.update({
-    where: { id: sponsorship.salonId },
-    data: {
-      isSponsored: false,
-      sponsorshipPriority: 0,
-      sponsorshipExpiresAt: null,
-    },
-  });
-
-  logger.info(`Sponsored salon removed: ${sponsorshipId}, salon ${sponsorship.salonId}`);
-  return updatedSponsorship;
-}
-
-/**
- * Get all active sponsored salons
- * - Return all where isActive=true, include salon details, order by priority ASC
- */
-export async function getSponsoredSalons() {
-  const sponsoredSalons = await prisma.sponsoredSalon.findMany({
-    where: { isActive: true },
-    include: {
-      salon: {
-        select: {
-          id: true,
-          businessName: true,
-          city: true,
-          region: true,
-          logo: true,
-          rating: true,
-          reviewCount: true,
-          owner: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              phoneNumber: true,
-              email: true,
-            },
+      include: {
+        salon: {
+          select: {
+            id: true,
+            businessName: true,
+            city: true,
+            region: true,
+            address: true,
+            logo: true,
           },
         },
       },
-      createdBy: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
+    }),
+    prisma.salon.update({
+      where: { id: sponsorship.salonId },
+      data: {
+        isSponsored: false,
+        sponsorshipPriority: 0,
+        sponsorshipExpiresAt: null,
+      },
+    }),
+  ]);
+
+  logger.info(`Sponsored salon removed: ${sponsorshipId}, salon ${sponsorship.salonId}`);
+  return serializeSponsorship(updatedSponsorship);
+}
+
+/**
+ * Get sponsored salons (paginated, with optional active/expired filter)
+ */
+export async function getSponsoredSalons(
+  page: number = 1,
+  limit: number = 20,
+  status?: 'active' | 'expired'
+): Promise<{ data: any[]; total: number; totalPages: number }> {
+  const where: any = {};
+  if (status === 'active') where.isActive = true;
+  else if (status === 'expired') where.isActive = false;
+
+  const [rows, total] = await Promise.all([
+    prisma.sponsoredSalon.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        salon: {
+          select: {
+            id: true,
+            businessName: true,
+            city: true,
+            region: true,
+            address: true,
+            logo: true,
+            rating: true,
+            reviewCount: true,
+            owner: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phoneNumber: true,
+                email: true,
+              },
+            },
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
         },
       },
-    },
-    orderBy: [
-      { priority: 'asc' },
-      { startTime: 'desc' },
-    ],
-  });
+      orderBy: [
+        { isActive: 'desc' },
+        { priority: 'asc' },
+        { startTime: 'desc' },
+      ],
+    }),
+    prisma.sponsoredSalon.count({ where }),
+  ]);
 
-  return sponsoredSalons;
+  const data = rows.map(serializeSponsorship);
+  return { data, total, totalPages: Math.ceil(total / limit) };
 }
 
 /**
@@ -213,7 +262,7 @@ export async function getPackages() {
     ],
   });
 
-  return packages;
+  return packages.map(serializePackage);
 }
 
 /**

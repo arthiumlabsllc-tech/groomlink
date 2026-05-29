@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import SearchBox from './SearchBox'
+import LocationPicker from './LocationPicker'
 import BottomNav from './BottomNav'
 import TrustBadges from './TrustBadges'
 import FAQ from './FAQ'
+import RoleSelectorModal from './RoleSelectorModal'
 import { useGeolocation, formatDistance } from '../hooks/useGeolocation'
-import { GHANA_CITIES } from '../data/ghanaCities'
+import { useSavedLocation, appendLocationParams } from '../hooks/useSavedLocation'
 import { HaircutIcon, BarberIcon, NailsIcon, BraidingIcon, MassageIcon, DreadlocksIcon } from './CategoryIcons'
 
 interface Salon {
@@ -36,96 +38,6 @@ interface Category {
 const API_BASE_URL = 'https://groomlinkgh.com/api'
 const CUSTOMER_APP_URL = 'https://my.groomlinkgh.com'
 
-function MobileCityDiscovery() {
-  const [expandedCity, setExpandedCity] = useState<string | null>(null)
-
-  const toggleCity = (cityName: string) => {
-    setExpandedCity((prev) => (prev === cityName ? null : cityName))
-  }
-
-  const buildExploreUrl = (city: string, area?: string): string => {
-    const base = `${CUSTOMER_APP_URL}/explore`
-    const params = new URLSearchParams()
-    params.set('city', city)
-    if (area) params.set('area', area)
-    return `${base}?${params.toString()}`
-  }
-
-  return (
-    <div className="py-6 px-4">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-1 h-6 bg-[#FCD116] rounded-full" />
-        <h2 className="text-xl font-bold text-brand-text">Explore by City</h2>
-      </div>
-      <div className="space-y-2">
-        {GHANA_CITIES.map((city) => (
-          <div
-            key={city.city}
-            className="border border-gray-200 rounded-xl overflow-hidden bg-white"
-          >
-            <button
-              onClick={() => toggleCity(city.city)}
-              className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                  <img
-                    src={city.image}
-                    alt={city.city}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-brand-text text-sm">{city.city}</p>
-                  <p className="text-[10px] text-gray-500">{city.areas.length} areas</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <a
-                  href={buildExploreUrl(city.city)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-[10px] font-medium text-[#006B3F] px-1.5 py-0.5 rounded hover:bg-[#006B3F]/10 transition-colors"
-                >
-                  View All
-                </a>
-                <Icon
-                  name="expand_more"
-                  size={18}
-                  className={`text-gray-400 transition-transform duration-200 ${expandedCity === city.city ? 'rotate-180' : ''}`}
-                />
-              </div>
-            </button>
-
-            {expandedCity === city.city && (
-              <div className="px-3 pb-3">
-                <div className="border-t border-gray-100 pt-2">
-                  <div className="flex flex-wrap gap-1.5">
-                    {city.areas.slice(0, 15).map((area) => (
-                      <a
-                        key={area}
-                        href={buildExploreUrl(city.city, area)}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 text-[10px] font-medium rounded-full"
-                      >
-                        {area}
-                      </a>
-                    ))}
-                    {city.areas.length > 15 && (
-                      <span className="px-2 py-1 text-[10px] text-gray-400">
-                        +{city.areas.length - 15} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 const categories: Category[] = [
   { name: 'Hair', icon: <HaircutIcon className="w-7 h-7" />, query: 'Haircut' },
   { name: 'Barber', icon: <BarberIcon className="w-7 h-7" />, query: 'Beard Trim' },
@@ -135,7 +47,7 @@ const categories: Category[] = [
   { name: 'Dreadlocks', icon: <DreadlocksIcon className="w-7 h-7" />, query: 'Dreadlocks' },
 ]
 
-function HeroSection() {
+function HeroSection({ onLogin }: { onLogin: () => void }) {
   const navigate = useNavigate()
 
   const handleCategoryClick = (category: string) => {
@@ -143,20 +55,32 @@ function HeroSection() {
   }
 
   return (
-    <div className="bg-gradient-to-b from-[#1a0a0b] via-[#2d1215] to-[#1a1a1a] pt-8 pb-6 px-4">
-      {/* Logo */}
-      <div className="flex justify-center mb-6">
-        <img 
-          src="/logo-full-white.png" 
-          alt="GroomLink" 
-          className="h-10 w-auto"
+    <div className="bg-gradient-to-b from-[#1a0a0b] via-[#2d1215] to-[#1a1a1a] pt-6 pb-6 px-4">
+      {/* Top row: logo (left) + Log In button (right) */}
+      <div className="flex items-center justify-between mb-5">
+        <img
+          src="/logo-full-white.png"
+          alt="GroomLink"
+          className="h-9 w-auto"
         />
+        <button
+          onClick={onLogin}
+          className="inline-flex items-center gap-1.5 text-white text-sm font-semibold bg-white/10 border border-white/20 hover:bg-white/20 px-4 py-2 rounded-full transition-colors"
+        >
+          <Icon name="person" size={16} className="text-white" />
+          Log In
+        </button>
       </div>
 
       {/* Tagline */}
       <p className="text-white/90 text-center text-base mb-6 px-4">
         Discover and book beauty & grooming professionals near you
       </p>
+
+      {/* Location Picker - sits above the search bar */}
+      <div className="mb-3">
+        <LocationPicker variant="hero" autoPrompt />
+      </div>
 
       {/* Search Bar */}
       <SearchBox variant="mobile" className="mb-6" />
@@ -910,7 +834,7 @@ function AppDownloadBanner() {
             <p className="text-xs text-gray-500">Better experience on the app</p>
           </div>
           <a
-            href="https://my.groomlinkgh.com/login"
+            href="/download"
             className="bg-[#006B3F] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#005a35] transition-colors flex-shrink-0"
           >
             Download
@@ -941,7 +865,7 @@ function DownloadAppSection() {
       <div className="space-y-3">
         {/* Apple App Store */}
         <a
-          href="https://my.groomlinkgh.com/login"
+          href="/download"
           className="flex items-center justify-center gap-3 bg-black rounded-xl px-5 py-3 border border-white/20"
         >
           <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -955,7 +879,7 @@ function DownloadAppSection() {
 
         {/* Google Play */}
         <a
-          href="https://my.groomlinkgh.com/login"
+          href="/download"
           className="flex items-center justify-center gap-3 bg-black rounded-xl px-5 py-3 border border-white/20"
         >
           <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -983,7 +907,7 @@ function MiniFooter() {
   const quickLinks = [
     { name: 'For Customers', href: '/explore' },
     { name: 'For Barbershop/Salon', href: 'https://partners.groomlinkgh.com' },
-    { name: 'Support', href: 'https://my.groomlinkgh.com/support' },
+    { name: 'Support', href: '/support' },
     { name: 'About', href: '/about' },
   ]
 
@@ -1101,6 +1025,8 @@ export default function MobileHome() {
   const [popularSalons, setPopularSalons] = useState<Salon[]>([])
   const [loadingRecommended, setLoadingRecommended] = useState(true)
   const [loadingPopular, setLoadingPopular] = useState(true)
+  const [roleModalOpen, setRoleModalOpen] = useState(false)
+  const savedLocation = useSavedLocation()
 
   useEffect(() => {
     const mapSalonData = (raw: any[]): Salon[] =>
@@ -1122,14 +1048,21 @@ export default function MobileHome() {
 
     const fetchRecommended = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/salons?limit=8`)
+        setLoadingRecommended(true)
+        const params = new URLSearchParams()
+        params.set('limit', '8')
+        appendLocationParams(params, savedLocation)
+        const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         if (data.success && Array.isArray(data.data)) {
           setRecommendedSalons(mapSalonData(data.data.slice(0, 8)))
+        } else {
+          setRecommendedSalons([])
         }
       } catch (err) {
         console.error('Error fetching recommended salons:', err)
+        setRecommendedSalons([])
       } finally {
         setLoadingRecommended(false)
       }
@@ -1137,14 +1070,22 @@ export default function MobileHome() {
 
     const fetchPopular = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/salons?limit=8&sort=rating`)
+        setLoadingPopular(true)
+        const params = new URLSearchParams()
+        params.set('limit', '8')
+        params.set('sort', 'rating')
+        appendLocationParams(params, savedLocation)
+        const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         if (data.success && Array.isArray(data.data)) {
           setPopularSalons(mapSalonData(data.data.slice(0, 6)))
+        } else {
+          setPopularSalons([])
         }
       } catch (err) {
         console.error('Error fetching popular salons:', err)
+        setPopularSalons([])
       } finally {
         setLoadingPopular(false)
       }
@@ -1152,7 +1093,7 @@ export default function MobileHome() {
 
     fetchRecommended()
     fetchPopular()
-  }, [])
+  }, [savedLocation])
 
   return (
     <div className="min-h-screen bg-white">
@@ -1179,13 +1120,10 @@ export default function MobileHome() {
       <FloatingPartnerCTA />
 
       {/* Hero Section */}
-      <HeroSection />
+      <HeroSection onLogin={() => setRoleModalOpen(true)} />
 
       {/* Nearby Salons Section */}
       <NearbySection />
-
-      {/* City Discovery */}
-      <MobileCityDiscovery />
 
       {/* Recommended Section */}
       <RecommendedSection salons={recommendedSalons} loading={loadingRecommended} />
@@ -1219,6 +1157,9 @@ export default function MobileHome() {
 
       {/* Bottom Navigation */}
       <BottomNav activeTab="home" />
+
+      {/* Role selector modal for Log In / Sign Up */}
+      <RoleSelectorModal open={roleModalOpen} onClose={() => setRoleModalOpen(false)} />
     </div>
   )
 }

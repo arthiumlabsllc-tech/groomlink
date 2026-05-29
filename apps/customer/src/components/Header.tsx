@@ -133,19 +133,19 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-40 h-14">
-      <div className="flex items-center justify-between h-full px-4 max-w-7xl mx-auto">
-        {/* Logo */}
-        <Link to={isAuthenticated ? "/dashboard" : "/explore"} className="flex items-center gap-2 transition-all duration-200 hover:opacity-80">
+    <header className="fixed top-0 left-0 lg:left-64 right-0 bg-white border-b border-gray-100 z-40 h-14">
+      <div className="flex items-center justify-between h-full px-4 lg:px-8 max-w-7xl mx-auto lg:mx-0">
+        {/* Logo — mobile/tablet only; desktop sidebar already shows the logo */}
+        <Link to={isAuthenticated ? "/dashboard" : "/explore"} className="flex items-center gap-2 transition-all duration-200 hover:opacity-80 lg:hidden">
           <img 
-            src={isDark ? "/logo-white.png" : "/logo-black.png"} 
+            src={isDark ? "/logo-full-white.png" : "/logo-full-black.png"} 
             alt="GroomLink" 
-            className="h-7 w-auto"
+            className="h-8 w-auto"
           />
         </Link>
 
         {/* Right Side */}
-        <div className="flex items-center gap-2 relative">
+        <div className="flex items-center gap-2 relative lg:ml-auto">
           {isAuthenticated ? (
             <>
               {/* Notifications */}

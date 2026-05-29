@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom'
 import SearchBox from './SearchBox'
 import Icon from './Icon'
+import LocationPicker from './LocationPicker'
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[90vh] md:min-h-[700px] flex items-center overflow-hidden pt-20">
-      {/* Background */}
-      <div className="absolute inset-0">
+    <section className="relative z-20 min-h-[90vh] md:min-h-[700px] flex items-center pt-20">
+      {/* Background — overflow-hidden lives HERE (not on the <section>) so the
+          LocationPicker dropdown can extend below the hero's bottom edge and
+          paint in front of the HowItWorks section. The z-20 on the section
+          ensures the hero's stacking context wins over later siblings. */}
+      <div className="absolute inset-0 overflow-hidden">
         {/* Self-hosted Video Background - Desktop Only (lg+) */}
         <div className="hidden lg:block absolute inset-0 w-full h-full overflow-hidden">
           <video
@@ -63,8 +67,18 @@ export default function Hero() {
             Ghana's #1 platform to discover, compare, and book barbers, salons, makeup artists, and beauty professionals - or list your business and grow your clientele.
           </p>
 
+          {/* Location Picker - sits above the search bar.
+              z-30 wrapper ensures the location dropdown panel renders in FRONT
+              of the SearchBox (which sits in its own backdrop-blur stacking
+              context below at z-20). Without this, the location panel opens
+              downward and gets visually clipped behind the glassmorphic search
+              input on desktop. */}
+          <div className="relative z-30 animate-fade-in-up mb-3" style={{ animationDelay: '0.13s' }}>
+            <LocationPicker variant="hero" autoPrompt />
+          </div>
+
           {/* Search Box */}
-          <div className="animate-fade-in-up mb-8" style={{ animationDelay: '0.15s' }}>
+          <div className="relative z-20 animate-fade-in-up mb-8" style={{ animationDelay: '0.15s' }}>
             <SearchBox variant="desktop" />
           </div>
 
@@ -85,7 +99,7 @@ export default function Hero() {
               List Your Business
             </a>
             <a 
-              href="https://my.groomlinkgh.com/login" 
+              href="/download" 
               className="btn-outline-white text-center text-base px-6 py-3.5 min-h-12 w-full sm:w-auto inline-flex items-center justify-center gap-2"
             >
               <Icon name="phone_android" size={20} />
@@ -111,7 +125,7 @@ export default function Hero() {
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             {/* Apple App Store Badge */}
             <div className="flex flex-col items-center sm:items-start">
-              <div className="flex items-center gap-3 bg-black rounded-xl px-5 py-3 opacity-75 hover:opacity-90 transition-opacity cursor-not-allowed">
+              <a href="/download" className="flex items-center gap-3 bg-black rounded-xl px-5 py-3 opacity-75 hover:opacity-100 transition-opacity">
                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
@@ -119,12 +133,12 @@ export default function Hero() {
                   <span className="text-white/70 text-xs">Download on the</span>
                   <span className="text-white font-semibold text-base -mt-0.5">App Store</span>
                 </div>
-              </div>
+              </a>
             </div>
 
             {/* Google Play Store Badge */}
             <div className="flex flex-col items-center sm:items-start">
-              <div className="flex items-center gap-3 bg-black rounded-xl px-5 py-3 opacity-75 hover:opacity-90 transition-opacity cursor-not-allowed">
+              <a href="/download" className="flex items-center gap-3 bg-black rounded-xl px-5 py-3 opacity-75 hover:opacity-100 transition-opacity">
                 <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
                 </svg>
@@ -132,7 +146,7 @@ export default function Hero() {
                   <span className="text-white/70 text-xs">Get it on</span>
                   <span className="text-white font-semibold text-base -mt-0.5">Google Play</span>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </div>

@@ -133,7 +133,9 @@ export async function getSalonById(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Check if user is authenticated and has booked this salon
+    // Resolve viewer identity (used for both contact-info gating and status gating)
+    let viewerUserId: string | null = null;
+    let viewerRole: string | null = null;
     let canSeeContact = false;
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -141,12 +143,22 @@ export async function getSalonById(req: Request, res: Response): Promise<void> {
       try {
         const decoded = verifyToken(token);
         const userId = decoded.userId || (decoded as any).id;
+        viewerRole = (decoded as any).role || null;
         if (userId && userId !== 'pending') {
+          viewerUserId = userId;
           canSeeContact = await salonService.hasUserBookedSalon(userId, id);
         }
       } catch {
         // Invalid token - treat as anonymous
       }
+    }
+
+    // Hide non-APPROVED salons from public access. Owner and admins can still view.
+    const isOwner = viewerUserId !== null && viewerUserId === salon.ownerId;
+    const isAdmin = viewerRole === 'ADMIN' || viewerRole === 'SUPER_ADMIN';
+    if (salon.status !== 'APPROVED' && !isOwner && !isAdmin) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
     }
 
     // Strip sensitive contact info if user hasn't booked

@@ -9,20 +9,52 @@ input, textarea, select { color-scheme: light dark; }
 /* Dark mode overrides (surgical- keeps brand colors intact, flips neutral Tailwind classes) */
 @media (prefers-color-scheme: dark) {
   body { background-color: #0F1419 !important; color: #F3F4F6 !important; }
-  /* Surfaces */
+  /* Surfaces - solid */
   .bg-white { background-color: #1A1F2E !important; }
   .bg-gray-50 { background-color: #232937 !important; }
   .bg-gray-100 { background-color: #2A2F3E !important; }
+  /* Surfaces - opacity variants (Tailwind generates classes like .bg-white\/80) */
+  .bg-white\/90 { background-color: rgba(26, 31, 46, 0.9) !important; }
+  .bg-white\/80 { background-color: rgba(26, 31, 46, 0.85) !important; }
+  .bg-white\/70 { background-color: rgba(26, 31, 46, 0.75) !important; }
+  .bg-white\/60 { background-color: rgba(26, 31, 46, 0.65) !important; }
+  .bg-white\/50 { background-color: rgba(26, 31, 46, 0.55) !important; }
+  .bg-white\/40 { background-color: rgba(26, 31, 46, 0.45) !important; }
+  .bg-white\/30 { background-color: rgba(26, 31, 46, 0.35) !important; }
+  .bg-white\/20 { background-color: rgba(26, 31, 46, 0.25) !important; }
+  .bg-white\/10 { background-color: rgba(255, 255, 255, 0.06) !important; }
+  .bg-white\/5 { background-color: rgba(255, 255, 255, 0.04) !important; }
+  .bg-gray-50\/80, .bg-gray-50\/50 { background-color: rgba(35, 41, 55, 0.7) !important; }
+  .bg-gray-100\/80, .bg-gray-100\/50 { background-color: rgba(42, 47, 62, 0.7) !important; }
+  /* Hover & focus surfaces */
+  .hover\:bg-gray-50:hover { background-color: #2A2F3E !important; }
+  .hover\:bg-gray-100:hover { background-color: #323849 !important; }
+  .hover\:bg-gray-50\/80:hover { background-color: rgba(35, 41, 55, 0.85) !important; }
+  .focus\:bg-white:focus { background-color: #1A1F2E !important; }
+  /* Gradients that fade from-white / via-white - neutralize to surface */
+  .from-white { --tw-gradient-from: #1A1F2E !important; }
   /* Text */
   .text-\[\#1A1A1A\], .text-\[\#1a1a1a\] { color: #F3F4F6 !important; }
+  .text-black { color: #F3F4F6 !important; }
   .text-gray-900 { color: #F3F4F6 !important; }
   .text-gray-800 { color: #E5E7EB !important; }
   .text-gray-700 { color: #D1D5DB !important; }
   .text-gray-600, .text-gray-500 { color: #9CA3AF !important; }
+  .text-gray-400 { color: #9CA3AF !important; }
+  .text-gray-300 { color: #D1D5DB !important; }
   /* Borders */
   .border-gray-100 { border-color: #2A2F3E !important; }
   .border-gray-200 { border-color: #374151 !important; }
   .border-gray-300 { border-color: #4B5563 !important; }
+  .border-gray-200\/60, .border-gray-200\/50 { border-color: rgba(55, 65, 81, 0.7) !important; }
+  .border-gray-100\/50 { border-color: rgba(42, 47, 62, 0.7) !important; }
+  .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #2A2F3E !important; }
+  .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #374151 !important; }
+  /* Glassmorphism panels (notification dropdown etc.) */
+  .glass {
+    background: rgba(26, 31, 46, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
   /* Inputs */
   input, textarea, select {
     background-color: #1F2937 !important;
@@ -31,6 +63,47 @@ input, textarea, select { color-scheme: light dark; }
   }
   input::placeholder, textarea::placeholder { color: #9CA3AF !important; }
   .placeholder-gray-400::placeholder, .placeholder-gray-500::placeholder { color: #9CA3AF !important; }
+  /* Shadows become more subtle in dark mode so edges remain visible */
+  .shadow-card, .shadow-sm, .shadow-md, .shadow-lg {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.6) !important;
+  }
+  .shadow-elevated, .shadow-2xl, .shadow-xl {
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 8px 16px rgba(0,0,0,0.4) !important;
+  }
+  /* Status / alert surfaces - tint-dark instead of light pastel backgrounds */
+  .bg-red-50    { background-color: rgba(239, 68, 68, 0.12) !important; }
+  .bg-red-100   { background-color: rgba(239, 68, 68, 0.18) !important; }
+  .bg-amber-50  { background-color: rgba(245, 158, 11, 0.12) !important; }
+  .bg-amber-100 { background-color: rgba(245, 158, 11, 0.18) !important; }
+  .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.12) !important; }
+  .bg-yellow-100{ background-color: rgba(234, 179, 8, 0.18) !important; }
+  .bg-green-50  { background-color: rgba(34, 197, 94, 0.12) !important; }
+  .bg-green-100 { background-color: rgba(34, 197, 94, 0.18) !important; }
+  .bg-blue-50   { background-color: rgba(59, 130, 246, 0.12) !important; }
+  .bg-blue-100  { background-color: rgba(59, 130, 246, 0.18) !important; }
+  .hover\:bg-red-50:hover    { background-color: rgba(239, 68, 68, 0.15) !important; }
+  .hover\:bg-red-100:hover   { background-color: rgba(239, 68, 68, 0.22) !important; }
+  /* Status borders */
+  .border-red-200    { border-color: rgba(239, 68, 68, 0.35) !important; }
+  .border-amber-200  { border-color: rgba(245, 158, 11, 0.35) !important; }
+  .border-yellow-200 { border-color: rgba(234, 179, 8, 0.35) !important; }
+  .border-green-200  { border-color: rgba(34, 197, 94, 0.35) !important; }
+  .border-blue-200   { border-color: rgba(59, 130, 246, 0.35) !important; }
+  /* Status text - brighten for dark bg */
+  .text-red-700, .text-red-800, .text-red-900 { color: #FCA5A5 !important; }
+  .text-red-600 { color: #F87171 !important; }
+  .text-amber-700, .text-amber-800 { color: #FCD34D !important; }
+  .text-amber-600 { color: #FBBF24 !important; }
+  .text-yellow-700, .text-yellow-800 { color: #FDE047 !important; }
+  .text-green-700, .text-green-800 { color: #86EFAC !important; }
+  .text-green-600 { color: #4ADE80 !important; }
+  .text-blue-700, .text-blue-800 { color: #93C5FD !important; }
+  .text-blue-600 { color: #60A5FA !important; }
+  /* Skeleton shimmer for dark mode */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #1F2937 25%, #2A3446 50%, #1F2937 75%) !important;
+    background-size: 200% 100% !important;
+  }
 }
 
 html {

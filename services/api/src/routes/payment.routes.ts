@@ -28,4 +28,11 @@ router.post('/webhook/paystack', paymentController.handlePaystackWebhook);
 router.post('/callback/paystack', paymentController.handlePaystackCallback);
 router.get('/callback/paystack', paymentController.handlePaystackCallback);
 
+// TheTeller webhook - handles TheTeller payment callbacks
+router.post('/webhook/theteller', paymentController.handleTheTellerWebhook);
+
+// TheTeller callback - handles redirect after payment
+router.post('/callback/theteller', paymentController.handleTheTellerCallback);
+router.get('/callback/theteller', paymentController.handleTheTellerCallback);
+
 export default router;

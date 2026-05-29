@@ -20,6 +20,7 @@ import { SubscriptionPlans } from './pages/SubscriptionPlans';
 import { SubscriptionInvoices } from './pages/SubscriptionInvoices';
 import Feedback from './pages/Feedback';
 import { Security } from './pages/Security';
+import { AccessDenied } from './pages/AccessDenied';
 import { Login } from './pages/Login';
 import NotFound from './pages/NotFound';
 import { useAuth } from './hooks';
@@ -59,11 +60,23 @@ function PermissionGuard({
 
   // Check for SUPER_ADMIN requirement (only for specific actions like modifying SUPER_ADMIN accounts)
   if (requireSuperAdmin && user.role !== 'SUPER_ADMIN') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/access-denied" replace />;
   }
 
-  // ADMIN and SUPER_ADMIN both have access to all pages
-  // No page-level permission restrictions for regular ADMIN users
+  // Check page-level permissions
+  if (pageId) {
+    // SUPER_ADMIN has access to everything
+    if (user.role === 'SUPER_ADMIN') {
+      return <>{children}</>;
+    }
+    
+    // Check if user has permission for this page
+    const hasAccess = user.permissions?.pages?.includes(pageId);
+    
+    if (!hasAccess) {
+      return <Navigate to="/access-denied" replace />;
+    }
+  }
 
   return <>{children}</>;
 }
@@ -227,6 +240,7 @@ function AppRoutes() {
           } 
         />
       </Route>
+      <Route path="/access-denied" element={<AccessDenied />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

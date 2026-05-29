@@ -7,7 +7,7 @@ import {
   useKycSubmissions, useKycSubmissionDetail, useApproveKyc, useRejectKyc, usePendingKycCount
 } from '../hooks';
 import { formatDate, formatPhoneNumber, formatCurrency } from '../lib/utils';
-import { SalonType, SalonStatus, KycStatus, BusinessType, KycSubmission } from '../api/salons';
+import { SalonType, SalonStatus, KycStatus, BusinessType, KycSubmission, ProviderCategory } from '../api/salons';
 
 const GHANA_REGIONS = [
   'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Western', 
@@ -26,9 +26,15 @@ const SALON_TYPES: { value: SalonType; label: string }[] = [
 
 const WORKING_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const PROVIDER_CATEGORIES: { value: ProviderCategory; label: string; description: string }[] = [
+  { value: 'BUSINESS', label: 'Business / Shop', description: 'Physical salon or barbershop location' },
+  { value: 'FREELANCER', label: 'Freelancer / Mobile', description: 'Independent provider offering mobile services' },
+];
+
 interface CreateSalonFormData {
   businessName: string;
   type: SalonType;
+  providerCategory: ProviderCategory;
   phoneNumber: string;
   email: string;
   address: string;
@@ -39,6 +45,9 @@ interface CreateSalonFormData {
   workingDays: string[];
   description: string;
   ownerEmail: string;
+  ownerFirstName: string;
+  ownerLastName: string;
+  ownerPhoneNumber: string;
   latitude: string;
   longitude: string;
 }
@@ -46,6 +55,7 @@ interface CreateSalonFormData {
 const initialFormData: CreateSalonFormData = {
   businessName: '',
   type: 'BARBERSHOP',
+  providerCategory: 'BUSINESS',
   phoneNumber: '+233 ',
   email: '',
   address: '',
@@ -56,6 +66,9 @@ const initialFormData: CreateSalonFormData = {
   workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
   description: '',
   ownerEmail: '',
+  ownerFirstName: '',
+  ownerLastName: '',
+  ownerPhoneNumber: '',
   latitude: '',
   longitude: '',
 };
@@ -72,6 +85,7 @@ export function Salons() {
   const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
   const [suspendReason, setSuspendReason] = useState('');
   const [formData, setFormData] = useState<CreateSalonFormData>(initialFormData);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // KYC states
   const [activeTab, setActiveTab] = useState<'salons' | 'kyc'>('salons');
@@ -140,13 +154,15 @@ export function Salons() {
 
   const handleCreateSalon = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError(null);
     try {
       await createSalon.mutateAsync({
         businessName: formData.businessName,
         type: formData.type,
+        providerCategory: formData.providerCategory,
         phoneNumber: formData.phoneNumber,
         email: formData.email || undefined,
-        address: formData.address,
+        address: formData.address || undefined,
         city: formData.city,
         region: formData.region,
         openingTime: formData.openingTime,
@@ -154,13 +170,21 @@ export function Salons() {
         workingDays: formData.workingDays,
         description: formData.description || undefined,
         ownerEmail: formData.ownerEmail || undefined,
+        ownerFirstName: formData.ownerFirstName || undefined,
+        ownerLastName: formData.ownerLastName || undefined,
+        ownerPhoneNumber: formData.ownerPhoneNumber || undefined,
         latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
         longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
       });
       setShowAddModal(false);
       setFormData(initialFormData);
-    } catch (error) {
+      setCreateError(null);
+    } catch (error: any) {
       console.error('Failed to create salon:', error);
+      const errorMsg = error?.response?.data?.error?.message || 
+                       error?.response?.data?.message || 
+                       'Failed to create salon. Please try again.';
+      setCreateError(errorMsg);
     }
   };
 
@@ -619,9 +643,51 @@ export function Salons() {
               </button>
             </div>
             <form onSubmit={handleCreateSalon} className="p-6 space-y-6">
+              {/* Error Display */}
+              {createError && (
+                <div className="p-4 bg-[#CE1126]/10 border border-[#CE1126]/20 rounded-xl text-[#CE1126] text-sm flex items-start gap-2">
+                  <Icon name="error" size={18} className="flex-shrink-0 mt-0.5" />
+                  <span>{createError}</span>
+                </div>
+              )}
+
               {/* Business Info */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Business Information</h3>
+                
+                {/* Provider Category Toggle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Provider Type *</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {PROVIDER_CATEGORIES.map((category) => (
+                      <button
+                        key={category.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, providerCategory: category.value })}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${
+                          formData.providerCategory === category.value
+                            ? 'border-[#006B3F] bg-[#006B3F]/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 mb-1">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            formData.providerCategory === category.value
+                              ? 'border-[#006B3F]'
+                              : 'border-gray-300'
+                          }`}>
+                            {formData.providerCategory === category.value && (
+                              <div className="w-2 h-2 rounded-full bg-[#006B3F]" />
+                            )}
+                          </div>
+                          <span className="font-semibold text-gray-800">{category.label}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 ml-7">{category.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
@@ -686,14 +752,21 @@ export function Salons() {
 
               {/* Location */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Location</h3>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                  Location {formData.providerCategory === 'FREELANCER' && (
+                    <span className="text-xs normal-case text-gray-400">(Optional for freelancers)</span>
+                  )}
+                </h3>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address {formData.providerCategory === 'BUSINESS' ? '*' : '(Optional)'}
+                  </label>
                   <input
                     type="text"
-                    required
+                    required={formData.providerCategory === 'BUSINESS'}
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder={formData.providerCategory === 'FREELANCER' ? 'e.g. East Legon, Accra' : 'e.g. 123 Oxford Street'}
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
                   />
                 </div>
@@ -793,15 +866,60 @@ export function Salons() {
 
               {/* Owner */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Owner (Optional)</h3>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Owner Email (to link existing user)</label>
-                  <input
-                    type="email"
-                    value={formData.ownerEmail}
-                    onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
-                  />
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Owner Information</h3>
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                  <p className="text-sm text-blue-800 mb-3">
+                    <Icon name="info" size={14} className="inline mr-1" />
+                    Provide owner details to link or create a partner account
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Owner Email *</label>
+                      <input
+                        type="email"
+                        required
+                        value={formData.ownerEmail}
+                        onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
+                        placeholder="owner@example.com"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">If user exists, salon will be linked. Otherwise, a new account will be created.</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Owner First Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.ownerFirstName}
+                          onChange={(e) => setFormData({ ...formData, ownerFirstName: e.target.value })}
+                          placeholder="John"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Owner Last Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.ownerLastName}
+                          onChange={(e) => setFormData({ ...formData, ownerLastName: e.target.value })}
+                          placeholder="Doe"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Owner Phone Number (Optional)</label>
+                      <input
+                        type="tel"
+                        value={formData.ownerPhoneNumber}
+                        onChange={(e) => setFormData({ ...formData, ownerPhoneNumber: e.target.value })}
+                        placeholder="+233 XX XXX XXXX"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#006B3F] focus:ring-1 focus:ring-[#006B3F]"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -52,6 +52,12 @@ export async function getProfile(req: AuthenticatedRequest, res: Response): Prom
         preferredCategories: true,
         onboardingComplete: true,
         createdAt: true,
+        // Include admin permissions for ADMIN and SUPER_ADMIN roles
+        adminPermission: {
+          select: {
+            pages: true,
+          },
+        },
       },
     });
 

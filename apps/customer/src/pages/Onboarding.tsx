@@ -4,6 +4,7 @@ import Icon from '../components/Icon';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/auth';
 import apiClient from '../lib/api';
+import { findNearestGhanaLocation, isWithinGhana, isAccuracyAcceptable } from '../lib/ghanaLocations';
 
 /* ────────────────────────────────────────────
    Category chip data
@@ -372,24 +373,58 @@ export default function Onboarding() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
+          const { latitude, longitude, accuracy } = position.coords;
+          
+          console.log(`[Onboarding] GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}, Accuracy: ${accuracy}m`);
+          
+          // Validate if coordinates are within Ghana
+          if (!isWithinGhana(latitude, longitude)) {
+            console.log('[Onboarding] Location outside Ghana');
+            toast.error('Location appears to be outside Ghana. Please enable location services when in Ghana.');
+            setIsGettingLocation(false);
+            setStep(2);
+            return;
+          }
+          
+          // Check GPS accuracy
+          if (!isAccuracyAcceptable(accuracy)) {
+            console.log(`[Onboarding] Poor GPS accuracy: ${accuracy}m`);
+            toast.error('GPS accuracy is too low. Please try again in an area with better signal.');
+            setIsGettingLocation(false);
+            setStep(2);
+            return;
+          }
+          
+          // Find nearest Ghana location from our database
+          const nearestLocation = findNearestGhanaLocation(latitude, longitude, 20);
+          
+          if (nearestLocation) {
+            console.log(`[Onboarding] Detected: ${nearestLocation.city}, ${nearestLocation.region}`);
+            toast.success(`Location detected: ${nearestLocation.city}, ${nearestLocation.region}`);
+          }
+          
+          // Send coordinates to backend
           await apiClient.put('/users/location', {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
+            latitude,
+            longitude,
           });
+          
           toast.success('Location updated!');
-        } catch {
+        } catch (error) {
+          console.error('[Onboarding] Location update error:', error);
           // Non-critical- still advance
         } finally {
           setIsGettingLocation(false);
           setStep(2);
         }
       },
-      () => {
+      (error) => {
+        console.error('[Onboarding] Geolocation error:', error);
         // User denied or error- skip silently
         setIsGettingLocation(false);
         setStep(2);
       },
-      { enableHighAccuracy: false, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 

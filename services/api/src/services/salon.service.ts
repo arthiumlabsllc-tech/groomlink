@@ -31,6 +31,7 @@ export interface CreateSalonData {
   logo?: string;
   images?: string[];
   serviceAreas?: string[];
+  ghanaPostGPS?: string;
 }
 
 export interface UpdateSalonData extends Partial<CreateSalonData> {
@@ -108,6 +109,7 @@ export async function createSalon(ownerId: string, data: CreateSalonData) {
       ownerId,
       latitude: typeof latitude === 'number' ? latitude : null,
       longitude: typeof longitude === 'number' ? longitude : null,
+      ghanaPostGPS: data.ghanaPostGPS || null,
     } as any,
   });
 

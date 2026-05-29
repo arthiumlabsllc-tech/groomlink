@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { z } from 'zod';
-import { successResponse, errorResponse } from '../utils/response';
+import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import { AuthenticatedRequest } from '../types';
 import * as sponsorshipService from '../services/sponsorship.service';
 import logger from '../config/logger';
@@ -75,14 +75,19 @@ export async function removeSponsoredSalon(req: AuthenticatedRequest, res: Respo
 }
 
 /**
- * Get all active sponsored salons
- * GET /admin/sponsored-salons
+ * Get sponsored salons (paginated, with optional status filter)
+ * GET /admin/sponsored-salons?page=&limit=&status=active|expired
  */
 export async function getSponsoredSalons(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const sponsoredSalons = await sponsorshipService.getSponsoredSalons();
+    const page = Math.max(parseInt((req.query.page as string) || '1', 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt((req.query.limit as string) || '20', 10) || 20, 1), 100);
+    const statusParam = (req.query.status as string | undefined)?.toLowerCase();
+    const status = statusParam === 'active' || statusParam === 'expired' ? statusParam : undefined;
 
-    successResponse(res, sponsoredSalons);
+    const { data, total } = await sponsorshipService.getSponsoredSalons(page, limit, status);
+
+    paginatedResponse(res, data, page, limit, total);
   } catch (error) {
     logger.error('Error getting sponsored salons:', error);
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);

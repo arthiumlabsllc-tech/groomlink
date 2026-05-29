@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from './Icon'
+import {
+  loadSavedLocation,
+  appendLocationParams,
+  type SavedLocation,
+} from '../hooks/useSavedLocation'
 
 interface Salon {
   id: string
@@ -54,12 +59,26 @@ export default function SearchBox({ variant = 'mobile', className = '' }: Search
   const [isSearching, setIsSearching] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [savedLocation, setSavedLocation] = useState<SavedLocation | null>(() =>
+    typeof window !== 'undefined' ? loadSavedLocation() : null
+  )
 
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isDesktop = variant === 'desktop'
+
+  // Refresh saved location when LocationPicker updates it
+  useEffect(() => {
+    const refresh = () => setSavedLocation(loadSavedLocation())
+    window.addEventListener('storage', refresh)
+    window.addEventListener('groomlink:location-changed', refresh as EventListener)
+    return () => {
+      window.removeEventListener('storage', refresh)
+      window.removeEventListener('groomlink:location-changed', refresh as EventListener)
+    }
+  }, [])
 
   // Debounced search
   useEffect(() => {
@@ -80,9 +99,11 @@ export default function SearchBox({ variant = 'mobile', className = '' }: Search
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/salons?search=${encodeURIComponent(query)}&limit=8`
-        )
+        const params = new URLSearchParams()
+        params.set('search', query)
+        params.set('limit', '8')
+        appendLocationParams(params, savedLocation)
+        const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         if (data.success && Array.isArray(data.data)) {
@@ -103,7 +124,7 @@ export default function SearchBox({ variant = 'mobile', className = '' }: Search
         clearTimeout(debounceRef.current)
       }
     }
-  }, [query])
+  }, [query, savedLocation])
 
   // Close on click outside
   useEffect(() => {
@@ -209,8 +230,14 @@ export default function SearchBox({ variant = 'mobile', className = '' }: Search
 
             {!isSearching && results.length === 0 && (
               <div className="px-4 py-6 text-center">
-                <p className="text-gray-500 text-sm">
-                  No salons found for '<span className="font-medium text-gray-700">{query}</span>'
+                <Icon name="search_off" size={28} className="text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-700 text-sm font-medium">
+                  No salons{savedLocation ? <> in <span className="text-[#CE1126]">{savedLocation.label}</span></> : null} match '<span className="font-medium text-gray-700">{query}</span>'
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {savedLocation
+                    ? "We're not in your area yet, or no provider offers this service. Try another city or service."
+                    : 'Try a different keyword, or set your location to find pros around you.'}
                 </p>
               </div>
             )}
@@ -323,8 +350,14 @@ export default function SearchBox({ variant = 'mobile', className = '' }: Search
 
           {!isSearching && results.length === 0 && (
             <div className="px-4 py-6 text-center">
-              <p className="text-gray-500 text-sm">
-                No salons found for '<span className="font-medium text-gray-700">{query}</span>'
+              <Icon name="search_off" size={28} className="text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-700 text-sm font-medium">
+                No salons{savedLocation ? <> in <span className="text-[#CE1126]">{savedLocation.label}</span></> : null} match '<span className="font-medium text-gray-700">{query}</span>'
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {savedLocation
+                  ? "We're not in your area yet, or no provider offers this service. Try another city or service."
+                  : 'Try a different keyword, or set your location to find pros around you.'}
               </p>
             </div>
           )}
