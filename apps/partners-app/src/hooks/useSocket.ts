@@ -1,12 +1,11 @@
 /**
  * Socket.io hook for real-time notifications in mobile app
  * Handles connection to the API server and event listeners for booking events
+ * Uses useRef pattern to prevent infinite reconnection loops.
  */
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
-import { useNotificationSound } from './useNotificationSound';
-import { useAuthStore } from '../store/authStore';
 
 const API_BASE_URL = 'https://groomlinkgh.com';
 
@@ -55,158 +54,155 @@ interface UseSocketOptions extends SocketEvents {
 }
 
 /**
- * Socket.io hook for real-time updates on mobile
+ * Socket.io hook for real-time updates on mobile.
+ * Callbacks are stored in refs so the socket won't reconnect when they change.
  */
-export function useSocket({
-  salonId,
-  enabled = true,
-  onBookingNew,
-  onBookingCheckin,
-  onBookingCompleted,
-  onQueueJoined,
-  onQueueCompleted,
-  onQueueUpdated,
-}: UseSocketOptions) {
+export function useSocket(options: UseSocketOptions) {
+  const { salonId, enabled = true } = options;
   const socketRef = useRef<Socket | null>(null);
-  const { playBookingSound, playCheckinSound, playCompletionSound } = useNotificationSound();
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Connect to socket
+  // Store callbacks in refs so socket listeners always use the latest
+  // without triggering reconnections.
+  const callbacksRef = useRef(options);
+  callbacksRef.current = options;
+
+  // Track salonId changes for room management without reconnecting
+  const salonIdRef = useRef(salonId);
+
+  // Stable connect function - no dependencies that change per render
+  const connect = useCallback(async () => {
+    if (socketRef.current?.connected) return;
+
+    try {
+      const token = await SecureStore.getItemAsync('accessToken');
+      if (!token) {
+        console.log('No auth token found, skipping socket connection');
+        return;
+      }
+
+      const socket = io(API_BASE_URL, {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+      });
+
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        console.log('Socket connected:', socket.id);
+        setIsConnected(true);
+        // Join salon room on connect/reconnect
+        const currentSalonId = salonIdRef.current;
+        if (currentSalonId) {
+          socket.emit('join:salon', currentSalonId);
+        }
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
+        setIsConnected(false);
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error.message);
+      });
+
+      // Booking events - use callbacksRef.current for always-latest handlers
+      socket.on('booking:new', (data: BookingNewEvent) => {
+        console.log('New booking received:', data);
+        callbacksRef.current.onBookingNew?.(data);
+      });
+
+      socket.on('booking:checkin', (data: BookingCheckinEvent) => {
+        console.log('Customer checked in:', data);
+        callbacksRef.current.onBookingCheckin?.(data);
+      });
+
+      socket.on('booking:completed', (data: BookingCompletedEvent) => {
+        console.log('Booking completed:', data);
+        callbacksRef.current.onBookingCompleted?.(data);
+      });
+
+      // Queue events
+      socket.on('queue:joined', (data: any) => {
+        console.log('Queue joined:', data);
+        callbacksRef.current.onQueueJoined?.(data);
+      });
+
+      socket.on('queue:completed', (data: any) => {
+        console.log('Queue completed:', data);
+        callbacksRef.current.onQueueCompleted?.(data);
+      });
+
+      socket.on('queue:updated', (data: any) => {
+        console.log('Queue updated:', data);
+        callbacksRef.current.onQueueUpdated?.(data);
+      });
+    } catch (error) {
+      console.error('Failed to connect socket:', error);
+    }
+  }, []);
+
+  const disconnect = useCallback(() => {
+    if (socketRef.current) {
+      const currentSalonId = salonIdRef.current;
+      if (currentSalonId) {
+        socketRef.current.emit('leave:salon', currentSalonId);
+      }
+      socketRef.current.disconnect();
+      socketRef.current = null;
+      setIsConnected(false);
+    }
+  }, []);
+
+  // Connect on mount when enabled, disconnect on unmount
   useEffect(() => {
     if (!enabled || !salonId) {
+      // If was connected but now disabled, disconnect
+      if (socketRef.current) {
+        disconnect();
+      }
       return;
     }
 
-    let isMounted = true;
+    connect();
 
-    const connectSocket = async () => {
-      try {
-        const token = await SecureStore.getItemAsync('accessToken');
-        
-        if (!token) {
-          console.log('No auth token found, skipping socket connection');
-          return;
-        }
-
-        // Create socket connection
-        const socket = io(API_BASE_URL, {
-          auth: { token },
-          transports: ['websocket', 'polling'],
-          reconnection: true,
-          reconnectionAttempts: 10,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-        });
-
-        if (!isMounted) return;
-        socketRef.current = socket;
-
-        // Connection events
-        socket.on('connect', () => {
-          console.log('Socket connected:', socket.id);
-          // Join the salon room
-          socket.emit('join:salon', salonId);
-        });
-
-        socket.on('disconnect', (reason) => {
-          console.log('Socket disconnected:', reason);
-        });
-
-        socket.on('connect_error', (error) => {
-          console.error('Socket connection error:', error);
-        });
-
-        // Booking events
-        socket.on('booking:new', (data: BookingNewEvent) => {
-          console.log('New booking received:', data);
-          
-          // Play sound
-          playBookingSound();
-          
-          // Call custom handler
-          onBookingNew?.(data);
-        });
-
-        socket.on('booking:checkin', (data: BookingCheckinEvent) => {
-          console.log('Customer checked in:', data);
-          
-          // Play sound
-          playCheckinSound();
-          
-          // Call custom handler
-          onBookingCheckin?.(data);
-        });
-
-        socket.on('booking:completed', (data: BookingCompletedEvent) => {
-          console.log('Booking completed:', data);
-          
-          // Play sound
-          playCompletionSound();
-          
-          // Call custom handler
-          onBookingCompleted?.(data);
-        });
-
-        // Queue events
-        socket.on('queue:joined', (data: any) => {
-          console.log('Queue joined:', data);
-          onQueueJoined?.(data);
-        });
-
-        socket.on('queue:completed', (data: any) => {
-          console.log('Queue completed:', data);
-          onQueueCompleted?.(data);
-        });
-
-        socket.on('queue:updated', (data: any) => {
-          console.log('Queue updated:', data);
-          onQueueUpdated?.(data);
-        });
-      } catch (error) {
-        console.error('Failed to connect socket:', error);
-      }
-    };
-
-    connectSocket();
-
-    // Cleanup on unmount
     return () => {
-      isMounted = false;
-      if (socketRef.current) {
-        socketRef.current.emit('leave:salon', salonId);
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
+      disconnect();
     };
-  }, [
-    salonId,
-    enabled,
-    playBookingSound,
-    playCheckinSound,
-    playCompletionSound,
-    onBookingNew,
-    onBookingCheckin,
-    onBookingCompleted,
-    onQueueJoined,
-    onQueueCompleted,
-    onQueueUpdated,
-  ]);
+  }, [enabled, !!salonId, connect, disconnect]);
 
-  // Return socket instance and utility functions
+  // Handle salonId changes - join/leave rooms without reconnecting
+  useEffect(() => {
+    const prevSalonId = salonIdRef.current;
+    salonIdRef.current = salonId;
+
+    if (!isConnected || !socketRef.current?.connected) return;
+
+    // Leave old room
+    if (prevSalonId && prevSalonId !== salonId) {
+      socketRef.current.emit('leave:salon', prevSalonId);
+    }
+    // Join new room
+    if (salonId && salonId !== prevSalonId) {
+      socketRef.current.emit('join:salon', salonId);
+    }
+  }, [salonId, isConnected]);
+
+  // Utility emit function
   const emit = useCallback((event: string, data: any) => {
     if (socketRef.current?.connected) {
       socketRef.current.emit(event, data);
     }
   }, []);
 
-  const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-    }
-  }, []);
-
   return {
     socket: socketRef.current,
-    isConnected: socketRef.current?.connected || false,
+    isConnected,
     emit,
     disconnect,
   };

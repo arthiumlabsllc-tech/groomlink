@@ -9,11 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 // - Polls /api/guest/support/tickets/:id every 3s while open.
 // - Plays notification sound when agent replies.
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_URL ||
-  (window.location.hostname === 'localhost'
-    ? 'http://localhost:3001/api'
-    : 'https://groomlinkgh.com/api');
+import { API_BASE_URL as API_BASE } from '../config';
 
 const STORAGE_KEY = 'groomlink_chat_landing';
 

@@ -540,14 +540,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.successBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   positionText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: theme.primary,
   },
   customerInfo: {
     flex: 1,
@@ -555,11 +555,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   customerName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.text,
   },
   serviceName: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   statusChip: {

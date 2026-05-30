@@ -14,7 +14,7 @@ import Icon from '../components/Icon'
 // endpoint used by the Support page, so interest signals land
 // in the agent dashboard.
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
 
 type Context = 'careers' | 'blog' | 'press' | 'download' | 'generic'
 

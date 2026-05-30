@@ -23,6 +23,7 @@ import PartnerWithUs from './pages/PartnerWithUs'
 import Support from './pages/Support'
 import About from './pages/About'
 import ComingSoon from './pages/ComingSoon'
+import NotFound from './pages/NotFound'
 
 /* Floating Partner CTA for desktop - slides in after scrolling */
 function FloatingPartnerBanner() {
@@ -146,6 +147,7 @@ function App() {
           <Route path="/download" element={<ComingSoon />} />
           <Route path="/app" element={<ComingSoon />} />
           <Route path="/get-app" element={<ComingSoon />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
       <ChatWidget />

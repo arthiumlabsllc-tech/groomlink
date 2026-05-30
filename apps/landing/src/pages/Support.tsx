@@ -12,7 +12,7 @@ import Icon from '../components/Icon'
 // fallback contact form. Channel details come from the public
 // site-settings endpoint so admins can change them without a deploy.
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
 
 interface SiteSettings {
   email: string

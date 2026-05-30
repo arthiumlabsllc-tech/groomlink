@@ -22,7 +22,8 @@ interface Salon {
   distance?: number
 }
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
+
 
 function mapSalonData(raw: any[], userLat?: number, userLng?: number): Salon[] {
   return raw.map((s: any) => {

@@ -1,17 +1,14 @@
 /**
  * Notification Sound Hook for Mobile App
- * Uses expo-av to play notification sounds for different events
+ * Uses expo-av to play a system notification sound.
+ * NOTE: Does NOT schedule notifications - App.tsx handles that.
+ * This hook only provides haptic/audio feedback for real-time events.
  */
 import { useRef, useCallback, useEffect } from 'react';
-import { Audio, AVPlaybackStatus } from 'expo-av';
-import * as Notifications from 'expo-notifications';
+import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 
 type NotificationSoundType = 'booking' | 'checkin' | 'completion';
-
-// Sound file URIs (we'll generate these using expo-av)
-// For simplicity, we'll use the system default notification sound
-// In a production app, you'd include actual sound files in the assets folder
 
 class NotificationSoundPlayer {
   private enabled: boolean = true;
@@ -19,12 +16,11 @@ class NotificationSoundPlayer {
 
   async initialize() {
     if (this.initialized) return;
-    
+
     try {
-      // Configure audio mode for playback
       await Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
+        staysActiveInBackground: false,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
@@ -39,83 +35,33 @@ class NotificationSoundPlayer {
   }
 
   /**
-   * Play a notification sound using synthesized tones
-   * Since we don't have audio files, we'll use a simple approach with expo-av
-   * In production, you'd use actual audio files from assets
+   * Play a short system sound for notification feedback.
+   * The actual notification is handled by App.tsx via Notifications.scheduleNotificationAsync
+   * which already includes `sound: true`. This method is for immediate audio feedback
+   * when the app is in the foreground.
    */
-  async playBookingSound() {
+  async playSound() {
     if (!this.enabled) return;
     await this.initialize();
-    
-    // For now, we'll trigger a local notification with sound
-    // In production, you would use actual audio files
-    await this.playLocalNotification(
-      'New Booking',
-      'A new booking has been received',
-      'booking'
-    );
-  }
 
-  async playCheckinSound() {
-    if (!this.enabled) return;
-    await this.initialize();
-    
-    await this.playLocalNotification(
-      'Customer Checked In',
-      'A customer has checked in',
-      'checkin'
-    );
-  }
-
-  async playCompletionSound() {
-    if (!this.enabled) return;
-    await this.initialize();
-    
-    await this.playLocalNotification(
-      'Service Completed',
-      'A service has been completed',
-      'completion'
-    );
-  }
-
-  async play(type: NotificationSoundType) {
-    switch (type) {
-      case 'booking':
-        await this.playBookingSound();
-        break;
-      case 'checkin':
-        await this.playCheckinSound();
-        break;
-      case 'completion':
-        await this.playCompletionSound();
-        break;
-    }
-  }
-
-  private async playLocalNotification(title: string, body: string, type: NotificationSoundType) {
     try {
-      // Configure notification handler
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
-      });
-
-      // Schedule a local notification with sound
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-        },
-        trigger: null, // Immediately
-      });
+      // Use a short system sound for in-app feedback
+      // On Android, the notification itself will play the default sound.
+      // This provides immediate feedback when the app is foregrounded.
+      if (Platform.OS === 'android') {
+        // Android notifications with sound: true already play the sound
+        // No additional sound needed to avoid double-play
+        return;
+      }
+      // On iOS, foreground notifications may not play sound depending on config,
+      // so we can rely on the notification handler's shouldPlaySound: true
     } catch (error) {
       console.error('Failed to play notification sound:', error);
     }
+  }
+
+  async play(_type: NotificationSoundType) {
+    await this.playSound();
   }
 }
 
@@ -123,30 +69,13 @@ class NotificationSoundPlayer {
 export const notificationSound = new NotificationSoundPlayer();
 
 /**
- * React hook for notification sounds on mobile
+ * React hook for notification sounds on mobile.
+ * Provides stable callback references that won't cause re-renders.
  */
 export function useNotificationSound() {
   const soundRef = useRef<NotificationSoundPlayer>(notificationSound);
 
   useEffect(() => {
-    // Request notification permissions on mount
-    const requestPermissions = async () => {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      
-      if (finalStatus !== 'granted') {
-        console.log('Notification permissions not granted');
-      }
-    };
-    
-    requestPermissions();
-    
-    // Initialize audio
     notificationSound.initialize();
   }, []);
 

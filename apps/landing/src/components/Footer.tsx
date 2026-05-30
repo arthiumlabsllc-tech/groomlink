@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import Icon from './Icon'
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
+
 
 interface SiteSettings {
   siteName: string
@@ -225,7 +226,7 @@ export default function Footer() {
         <div className="py-6 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm">
             <p className="text-gray-400">
-              © 2025 GroomLink. All rights reserved.
+              © {new Date().getFullYear()} GroomLink. All rights reserved.
             </p>
             <span className="hidden sm:inline text-gray-600">•</span>
             <p className="text-gray-400 flex items-center gap-1">

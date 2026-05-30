@@ -43,6 +43,7 @@ export default function BookingsScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [statusFilter, setStatusFilter] = useState<BookingStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
 
   // Fetch salon data
   const { data: salon } = useQuery({
@@ -69,7 +70,25 @@ export default function BookingsScreen() {
     enabled: !!salon?.id,
   });
 
+  // Accumulate bookings across pages; reset when filter changes
+  React.useEffect(() => {
+    if (bookingsData?.data) {
+      if (page === 1) {
+        setAllBookings(bookingsData.data);
+      } else {
+        setAllBookings((prev) => {
+          // Prevent duplicates by filtering already-loaded ids
+          const existingIds = new Set(prev.map((b) => b.id));
+          const newBookings = bookingsData.data.filter((b: Booking) => !existingIds.has(b.id));
+          return [...prev, ...newBookings];
+        });
+      }
+    }
+  }, [bookingsData, page]);
+
   const onRefresh = useCallback(() => {
+    setPage(1);
+    setAllBookings([]);
     queryClient.invalidateQueries({ queryKey: ['salonBookings', salon?.id] });
   }, [queryClient, salon?.id]);
 
@@ -285,6 +304,7 @@ export default function BookingsScreen() {
                 onPress={() => {
                   setStatusFilter(item.value);
                   setPage(1);
+                  setAllBookings([]);
                 }}
                 activeOpacity={0.7}
               >
@@ -303,7 +323,7 @@ export default function BookingsScreen() {
 
       {/* Bookings List */}
       <FlatList
-        data={bookingsData?.data || []}
+        data={allBookings}
         keyExtractor={(item) => item.id}
         renderItem={renderBookingItem}
         ListEmptyComponent={isLoading ? null : renderEmptyState}
@@ -311,7 +331,7 @@ export default function BookingsScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
-            refreshing={isLoading}
+            refreshing={isLoading && page === 1}
             onRefresh={onRefresh}
             colors={['#006B3F']}
             tintColor="#006B3F"

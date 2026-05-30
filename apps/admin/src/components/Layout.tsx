@@ -381,10 +381,12 @@ export function Layout() {
           })}
 
           {/* Trust & Safety Section */}
-          <div className="px-4 pt-6 pb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Trust & Safety</p>
-          </div>
-          {trustSafetyNavItems.map((item) => {
+          {filteredTrustSafetyItems.length > 0 && (
+            <div className="px-4 pt-6 pb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Trust & Safety</p>
+            </div>
+          )}
+          {filteredTrustSafetyItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -404,7 +406,7 @@ export function Layout() {
           })}
 
           {/* Policies Link */}
-          {(() => {
+          {showPolicy && (() => {
             const isActive = location.pathname === policyNavItem.path;
             return (
               <Link
@@ -422,27 +424,31 @@ export function Layout() {
             );
           })()}
           
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Configuration</p>
-          </div>
           {/* Settings Link */}
-          {(() => {
-            const isActive = location.pathname === settingsNavItem.path;
-            return (
-              <Link
-                to={settingsNavItem.path}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-[#006B3F] text-white shadow-md shadow-green-500/20 border-l-2 border-ghana-yellow'
-                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116] hover:translate-x-0.5 border-l-2 border-transparent'
-                }`}
-              >
-                <Icon name={settingsNavItem.icon} size={20} />
-                <span className="ml-3">{settingsNavItem.label}</span>
-              </Link>
-            );
-          })()}
+          {showSettings && (
+            <>
+              <div className="px-4 pt-4 pb-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Configuration</p>
+              </div>
+              {(() => {
+                const isActive = location.pathname === settingsNavItem.path;
+                return (
+                  <Link
+                    to={settingsNavItem.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-[#006B3F] text-white shadow-md shadow-green-500/20 border-l-2 border-ghana-yellow'
+                        : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116] hover:translate-x-0.5 border-l-2 border-transparent'
+                    }`}
+                  >
+                    <Icon name={settingsNavItem.icon} size={20} />
+                    <span className="ml-3">{settingsNavItem.label}</span>
+                  </Link>
+                );
+              })()}
+            </>
+          )}
         </nav>
 
         {/* User Info & Logout */}

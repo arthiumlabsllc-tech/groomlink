@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
 
 // Types
 interface Service {

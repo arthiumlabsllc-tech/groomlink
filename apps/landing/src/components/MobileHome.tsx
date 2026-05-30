@@ -35,7 +35,8 @@ interface Category {
   query: string
 }
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
+
 const CUSTOMER_APP_URL = 'https://my.groomlinkgh.com'
 
 const categories: Category[] = [

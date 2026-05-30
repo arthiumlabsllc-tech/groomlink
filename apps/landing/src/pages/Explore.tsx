@@ -26,7 +26,7 @@ interface Category {
   query: string
 }
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
 
 const categories: Category[] = [
   { name: 'Hair', icon: <HaircutIcon className="w-4 h-4" />, query: 'Haircut' },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { PaperProvider, DefaultTheme } from 'react-native-paper';
@@ -13,6 +13,7 @@ import LoadingScreen from './src/components/LoadingScreen';
 import { useAuthStore } from './src/store/authStore';
 import { authApi } from './src/api/auth';
 import { salonApi } from './src/api/salon';
+import apiClient from './src/api/client';
 import { useSocket } from './src/hooks/useSocket';
 import { useNotificationStore } from './src/store/notificationStore';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
@@ -26,7 +27,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function registerForPushNotificationsAsync() {
+async function registerForPushNotificationsAsync(): Promise<string | null> {
   // Check and request notification permission
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -51,7 +52,7 @@ async function registerForPushNotificationsAsync() {
     return null;
   }
 
-  const token = await Notifications.getExpoPushTokenAsync({ projectId });
+  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
 
   // Configure Android notification channel
   if (Platform.OS === 'android') {
@@ -63,7 +64,20 @@ async function registerForPushNotificationsAsync() {
     });
   }
 
-  return token;
+  // Register token with backend so server can send push notifications
+  if (tokenData?.data) {
+    try {
+      await apiClient.post('/users/push-token', {
+        token: tokenData.data,
+        platform: Platform.OS,
+      });
+      console.log('Push token registered with server');
+    } catch (err) {
+      console.warn('Failed to register push token with server:', err);
+    }
+  }
+
+  return tokenData?.data || null;
 }
 
 const queryClient = new QueryClient({
@@ -135,6 +149,10 @@ function AppContent() {
   const [salonReady, setSalonReady] = useState(false);
   const [minSplashElapsed, setMinSplashElapsed] = useState(false);
 
+  // Notification listener refs for cleanup
+  const notificationListenerRef = useRef<Notifications.Subscription | null>(null);
+  const responseListenerRef = useRef<Notifications.Subscription | null>(null);
+
   useEffect(() => {
     // Enforce minimum splash duration so shop data can load in background
     const timer = setTimeout(() => {
@@ -142,10 +160,33 @@ function AppContent() {
     }, MIN_SPLASH_DURATION_MS);
 
     checkAuth();
-    registerForPushNotificationsAsync();
 
-    return () => clearTimeout(timer);
+    // Setup notification listeners
+    notificationListenerRef.current = Notifications.addNotificationReceivedListener((notification) => {
+      console.log('Notification received in foreground:', notification.request.content.title);
+    });
+
+    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log('Notification tapped:', response.notification.request.content.data);
+    });
+
+    return () => {
+      clearTimeout(timer);
+      if (notificationListenerRef.current) {
+        Notifications.removeNotificationSubscription(notificationListenerRef.current);
+      }
+      if (responseListenerRef.current) {
+        Notifications.removeNotificationSubscription(responseListenerRef.current);
+      }
+    };
   }, []);
+
+  // Register push token when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      registerForPushNotificationsAsync();
+    }
+  }, [isAuthenticated]);
 
   // Fetch salon when authenticated, reset on logout
   useEffect(() => {

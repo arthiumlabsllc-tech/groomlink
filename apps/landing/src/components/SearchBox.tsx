@@ -26,7 +26,7 @@ interface SearchBoxProps {
   className?: string
 }
 
-const API_BASE_URL = 'https://groomlinkgh.com/api'
+import { API_BASE_URL } from '../config'
 
 function getSalonImageUrl(salon: Salon): string | null {
   if (salon.images && salon.images.length > 0) return salon.images[0]
