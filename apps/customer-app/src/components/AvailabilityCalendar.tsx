@@ -9,23 +9,25 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { bookingApi, AvailableSlot } from '../api/booking';
+import { useAppTheme } from '../theme/ThemeContext';
+import type { AppTheme } from '../theme/colors';
 
-// Design System Colors (Ghana theme)
-const COLORS = {
+// Theme-aware color factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-  lightGray: '#D1D5DB',
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+  lightGray: t.textTertiary,
   availableGreen: '#006B3F',
   unavailableRed: '#EF4444',
-  pastGray: '#9CA3AF',
-};
+  pastGray: t.textTertiary,
+});
 
 const MAX_BOOKING_DAYS_AHEAD = 30;
 
@@ -66,6 +68,8 @@ export default function AvailabilityCalendar({
   onDateSelect,
   selectedDate,
 }: AvailabilityCalendarProps) {
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availabilityMap, setAvailabilityMap] = useState<Record<string, DayAvailability>>({});
 
@@ -231,9 +235,9 @@ export default function AvailabilityCalendar({
     const isBeyondWindow = date > maxBookingDate;
     const isSelected = selectedDate === dateStr;
     
-    let backgroundColor = COLORS.cardBackground;
-    let borderColor = COLORS.border;
-    let textColor = COLORS.textPrimary;
+    let backgroundColor: string = COLORS.cardBackground;
+    let borderColor: string = COLORS.border;
+    let textColor: string = COLORS.textPrimary;
     let isSelectable = false;
     
     if (isPast || isBeyondWindow) {
@@ -320,13 +324,13 @@ export default function AvailabilityCalendar({
   const canGoPrev = currentMonthVal > todayMonthVal;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: COLORS.cardBackground }]}>
       {/* Month Navigation */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={goToPrevMonth}
           disabled={!canGoPrev}
-          style={[styles.navButton, !canGoPrev && styles.navButtonDisabled]}
+          style={[styles.navButton, { backgroundColor: COLORS.background }, !canGoPrev && styles.navButtonDisabled]}
         >
           <Ionicons
             name="chevron-back"
@@ -335,9 +339,9 @@ export default function AvailabilityCalendar({
           />
         </TouchableOpacity>
         
-        <RNText style={styles.monthTitle}>{monthYear}</RNText>
+        <RNText style={[styles.monthTitle, { color: COLORS.textPrimary }]}>{monthYear}</RNText>
         
-        <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+        <TouchableOpacity onPress={goToNextMonth} style={[styles.navButton, { backgroundColor: COLORS.background }]}>
           <Ionicons name="chevron-forward" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
@@ -346,7 +350,7 @@ export default function AvailabilityCalendar({
       <View style={styles.weekdayRow}>
         {WEEKDAYS.map((day) => (
           <View key={day} style={styles.weekdayCell}>
-            <RNText style={styles.weekdayText}>{day}</RNText>
+            <RNText style={[styles.weekdayText, { color: COLORS.textSecondary }]}>{day}</RNText>
           </View>
         ))}
       </View>
@@ -357,22 +361,22 @@ export default function AvailabilityCalendar({
       </View>
       
       {/* Legend */}
-      <View style={styles.legend}>
+      <View style={[styles.legend, { borderTopColor: COLORS.border }]}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.availableGreen }]} />
-          <RNText style={styles.legendText}>Available</RNText>
+          <RNText style={[styles.legendText, { color: COLORS.textSecondary }]}>Available</RNText>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.lightGray }]} />
-          <RNText style={styles.legendText}>Unavailable</RNText>
+          <RNText style={[styles.legendText, { color: COLORS.textSecondary }]}>Unavailable</RNText>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.pastGray }]} />
-          <RNText style={styles.legendText}>Past</RNText>
+          <RNText style={[styles.legendText, { color: COLORS.textSecondary }]}>Past</RNText>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendBorder, { borderColor: COLORS.accentGold }]} />
-          <RNText style={styles.legendText}>Selected</RNText>
+          <RNText style={[styles.legendText, { color: COLORS.textSecondary }]}>Selected</RNText>
         </View>
       </View>
     </View>
@@ -381,7 +385,6 @@ export default function AvailabilityCalendar({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.cardBackground,
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
@@ -399,7 +402,6 @@ const styles = StyleSheet.create({
   navButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: COLORS.background,
   },
   navButtonDisabled: {
     opacity: 0.5,
@@ -407,7 +409,6 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   weekdayRow: {
     flexDirection: 'row',
@@ -421,7 +422,6 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontSize: 12,
     fontWeight: '500',
-    color: COLORS.textSecondary,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.accentGold,
+    backgroundColor: '#FCD116',
   },
   legend: {
     flexDirection: 'row',
@@ -462,7 +462,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     gap: 12,
   },
   legendItem: {
@@ -483,6 +482,5 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    color: COLORS.textSecondary,
   },
 });

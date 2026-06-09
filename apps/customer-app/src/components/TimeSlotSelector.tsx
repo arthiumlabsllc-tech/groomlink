@@ -7,20 +7,22 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '../theme/ThemeContext';
+import type { AppTheme } from '../theme/colors';
 
-// Design System Colors (Ghana theme)
-const COLORS = {
+// Theme-aware color factory
+const createColors = (t: AppTheme) => ({
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
   dark: '#1a1a2e',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-  lightGray: '#D1D5DB',
-};
+  background: t.background,
+  cardBackground: t.surface,
+  textPrimary: t.text,
+  textSecondary: t.textSecondary,
+  border: t.border,
+  lightGray: t.textTertiary,
+});
 
 export interface TimeSlotData {
   time: string;
@@ -89,6 +91,8 @@ export default function TimeSlotSelector({
   lastAvailableSlot,
   totalPeople = 1,
 }: TimeSlotSelectorProps) {
+  const { theme } = useAppTheme();
+  const COLORS = useMemo(() => createColors(theme), [theme]);
   const groupedSlots = useMemo(() => groupSlotsByPeriod(slots), [slots]);
   const availableSlotsCount = useMemo(() => getTimeRemaining(slots), [slots]);
   const showLowSlotsWarning = availableSlotsCount > 0 && availableSlotsCount < 3;
@@ -107,9 +111,9 @@ export default function TimeSlotSelector({
       slot.remainingSpots > 0 && 
       slot.remainingSpots < 3;
     
-    let backgroundColor = COLORS.cardBackground;
-    let borderColor = COLORS.border;
-    let textColor = COLORS.textPrimary;
+    let backgroundColor: string = COLORS.cardBackground;
+    let borderColor: string = COLORS.border;
+    let textColor: string = COLORS.textPrimary;
     let showStripes = false;
     
     if (slot.isBreak) {
@@ -205,7 +209,7 @@ export default function TimeSlotSelector({
       <View style={styles.periodSection}>
         <View style={styles.periodHeader}>
           <Ionicons name={iconName} size={16} color={COLORS.textSecondary} />
-          <RNText style={styles.periodTitle}>{title}</RNText>
+          <RNText style={[styles.periodTitle, { color: COLORS.textPrimary }]}>{title}</RNText>
         </View>
         <ScrollView
           horizontal
@@ -219,13 +223,13 @@ export default function TimeSlotSelector({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: COLORS.cardBackground }]}>
       {/* Empty state - no slots available */}
       {slots.length === 0 && (
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={40} color={COLORS.textSecondary} />
-          <RNText style={styles.emptyTitle}>No time slots available</RNText>
-          <RNText style={styles.emptySubtitle}>
+          <RNText style={[styles.emptyTitle, { color: COLORS.textPrimary }]}>No time slots available</RNText>
+          <RNText style={[styles.emptySubtitle, { color: COLORS.textSecondary }]}>
             The salon is closed on this date. Please select a different date.
           </RNText>
         </View>
@@ -233,9 +237,9 @@ export default function TimeSlotSelector({
 
       {/* Low Slots Warning */}
       {showLowSlotsWarning && (
-        <View style={styles.warningBanner}>
+        <View style={[styles.warningBanner, { backgroundColor: `${COLORS.accentGold}20` }]}>
           <Ionicons name="warning" size={16} color={COLORS.accentGold} />
-          <RNText style={styles.warningText}>
+          <RNText style={[styles.warningText, { color: COLORS.textPrimary }]}>
             Only {availableSlotsCount} slots left today!
           </RNText>
         </View>
@@ -243,9 +247,9 @@ export default function TimeSlotSelector({
       
       {/* Closing Time Warning */}
       {closingTime && lastAvailableSlot && (
-        <View style={styles.infoBanner}>
+        <View style={[styles.infoBanner, { backgroundColor: COLORS.background }]}>
           <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
-          <RNText style={styles.infoText}>
+          <RNText style={[styles.infoText, { color: COLORS.textSecondary }]}>
             Salon closes at {formatTime(closingTime)}. Last available slot at {formatTime(lastAvailableSlot)}.
           </RNText>
         </View>
@@ -257,9 +261,9 @@ export default function TimeSlotSelector({
       {renderPeriodSection('Evening', 'moon-outline', groupedSlots.evening)}
       
       {/* Cancellation Policy */}
-      <View style={styles.policySection}>
+      <View style={[styles.policySection, { backgroundColor: COLORS.background }]}>
         <Ionicons name="information-circle-outline" size={16} color={COLORS.textSecondary} />
-        <RNText style={styles.policyText}>
+        <RNText style={[styles.policyText, { color: COLORS.textSecondary }]}>
           Cancellation Policy: Free cancellation up to 3 hours before your appointment
         </RNText>
       </View>
@@ -269,7 +273,6 @@ export default function TimeSlotSelector({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.cardBackground,
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
@@ -281,7 +284,6 @@ const styles = StyleSheet.create({
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${COLORS.accentGold}20`,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -290,13 +292,11 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.dark,
     flex: 1,
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -304,7 +304,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: COLORS.textSecondary,
     flex: 1,
   },
   periodSection: {
@@ -319,7 +318,6 @@ const styles = StyleSheet.create({
   periodTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   slotsContainer: {
     flexDirection: 'row',
@@ -355,7 +353,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   fullBadge: {
-    backgroundColor: COLORS.accentRed,
+    backgroundColor: '#CE1126',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -367,7 +365,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   limitedBadge: {
-    backgroundColor: COLORS.accentGold,
+    backgroundColor: '#FCD116',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -376,10 +374,10 @@ const styles = StyleSheet.create({
   limitedBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.dark,
+    color: '#1a1a2e',
   },
   spotsBadge: {
-    backgroundColor: `${COLORS.primaryGreen}20`,
+    backgroundColor: 'rgba(0, 107, 63, 0.12)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -388,10 +386,10 @@ const styles = StyleSheet.create({
   spotsBadgeText: {
     fontSize: 10,
     fontWeight: '500',
-    color: COLORS.primaryGreen,
+    color: '#006B3F',
   },
   insufficientBadge: {
-    backgroundColor: `${COLORS.textSecondary}20`,
+    backgroundColor: 'rgba(107, 114, 128, 0.12)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -400,12 +398,11 @@ const styles = StyleSheet.create({
   insufficientBadgeText: {
     fontSize: 9,
     fontWeight: '500',
-    color: COLORS.textSecondary,
+    color: '#6B7280',
   },
   policySection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
     borderRadius: 8,
     padding: 12,
     marginTop: 8,
@@ -413,7 +410,6 @@ const styles = StyleSheet.create({
   },
   policyText: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     flex: 1,
     lineHeight: 18,
   },
@@ -426,12 +422,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
