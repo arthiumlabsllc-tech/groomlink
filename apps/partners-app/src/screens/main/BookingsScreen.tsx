@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import {
   Text,
@@ -25,6 +26,7 @@ import { Booking, BookingStatus, MainStackParamList } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import * as Haptics from 'expo-haptics';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -44,6 +46,7 @@ export default function BookingsScreen() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch salon data
   const { data: salon } = useQuery({
@@ -91,6 +94,17 @@ export default function BookingsScreen() {
     setAllBookings([]);
     queryClient.invalidateQueries({ queryKey: ['salonBookings', salon?.id] });
   }, [queryClient, salon?.id]);
+
+  // Filter bookings by search query
+  const filteredBookings = useMemo(() => {
+    if (!searchQuery.trim()) return allBookings;
+    const q = searchQuery.toLowerCase();
+    return allBookings.filter((b: Booking) => {
+      const name = `${b.customer?.firstName || ''} ${b.customer?.lastName || ''}`.toLowerCase();
+      const service = (b.service?.name || '').toLowerCase();
+      return name.includes(q) || service.includes(q);
+    });
+  }, [allBookings, searchQuery]);
 
   const navigateToBooking = (bookingId: string) => {
     navigation.navigate('BookingDetail', { bookingId });
@@ -252,20 +266,25 @@ export default function BookingsScreen() {
     if (!bookingsData?.pagination || bookingsData.pagination.page >= bookingsData.pagination.totalPages) {
       return null;
     }
-    return (
-      <View style={styles.loadMore}>
-        <Button
-          mode="outlined"
-          onPress={() => setPage((p) => p + 1)}
-          loading={isLoading}
-          textColor="#006B3F"
-          theme={{ roundness: 10 }}
-        >
-          Load More
-        </Button>
-      </View>
-    );
+    if (isLoading && page > 1) {
+      return (
+        <View style={styles.loadMore}>
+          <ActivityIndicator size="small" color="#006B3F" />
+        </View>
+      );
+    }
+    return null;
   };
+
+  const handleEndReached = useCallback(() => {
+    if (
+      bookingsData?.pagination &&
+      bookingsData.pagination.page < bookingsData.pagination.totalPages &&
+      !isLoading
+    ) {
+      setPage((p) => p + 1);
+    }
+  }, [bookingsData, isLoading]);
 
   if (!salon) {
     return (
@@ -302,6 +321,7 @@ export default function BookingsScreen() {
                   isActive && { backgroundColor: item.color, borderColor: item.color },
                 ]}
                 onPress={() => {
+                  Haptics.selectionAsync();
                   setStatusFilter(item.value);
                   setPage(1);
                   setAllBookings([]);
@@ -321,14 +341,33 @@ export default function BookingsScreen() {
         />
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color={theme.textTertiary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name or service..."
+          placeholderTextColor={theme.textTertiary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* Bookings List */}
       <FlatList
-        data={allBookings}
+        data={filteredBookings}
         keyExtractor={(item) => item.id}
         renderItem={renderBookingItem}
         ListEmptyComponent={isLoading ? null : renderEmptyState}
         ListFooterComponent={renderFooter}
         contentContainerStyle={styles.listContent}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.3}
         refreshControl={
           <RefreshControl
             refreshing={isLoading && page === 1}
@@ -375,6 +414,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   filterList: {
     paddingHorizontal: 16,
     gap: 8,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: theme.surfaceVariant,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: theme.text,
+    padding: 0,
   },
   filterTab: {
     paddingVertical: 10,

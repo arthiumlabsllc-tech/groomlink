@@ -22,6 +22,7 @@ export type MainStackParamList = {
   ProfileMain: undefined;
   PlatformFeedback: undefined;
   Notifications: undefined;
+  CompletionSettings: undefined;
 };
 
 export interface Service {

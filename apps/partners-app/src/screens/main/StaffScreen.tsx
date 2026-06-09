@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,21 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FAB, IconButton, ActivityIndicator, Surface, Chip } from 'react-native-paper';
+import { ActivityIndicator, Surface, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { Swipeable } from 'react-native-gesture-handler';
 import { staffApi, StaffMember } from '../../api/staff';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import * as Haptics from 'expo-haptics';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -50,6 +53,17 @@ export default function StaffScreen() {
   });
 
   const staff = staffData || [];
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter staff based on search
+  const filteredStaff = useMemo(() => {
+    if (!searchQuery.trim()) return staff;
+    const q = searchQuery.toLowerCase();
+    return staff.filter((s: StaffMember) =>
+      s.fullName.toLowerCase().includes(q) ||
+      (s.specialty && s.specialty.toLowerCase().includes(q))
+    );
+  }, [staff, searchQuery]);
 
   // Delete staff mutation
   const deleteMutation = useMutation({
@@ -63,6 +77,7 @@ export default function StaffScreen() {
   });
 
   const handleDeleteStaff = (staffMember: StaffMember) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert(
       'Remove Staff Member',
       `Are you sure you want to remove "${staffMember.fullName}"?`,
@@ -90,93 +105,57 @@ export default function StaffScreen() {
     return name.split(' ').map((n) => n?.[0] || '').join('').toUpperCase().slice(0, 2) || 'U';
   };
 
-  const renderStaffItem = ({ item }: { item: StaffMember }) => (
-    <TouchableOpacity onPress={() => handleEditStaff(item)} activeOpacity={0.7}>
-      <Surface style={[styles.staffCard, !item.isActive && styles.inactiveCard]} elevation={0}>
-        <View style={styles.cardHeader}>
-          <View style={styles.avatarSection}>
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>{getInitials(item.fullName)}</Text>
-            </View>
-            {item.isActive && (
-              <View style={styles.activeDot}>
-                <View style={styles.activeDotInner} />
-              </View>
-            )}
-          </View>
-          <View style={styles.staffInfo}>
-            <Text style={styles.staffName}>{item.fullName}</Text>
-            {item.specialty && (
-              <Text style={styles.staffRole}>{item.specialty}</Text>
-            )}
-            {item.phoneNumber && (
-              <View style={styles.phoneRow}>
-                <Ionicons name="call-outline" size={12} color="#9CA3AF" />
-                <Text style={styles.staffPhone}>{item.phoneNumber}</Text>
-              </View>
-            )}
-          </View>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteStaff(item)}
-          >
-            <Ionicons name="trash-outline" size={18} color="#CE1126" />
-          </TouchableOpacity>
-        </View>
+  const renderRightActions = (item: StaffMember) => (
+    <TouchableOpacity
+      style={styles.swipeDeleteAction}
+      onPress={() => handleDeleteStaff(item)}
+    >
+      <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+      <Text style={styles.swipeDeleteText}>Remove</Text>
+    </TouchableOpacity>
+  );
 
-        {item.workerServices && item.workerServices.length > 0 && (
-          <View style={styles.servicesSection}>
-            <Text style={styles.servicesLabel}>Services</Text>
-            <View style={styles.servicesList}>
-              {item.workerServices.slice(0, 4).map((ws, index) => (
-                <Chip
-                  key={index}
-                  style={styles.serviceChip}
-                  textStyle={styles.serviceChipText}
-                  compact
-                >
-                  {ws.service?.name || 'Service'}
-                </Chip>
-              ))}
-              {item.workerServices.length > 4 && (
-                <Chip style={styles.moreChip} textStyle={styles.moreChipText} compact>
-                  +{item.workerServices.length - 4}
-                </Chip>
+  const renderStaffItem = ({ item }: { item: StaffMember }) => (
+    <Swipeable
+      renderRightActions={() => renderRightActions(item)}
+      overshootRight={false}
+    >
+      <TouchableOpacity onPress={() => handleEditStaff(item)} activeOpacity={0.7}>
+        <Surface style={[styles.staffCard, !item.isActive && styles.inactiveCard]} elevation={0}>
+          <View style={styles.cardHeader}>
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>{getInitials(item.fullName)}</Text>
+              </View>
+              {item.isActive && (
+                <View style={styles.activeDot}>
+                  <View style={styles.activeDotInner} />
+                </View>
               )}
             </View>
-          </View>
-        )}
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Ionicons name="calendar-outline" size={16} color="#006B3F" />
-            <Text style={styles.statValue}>{item._count?.bookings || 0}</Text>
-            <Text style={styles.statLabel}>Bookings</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Ionicons name="star-outline" size={16} color="#FCD116" />
-            <Text style={styles.statValue}>{item._count?.reviews || 0}</Text>
-            <Text style={styles.statLabel}>Reviews</Text>
-          </View>
-          {item.rating !== undefined && item.rating > 0 && (
-            <>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Ionicons name="star" size={16} color="#FCD116" />
-                <Text style={styles.statValue}>{item.rating.toFixed(1)}</Text>
-                <Text style={styles.statLabel}>Rating</Text>
+            <View style={styles.staffInfo}>
+              <Text style={styles.staffName} numberOfLines={1}>{item.fullName}</Text>
+              {item.specialty && (
+                <Text style={styles.staffRole} numberOfLines={1}>{item.specialty}</Text>
+              )}
+              {item.phoneNumber && (
+                <View style={styles.phoneRow}>
+                  <Ionicons name="call-outline" size={12} color="#9CA3AF" />
+                  <Text style={styles.staffPhone}>{item.phoneNumber}</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.cardMeta}>
+              <View style={styles.miniStat}>
+                <Ionicons name="calendar-outline" size={14} color={theme.textTertiary} />
+                <Text style={styles.miniStatText}>{item._count?.bookings || 0}</Text>
               </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.editHint}>
-          <Text style={styles.editHintText}>Tap to edit</Text>
-          <Ionicons name="chevron-forward" size={16} color="#006B3F" />
-        </View>
-      </Surface>
-    </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+            </View>
+          </View>
+        </Surface>
+      </TouchableOpacity>
+    </Swipeable>
   );
 
   const renderEmptyState = () => (
@@ -238,8 +217,25 @@ export default function StaffScreen() {
         </View>
       </Surface>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color={theme.textTertiary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search staff..."
+          placeholderTextColor={theme.textTertiary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <FlatList
-        data={staff}
+        data={filteredStaff}
         keyExtractor={(item) => item.id}
         renderItem={renderStaffItem}
         contentContainerStyle={styles.listContent}
@@ -253,14 +249,6 @@ export default function StaffScreen() {
           />
         }
         ListEmptyComponent={renderEmptyState}
-      />
-
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        color="#FFFFFF"
-        onPress={handleAddStaff}
-        theme={{ roundness: 16 }}
       />
     </SafeAreaView>
   );
@@ -350,13 +338,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 24,
   },
   staffCard: {
-    marginBottom: 12,
+    marginBottom: 10,
     borderRadius: 14,
     backgroundColor: theme.surface,
-    padding: 16,
+    padding: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -407,6 +395,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   staffInfo: {
     flex: 1,
+    marginRight: 8,
   },
   staffName: {
     fontSize: 16,
@@ -429,84 +418,58 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 12,
     color: theme.textTertiary,
   },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: theme.dangerBg,
+  cardMeta: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  miniStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: theme.surfaceVariant,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  miniStatText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  swipeDeleteAction: {
+    backgroundColor: '#CE1126',
     justifyContent: 'center',
     alignItems: 'center',
+    width: 80,
+    marginBottom: 10,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
   },
-  servicesSection: {
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-  },
-  servicesLabel: {
-    fontSize: 12,
-    color: theme.textSecondary,
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  servicesList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  serviceChip: {
-    backgroundColor: theme.successBg,
-    height: 28,
-  },
-  serviceChipText: {
-    fontSize: 12,
-    color: theme.accent,
-  },
-  moreChip: {
-    backgroundColor: theme.surfaceVariant,
-    height: 28,
-  },
-  moreChipText: {
-    fontSize: 12,
-    color: theme.textSecondary,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#F3F4F6',
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.text,
-  },
-  statLabel: {
+  swipeDeleteText: {
+    color: '#FFFFFF',
     fontSize: 11,
-    color: theme.textSecondary,
+    fontWeight: '600',
+    marginTop: 4,
   },
-  editHint: {
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    marginHorizontal: 16,
     marginTop: 12,
-    gap: 4,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: theme.surfaceVariant,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    gap: 10,
   },
-  editHintText: {
-    fontSize: 13,
-    color: theme.accent,
-    fontWeight: '500',
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: theme.text,
+    padding: 0,
   },
   emptyState: {
     flex: 1,
@@ -549,11 +512,5 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#006B3F',
-  },
+
 });

@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import DashboardScreen from '../screens/main/DashboardScreen';
 import QueueScreen from '../screens/main/QueueScreen';
 import BookingsScreen from '../screens/main/BookingsScreen';
@@ -18,9 +19,12 @@ import QRScannerScreen from '../screens/main/QRScannerScreen';
 import PricingScreen from '../screens/main/PricingScreen';
 import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import NotificationsListScreen from '../screens/main/NotificationsListScreen';
+import CompletionSettingsScreen from '../screens/main/CompletionSettingsScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 import { AppTheme } from '../theme/colors';
 import { useAppTheme } from '../theme/ThemeContext';
+import { bookingsApi } from '../api/bookings';
+import { salonApi } from '../api/salon';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -187,6 +191,11 @@ function ProfileStack() {
         component={PlatformFeedbackScreen}
         options={{ title: 'Rate GroomLink' }}
       />
+      <Stack.Screen
+        name="CompletionSettings"
+        component={CompletionSettingsScreen}
+        options={{ title: 'Completion Settings' }}
+      />
     </Stack.Navigator>
   );
 }
@@ -195,6 +204,22 @@ export default function MainNavigator() {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
+
+  // Fetch pending bookings count for tab badge
+  const { data: salon } = useQuery({
+    queryKey: ['mySalon'],
+    queryFn: salonApi.getMySalon,
+  });
+  const { data: bookingsData } = useQuery({
+    queryKey: ['salonBookings', salon?.id, 'badge'],
+    queryFn: () => salon ? bookingsApi.getSalonBookings({ salonId: salon.id, limit: 50 }) : null,
+    enabled: !!salon?.id,
+    refetchInterval: 30000, // refresh every 30s
+  });
+  const pendingCount = useMemo(() => {
+    if (!bookingsData?.data) return 0;
+    return bookingsData.data.filter((b: any) => b.status === 'PENDING').length;
+  }, [bookingsData]);
 
   return (
     <Tab.Navigator
@@ -259,6 +284,16 @@ export default function MainNavigator() {
         component={BookingsStack}
         options={{
           tabBarLabel: 'Bookings',
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: theme.danger,
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: '600' as const,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+          },
         }}
       />
       <Tab.Screen 

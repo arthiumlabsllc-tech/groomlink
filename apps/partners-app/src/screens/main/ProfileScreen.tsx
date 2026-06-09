@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -15,24 +15,22 @@ import {
   Avatar,
   Button,
   Divider,
-  List,
   Surface,
   Switch,
   TextInput,
   ActivityIndicator,
   HelperText,
   Text,
-  Chip,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
 import { salonApi } from '../../api/salon';
 import { useAuthStore } from '../../store/authStore';
 import { MainStackParamList } from '../../types/navigation';
-import { CompletionSettings } from '../../types';
 import Constants from 'expo-constants';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import * as Haptics from 'expo-haptics';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -64,15 +62,6 @@ export default function ProfileScreen() {
   // Settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
-  // Completion settings state
-  const [completionSettings, setCompletionSettings] = useState<CompletionSettings>({
-    autoCompletionHours: 2,
-    requiresCustomerConfirmation: false,
-    completionReminderEnabled: true,
-    qrCheckinEnabled: false,
-  });
-  const [hasSettingsChanges, setHasSettingsChanges] = useState(false);
-
   // Fetch fresh profile data
   const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ['profile'],
@@ -91,20 +80,6 @@ export default function ProfileScreen() {
     queryFn: () => (salon ? salonApi.getSalonStats(salon.id) : null),
     enabled: !!salon?.id,
   });
-
-  // Fetch completion settings
-  const { data: fetchedCompletionSettings } = useQuery({
-    queryKey: ['completionSettings', salon?.id],
-    queryFn: () => (salon ? salonApi.getCompletionSettings(salon.id) : null),
-    enabled: !!salon?.id,
-  });
-
-  // Update completion settings when fetched
-  useEffect(() => {
-    if (fetchedCompletionSettings && !hasSettingsChanges) {
-      setCompletionSettings(fetchedCompletionSettings);
-    }
-  }, [fetchedCompletionSettings, hasSettingsChanges]);
 
   // Update profile mutation
   const updateMutation = useMutation({
@@ -126,36 +101,6 @@ export default function ProfileScreen() {
       Alert.alert('Error', `Failed to update profile: ${error.message}`);
     },
   });
-
-  // Update completion settings mutation
-  const updateCompletionSettingsMutation = useMutation({
-    mutationFn: (settings: Partial<CompletionSettings>) => {
-      if (!salon?.id) throw new Error('No salon found');
-      return salonApi.updateCompletionSettings(salon.id, settings);
-    },
-    onSuccess: () => {
-      setHasSettingsChanges(false);
-      queryClient.invalidateQueries({ queryKey: ['completionSettings'] });
-      Alert.alert('Success', 'Completion settings updated successfully');
-    },
-    onError: (error: Error) => {
-      Alert.alert('Error', `Failed to update settings: ${error.message}`);
-    },
-  });
-
-  // Handle completion settings change
-  const handleCompletionSettingChange = <K extends keyof CompletionSettings>(
-    key: K,
-    value: CompletionSettings[K]
-  ) => {
-    setCompletionSettings((prev) => ({ ...prev, [key]: value }));
-    setHasSettingsChanges(true);
-  };
-
-  // Handle save completion settings
-  const handleSaveCompletionSettings = () => {
-    updateCompletionSettingsMutation.mutate(completionSettings);
-  };
 
   // Get initials for avatar
   const getInitials = () => {
@@ -205,6 +150,7 @@ export default function ProfileScreen() {
 
   // Handle logout
   const handleLogout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -432,14 +378,14 @@ export default function ProfileScreen() {
 
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => navigation.getParent()?.navigate('Staff')}
+            onPress={() => navigation.navigate('CompletionSettings')}
           >
             <View style={[styles.menuIcon, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="people-outline" size={20} color="#3B82F6" />
+              <Ionicons name="checkmark-done-outline" size={20} color="#3B82F6" />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Manage Staff</Text>
-              <Text style={styles.menuSubtitle}>Add or edit team members</Text>
+              <Text style={styles.menuTitle}>Completion Settings</Text>
+              <Text style={styles.menuSubtitle}>Auto-completion, QR check-in & reminders</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
@@ -511,120 +457,6 @@ export default function ProfileScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
-        </Surface>
-
-        {/* Service Completion Settings */}
-        <Surface style={styles.section} elevation={0}>
-          <Text style={styles.sectionLabel}>Service Completion</Text>
-          
-          {/* Auto-completion hours */}
-          <View style={styles.menuItem}>
-            <View style={[styles.menuIcon, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="time-outline" size={20} color="#3B82F6" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Auto-completion</Text>
-              <Text style={styles.menuSubtitle}>
-                Automatically complete after {completionSettings.autoCompletionHours} hour(s)
-              </Text>
-            </View>
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity
-                style={[styles.stepperButton, completionSettings.autoCompletionHours <= 1 && styles.stepperButtonDisabled]}
-                onPress={() => {
-                  if (completionSettings.autoCompletionHours > 1) {
-                    handleCompletionSettingChange('autoCompletionHours', completionSettings.autoCompletionHours - 1);
-                  }
-                }}
-                disabled={completionSettings.autoCompletionHours <= 1}
-              >
-                <Ionicons name="remove" size={18} color={completionSettings.autoCompletionHours <= 1 ? '#D1D5DB' : '#3B82F6'} />
-              </TouchableOpacity>
-              <Text style={styles.stepperValue}>{completionSettings.autoCompletionHours}</Text>
-              <TouchableOpacity
-                style={[styles.stepperButton, completionSettings.autoCompletionHours >= 6 && styles.stepperButtonDisabled]}
-                onPress={() => {
-                  if (completionSettings.autoCompletionHours < 6) {
-                    handleCompletionSettingChange('autoCompletionHours', completionSettings.autoCompletionHours + 1);
-                  }
-                }}
-                disabled={completionSettings.autoCompletionHours >= 6}
-              >
-                <Ionicons name="add" size={18} color={completionSettings.autoCompletionHours >= 6 ? '#D1D5DB' : '#3B82F6'} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Divider style={styles.menuDivider} />
-
-          {/* Customer confirmation toggle */}
-          <View style={styles.menuItem}>
-            <View style={[styles.menuIcon, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#D97706" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Customer Confirmation</Text>
-              <Text style={styles.menuSubtitle}>Require customer to confirm completion</Text>
-            </View>
-            <Switch
-              value={completionSettings.requiresCustomerConfirmation}
-              onValueChange={(value) => handleCompletionSettingChange('requiresCustomerConfirmation', value)}
-              color="#006B3F"
-            />
-          </View>
-
-          <Divider style={styles.menuDivider} />
-
-          {/* Completion reminders toggle */}
-          <View style={styles.menuItem}>
-            <View style={[styles.menuIcon, { backgroundColor: '#DBEAFE' }]}>
-              <Ionicons name="notifications-outline" size={20} color="#2563EB" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Completion Reminders</Text>
-              <Text style={styles.menuSubtitle}>Send reminders to complete service</Text>
-            </View>
-            <Switch
-              value={completionSettings.completionReminderEnabled}
-              onValueChange={(value) => handleCompletionSettingChange('completionReminderEnabled', value)}
-              color="#006B3F"
-            />
-          </View>
-
-          <Divider style={styles.menuDivider} />
-
-          {/* QR check-in toggle */}
-          <View style={styles.menuItem}>
-            <View style={[styles.menuIcon, { backgroundColor: '#D1FAE5' }]}>
-              <Ionicons name="qr-code-outline" size={20} color="#059669" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>QR Check-in</Text>
-              <Text style={styles.menuSubtitle}>Allow customers to check in via QR</Text>
-            </View>
-            <Switch
-              value={completionSettings.qrCheckinEnabled}
-              onValueChange={(value) => handleCompletionSettingChange('qrCheckinEnabled', value)}
-              color="#006B3F"
-            />
-          </View>
-
-          {/* Save button */}
-          {hasSettingsChanges && (
-            <View style={styles.saveButtonContainer}>
-              <Button
-                mode="contained"
-                onPress={handleSaveCompletionSettings}
-                loading={updateCompletionSettingsMutation.isPending}
-                disabled={updateCompletionSettingsMutation.isPending}
-                buttonColor="#006B3F"
-                theme={{ roundness: 10 }}
-                style={styles.saveSettingsButton}
-              >
-                Save Settings
-              </Button>
-            </View>
-          )}
         </Surface>
 
         {/* Logout Button */}
@@ -874,37 +706,5 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 12,
     color: theme.textTertiary,
     opacity: 0.7,
-  },
-  // Stepper styles
-  stepperContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepperButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: theme.infoBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepperButtonDisabled: {
-    backgroundColor: theme.surfaceVariant,
-  },
-  stepperValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.text,
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  // Save button styles
-  saveButtonContainer: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  saveSettingsButton: {
-    borderRadius: 10,
   },
 });

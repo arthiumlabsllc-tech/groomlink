@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,22 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  TextInput,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, Switch, FAB, IconButton, ActivityIndicator, Surface, Chip } from 'react-native-paper';
+import { Switch, ActivityIndicator, Surface, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { Swipeable } from 'react-native-gesture-handler';
 import { servicesApi, Service } from '../../api/services';
 import { salonApi } from '../../api/salon';
 import { MainStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import * as Haptics from 'expo-haptics';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -60,6 +64,17 @@ export default function ServicesScreen() {
   });
 
   const services = servicesData || [];
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter services based on search
+  const filteredServices = useMemo(() => {
+    if (!searchQuery.trim()) return services;
+    const q = searchQuery.toLowerCase();
+    return services.filter((s: Service) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.category && s.category.toLowerCase().includes(q))
+    );
+  }, [services, searchQuery]);
 
   // Toggle service status mutation
   const toggleMutation = useMutation({
@@ -85,10 +100,12 @@ export default function ServicesScreen() {
   });
 
   const handleToggleStatus = (service: Service) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     toggleMutation.mutate({ serviceId: service.id, isActive: !service.isActive });
   };
 
   const handleDeleteService = (service: Service) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert(
       'Delete Service',
       `Are you sure you want to delete "${service.name}"?`,
@@ -122,64 +139,69 @@ export default function ServicesScreen() {
     return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
   };
 
-  const renderServiceItem = ({ item }: { item: Service }) => (
-    <TouchableOpacity onPress={() => handleEditService(item)} activeOpacity={0.7}>
-      <Surface style={[styles.serviceCard, !item.isActive && styles.inactiveCard]} elevation={0}>
-        <View style={styles.cardHeader}>
-          <View style={styles.serviceInfo}>
-            <Text style={styles.serviceName}>{item.name}</Text>
-            <Chip style={styles.categoryChip} textStyle={styles.categoryChipText} compact>
-              {SERVICE_CATEGORIES[item.category] || item.category}
-            </Chip>
-          </View>
-          <Switch
-            value={item.isActive}
-            onValueChange={() => handleToggleStatus(item)}
-            color="#006B3F"
-          />
-        </View>
-        
-        <View style={styles.cardDivider} />
-        
-        <View style={styles.cardDetails}>
-          <View style={styles.detailColumn}>
-            <View style={styles.detailRow}>
-              <Ionicons name="cash-outline" size={16} color={theme.textSecondary} />
-              <Text style={styles.detailLabel}>Price</Text>
-            </View>
-            <Text style={styles.priceValue}>{formatPrice(item.price)}</Text>
-          </View>
-          <View style={styles.detailDivider} />
-          <View style={styles.detailColumn}>
-            <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
-              <Text style={styles.detailLabel}>Duration</Text>
-            </View>
-            <Text style={styles.durationValue}>{formatDuration(item.duration)}</Text>
-          </View>
-        </View>
-
-        {item.description && (
-          <Text style={styles.serviceDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-
-        <View style={styles.cardActions}>
-          <TouchableOpacity 
-            style={styles.deleteButton}
-            onPress={() => handleDeleteService(item)}
-          >
-            <Ionicons name="trash-outline" size={18} color={theme.danger} />
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.editHint}>
-            <Text style={styles.editHintText}>Tap to edit</Text>
-            <Ionicons name="chevron-forward" size={16} color={theme.primary} />
-          </TouchableOpacity>
-        </View>
-      </Surface>
+  const renderRightActions = (item: Service) => (
+    <TouchableOpacity
+      style={styles.swipeDeleteAction}
+      onPress={() => handleDeleteService(item)}
+    >
+      <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+      <Text style={styles.swipeDeleteText}>Delete</Text>
     </TouchableOpacity>
+  );
+
+  const renderServiceItem = ({ item }: { item: Service }) => (
+    <Swipeable
+      renderRightActions={() => renderRightActions(item)}
+      overshootRight={false}
+    >
+      <TouchableOpacity onPress={() => handleEditService(item)} activeOpacity={0.7}>
+        <Surface style={[styles.serviceCard, !item.isActive && styles.inactiveCard]} elevation={0}>
+          <View style={styles.cardHeader}>
+            <View style={styles.serviceInfo}>
+              <Text style={styles.serviceName} numberOfLines={1}>{item.name}</Text>
+              <Chip style={styles.categoryChip} textStyle={styles.categoryChipText} compact>
+                {SERVICE_CATEGORIES[item.category] || item.category}
+              </Chip>
+            </View>
+            <Switch
+              value={item.isActive}
+              onValueChange={() => handleToggleStatus(item)}
+              color="#006B3F"
+            />
+          </View>
+          
+          <View style={styles.cardDivider} />
+          
+          <View style={styles.cardDetails}>
+            <View style={styles.detailColumn}>
+              <View style={styles.detailRow}>
+                <Ionicons name="cash-outline" size={16} color={theme.textSecondary} />
+                <Text style={styles.detailLabel}>Price</Text>
+              </View>
+              <Text style={styles.priceValue}>{formatPrice(item.price)}</Text>
+            </View>
+            <View style={styles.detailDivider} />
+            <View style={styles.detailColumn}>
+              <View style={styles.detailRow}>
+                <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
+                <Text style={styles.detailLabel}>Duration</Text>
+              </View>
+              <Text style={styles.durationValue}>{formatDuration(item.duration)}</Text>
+            </View>
+          </View>
+
+          {item.description && (
+            <Text style={styles.serviceDescription} numberOfLines={2}>
+              {item.description}
+            </Text>
+          )}
+
+          <View style={styles.cardFooter}>
+            <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+          </View>
+        </Surface>
+      </TouchableOpacity>
+    </Swipeable>
   );
 
   const renderEmptyState = () => (
@@ -241,8 +263,25 @@ export default function ServicesScreen() {
         </View>
       </Surface>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color={theme.textTertiary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search services..."
+          placeholderTextColor={theme.textTertiary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <FlatList
-        data={services}
+        data={filteredServices}
         keyExtractor={(item) => item.id}
         renderItem={renderServiceItem}
         contentContainerStyle={styles.listContent}
@@ -256,14 +295,6 @@ export default function ServicesScreen() {
           />
         }
         ListEmptyComponent={renderEmptyState}
-      />
-
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        color="#FFFFFF"
-        onPress={handleAddService}
-        theme={{ roundness: 16 }}
       />
     </SafeAreaView>
   );
@@ -353,7 +384,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 24,
   },
   serviceCard: {
     marginBottom: 12,
@@ -440,37 +471,44 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: 12,
     lineHeight: 20,
   },
-  cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  cardFooter: {
+    alignItems: 'flex-end',
+    marginTop: 10,
+  },
+  swipeDeleteAction: {
+    backgroundColor: '#CE1126',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
+    width: 80,
+    marginBottom: 12,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
   },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: theme.dangerBg,
+  swipeDeleteText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
   },
-  deleteButtonText: {
-    fontSize: 13,
-    color: theme.danger,
-    fontWeight: '500',
-  },
-  editHint: {
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: theme.surfaceVariant,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    gap: 10,
   },
-  editHintText: {
-    fontSize: 13,
-    color: theme.accent,
-    fontWeight: '500',
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: theme.text,
+    padding: 0,
   },
   emptyState: {
     flex: 1,
@@ -513,11 +551,5 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#006B3F',
-  },
+
 });

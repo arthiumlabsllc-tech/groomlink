@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import SubscriptionStatusCard from '../../components/SubscriptionStatusCard';
 import { AppTheme } from '../../theme/colors';
 import { useAppTheme } from '../../theme/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -242,6 +243,31 @@ export default function DashboardScreen() {
             {/* Subscription Card- like MTN's "Loyalty Points" */}
             <SubscriptionStatusCard />
 
+            {/* Guidance tip card for new partners */}
+            {stats && stats.totalBookings === 0 && (
+              <View style={styles.tipCard}>
+                <View style={styles.tipCardIcon}>
+                  <Ionicons name="bulb" size={24} color={theme.warning} />
+                </View>
+                <View style={styles.tipCardContent}>
+                  <Text style={styles.tipCardTitle}>Getting Started</Text>
+                  <Text style={styles.tipCardText}>
+                    Add your services and staff to start receiving bookings from customers.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.tipCardAction}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      navigation.getParent()?.navigate('Services');
+                    }}
+                  >
+                    <Text style={styles.tipCardActionText}>Add Services</Text>
+                    <Ionicons name="arrow-forward" size={14} color={theme.accent} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Overview Section Header */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Overview</Text>
@@ -322,14 +348,13 @@ export default function DashboardScreen() {
             >
               <TouchableOpacity
                 style={styles.quickActionCard}
-                onPress={() => navigation.getParent()?.navigate('Bookings')}
+                onPress={() => navigation.navigate('EditSalon')}
                 activeOpacity={0.7}
               >
-                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.successBg }]}>
-                  <Ionicons name="calendar" size={22} color={theme.success} />
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.warningBg }]}>
+                  <Ionicons name="create" size={22} color={theme.warning} />
                 </View>
-                <Text style={styles.quickActionLabel}>View Bookings</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
+                <Text style={styles.quickActionLabel}>Edit Salon</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -341,31 +366,6 @@ export default function DashboardScreen() {
                   <Ionicons name="add-circle" size={22} color={theme.accent} />
                 </View>
                 <Text style={styles.quickActionLabel}>Add Service</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.quickActionCard}
-                onPress={() => navigation.getParent()?.navigate('Staff')}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.infoBg }]}>
-                  <Ionicons name="people" size={22} color={theme.info} />
-                </View>
-                <Text style={styles.quickActionLabel}>Manage Staff</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.quickActionCard}
-                onPress={() => navigation.navigate('EditSalon')}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.warningBg }]}>
-                  <Ionicons name="create" size={22} color={theme.warning} />
-                </View>
-                <Text style={styles.quickActionLabel}>Edit Salon</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -373,11 +373,32 @@ export default function DashboardScreen() {
                 onPress={() => navigation.navigate('QRScanner')}
                 activeOpacity={0.7}
               >
-                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.dangerBg }]}>
-                  <Ionicons name="qr-code" size={22} color={theme.danger} />
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.infoBg }]}>
+                  <Ionicons name="qr-code" size={22} color={theme.info} />
                 </View>
                 <Text style={styles.quickActionLabel}>Scan QR</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.quickActionArrow} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate('Pricing')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.successBg }]}>
+                  <Ionicons name="diamond" size={22} color={theme.success} />
+                </View>
+                <Text style={styles.quickActionLabel}>Subscription</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate('Notifications')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.quickActionIconCircle, { backgroundColor: theme.dangerBg }]}>
+                  <Ionicons name="notifications" size={22} color={theme.danger} />
+                </View>
+                <Text style={styles.quickActionLabel}>Notifications</Text>
               </TouchableOpacity>
             </ScrollView>
 
@@ -687,5 +708,49 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  // ─── Tip Card ───
+  tipCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: theme.warningBg,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  tipCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tipCardContent: {
+    flex: 1,
+  },
+  tipCardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 4,
+  },
+  tipCardText: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  tipCardAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tipCardActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.accent,
   },
 });
