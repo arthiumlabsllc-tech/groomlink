@@ -119,7 +119,10 @@ export default function OTPScreen() {
         inputRefs.current[0]?.focus();
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
+      const errorMessage = err.response?.data?.error?.message 
+        || err.response?.data?.message 
+        || 'Invalid OTP. Please try again.';
+      setError(errorMessage);
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {

@@ -101,17 +101,17 @@ export default function QueueScreen() {
   const getStatusBgColor = (status: QueueStatus) => {
     switch (status) {
       case 'WAITING':
-        return '#FEF3C7';
+        return theme.warningBg;
       case 'CALLED':
-        return '#DBEAFE';
+        return theme.infoBg;
       case 'IN_SERVICE':
-        return '#D1FAE5';
+        return theme.successBg;
       case 'COMPLETED':
-        return '#F3F4F6';
+        return theme.surfaceVariant;
       case 'SKIPPED':
-        return '#FEE2E2';
+        return theme.dangerBg;
       default:
-        return '#F3F4F6';
+        return theme.surfaceVariant;
     }
   };
 
@@ -197,14 +197,14 @@ export default function QueueScreen() {
 
         <View style={styles.queueDetails}>
           <View style={styles.detailItem}>
-            <Ionicons name="time-outline" size={14} color="#6B7280" />
+            <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
             <Text style={styles.detailText}>
               Waiting: {formatWaitTime(entry.joinedAt)}
             </Text>
           </View>
           {entry.status === 'WAITING' && (
             <View style={styles.detailItem}>
-              <Ionicons name="hourglass-outline" size={14} color="#6B7280" />
+              <Ionicons name="hourglass-outline" size={14} color={theme.textSecondary} />
               <Text style={styles.detailText}>
                 Est: {formatEstimatedWait(entry.estimatedWait)}
               </Text>
@@ -328,7 +328,7 @@ export default function QueueScreen() {
         {/* Stats Cards */}
         <View style={styles.statsGrid}>
           <View style={[styles.statsCard, { borderLeftColor: '#F59E0B' }]}>
-            <View style={[styles.statsIcon, { backgroundColor: '#FEF3C7' }]}>
+            <View style={[styles.statsIcon, { backgroundColor: theme.warningBg }]}>
               <Ionicons name="people" size={20} color="#F59E0B" />
             </View>
             <Text variant="labelSmall" style={styles.statsLabel}>
@@ -340,7 +340,7 @@ export default function QueueScreen() {
           </View>
 
           <View style={[styles.statsCard, { borderLeftColor: '#3B82F6' }]}>
-            <View style={[styles.statsIcon, { backgroundColor: '#DBEAFE' }]}>
+            <View style={[styles.statsIcon, { backgroundColor: theme.infoBg }]}>
               <Ionicons name="time" size={20} color="#3B82F6" />
             </View>
             <Text variant="labelSmall" style={styles.statsLabel}>
@@ -352,7 +352,7 @@ export default function QueueScreen() {
           </View>
 
           <View style={[styles.statsCard, { borderLeftColor: '#10B981' }]}>
-            <View style={[styles.statsIcon, { backgroundColor: '#D1FAE5' }]}>
+            <View style={[styles.statsIcon, { backgroundColor: theme.successBg }]}>
               <Ionicons name="checkmark-circle" size={20} color="#10B981" />
             </View>
             <Text variant="labelSmall" style={styles.statsLabel}>

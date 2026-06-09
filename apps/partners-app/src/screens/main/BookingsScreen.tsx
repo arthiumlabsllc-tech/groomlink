@@ -160,7 +160,7 @@ export default function BookingsScreen() {
                   {item.customer?.firstName || ''} {item.customer?.lastName || ''}
                 </Text>
                 <View style={styles.phoneRow}>
-                  <Ionicons name="call-outline" size={12} color="#9CA3AF" />
+                  <Ionicons name="call-outline" size={12} color={theme.textTertiary} />
                   <Text style={styles.phoneText}>{item.customer?.phoneNumber || 'N/A'}</Text>
                 </View>
               </View>
@@ -192,17 +192,17 @@ export default function BookingsScreen() {
           <View style={styles.bookingDetails}>
             <View style={styles.detailRow}>
               <View style={styles.detailItem}>
-                <Ionicons name="cut-outline" size={16} color="#6B7280" />
+                <Ionicons name="cut-outline" size={16} color={theme.textSecondary} />
                 <Text style={styles.detailText}>{item.service?.name || 'Service'}</Text>
               </View>
             </View>
             <View style={styles.detailRow}>
               <View style={styles.detailItem}>
-                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                <Ionicons name="calendar-outline" size={16} color={theme.textSecondary} />
                 <Text style={styles.detailText}>{formatDate(item.date)}</Text>
               </View>
               <View style={styles.detailItem}>
-                <Ionicons name="time-outline" size={16} color="#6B7280" />
+                <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
                 <Text style={styles.detailText}>{formatTime(item.startTime)}</Text>
               </View>
             </View>
@@ -213,7 +213,7 @@ export default function BookingsScreen() {
             <Text style={styles.price}>GH₵{parseFloat(String(item.finalAmount || 0)).toLocaleString()}</Text>
             <View style={styles.tapHint}>
               <Text style={styles.tapHintText}>View Details</Text>
-              <Ionicons name="chevron-forward" size={16} color="#006B3F" />
+              <Ionicons name="chevron-forward" size={16} color={theme.primary} />
             </View>
           </View>
         </View>

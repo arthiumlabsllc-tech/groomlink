@@ -339,8 +339,10 @@ export async function logout(userId: string): Promise<void> {
 
 /**
  * Request OTP for email verification
+ * @param email - User's email address
+ * @param requestedRole - Optional role to validate against (e.g. 'CUSTOMER' from customer-app)
  */
-export async function requestEmailOTP(email: string): Promise<void> {
+export async function requestEmailOTP(email: string, requestedRole?: UserRole): Promise<void> {
   // Normalize email to prevent case-sensitivity mismatches between request/verify
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -348,6 +350,19 @@ export async function requestEmailOTP(email: string): Promise<void> {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(normalizedEmail)) {
     throw new Error('Invalid email format');
+  }
+
+  // Check if user already exists with a different role
+  // This prevents sending OTP to salon owners trying to use customer-app (and vice versa)
+  if (requestedRole) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { role: true },
+    });
+
+    if (existingUser && !isAdminRole(existingUser.role) && existingUser.role !== requestedRole) {
+      throw new RoleMismatchError(existingUser.role, requestedRole);
+    }
   }
 
   const otp = await createEmailOTP(normalizedEmail);
@@ -391,9 +406,9 @@ export class RoleMismatchError extends Error {
     if (isAdminRole) {
       super('This email is registered as an admin account. Please use the admin portal to log in.');
     } else if (existingRole === UserRole.CUSTOMER && requestedRole === UserRole.SALON_OWNER) {
-      super('This email is registered as a customer. Please use a different email or log in at my.groomlinkgh.com');
+      super('This email is registered as a customer. Please use a different email or download the GroomLink Customer app to log in.');
     } else if (existingRole === UserRole.SALON_OWNER && requestedRole === UserRole.CUSTOMER) {
-      super('This email is registered as a salon partner. Please use a different email or log in at partners.groomlinkgh.com');
+      super('This email is registered as a salon partner. Please use a different email or download the GroomLink Partners app to manage your business.');
     } else {
       super(`This email is already registered with a different role (${existingRole}). Please use a different email.`);
     }

@@ -264,7 +264,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.successBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -297,7 +297,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   cardSelected: {
     borderColor: '#006B3F',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: theme.successBg,
   },
   radioOuter: {
     position: 'absolute',
@@ -335,7 +335,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   iconCircleSelected: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: theme.successBg,
   },
   emoji: {
     fontSize: 24,

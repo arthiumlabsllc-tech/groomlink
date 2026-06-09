@@ -144,7 +144,7 @@ export default function ServicesScreen() {
         <View style={styles.cardDetails}>
           <View style={styles.detailColumn}>
             <View style={styles.detailRow}>
-              <Ionicons name="cash-outline" size={16} color="#6B7280" />
+              <Ionicons name="cash-outline" size={16} color={theme.textSecondary} />
               <Text style={styles.detailLabel}>Price</Text>
             </View>
             <Text style={styles.priceValue}>{formatPrice(item.price)}</Text>
@@ -152,7 +152,7 @@ export default function ServicesScreen() {
           <View style={styles.detailDivider} />
           <View style={styles.detailColumn}>
             <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
               <Text style={styles.detailLabel}>Duration</Text>
             </View>
             <Text style={styles.durationValue}>{formatDuration(item.duration)}</Text>
@@ -170,12 +170,12 @@ export default function ServicesScreen() {
             style={styles.deleteButton}
             onPress={() => handleDeleteService(item)}
           >
-            <Ionicons name="trash-outline" size={18} color="#CE1126" />
+            <Ionicons name="trash-outline" size={18} color={theme.danger} />
             <Text style={styles.deleteButtonText}>Delete</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.editHint}>
             <Text style={styles.editHintText}>Tap to edit</Text>
-            <Ionicons name="chevron-forward" size={16} color="#006B3F" />
+            <Ionicons name="chevron-forward" size={16} color={theme.primary} />
           </TouchableOpacity>
         </View>
       </Surface>

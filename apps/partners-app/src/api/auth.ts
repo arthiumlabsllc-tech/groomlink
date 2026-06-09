@@ -25,7 +25,7 @@ export const authApi = {
 
   // Request Email OTP for login
   requestEmailOTP: async (email: string) => {
-    const response = await apiClient.post('/auth/otp/email/request', { email });
+    const response = await apiClient.post('/auth/otp/email/request', { email, role: 'SALON_OWNER' });
     return response.data;
   },
 

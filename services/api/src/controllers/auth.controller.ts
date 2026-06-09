@@ -32,6 +32,7 @@ const loginSchema = z.object({
 
 const emailSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.string().email('Invalid email format')),
+  role: z.enum(['CUSTOMER', 'SALON_OWNER']).optional(),
 });
 
 const verifyEmailOTPSchema = z.object({
@@ -153,13 +154,18 @@ export async function logout(req: Request, res: Response): Promise<void> {
 
 export async function requestEmailOTP(req: Request, res: Response): Promise<void> {
   try {
-    const { email } = emailSchema.parse(req.body);
+    const { email, role } = emailSchema.parse(req.body);
     securityAlert.recordOtpRequest({ identifier: email, req }).catch(() => undefined);
-    await authService.requestEmailOTP(email);
+    await authService.requestEmailOTP(email, role as any);
     successResponse(res, { message: 'OTP sent successfully to your email' });
   } catch (error) {
     if (error instanceof z.ZodError) {
       errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    // Handle role mismatch specifically
+    if (error instanceof RoleMismatchError) {
+      errorResponse(res, 'ROLE_MISMATCH', error.message, 400);
       return;
     }
     errorResponse(res, 'REQUEST_FAILED', (error as Error).message, 400);

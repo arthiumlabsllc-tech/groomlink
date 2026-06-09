@@ -75,7 +75,10 @@ export default function EmailScreen() {
       await authApi.requestEmailOTP(trimmedEmail);
       navigation.navigate('OTP', { email: trimmedEmail });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+      const errorMessage = err.response?.data?.error?.message 
+        || err.response?.data?.message 
+        || 'Failed to send OTP. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

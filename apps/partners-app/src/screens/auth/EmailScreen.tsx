@@ -62,7 +62,10 @@ export default function EmailScreen() {
       await authApi.requestEmailOTP(email);
       navigation.navigate('OTP', { email });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+      const errorMessage = err.response?.data?.error?.message 
+        || err.response?.data?.message 
+        || 'Failed to send OTP. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -78,7 +81,7 @@ export default function EmailScreen() {
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../assets/logo-full-black.png')}
+              source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />
