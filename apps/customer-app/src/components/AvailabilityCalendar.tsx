@@ -214,13 +214,13 @@ export default function AvailabilityCalendar({
 
   const handleDatePress = useCallback((date: Date) => {
     const dateStr = formatDateStr(date);
-    const availability = availabilityMap[dateStr];
     
-    // Allow selecting if not past, within window, and has slots (or availability unknown)
-    if (date >= today && date <= maxBookingDate && (availability?.hasSlots || !availability)) {
+    // Allow selecting any future date within the booking window
+    // The time slot fetch on the booking screen will show actual availability
+    if (date >= today && date <= maxBookingDate) {
       onDateSelect(dateStr);
     }
-  }, [availabilityMap, today, maxBookingDate, onDateSelect]);
+  }, [today, maxBookingDate, onDateSelect]);
 
   const getDateStyle = useCallback((date: Date | null) => {
     if (!date) return null;
@@ -244,7 +244,14 @@ export default function AvailabilityCalendar({
       backgroundColor = COLORS.cardBackground;
       borderColor = COLORS.border;
       textColor = COLORS.textSecondary;
-    } else if (availability?.isClosed || availability?.isFullyBooked) {
+      isSelectable = true; // Allow selection while loading
+    } else if (availability?.isClosed) {
+      backgroundColor = COLORS.background;
+      borderColor = COLORS.lightGray;
+      textColor = COLORS.textSecondary;
+      // Still allow selection - the booking screen will show "no slots" message
+      isSelectable = true;
+    } else if (availability?.isFullyBooked) {
       backgroundColor = COLORS.background;
       borderColor = COLORS.lightGray;
       textColor = COLORS.textSecondary;
@@ -252,6 +259,9 @@ export default function AvailabilityCalendar({
       backgroundColor = `${COLORS.availableGreen}15`; // Light green tint
       borderColor = COLORS.availableGreen;
       textColor = COLORS.availableGreen;
+      isSelectable = true;
+    } else {
+      // Availability not yet loaded - allow selection
       isSelectable = true;
     }
     

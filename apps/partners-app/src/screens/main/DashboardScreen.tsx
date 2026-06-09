@@ -217,11 +217,11 @@ export default function DashboardScreen() {
                   style={styles.headerLogo}
                   resizeMode="contain"
                 />
-                <View>
-                  <Text variant="bodyMedium" style={styles.greeting}>
+                <View style={styles.greetingContainer}>
+                  <Text variant="bodyMedium" style={styles.greeting} numberOfLines={1}>
                     {getGreeting()},
                   </Text>
-                  <Text variant="headlineMedium" style={styles.salonName}>
+                  <Text variant="headlineMedium" style={styles.salonName} numberOfLines={1}>
                     {salon?.businessName || user?.firstName || 'Partner'}
                   </Text>
                 </View>
@@ -428,10 +428,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   headerLogo: {
     width: 120,
     height: 36,
+  },
+  greetingContainer: {
+    flex: 1,
   },
   greeting: {
     color: theme.textSecondary,

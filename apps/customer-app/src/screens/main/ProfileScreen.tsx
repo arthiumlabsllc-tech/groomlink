@@ -267,7 +267,7 @@ export default function ProfileScreen() {
   }
   
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={styles.profileHeader}>
@@ -294,10 +294,10 @@ export default function ProfileScreen() {
               <Ionicons name="camera" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
-          <Text variant="headlineSmall" style={styles.userName}>
+          <Text variant="headlineSmall" style={styles.userName} numberOfLines={1}>
             {getDisplayName()}
           </Text>
-          <Text variant="bodyMedium" style={styles.userEmail}>
+          <Text variant="bodyMedium" style={styles.userEmail} numberOfLines={1}>
             {user?.email || user?.phoneNumber}
           </Text>
         </View>

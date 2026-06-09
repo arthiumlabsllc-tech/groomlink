@@ -225,7 +225,7 @@ export default function ServicesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <Surface style={styles.header} elevation={0}>
         <View style={styles.headerContent}>

@@ -820,10 +820,12 @@ export async function getAvailableSlots(
   }
 
   // Check 30-day booking window
+  // Use UTC methods because date-only strings ("YYYY-MM-DD") are parsed as UTC midnight
+  // and Ghana is at UTC+0, so UTC methods give correct local time
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const requestedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const daysDiff = Math.floor((requestedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const requestedUTC = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const daysDiff = Math.round((requestedUTC - todayUTC) / (1000 * 60 * 60 * 24));
 
   if (daysDiff > bookingConfig.maxBookingDaysAhead) {
     throw new Error(`Bookings can only be made up to ${bookingConfig.maxBookingDaysAhead} days in advance`);
@@ -834,7 +836,7 @@ export async function getAvailableSlots(
     return [];
   }
 
-  const dayOfWeek = date.getDay();
+  const dayOfWeek = date.getUTCDay();
 
   // Check if worker is on leave (if workerId provided)
   if (workerId) {
@@ -950,8 +952,8 @@ export async function getAvailableSlots(
   // Calculate minimum start time for today
   let minStartMinutes = 0;
   if (daysDiff === 0) {
-    // Today - add minimum advance buffer
-    minStartMinutes = timeToMinutes(`${now.getHours()}:${now.getMinutes()}`) + bookingConfig.bufferMinutes;
+    // Today - add minimum advance buffer (use UTC since Ghana = UTC+0)
+    minStartMinutes = timeToMinutes(`${now.getUTCHours()}:${now.getUTCMinutes()}`) + bookingConfig.bufferMinutes;
   }
 
   // Generate time slots based on service duration

@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -54,6 +55,7 @@ export default function ProviderCategoryScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [selected, setSelected] = useState<string | null>(null);
   const { theme, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleContinue = () => {
@@ -62,7 +64,7 @@ export default function ProviderCategoryScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.statusBar} />
 
       {/* Progress Steps */}
@@ -189,7 +191,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.background,
     paddingHorizontal: 20,
-    paddingTop: 16,
   },
   // Progress
   progressContainer: {

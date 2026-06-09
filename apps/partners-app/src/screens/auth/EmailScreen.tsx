@@ -97,18 +97,22 @@ export default function EmailScreen() {
             For salon & barbershop owners in Ghana
           </Text>
 
-          <View style={styles.inputContainer}>
-            <Text variant="labelLarge" style={styles.inputLabel}>
-              Email Address
+          {/* Sign In Method Description */}
+          <View style={styles.authMethodContainer}>
+            <Ionicons name="shield-checkmark-outline" size={20} color="#006B3F" />
+            <Text variant="bodyMedium" style={styles.authMethodText}>
+              We use passwordless sign in. Enter your email and we'll send a 6-digit verification code.
             </Text>
+          </View>
+
+          <View style={styles.inputContainer}>
             <TextInput
-              label=""
+              label="Email Address"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              autoFocus
               style={styles.input}
               placeholder="you@example.com"
               mode="outlined"
@@ -117,11 +121,8 @@ export default function EmailScreen() {
               textColor={theme.text}
               placeholderTextColor={theme.textSecondary}
               left={<TextInput.Icon icon="email-outline" color={theme.textSecondary} />}
-              theme={{ roundness: 12 }}
+              theme={{ roundness: 12, colors: { onSurfaceVariant: theme.textSecondary } }}
             />
-            <HelperText type="info" visible={true} style={styles.helperText}>
-              We'll send a 6-digit verification code to this email
-            </HelperText>
             {error ? (
               <HelperText type="error" visible={true} style={styles.errorText}>
                 {error}
@@ -136,23 +137,17 @@ export default function EmailScreen() {
             disabled={loading || !validateEmail(email)}
             style={[styles.button, (loading || !validateEmail(email)) && styles.buttonDisabled]}
             contentStyle={styles.buttonContent}
-            buttonColor="#006B3F"
-            textColor="#fff"
+            buttonColor={(loading || !validateEmail(email)) ? '#E0E0E0' : '#006B3F'}
+            textColor={(loading || !validateEmail(email)) ? '#9E9E9E' : '#FFFFFF'}
             theme={{ roundness: 12 }}
           >
             {loading ? 'Sending...' : 'Continue'}
           </Button>
 
-          {!validateEmail(email) && !loading && (
-            <Text variant="bodySmall" style={styles.hintText}>
-              Enter a valid email address to continue
-            </Text>
-          )}
-
           <View style={styles.footerNote}>
             <Ionicons name="information-circle-outline" size={16} color={theme.textTertiary} />
             <Text variant="bodySmall" style={styles.signupNote}>
-              New salon owner? We'll help you set up your business after verification
+              New salon owner? We'll help you set up your business after verification. No password needed.
             </Text>
           </View>
 
@@ -191,7 +186,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
     fontWeight: 'bold',
-    color: '#006B3F',
+    color: theme.text,
     letterSpacing: 0.5,
   },
   subtitle: {
@@ -205,21 +200,27 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 40,
     color: theme.textSecondary,
   },
+  authMethodContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: theme.successBg,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+    gap: 10,
+  },
+  authMethodText: {
+    flex: 1,
+    color: theme.text,
+    lineHeight: 20,
+  },
   inputContainer: {
     marginBottom: 24,
-  },
-  inputLabel: {
-    marginBottom: 8,
-    color: theme.text,
-    fontWeight: '500',
   },
   input: {
     backgroundColor: theme.surface,
     fontSize: 16,
-  },
-  helperText: {
-    marginTop: 6,
-    color: theme.textSecondary,
+    minHeight: 56,
   },
   errorText: {
     marginTop: 4,
@@ -231,18 +232,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
   },
   buttonDisabled: {
-    backgroundColor: '#006B3F80',
-    opacity: 0.7,
+    elevation: 0,
   },
   buttonContent: {
     paddingVertical: 16,
     paddingHorizontal: 24,
-  },
-  hintText: {
-    textAlign: 'center',
-    color: theme.textSecondary,
-    marginTop: 12,
-    fontSize: 13,
   },
   footerNote: {
     flexDirection: 'row',

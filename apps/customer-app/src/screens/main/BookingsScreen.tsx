@@ -26,6 +26,7 @@ import { useAuthStore } from '../../store/authStore';
 import { autoCheckinService } from '../../services/AutoCheckinService';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -66,6 +67,7 @@ export default function BookingsScreen() {
   const { theme, isDark } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const { numColumns, isTablet } = useResponsiveColumns();
   const { isAuthenticated, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
@@ -342,7 +344,7 @@ export default function BookingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -393,9 +395,12 @@ export default function BookingsScreen() {
         </View>
       ) : (
         <FlatList
+          key={numColumns}
           data={filteredBookings}
           keyExtractor={(item) => item.id}
           renderItem={renderBookingCard}
+          numColumns={numColumns}
+          columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmptyState}
           refreshControl={
@@ -478,8 +483,13 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     padding: 16,
     paddingBottom: 32,
   },
+  columnWrapper: {
+    justifyContent: 'space-between',
+  },
   bookingCard: {
+    flex: 1,
     marginBottom: 16,
+    marginHorizontal: 4,
     borderRadius: 16,
     backgroundColor: COLORS.cardBackground,
     shadowColor: '#000',

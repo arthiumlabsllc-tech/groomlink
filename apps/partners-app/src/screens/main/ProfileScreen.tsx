@@ -263,10 +263,10 @@ export default function ProfileScreen() {
               <Ionicons name="business" size={14} color="#FFFFFF" />
             </View>
           </View>
-          <Text variant="headlineSmall" style={styles.name}>
+          <Text variant="headlineSmall" style={styles.name} numberOfLines={1}>
             {displayName?.firstName} {displayName?.lastName}
           </Text>
-          <Text variant="bodyMedium" style={styles.salonName}>
+          <Text variant="bodyMedium" style={styles.salonName} numberOfLines={1}>
             {salon?.businessName || 'Your Salon'}
           </Text>
           <View style={styles.contactRow}>

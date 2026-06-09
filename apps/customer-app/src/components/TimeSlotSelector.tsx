@@ -220,6 +220,17 @@ export default function TimeSlotSelector({
 
   return (
     <View style={styles.container}>
+      {/* Empty state - no slots available */}
+      {slots.length === 0 && (
+        <View style={styles.emptyState}>
+          <Ionicons name="calendar-outline" size={40} color={COLORS.textSecondary} />
+          <RNText style={styles.emptyTitle}>No time slots available</RNText>
+          <RNText style={styles.emptySubtitle}>
+            The salon is closed on this date. Please select a different date.
+          </RNText>
+        </View>
+      )}
+
       {/* Low Slots Warning */}
       {showLowSlotsWarning && (
         <View style={styles.warningBanner}>
@@ -405,5 +416,23 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     flex: 1,
     lineHeight: 18,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginTop: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions, useWindowDimensions } from 'react-native';
 import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { useNotificationStore } from '../../store/notificationStore';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { findNearestGhanaLocation, isWithinGhana } from '../../utils/ghanaLocations';
+import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
 
 // Design System Colors (theme-aware)
 const createColors = (t: AppTheme) => ({
@@ -59,6 +60,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [homeServiceOnly, setHomeServiceOnly] = useState(false);
+  const { numColumns, isTablet } = useResponsiveColumns();
   const [location, setLocation] = useState<LocationState>({
     lat: null,
     lng: null,
@@ -264,11 +266,11 @@ export default function HomeScreen() {
                 style={styles.headerLogo}
                 resizeMode="contain"
               />
-              <View>
-                <Text variant="bodyMedium" style={styles.greetingLabel}>
+              <View style={styles.greetingContainer}>
+                <Text variant="bodyMedium" style={styles.greetingLabel} numberOfLines={1}>
                   {getGreeting()},
                 </Text>
-                <Text variant="headlineSmall" style={styles.greetingName}>
+                <Text variant="headlineSmall" style={styles.greetingName} numberOfLines={1}>
                   {getUserName()}
                 </Text>
               </View>
@@ -371,8 +373,12 @@ export default function HomeScreen() {
           ) : nearbyError ? (
             renderError()
           ) : filteredNearbySalons && filteredNearbySalons.length > 0 ? (
-            <View style={styles.nearbyList}>
-              {filteredNearbySalons.map((salon) => renderSalonCard(salon, false))}
+            <View style={[styles.nearbyList, isTablet && styles.nearbyGrid]}>
+              {filteredNearbySalons.map((salon) => (
+                <View key={salon.id} style={isTablet ? { width: '32%' } : { width: '100%' }}>
+                  {renderSalonCard(salon, false)}
+                </View>
+              ))}
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -412,10 +418,14 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   headerLogo: {
     width: 120,
     height: 36,
+  },
+  greetingContainer: {
+    flex: 1,
   },
   greetingLabel: {
     color: COLORS.textSecondary,
@@ -587,6 +597,11 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   nearbyList: {
     gap: 16,
+  },
+  nearbyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   loadingContainer: {
     paddingVertical: 32,

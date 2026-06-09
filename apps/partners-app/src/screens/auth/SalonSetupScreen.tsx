@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text, HelperText, Divider, Surface, Chip } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,6 +89,7 @@ export default function SalonSetupScreen() {
   const route = useRoute<SalonSetupRouteProp>();
   const { user, setUser } = useAuthStore();
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Get provider category from route params (selected in ProviderCategoryScreen)
@@ -305,7 +307,7 @@ export default function SalonSetupScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { paddingTop: insets.top }]}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
