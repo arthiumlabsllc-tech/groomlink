@@ -74,6 +74,17 @@ export function useReactivateSalon() {
   });
 }
 
+export function useToggleFeaturedSalon() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => salonsApi.toggleFeatured(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SALONS_KEY] });
+    },
+  });
+}
+
 export function useCreateSalon() {
   const queryClient = useQueryClient();
   

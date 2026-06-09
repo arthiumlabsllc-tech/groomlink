@@ -23,6 +23,7 @@ import { Salon } from '../../types';
 import { TabParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -72,6 +73,7 @@ export default function SearchScreen() {
   const { theme } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const { numColumns, isTablet } = useResponsiveColumns();
   
   // Safely access route params with fallback
   const initialQuery = route.params?.query || '';
@@ -283,9 +285,12 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
+        key={numColumns}
         data={salons}
         keyExtractor={(item) => item.id}
         renderItem={renderSalonCard}
+        numColumns={numColumns}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={styles.listContent}
@@ -369,8 +374,13 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     padding: 16,
     paddingBottom: 32,
   },
+  columnWrapper: {
+    justifyContent: 'space-between',
+  },
   salonCard: {
+    flex: 1,
     marginBottom: 16,
+    marginHorizontal: 4,
     borderRadius: 16,
     backgroundColor: COLORS.cardBackground,
     shadowColor: '#000',

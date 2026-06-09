@@ -27,6 +27,7 @@ export interface Salon {
   hasWifi: boolean;
   hasAC: boolean;
   acceptsWalkIns: boolean;
+  isFeatured?: boolean;
   createdAt: string;
   owner: {
     id: string;
@@ -256,6 +257,12 @@ export const salonsApi = {
   // Reactivate suspended salon
   reactivate: async (id: string): Promise<Salon> => {
     const response = await apiClient.post(`/admin/salons/${id}/reactivate`);
+    return response.data.data;
+  },
+
+  // Toggle featured status
+  toggleFeatured: async (id: string): Promise<Salon> => {
+    const response = await apiClient.post(`/admin/salons/${id}/feature`);
     return response.data.data;
   },
 

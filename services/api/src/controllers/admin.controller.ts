@@ -1667,6 +1667,41 @@ export async function reactivateSalon(req: AuthenticatedRequest, res: Response):
   }
 }
 
+// Toggle Featured Salon
+export async function toggleFeaturedSalon(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const salon = await prisma.salon.findUnique({ where: { id } });
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    const updatedSalon = await prisma.salon.update({
+      where: { id },
+      data: { isFeatured: !salon.isFeatured },
+      include: {
+        owner: {
+          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true }
+        }
+      }
+    });
+
+    // Track admin activity
+    await activityService.trackActivity(
+      req.user!.id,
+      salon.isFeatured ? 'SALON_UNFEATURED' : 'SALON_FEATURED',
+      req as any,
+      { salonId: id, salonName: salon.businessName }
+    );
+
+    successResponse(res, updatedSalon);
+  } catch (error) {
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
 // Public Site Settings (No Auth)
 export async function getPublicSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {

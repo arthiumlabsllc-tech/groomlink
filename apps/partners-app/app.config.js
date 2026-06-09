@@ -1,5 +1,5 @@
 /**
- * Dynamic Expo Configuration
+ * Dynamic Expo Configuration - Partners App
  * This file allows us to use environment variables securely
  * 
  * IMPORTANT: API keys are injected at BUILD TIME, not stored in code
@@ -7,49 +7,38 @@
 
 export default {
   expo: {
-    name: "GroomLink",
-    slug: "groomlink-customer",
+    name: "GroomLink Partners",
+    slug: "groomlink-partners",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/loading-salon-02-splash.png",
+      image: "./assets/loading-barber-01-splash.png",
       resizeMode: "cover",
-      backgroundColor: "#FAF6F0"
+      backgroundColor: "#1a3c2a"
     },
     assetBundlePatterns: [
       "**/*"
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.arthiumlabsllc.groomlink",
+      bundleIdentifier: "com.arthiumlabsllc.partners",
       buildNumber: "1.0.0",
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: "GroomLink uses your location to find nearby barbershops.",
-        NSCameraUsageDescription: "GroomLink needs camera access to upload profile photos.",
-        NSPhotoLibraryUsageDescription: "GroomLink needs photo library access to upload profile photos.",
+        NSLocationWhenInUseUsageDescription: "GroomLink Partners uses your location for your salon address.",
+        NSCameraUsageDescription: "GroomLink Partners needs camera access to scan QR codes and upload salon photos.",
+        NSPhotoLibraryUsageDescription: "GroomLink Partners needs photo library access to upload salon photos.",
         ITSAppUsesNonExemptEncryption: false
       }
     },
     android: {
-      package: "com.arthiumlabsllc.groomlink",
-      versionCode: 17,
+      package: "com.arthiumlabsllc.partners",
+      versionCode: 5,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#FFFFFF"
+        backgroundColor: "#1a3c2a"
       },
-      intentFilters: [
-        {
-          action: "VIEW",
-          data: [
-            {
-              scheme: "groomlink"
-            }
-          ],
-          category: ["BROWSABLE", "DEFAULT"]
-        }
-      ],
       permissions: [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -61,21 +50,16 @@ export default {
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ],
-      config: {
-        googleMaps: {
-          // API key injected at build time from environment variables
-          apiKey: process.env.GOOGLE_MAPS_API_KEY || process.env.EAS_BUILD_SECRET_GOOGLE_MAPS_API_KEY || ''
-        }
-      }
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     web: {
       favicon: "./assets/favicon.png"
     },
     extra: {
       eas: {
-        projectId: "81417e23-6df9-4792-bf49-7829dd1d130e"
+        projectId: "0c94a806-7dcb-42fe-935f-8c577b83e053"
       }
     },
     plugins: [
@@ -100,13 +84,19 @@ export default {
         "expo-notifications",
         {
           icon: "./assets/notification-icon.png",
-          color: "#CE1126"
+          color: "#006B3F"
         }
       ],
       [
         "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission: "GroomLink needs your location to find nearby salons and barbershops."
+          locationAlwaysAndWhenInUsePermission: "GroomLink Partners needs your location to set your salon's position on the map."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          cameraPermission: "GroomLink Partners needs camera access to scan QR codes and upload salon photos."
         }
       ],
       "./plugins/android-manifest-fixes",

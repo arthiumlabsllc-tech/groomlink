@@ -28,6 +28,10 @@
     "production": {
       "autoIncrement": true,
       "node": "18.19.0",
+      "ios": {
+        "autoIncrement": true,
+        "image": "latest"
+      },
       "cache": {
         "key": "v5-16kb-fix-gl-logo"
       }
@@ -40,10 +44,10 @@
         "track": "production"
       },
       "ios": {
-        "ascAppId": "YOUR_APPLE_APP_ID",
-        "ascApiKeyPath": "./AuthKey.p8",
-        "ascApiKeyIssuerId": "YOUR_ISSUER_ID",
-        "ascApiKeyId": "YOUR_KEY_ID"
+        "ascAppId": "6778125298",
+        "ascApiKeyId": "FT259GR8VZ",
+        "ascApiKeyIssuerId": "cddb25bf-75b9-4d81-9ad4-b2a0af0ba2aa",
+        "ascApiKeyPath": "./AuthKey_FT259GR8VZ.p8"
       }
     }
   }

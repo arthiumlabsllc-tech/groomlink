@@ -4,7 +4,8 @@ import LoadingScreen from '../components/LoadingScreen';
 import { 
   useSalons, useApproveSalon, useRejectSalon, usePendingSalons, 
   useSuspendSalon, useReactivateSalon, useCreateSalon, useSalonDetails,
-  useKycSubmissions, useKycSubmissionDetail, useApproveKyc, useRejectKyc, usePendingKycCount
+  useKycSubmissions, useKycSubmissionDetail, useApproveKyc, useRejectKyc, usePendingKycCount,
+  useToggleFeaturedSalon
 } from '../hooks';
 import { formatDate, formatPhoneNumber, formatCurrency } from '../lib/utils';
 import { SalonType, SalonStatus, KycStatus, BusinessType, KycSubmission, ProviderCategory } from '../api/salons';
@@ -103,6 +104,7 @@ export function Salons() {
   const rejectSalon = useRejectSalon();
   const suspendSalon = useSuspendSalon();
   const reactivateSalon = useReactivateSalon();
+  const toggleFeatured = useToggleFeaturedSalon();
   const createSalon = useCreateSalon();
   const { data: salonDetails, isLoading: detailsLoading } = useSalonDetails(selectedSalonId || '');
 
@@ -489,13 +491,27 @@ export function Salons() {
                 </>
               )}
               {salon.status === 'APPROVED' && (
-                <button
-                  onClick={() => openSuspendModal(salon.id)}
-                  className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium"
-                >
-                  <Icon name="block" size={18} />
-                  Suspend
-                </button>
+                <>
+                  <button
+                    onClick={() => toggleFeatured.mutateAsync(salon.id)}
+                    disabled={toggleFeatured.isPending}
+                    className={`btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-colors font-medium ${
+                      salon.isFeatured
+                        ? 'bg-[#FCD116] text-gray-900 hover:bg-[#e0b800]'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    } disabled:opacity-50`}
+                  >
+                    <Icon name="star" size={18} />
+                    {salon.isFeatured ? 'Unfeature' : 'Feature'}
+                  </button>
+                  <button
+                    onClick={() => openSuspendModal(salon.id)}
+                    className="btn-ripple flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium"
+                  >
+                    <Icon name="block" size={18} />
+                    Suspend
+                  </button>
+                </>
               )}
               {salon.status === 'SUSPENDED' && (
                 <button
@@ -540,7 +556,12 @@ export function Salons() {
                         <Icon name="storefront" size={18} className="text-[#006B3F]" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">{salon.businessName}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-gray-800">{salon.businessName}</p>
+                          {salon.isFeatured && (
+                            <Icon name="star" size={14} className="text-[#FCD116]" />
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500">{formatDate(salon.createdAt)}</p>
                       </div>
                     </div>
@@ -591,13 +612,27 @@ export function Salons() {
                         </>
                       )}
                       {salon.status === 'APPROVED' && (
-                        <button
-                          onClick={() => openSuspendModal(salon.id)}
-                          className="btn-ripple p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                          title="Suspend salon"
-                        >
-                          <Icon name="block" size={18} />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => toggleFeatured.mutateAsync(salon.id)}
+                            disabled={toggleFeatured.isPending}
+                            className={`btn-ripple p-2 rounded-lg transition-colors ${
+                              salon.isFeatured
+                                ? 'bg-[#FCD116] text-gray-900 hover:bg-[#e0b800]'
+                                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            } disabled:opacity-50`}
+                            title={salon.isFeatured ? 'Remove from featured' : 'Mark as featured'}
+                          >
+                            <Icon name="star" size={18} />
+                          </button>
+                          <button
+                            onClick={() => openSuspendModal(salon.id)}
+                            className="btn-ripple p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                            title="Suspend salon"
+                          >
+                            <Icon name="block" size={18} />
+                          </button>
+                        </>
                       )}
                       {salon.status === 'SUSPENDED' && (
                         <button

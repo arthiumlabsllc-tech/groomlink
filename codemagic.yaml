@@ -1,0 +1,249 @@
+# Codemagic CI/CD Configuration for GroomLink iOS Builds
+# ============================================================
+# This config builds both the customer-app and partners-app for iOS
+# and submits them to the Apple App Store via App Store Connect API.
+#
+# PREREQUISITES (set up in Codemagic dashboard):
+# 1. Apple Developer account connected
+# 2. App Store Connect API key uploaded (AuthKey_XXXXXX.p8)
+# 3. iOS code signing (automatic or manual)
+# 4. Environment variables configured (see below)
+#
+# REQUIRED ENVIRONMENT VARIABLES (set in Codemagic UI):
+# - APP_STORE_CONNECT_ISSUER_ID: Your App Store Connect API Issuer ID
+# - APP_STORE_CONNECT_KEY_IDENTIFIER: Your API Key ID  
+# - APP_STORE_CONNECT_PRIVATE_KEY: Contents of your AuthKey.p8 file
+# - CERTIFICATE_PRIVATE_KEY: iOS distribution certificate private key
+# - GOOGLE_MAPS_API_KEY: Google Maps API key for customer-app
+# - EXPO_TOKEN: Your Expo access token (from expo.dev)
+#
+# APPLE APP IDs (from App Store Connect):
+# - Customer App: Set ASC_APP_ID_CUSTOMER in environment
+# - Partners App: Set ASC_APP_ID_PARTNERS in environment
+# ============================================================
+
+workflows:
+  # ============================================================
+  # CUSTOMER APP - iOS Production Build & Submit
+  # ============================================================
+  customer-app-ios:
+    name: GroomLink Customer - iOS Production
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: apps/customer-app
+    
+    integrations:
+      app_store_connect: GroomLink ASC
+    
+    environment:
+      node: 18.19.0
+      xcode: latest
+      cocoapods: default
+      groups:
+        - groomlink_credentials
+        - groomlink_ios_signing
+      vars:
+        EXPO_NO_DOTENV: "1"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.arthiumlabsllc.groomlink
+    
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+    
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          
+      - name: Set up Expo
+        script: |
+          npx expo install --check
+          
+      - name: Run Expo Prebuild (iOS)
+        script: |
+          npx expo prebuild --platform ios --clean
+          
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+          
+      - name: Build iOS app
+        script: |
+          cd ios
+          xcode-project build-ipa \
+            --workspace "*.xcworkspace" \
+            --scheme "groomlinkcustomer" \
+            --config Release
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - ios/build/Build/Products/*.app
+      
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+      email:
+        recipients:
+          - hello@groomlinkgh.com
+        notify:
+          success: true
+          failure: true
+
+  # ============================================================
+  # PARTNERS APP - iOS Production Build & Submit
+  # ============================================================
+  partners-app-ios:
+    name: GroomLink Partners - iOS Production
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: apps/partners-app
+    
+    integrations:
+      app_store_connect: GroomLink ASC
+    
+    environment:
+      node: 18.19.0
+      xcode: latest
+      cocoapods: default
+      groups:
+        - groomlink_credentials
+        - groomlink_ios_signing
+      vars:
+        EXPO_NO_DOTENV: "1"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.arthiumlabsllc.partners
+    
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+    
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          
+      - name: Set up Expo
+        script: |
+          npx expo install --check
+          
+      - name: Run Expo Prebuild (iOS)
+        script: |
+          npx expo prebuild --platform ios --clean
+          
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+          
+      - name: Build iOS app
+        script: |
+          cd ios
+          xcode-project build-ipa \
+            --workspace "*.xcworkspace" \
+            --scheme "groomlinkpartners" \
+            --config Release
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - ios/build/Build/Products/*.app
+      
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+      email:
+        recipients:
+          - hello@groomlinkgh.com
+        notify:
+          success: true
+          failure: true
+
+  # ============================================================
+  # BOTH APPS - Build & Submit (manual trigger)
+  # ============================================================
+  all-ios-production:
+    name: GroomLink All Apps - iOS Production
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    
+    integrations:
+      app_store_connect: GroomLink ASC
+    
+    environment:
+      node: 18.19.0
+      xcode: latest
+      cocoapods: default
+      groups:
+        - groomlink_credentials
+        - groomlink_ios_signing
+      vars:
+        EXPO_NO_DOTENV: "1"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier:
+          - com.arthiumlabsllc.groomlink
+          - com.arthiumlabsllc.partners
+    
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: "v*"
+          include: true
+    
+    scripts:
+      # --- Customer App ---
+      - name: Build Customer App
+        script: |
+          cd apps/customer-app
+          npm install
+          npx expo prebuild --platform ios --clean
+          cd ios
+          xcode-project build-ipa \
+            --workspace "*.xcworkspace" \
+            --scheme "groomlinkcustomer" \
+            --config Release
+          
+      # --- Partners App ---
+      - name: Build Partners App
+        script: |
+          cd apps/partners-app
+          npm install
+          npx expo prebuild --platform ios --clean
+          cd ios
+          xcode-project build-ipa \
+            --workspace "*.xcworkspace" \
+            --scheme "groomlinkpartners" \
+            --config Release
+    
+    artifacts:
+      - apps/customer-app/build/ios/ipa/*.ipa
+      - apps/partners-app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+      email:
+        recipients:
+          - hello@groomlinkgh.com
+        notify:
+          success: true
+          failure: true

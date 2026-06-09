@@ -22,6 +22,7 @@ router.post('/salons/:id/approve', authenticateToken, requireAdminOrHigher, requ
 router.post('/salons/:id/reject', authenticateToken, requireAdminOrHigher, requirePermission('salons'), adminController.rejectSalon);
 router.post('/salons/:id/suspend', authenticateToken, requireAdminOrHigher, requirePermission('salons'), adminController.suspendSalon);
 router.post('/salons/:id/reactivate', authenticateToken, requireAdminOrHigher, requirePermission('salons'), adminController.reactivateSalon);
+router.post('/salons/:id/feature', authenticateToken, requireAdminOrHigher, requirePermission('salons'), adminController.toggleFeaturedSalon);
 
 // Coupon Management
 router.get('/coupons', authenticateToken, requireAdminOrHigher, adminController.getCoupons);
