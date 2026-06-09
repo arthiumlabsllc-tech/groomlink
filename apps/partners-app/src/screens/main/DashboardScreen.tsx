@@ -250,60 +250,68 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Stats Grid- like MTN's "Balances" Airtime/Data cards */}
+            {/* Stats Grid */}
             <View style={styles.statsGrid}>
               {/* Today's Bookings */}
               <View style={styles.statsCard}>
-                <View style={styles.statsCardTop}>
+                <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.successBg }]}>
-                    <Ionicons name="calendar-today" size={18} color={theme.success} />
+                    <Ionicons name="calendar" size={18} color={theme.success} />
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+                  <Text style={styles.statsValue}>{todayBookings.length}</Text>
+                  <Text style={styles.statsLabel}>Today's Bookings</Text>
                 </View>
-                <Text style={styles.statsValue}>{todayBookings.length}</Text>
-                <Text style={styles.statsLabel}>Today's Bookings</Text>
+                <View style={styles.statsCardBgIcon}>
+                  <Ionicons name="calendar" size={52} color={theme.success} style={{ opacity: 0.08 }} />
+                </View>
               </View>
 
               {/* Weekly Revenue */}
               <View style={styles.statsCard}>
-                <View style={styles.statsCardTop}>
+                <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.accentBg }]}>
                     <Ionicons name="cash" size={18} color={theme.accent} />
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+                  <Text style={styles.statsValue}>GH₵{weeklyRevenue.toLocaleString()}</Text>
+                  <Text style={styles.statsLabel}>Weekly Revenue</Text>
                 </View>
-                <Text style={styles.statsValue}>GH₵{weeklyRevenue.toLocaleString()}</Text>
-                <Text style={styles.statsLabel}>Weekly Revenue</Text>
+                <View style={styles.statsCardBgIcon}>
+                  <Ionicons name="cash" size={52} color={theme.accent} style={{ opacity: 0.08 }} />
+                </View>
               </View>
 
               {/* Pending */}
               <View style={styles.statsCard}>
-                <View style={styles.statsCardTop}>
+                <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.pendingBg }]}>
                     <Ionicons name="time" size={18} color={theme.pending} />
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+                  <Text style={styles.statsValue}>{pendingBookings.length}</Text>
+                  <Text style={styles.statsLabel}>Pending</Text>
                 </View>
-                <Text style={styles.statsValue}>{pendingBookings.length}</Text>
-                <Text style={styles.statsLabel}>Pending</Text>
+                <View style={styles.statsCardBgIcon}>
+                  <Ionicons name="time" size={52} color={theme.pending} style={{ opacity: 0.08 }} />
+                </View>
               </View>
 
               {/* Rating */}
               <View style={styles.statsCard}>
-                <View style={styles.statsCardTop}>
+                <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.infoBg }]}>
                     <Ionicons name="star" size={18} color={theme.info} />
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+                  <Text style={styles.statsValue}>
+                    {stats?.averageRating ? stats.averageRating.toFixed(1) : '-'}
+                  </Text>
+                  <Text style={styles.statsLabel}>Rating</Text>
                 </View>
-                <Text style={styles.statsValue}>
-                  {stats?.averageRating ? stats.averageRating.toFixed(1) : '-'}
-                </Text>
-                <Text style={styles.statsLabel}>Rating</Text>
+                <View style={styles.statsCardBgIcon}>
+                  <Ionicons name="star" size={52} color={theme.info} style={{ opacity: 0.08 }} />
+                </View>
               </View>
             </View>
 
-            {/* Quick Actions- like MTN's "Digital Services" horizontal scroll */}
+            {/* Quick Actions */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Quick Actions</Text>
             </View>
@@ -510,16 +518,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   statsCard: {
     width: '47%',
     backgroundColor: theme.surfaceVariant,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
     borderColor: theme.border,
+    overflow: 'hidden',
+    position: 'relative' as const,
   },
-  statsCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  statsCardContent: {
+    zIndex: 1,
+  },
+  statsCardBgIcon: {
+    position: 'absolute' as const,
+    bottom: -6,
+    right: -6,
+    opacity: 1,
   },
   statsIconCircle: {
     width: 36,
@@ -527,6 +540,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
   },
   statsValue: {
     fontWeight: 'bold',
