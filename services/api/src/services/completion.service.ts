@@ -4,6 +4,7 @@ import logger from '../config/logger';
 import { releaseEscrow, refundEscrow, getEscrowByBookingId } from './escrow.service';
 import * as smsService from './sms.service';
 import { emitBookingCompleted } from '../config/socket';
+import * as pushService from './pushNotification.service';
 import QRCode from 'qrcode';
 
 /**
@@ -109,6 +110,15 @@ export async function manualComplete(bookingId: string, completedById: string) {
       totalAmount: booking.escrow.amountHeld.toString(),
     });
 
+    // Send push notification (works when app is backgrounded)
+    pushService.pushServiceCompleted(
+      booking.salonId,
+      `${booking.customer.firstName} ${booking.customer.lastName}`,
+      booking.service?.name || 'Service',
+      booking.id,
+      booking.escrow.amountHeld.toString()
+    ).catch((err) => logger.error('Failed to send push for manual completion', { err }));
+
     return updatedBooking;
   } catch (error) {
     logger.error('Error in manualComplete:', { bookingId, completedById, error });
@@ -202,6 +212,15 @@ export async function customerConfirmComplete(bookingId: string, userId: string)
       serviceName: booking.service?.name || 'Service',
       totalAmount: booking.escrow.amountHeld.toString(),
     });
+
+    // Send push notification (works when app is backgrounded)
+    pushService.pushServiceCompleted(
+      booking.salonId,
+      `${booking.customer.firstName} ${booking.customer.lastName}`,
+      booking.service?.name || 'Service',
+      booking.id,
+      booking.escrow.amountHeld.toString()
+    ).catch((err) => logger.error('Failed to send push for customer confirm completion', { err }));
 
     return updatedBooking;
   } catch (error) {
@@ -308,6 +327,15 @@ export async function qrComplete(bookingId: string, salonOwnerId: string) {
       totalAmount: booking.escrow.amountHeld.toString(),
     });
 
+    // Send push notification (works when app is backgrounded)
+    pushService.pushServiceCompleted(
+      booking.salonId,
+      `${booking.customer.firstName} ${booking.customer.lastName}`,
+      booking.service?.name || 'Service',
+      booking.id,
+      booking.escrow.amountHeld.toString()
+    ).catch((err) => logger.error('Failed to send push for QR completion', { err }));
+
     return updatedBooking;
   } catch (error) {
     logger.error('Error in qrComplete:', { bookingId, salonOwnerId, error });
@@ -406,6 +434,15 @@ export async function autoCompleteBooking(bookingId: string) {
       serviceName: booking.service?.name || 'Service',
       totalAmount: booking.escrow.amountHeld.toString(),
     });
+
+    // Send push notification (works when app is backgrounded)
+    pushService.pushServiceCompleted(
+      booking.salonId,
+      `${booking.customer.firstName} ${booking.customer.lastName}`,
+      booking.service?.name || 'Service',
+      booking.id,
+      booking.escrow.amountHeld.toString()
+    ).catch((err) => logger.error('Failed to send push for auto completion', { err }));
 
     return updatedBooking;
   } catch (error) {

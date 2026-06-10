@@ -33,7 +33,14 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+        allowCriticalAlerts: true,
+      },
+    });
     finalStatus = status;
   }
 
@@ -54,13 +61,14 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
   const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
 
-  // Configure Android notification channel
+  // Configure Android notification channel with custom sound
   if (Platform.OS === 'android') {
     Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+      name: 'Booking Alerts',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#006B3F',
+      sound: 'notification_alert.wav',
     });
   }
 
@@ -283,7 +291,7 @@ function AppContent() {
         content: {
           title: 'New Booking!',
           body: `${customerName || 'A customer'} booked ${serviceName}`,
-          sound: true,
+          sound: 'notification_alert.wav',
           priority: Notifications.AndroidNotificationPriority.MAX,
           data: { bookingId },
         },
@@ -314,7 +322,7 @@ function AppContent() {
         content: {
           title: 'Customer Checked In',
           body: `${customerName} has checked in - Queue position: ${queuePosition || '-'}`,
-          sound: true,
+          sound: 'notification_alert.wav',
           priority: Notifications.AndroidNotificationPriority.MAX,
           data: { bookingId },
         },
@@ -345,7 +353,7 @@ function AppContent() {
         content: {
           title: 'Service Completed',
           body: `${customerName}'s ${serviceName} completed - GH₵${totalAmount || 0}`,
-          sound: true,
+          sound: 'notification_alert.wav',
           priority: Notifications.AndroidNotificationPriority.MAX,
           data: { bookingId },
         },

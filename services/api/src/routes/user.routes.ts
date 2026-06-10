@@ -12,6 +12,7 @@ router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/profile', authenticateToken, userController.updateProfile);
 router.post('/profile/avatar', authenticateToken, upload.single('avatar'), userController.uploadAvatar);
 router.put('/location', authenticateToken, userController.updateLocation);
+router.post('/push-token', authenticateToken, userController.registerPushToken);
 
 // Favorites - Salons
 router.get('/favorites', authenticateToken, userController.getFavorites);

@@ -4,6 +4,7 @@ import redis from '../config/redis';
 import { BookingStatus, PaymentStatus } from '@prisma/client';
 import * as smsService from './sms.service';
 import * as notificationService from './notification.service';
+import * as pushService from './pushNotification.service';
 import Redlock from 'redlock';
 import { bookingConfig } from '../config/booking';
 import { emitSlotUpdated, emitBookingConfirmed, emitBookingCancelled } from '../config/socket';
@@ -707,6 +708,14 @@ export async function cancelBooking(id: string, userId: string, userRole: string
         booking.service?.name || 'service',
         reason
       ).catch((err) => logger.error('Failed to send cancellation notification to salon owner', { err }));
+
+      // Send push notification for cancellation
+      pushService.pushBookingCancelled(
+        booking.salonId,
+        `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
+        booking.service?.name || 'service',
+        booking.id
+      ).catch((err) => logger.error('Failed to send push for booking cancellation', { err }));
     }
   }
 

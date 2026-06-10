@@ -168,6 +168,46 @@ export async function updateLocation(req: AuthenticatedRequest, res: Response): 
   }
 }
 
+const pushTokenSchema = z.object({
+  token: z.string().min(1),
+  platform: z.enum(['ios', 'android']),
+});
+
+export async function registerPushToken(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { token, platform } = pushTokenSchema.parse(req.body);
+
+    // Upsert: if the token already exists, update it; otherwise create
+    await prisma.pushToken.upsert({
+      where: { token },
+      create: {
+        token,
+        platform,
+        userId: req.user.id,
+      },
+      update: {
+        userId: req.user.id,
+        platform,
+      },
+    });
+
+    logger.info(`Push token registered for user ${req.user.id} (${platform})`);
+    successResponse(res, { message: 'Push token registered' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    logger.error('Failed to register push token', { error });
+    errorResponse(res, 'REGISTER_FAILED', (error as Error).message, 500);
+  }
+}
+
 export async function getFavorites(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {

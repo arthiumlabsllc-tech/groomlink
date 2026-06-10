@@ -6,7 +6,6 @@
  */
 import { useRef, useCallback, useEffect } from 'react';
 import { Audio } from 'expo-av';
-import { Platform } from 'react-native';
 
 type NotificationSoundType = 'booking' | 'checkin' | 'completion';
 
@@ -35,26 +34,27 @@ class NotificationSoundPlayer {
   }
 
   /**
-   * Play a short system sound for notification feedback.
-   * The actual notification is handled by App.tsx via Notifications.scheduleNotificationAsync
-   * which already includes `sound: true`. This method is for immediate audio feedback
-   * when the app is in the foreground.
+   * Play the custom notification alert sound for in-app foreground feedback.
+   * The actual push/local notification is handled by App.tsx via Notifications.scheduleNotificationAsync
+   * which already includes `sound: 'notification_alert.wav'`. This method provides immediate
+   * audio feedback when the app is in the foreground.
    */
   async playSound() {
     if (!this.enabled) return;
     await this.initialize();
 
     try {
-      // Use a short system sound for in-app feedback
-      // On Android, the notification itself will play the default sound.
-      // This provides immediate feedback when the app is foregrounded.
-      if (Platform.OS === 'android') {
-        // Android notifications with sound: true already play the sound
-        // No additional sound needed to avoid double-play
-        return;
-      }
-      // On iOS, foreground notifications may not play sound depending on config,
-      // so we can rely on the notification handler's shouldPlaySound: true
+      // Load and play the custom notification sound for immediate in-app feedback
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/notification_alert.wav')
+      );
+      await sound.playAsync();
+      // Unload after playing to free memory
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
     } catch (error) {
       console.error('Failed to play notification sound:', error);
     }
