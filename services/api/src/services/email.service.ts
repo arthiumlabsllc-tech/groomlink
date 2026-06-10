@@ -6,6 +6,56 @@ import emailConfig, { validateEmailConfig } from '../config/email';
 const BRAND_GREEN = '#006B3F';
 const BRAND_GOLD = '#FCD116';
 
+/**
+ * Dark mode support for email templates.
+ * Adds meta tags and CSS media query so content is visible
+ * in dark-mode email clients (Apple Mail, iOS, Gmail, Outlook).
+ */
+function getDarkModeHead(): string {
+  return `
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      /* Background overrides */
+      body, .email-body { background-color: #1a1a1a !important; }
+      .email-card { background-color: #2d2d2d !important; }
+      .email-detail-panel { background: #363636 !important; }
+      .email-footer { background-color: #262626 !important; }
+      .email-notice-yellow { background-color: #3a3520 !important; border-color: #8b7a2b !important; }
+      .email-notice-green { background-color: #1a3a24 !important; border-color: #2d7a4a !important; }
+
+      /* Text color overrides — headings */
+      .email-card h2 { color: #f0f0f0 !important; }
+      .email-detail-panel h3 { color: #f0f0f0 !important; }
+
+      /* Text color overrides — detail panel rows (labels + values) */
+      .email-detail-panel td { color: #e0e0e0 !important; }
+      .email-detail-panel th { color: #a0a0a0 !important; }
+
+      /* Text color overrides — paragraphs & general content */
+      .email-card p { color: #d0d0d0 !important; }
+      .email-card td { color: #d0d0d0 !important; }
+      .email-card strong { color: #f0f0f0 !important; }
+
+      /* Footer text */
+      .email-footer p { color: #a0a0a0 !important; }
+      .email-footer a { color: #4ade80 !important; }
+
+      /* Notice box text */
+      .email-notice-yellow p, .email-notice-green p { color: #e0e0e0 !important; }
+      .email-notice-yellow strong, .email-notice-green strong { color: #f5f5f5 !important; }
+
+      /* Chat reply template */
+      .email-card div { background-color: #3d3d3d !important; color: #e0e0e0 !important; border-color: #4ade80 !important; }
+
+      /* Amount display */
+      .email-card p[style*="42px"] { color: #f0f0f0 !important; }
+    }
+  </style>`;
+}
+
 // Create transporter
 let transporter: nodemailer.Transporter | null = null;
 
@@ -43,13 +93,14 @@ export async function sendEmailOTP(email: string, otpCode: string): Promise<bool
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GroomLink Verification Code</title>
+  ${getDarkModeHead()}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;" class="email-body">
   <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your verification code is ready</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;" class="email-card">
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
@@ -65,8 +116,8 @@ export async function sendEmailOTP(email: string, otpCode: string): Promise<bool
           <!-- Content -->
           <tr>
             <td style="padding: 40px 48px 20px 48px;">
-              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GREEN}; padding-left: 14px;">Verify Your Email</h2>
-              <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
+              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GREEN}; padding-left: 14px;" class="email-text-primary">Verify Your Email</h2>
+              <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.7;" class="email-text-secondary">
                 You're almost there! Please use the following code to verify your email address:
               </p>
             </td>
@@ -88,8 +139,8 @@ export async function sendEmailOTP(email: string, otpCode: string): Promise<bool
           <!-- Expiry Notice -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
-                &#9201; This code expires in <strong style="color: #1a1a1a;">5 minutes</strong>
+              <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;" class="email-text-muted">
+                &#9201; This code expires in <strong style="color: #1a1a1a;" class="email-text-primary">5 minutes</strong>
               </p>
             </td>
           </tr>
@@ -97,11 +148,11 @@ export async function sendEmailOTP(email: string, otpCode: string): Promise<bool
           <!-- Security Notice -->
           <tr>
             <td style="padding: 0 48px 40px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-notice-yellow">
                 <tr>
                   <td style="padding: 16px 22px;">
-                    <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
-                      <strong style="color: #1a1a1a;">&#128274; Security tip:</strong> Never share this code with anyone. GroomLink will never ask for your verification code via phone or email.
+                    <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;" class="email-text-secondary">
+                      <strong style="color: #1a1a1a;" class="email-text-primary">&#128274; Security tip:</strong> Never share this code with anyone. GroomLink will never ask for your verification code via phone or email.
                     </p>
                   </td>
                 </tr>
@@ -111,7 +162,7 @@ export async function sendEmailOTP(email: string, otpCode: string): Promise<bool
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};" class="email-footer">
               <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
                 &nbsp;&nbsp;&#124;&nbsp;&nbsp;
@@ -191,13 +242,14 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to GroomLink Support Team</title>
+  ${getDarkModeHead()}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;" class="email-body">
   <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Welcome to the GroomLink team</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;" class="email-card">
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
@@ -213,11 +265,11 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
           <!-- Content -->
           <tr>
             <td style="padding: 40px 48px 20px 48px;">
-              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GREEN}; padding-left: 14px;">Welcome to the Team!</h2>
-              <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
+              <h2 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 24px; font-weight: 700; border-left: 3px solid ${BRAND_GREEN}; padding-left: 14px;" class="email-text-primary">Welcome to the Team!</h2>
+              <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.7;" class="email-text-secondary">
                 Hi ${firstName},
               </p>
-              <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.7;">
+              <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.7;" class="email-text-secondary">
                 You have been added as a support team member at <strong style="color: ${BRAND_GREEN};">GroomLink</strong>. We're excited to have you on board!
               </p>
             </td>
@@ -226,22 +278,22 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
           <!-- Login Instructions -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-detail-panel">
                 <tr>
                   <td style="padding: 25px 30px;">
-                    <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">How to Access Your Dashboard</h3>
+                    <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;" class="email-text-primary">How to Access Your Dashboard</h3>
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; width: 40%;">Dashboard URL</td>
-                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;"><a href="https://support.groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">support.groomlinkgh.com</a></td>
+                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; width: 40%;" class="email-text-muted">Dashboard URL</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;" class="email-text-value"><a href="https://support.groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">support.groomlinkgh.com</a></td>
                       </tr>
                       <tr>
-                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Email</td>
-                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">${email}</td>
+                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;" class="email-text-muted">Email</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;" class="email-text-value">${email}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Login Method</td>
-                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;">OTP verification via email</td>
+                        <td style="padding: 6px 0; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;" class="email-text-muted">Login Method</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-weight: 500; font-size: 14px;" class="email-text-value">OTP verification via email</td>
                       </tr>
                     </table>
                   </td>
@@ -278,7 +330,7 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};" class="email-footer">
               <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
                 &nbsp;&nbsp;&#124;&nbsp;&nbsp;
@@ -398,13 +450,14 @@ export async function sendBookingConfirmationEmail(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Booking Confirmation</title>
+  ${getDarkModeHead()}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;" class="email-body">
   <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your appointment is confirmed</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;" class="email-card">
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
@@ -443,7 +496,7 @@ export async function sendBookingConfirmationEmail(
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-detail-panel">
                 <tr>
                   <td style="padding: 25px 30px;">
                     <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Booking Details</h3>
@@ -512,7 +565,7 @@ export async function sendBookingConfirmationEmail(
           <!-- Customer Notes -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-notice-yellow">
                 <tr>
                   <td style="padding: 16px 22px;">
                     <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
@@ -528,7 +581,7 @@ export async function sendBookingConfirmationEmail(
           <!-- Important Note -->
           <tr>
             <td style="padding: 0 48px 40px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e8f5e9; border-radius: 10px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e8f5e9; border-radius: 10px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-notice-green">
                 <tr>
                   <td style="padding: 16px 22px;">
                     <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
@@ -542,7 +595,7 @@ export async function sendBookingConfirmationEmail(
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};" class="email-footer">
               <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
                 &nbsp;&nbsp;&#124;&nbsp;&nbsp;
@@ -652,13 +705,14 @@ export async function sendNewBookingNotificationEmail(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Booking</title>
+  ${getDarkModeHead()}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;" class="email-body">
   <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">New booking at your salon</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;" class="email-card">
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
@@ -697,7 +751,7 @@ export async function sendNewBookingNotificationEmail(
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-detail-panel">
                 <tr>
                   <td style="padding: 25px 30px;">
                     <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Booking Details</h3>
@@ -760,7 +814,7 @@ export async function sendNewBookingNotificationEmail(
           <!-- Customer Notes -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef9e7; border-radius: 10px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-notice-yellow">
                 <tr>
                   <td style="padding: 16px 22px;">
                     <p style="margin: 0; color: #4a5568; font-size: 13px; line-height: 1.6;">
@@ -775,7 +829,7 @@ export async function sendNewBookingNotificationEmail(
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};" class="email-footer">
               <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
                 &nbsp;&nbsp;&#124;&nbsp;&nbsp;
@@ -846,13 +900,14 @@ export async function sendPaymentReceiptEmail(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Receipt</title>
+  ${getDarkModeHead()}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;" class="email-body">
   <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Payment confirmed - receipt inside</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;" class="email-card">
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
@@ -895,7 +950,7 @@ export async function sendPaymentReceiptEmail(
           <!-- Receipt Details -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GREEN}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-detail-panel">
                 <tr>
                   <td style="padding: 25px 30px;">
                     <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Receipt Details</h3>
@@ -953,7 +1008,7 @@ export async function sendPaymentReceiptEmail(
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};" class="email-footer">
               <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
                 &nbsp;&nbsp;&#124;&nbsp;&nbsp;
@@ -1023,13 +1078,14 @@ export async function sendPaymentReceivedNotificationEmail(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Received</title>
+  ${getDarkModeHead()}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background-color: #eef1f4;" class="email-body">
   <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Payment received at your salon</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); overflow: hidden;" class="email-card">
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
@@ -1069,7 +1125,7 @@ export async function sendPaymentReceivedNotificationEmail(
           <!-- Payment Details -->
           <tr>
             <td style="padding: 0 48px 30px 48px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #f8fafb 0%, #f0f4f6 100%); border-radius: 12px; border-left: 3px solid ${BRAND_GOLD}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);" class="email-detail-panel">
                 <tr>
                   <td style="padding: 25px 30px;">
                     <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; font-weight: 700;">Payment Details</h3>
@@ -1114,7 +1170,7 @@ export async function sendPaymentReceivedNotificationEmail(
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};">
+            <td style="background-color: #f4f6f8; padding: 28px 48px; border-top: 2px solid ${BRAND_GOLD};" class="email-footer">
               <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 12px; text-align: center;">
                 <a href="https://groomlinkgh.com" style="color: ${BRAND_GREEN}; text-decoration: none;">Visit Website</a>
                 &nbsp;&nbsp;&#124;&nbsp;&nbsp;
@@ -1183,12 +1239,13 @@ export async function sendChatReplyEmail(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New reply from GroomLink Support</title>
+  ${getDarkModeHead()}
 </head>
-<body style="margin:0;padding:0;font-family:'Inter','Segoe UI',-apple-system,sans-serif;background-color:#eef1f4;">
+<body style="margin:0;padding:0;font-family:'Inter','Segoe UI',-apple-system,sans-serif;background-color:#eef1f4;" class="email-body">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;" class="email-card">
           <tr>
             <td style="background:linear-gradient(135deg,#0f766e,#10b981);padding:28px 32px;color:#ffffff;">
               <h1 style="margin:0;font-size:20px;font-weight:600;">GroomLink Support</h1>
