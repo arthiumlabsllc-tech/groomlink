@@ -42,6 +42,15 @@ export default function PaystackWebViewModal({
   const webViewRef = useRef<WebView>(null);
   const hasHandledResult = useRef(false);
 
+  // Theme-aware colors
+  const colors = {
+    background: isDark ? '#1a1a2e' : '#FFFFFF',
+    loadingOverlay: isDark ? 'rgba(26, 26, 46, 0.95)' : 'rgba(255, 255, 255, 0.9)',
+    text: isDark ? '#E5E7EB' : '#4B5563',
+    border: isDark ? '#333' : '#E5E7EB',
+    headerText: isDark ? '#FFF' : '#111',
+  };
+
   // Callback URL patterns that Paystack redirects to after payment
   const CALLBACK_PATTERNS = [
     '/api/payments/callback/paystack',
@@ -104,7 +113,7 @@ export default function PaystackWebViewModal({
       onShow={handleShow}
       onRequestClose={handleClose}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#E5E7EB' }]}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
@@ -126,9 +135,9 @@ export default function PaystackWebViewModal({
           onNavigationStateChange={handleNavigationStateChange}
           startInLoadingState={true}
           renderLoading={() => (
-            <View style={styles.loadingContainer}>
+            <View style={[styles.loadingContainer, { backgroundColor: colors.loadingOverlay }]}>
               <ActivityIndicator size="large" color="#006B3F" />
-              <Text style={[styles.loadingText, { color: isDark ? '#9CA3AF' : '#4B5563' }]}>
+              <Text style={[styles.loadingText, { color: colors.text }]}>
                 Loading secure checkout...
               </Text>
             </View>
@@ -182,7 +191,7 @@ export default function PaystackWebViewModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // overridden inline with theme
   },
   header: {
     flexDirection: 'row',
@@ -220,7 +229,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   loadingText: {
     marginTop: 12,

@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, Animated } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,6 +40,17 @@ export default function EmailScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Fade-in animation
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   // Select logo based on theme
   const logoSource = isDark ? LOGO_WHITE : LOGO_BLACK;
@@ -90,7 +101,7 @@ export default function EmailScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
+        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <Image
@@ -107,6 +118,16 @@ export default function EmailScreen() {
           <Text variant="bodyLarge" style={styles.subtitle}>
             Find the best salons in Ghana
           </Text>
+
+          {/* Social proof */}
+          <View style={styles.socialProofContainer}>
+            <View style={styles.socialProofAvatars}>
+              <View style={[styles.socialProofDot, { backgroundColor: '#006B3F' }]} />
+              <View style={[styles.socialProofDot, { backgroundColor: '#FCD116', marginLeft: -4 }]} />
+              <View style={[styles.socialProofDot, { backgroundColor: '#CE1126', marginLeft: -4 }]} />
+            </View>
+            <Text style={styles.socialProofText}>Join 5,000+ Ghanaians discovering great salons</Text>
+          </View>
 
           <View style={styles.inputContainer}>
             <TextInput
@@ -149,7 +170,7 @@ export default function EmailScreen() {
           <Text variant="bodySmall" style={styles.termsText}>
             By continuing, you agree to our Terms & Privacy Policy
           </Text>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -192,8 +213,31 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 16,
     color: COLORS.textSecondary,
+  },
+  socialProofContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+    gap: 8,
+  },
+  socialProofAvatars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  socialProofDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: COLORS.background,
+  },
+  socialProofText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   inputContainer: {
     marginBottom: 24,

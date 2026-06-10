@@ -8,6 +8,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import {
   Text,
@@ -37,6 +39,11 @@ import { useWorkerPreference } from '../../hooks/useWorkerPreference';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { a11yCurrency, a11yDuration } from '../../hooks/useAccessibility';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -303,6 +310,7 @@ export default function BookingScreen() {
   });
 
   const toggleService = (serviceId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSelectedServices(prev =>
       prev.includes(serviceId)
         ? prev.filter(id => id !== serviceId)
@@ -452,6 +460,19 @@ export default function BookingScreen() {
     if (selectedTime) completed++;
     return completed / 3;
   };
+
+  const getConfirmButtonLabel = () => {
+    if (noShowStatus?.restricted) return 'Booking Restricted';
+    if (initializingPayment) return 'Processing Payment...';
+    if (createBookingMutation.isPending) return 'Creating Booking...';
+    if (selectedServices.length === 0) return 'Select a service';
+    if (!selectedDate) return 'Pick a date';
+    if (!selectedTime) return 'Choose a time slot';
+    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 9) return 'Enter MoMo number';
+    return 'Confirm & Pay';
+  };
+
+  const isConfirmDisabled = selectedServices.length === 0 || !selectedTime || !selectedDate || createBookingMutation.isPending || initializingPayment || noShowStatus?.restricted || !phoneNumber || phoneNumber.replace(/\D/g, '').length < 9;
 
   if (salonLoading) {
     return (
@@ -1018,12 +1039,12 @@ export default function BookingScreen() {
               mode="contained"
               onPress={handleConfirmBooking}
               loading={createBookingMutation.isPending || initializingPayment}
-              disabled={selectedServices.length === 0 || !selectedTime || createBookingMutation.isPending || initializingPayment || noShowStatus?.restricted}
-              style={styles.confirmButton}
+              disabled={isConfirmDisabled}
+              style={[styles.confirmButton, isConfirmDisabled && styles.confirmButtonDisabled]}
               contentStyle={styles.confirmButtonContent}
               buttonColor={COLORS.primaryGreen}
             >
-              {noShowStatus?.restricted ? 'Booking Restricted' : initializingPayment ? 'Processing Payment...' : 'Confirm & Pay'}
+              {getConfirmButtonLabel()}
             </Button>
           </View>
         </Surface>
@@ -1268,6 +1289,9 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   confirmButton: {
     borderRadius: 12,
+  },
+  confirmButtonDisabled: {
+    opacity: 0.7,
   },
   confirmButtonContent: {
     paddingHorizontal: 24,

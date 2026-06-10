@@ -1,5 +1,5 @@
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions, useWindowDimensions } from 'react-native';
+import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions, useWindowDimensions, Animated } from 'react-native';
 import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import type { AppTheme } from '../../theme/colors';
 import { findNearestGhanaLocation, isWithinGhana } from '../../utils/ghanaLocations';
 import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
 import { a11ySalonLabel } from '../../hooks/useAccessibility';
+import * as Haptics from 'expo-haptics';
 
 // Design System Colors (theme-aware)
 const createColors = (t: AppTheme) => ({
@@ -67,6 +68,17 @@ export default function HomeScreen() {
     lng: null,
     permissionDenied: false,
   });
+
+  // Welcome animation
+  const greetingFade = useRef(new Animated.Value(0)).current;
+  const greetingSlide = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(greetingFade, { toValue: 1, duration: 800, delay: 200, useNativeDriver: true }),
+      Animated.timing(greetingSlide, { toValue: 0, duration: 800, delay: 200, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   // Request location permission on mount
   useEffect(() => {
@@ -159,6 +171,7 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
     // Re-request location on refresh if denied
     if (location.permissionDenied) {
       await requestLocationPermission();
@@ -270,14 +283,14 @@ export default function HomeScreen() {
                 style={styles.headerLogo}
                 resizeMode="contain"
               />
-              <View style={styles.greetingContainer}>
+              <Animated.View style={[styles.greetingContainer, { opacity: greetingFade, transform: [{ translateY: greetingSlide }] }]}>
                 <Text variant="bodyMedium" style={styles.greetingLabel} numberOfLines={1}>
                   {getGreeting()},
                 </Text>
                 <Text variant="headlineSmall" style={styles.greetingName} numberOfLines={1}>
                   {getUserName()}
                 </Text>
-              </View>
+              </Animated.View>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.bellContainer}>
@@ -288,13 +301,20 @@ export default function HomeScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-              <TouchableOpacity style={styles.avatarButton}>
-                <Avatar.Text
-                  size={44}
-                  label={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`}
-                  style={styles.userAvatar}
-                  labelStyle={styles.userAvatarLabel}
-                />
+              <TouchableOpacity style={styles.avatarButton} onPress={() => navigation.getParent()?.navigate('Profile')}>
+                {user?.avatar ? (
+                  <Image
+                    source={{ uri: user.avatar }}
+                    style={styles.userAvatarImage}
+                  />
+                ) : (
+                  <Avatar.Text
+                    size={44}
+                    label={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`}
+                    style={styles.userAvatar}
+                    labelStyle={styles.userAvatarLabel}
+                  />
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -385,9 +405,21 @@ export default function HomeScreen() {
               ))}
             </View>
           ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="location-outline" size={48} color={COLORS.border} />
-              <Text variant="bodyMedium" style={styles.emptyText}>No nearby salons found</Text>
+            <View style={styles.emptyStateEnhanced}>
+              <View style={styles.emptyStateIcon}>
+                <Ionicons name="location-outline" size={48} color={COLORS.primaryGreen} />
+              </View>
+              <Text variant="titleMedium" style={styles.emptyStateTitle}>No salons nearby</Text>
+              <Text variant="bodyMedium" style={styles.emptyText}>Try expanding your search or browse all salons</Text>
+              <Button
+                mode="outlined"
+                onPress={() => navigateToSearch()}
+                style={styles.emptyStateCta}
+                textColor={COLORS.primaryGreen}
+                icon="magnify"
+              >
+                Browse All Salons
+              </Button>
             </View>
           )}
         </View>
@@ -470,6 +502,13 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   userAvatar: {
     backgroundColor: COLORS.primaryGreen,
+  },
+  userAvatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: COLORS.primaryGreen,
   },
   userAvatarLabel: {
     fontSize: 16,
@@ -636,9 +675,38 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyStateEnhanced: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    marginHorizontal: 4,
+    padding: 24,
+  },
+  emptyStateIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${COLORS.primaryGreen}12`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  emptyStateCta: {
+    marginTop: 16,
+    borderColor: COLORS.primaryGreen,
+    borderRadius: 12,
+  },
   emptyText: {
     marginTop: 8,
     color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   categoriesSection: {
     marginTop: 16,
@@ -653,6 +721,9 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
+    minHeight: 44,
+    borderRadius: 22,
+    paddingHorizontal: 4,
   },
   categoryChipSelected: {
     backgroundColor: COLORS.primaryGreen,

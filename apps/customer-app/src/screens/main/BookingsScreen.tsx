@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   RefreshControl,
   TouchableOpacity,
   Image,
+  Animated,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -72,6 +74,7 @@ export default function BookingsScreen() {
   const { isAuthenticated, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
+  const animatedValues = useRef<Animated.Value[]>([]).current;
 
   const { data: bookings, isLoading, error, refetch } = useQuery({
     queryKey: ['bookings'],
@@ -111,6 +114,26 @@ export default function BookingsScreen() {
     const statusList = activeTab === 'upcoming' ? UPCOMING_STATUSES : PAST_STATUSES;
     return bookings.filter(booking => statusList.includes(booking.status));
   }, [bookings, activeTab]);
+
+  // Staggered entrance animation
+  useEffect(() => {
+    if (filteredBookings.length > 0) {
+      // Ensure we have enough animated values
+      while (animatedValues.length < filteredBookings.length) {
+        animatedValues.push(new Animated.Value(0));
+      }
+      // Stagger animation
+      const animations = filteredBookings.map((_, i) =>
+        Animated.timing(animatedValues[i], {
+          toValue: 1,
+          duration: 400,
+          delay: i * 80,
+          useNativeDriver: true,
+        })
+      );
+      Animated.stagger(80, animations).start();
+    }
+  }, [filteredBookings.length, activeTab]);
 
   // Auto check-in: Start app state listener for foreground events
   useEffect(() => {
@@ -171,11 +194,42 @@ export default function BookingsScreen() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const renderBookingCard = useCallback(({ item }: { item: Booking }) => {
+  const handleCancelBooking = useCallback((bookingId: string) => {
+    Alert.alert(
+      'Cancel Booking',
+      'Are you sure you want to cancel this booking?',
+      [
+        { text: 'Keep', style: 'cancel' },
+        {
+          text: 'Cancel Booking',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await bookingApi.cancelBooking(bookingId);
+              refetch();
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.message || 'Could not cancel booking');
+            }
+          },
+        },
+      ]
+    );
+  }, [refetch]);
+
+  const handleRebook = useCallback((item: Booking) => {
+    navigation.navigate('Booking', {
+      salonId: item.salon?.id || '',
+      services: item.services?.map(s => s.id) || [],
+    });
+  }, [navigation]);
+
+  const renderBookingCard = useCallback(({ item, index }: { item: Booking; index: number }) => {
+    const cardAnim = animatedValues[index] || new Animated.Value(1);
     const statusColor = STATUS_COLORS[item.status] || COLORS.textSecondary;
     const statusLabel = STATUS_LABELS[item.status] || item.status;
     
     return (
+      <Animated.View style={[{ opacity: cardAnim, transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
       <Card
         style={styles.bookingCard}
         onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
@@ -227,51 +281,81 @@ export default function BookingsScreen() {
               GH₵ {parseFloat(String(item.totalAmount)).toFixed(2)}
             </Text>
             {(item.status === 'CONFIRMED' || item.status === 'PENDING') && (
-              <TouchableOpacity 
-                style={styles.viewButton}
-                onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
-              >
-                <Text style={styles.viewButtonText}>View Details</Text>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.primaryGreen} />
-              </TouchableOpacity>
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => handleCancelBooking(item.id)}
+                >
+                  <Ionicons name="close-circle-outline" size={16} color={COLORS.accentRed} />
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.viewButton}
+                  onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
+                >
+                  <Text style={styles.viewButtonText}>Details</Text>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.primaryGreen} />
+                </TouchableOpacity>
+              </View>
             )}
             {item.status === 'COMPLETED' && !item.review && (
-              <TouchableOpacity
-                style={styles.rateButton}
-                onPress={() => navigation.navigate('RateBooking', { bookingId: item.id })}
-              >
-                <Ionicons name="star" size={14} color={COLORS.accentGold} />
-                <Text style={styles.rateButtonText}>Rate This Visit</Text>
-              </TouchableOpacity>
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={styles.rebookButton}
+                  onPress={() => handleRebook(item)}
+                >
+                  <Ionicons name="refresh" size={14} color={COLORS.primaryGreen} />
+                  <Text style={styles.rebookButtonText}>Rebook</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.rateButton}
+                  onPress={() => navigation.navigate('RateBooking', { bookingId: item.id })}
+                >
+                  <Ionicons name="star" size={14} color={COLORS.accentGold} />
+                  <Text style={styles.rateButtonText}>Rate</Text>
+                </TouchableOpacity>
+              </View>
             )}
             {item.status === 'COMPLETED' && item.review && (
-              <View style={styles.reviewedBadge}>
-                <Ionicons name="star" size={14} color={COLORS.accentGold} />
-                <Text style={styles.reviewedText}>Reviewed ⭐ {item.review.rating}/5</Text>
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={styles.rebookButton}
+                  onPress={() => handleRebook(item)}
+                >
+                  <Ionicons name="refresh" size={14} color={COLORS.primaryGreen} />
+                  <Text style={styles.rebookButtonText}>Rebook</Text>
+                </TouchableOpacity>
+                <View style={styles.reviewedBadge}>
+                  <Ionicons name="star" size={14} color={COLORS.accentGold} />
+                  <Text style={styles.reviewedText}>⭐ {item.review.rating}/5</Text>
+                </View>
               </View>
             )}
           </View>
         </Card.Content>
       </Card>
+      </Animated.View>
     );
-  }, [navigation]);
+  }, [navigation, animatedValues, handleCancelBooking, handleRebook]);
 
   const renderEmptyState = () => {
     if (isLoading) return null;
 
     return (
       <View style={styles.emptyState}>
-        <Ionicons
-          name={activeTab === 'upcoming' ? 'calendar-outline' : 'checkmark-done-outline'}
-          size={64}
-          color="#ccc"
-        />
+        <View style={styles.emptyStateIconContainer}>
+          <Ionicons
+            name={activeTab === 'upcoming' ? 'calendar-outline' : 'checkmark-done-outline'}
+            size={56}
+            color={COLORS.primaryGreen}
+          />
+        </View>
         <Text variant="titleMedium" style={styles.emptyTitle}>
           No {activeTab} bookings
         </Text>
         <Text variant="bodyMedium" style={styles.emptySubtitle}>
           {activeTab === 'upcoming'
-            ? 'Your upcoming appointments will appear here'
+            ? 'Ready for a fresh look? Book your next appointment now!'
             : 'Your past appointments will appear here'}
         </Text>
         {activeTab === 'upcoming' && (
@@ -279,8 +363,9 @@ export default function BookingsScreen() {
             mode="contained"
             onPress={() => navigation.getParent()?.navigate('Search')}
             style={styles.bookNowButton}
+            icon="magnify"
           >
-            Book an Appointment
+            Find a Salon
           </Button>
         )}
       </View>
@@ -694,5 +779,47 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   loginPromptButton: {
     borderRadius: 12,
     paddingHorizontal: 32,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.accentRed}10`,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  cancelButtonText: {
+    color: COLORS.accentRed,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  rebookButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  rebookButtonText: {
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  emptyStateIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
 });

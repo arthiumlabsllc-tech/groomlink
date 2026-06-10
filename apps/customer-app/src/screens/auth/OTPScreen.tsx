@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput, Image } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, TextInput as RNTextInput, Image, Animated } from 'react-native';
 import { Text, Button, HelperText } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
+import * as Clipboard from 'expo-clipboard';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types/navigation';
@@ -48,7 +50,33 @@ export default function OTPScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(RESEND_TIMEOUT);
+  const [verified, setVerified] = useState(false);
   const inputRefs = useRef<(RNTextInput | null)[]>([]);
+
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const successScale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+  }, []);
+
+  // Auto-paste from clipboard
+  useEffect(() => {
+    const checkClipboard = async () => {
+      try {
+        const clip = await Clipboard.getStringAsync();
+        if (clip && /^\d{6}$/.test(clip.trim())) {
+          const digits = clip.trim().split('');
+          setOtp(digits);
+          handleVerify(clip.trim());
+        }
+      } catch {}
+    };
+    // Small delay to allow screen to mount
+    const timer = setTimeout(checkClipboard, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -95,6 +123,13 @@ export default function OTPScreen() {
       if (response.success) {
         const { user, isNewUser } = response.data;
         
+        // Show success animation
+        setVerified(true);
+        Animated.spring(successScale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+
+        // Brief delay for visual feedback
+        await new Promise(resolve => setTimeout(resolve, 600));
+
         if (isNewUser) {
           // New user - store flag and email, then navigate to ProfileSetup to complete registration
           await SecureStore.setItemAsync('isNewUser', 'true');
@@ -151,7 +186,7 @@ export default function OTPScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <View style={styles.content}>
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
@@ -161,62 +196,73 @@ export default function OTPScreen() {
           />
         </View>
 
-        <Text variant="headlineMedium" style={styles.title}>
-          Verify your email
-        </Text>
-        <Text variant="bodyLarge" style={styles.subtitle}>
-          Enter the 6-digit code sent to{'\n'}
-          <Text style={styles.emailText}>{email}</Text>
-        </Text>
+        {verified ? (
+          <View style={styles.successContainer}>
+            <Animated.View style={[styles.successCircle, { transform: [{ scale: successScale }] }]}>
+              <Ionicons name="checkmark" size={40} color="#fff" />
+            </Animated.View>
+            <Text variant="headlineSmall" style={styles.successText}>Verified!</Text>
+          </View>
+        ) : (
+          <>
+            <Text variant="headlineMedium" style={styles.title}>
+              Verify your email
+            </Text>
+            <Text variant="bodyLarge" style={styles.subtitle}>
+              Enter the 6-digit code sent to{'\n'}
+              <Text style={styles.emailText}>{email}</Text>
+            </Text>
 
-        <View style={styles.otpContainer}>
-          {otp.map((digit, index) => (
-            <RNTextInput
-              key={index}
-              ref={(ref) => (inputRefs.current[index] = ref)}
-              style={[
-                styles.otpInput,
-                isActive(index) && styles.otpInputActive,
-              ]}
-              keyboardType="number-pad"
-              maxLength={1}
-              value={digit}
-              onChangeText={(value) => handleOtpChange(index, value)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
-              placeholderTextColor={COLORS.textSecondary}
-              selectTextOnFocus
-            />
-          ))}
-        </View>
+            <View style={styles.otpContainer}>
+              {otp.map((digit, index) => (
+                <RNTextInput
+                  key={index}
+                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  style={[
+                    styles.otpInput,
+                    isActive(index) && styles.otpInputActive,
+                  ]}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={(value) => handleOtpChange(index, value)}
+                  onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
+                  placeholderTextColor={COLORS.textSecondary}
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
 
-        {error ? (
-          <HelperText type="error" visible={true} style={styles.error}>
-            {error}
-          </HelperText>
-        ) : null}
+            {error ? (
+              <HelperText type="error" visible={true} style={styles.error}>
+                {error}
+              </HelperText>
+            ) : null}
 
-        <Button
-          mode="contained"
-          onPress={() => handleVerify(otp.join(''))}
-          loading={loading}
-          disabled={loading || otp.join('').length !== 6}
-          style={styles.button}
-          contentStyle={styles.buttonContent}
-          buttonColor={COLORS.primaryGreen}
-        >
-          {loading ? 'Verifying...' : 'Verify'}
-        </Button>
+            <Button
+              mode="contained"
+              onPress={() => handleVerify(otp.join(''))}
+              loading={loading}
+              disabled={loading || otp.join('').length !== 6}
+              style={styles.button}
+              contentStyle={styles.buttonContent}
+              buttonColor={COLORS.primaryGreen}
+            >
+              {loading ? 'Verifying...' : 'Verify'}
+            </Button>
 
-        <Button
-          mode="text"
-          onPress={handleResend}
-          disabled={loading || countdown > 0}
-          style={styles.resendButton}
-          textColor={countdown > 0 ? COLORS.textSecondary : COLORS.primaryGreen}
-        >
-          {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
-        </Button>
-      </View>
+            <Button
+              mode="text"
+              onPress={handleResend}
+              disabled={loading || countdown > 0}
+              style={styles.resendButton}
+              textColor={countdown > 0 ? COLORS.textSecondary : COLORS.primaryGreen}
+            >
+              {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
+            </Button>
+          </>
+        )}
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
@@ -295,5 +341,28 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   resendButton: {
     alignSelf: 'center',
+  },
+  successContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  successCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primaryGreen,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  successText: {
+    fontWeight: 'bold',
+    color: COLORS.primaryGreen,
   },
 });
