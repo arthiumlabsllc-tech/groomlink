@@ -704,7 +704,7 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   noSalonsOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
