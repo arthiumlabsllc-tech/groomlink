@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { NotificationType } from '@prisma/client';
+import * as pushService from './pushNotification.service';
 
 export interface CreateNotificationData {
   userId: string;
@@ -22,7 +23,7 @@ export interface NotificationWithRelations {
 }
 
 /**
- * Create a notification for a user
+ * Create a notification for a user and send a push notification
  */
 export async function createNotification(data: CreateNotificationData): Promise<NotificationWithRelations> {
   try {
@@ -37,6 +38,15 @@ export async function createNotification(data: CreateNotificationData): Promise<
     });
 
     logger.info(`Notification created: ${notification.id} for user: ${data.userId} - type: ${data.type}`);
+
+    // Also send a push notification so the user gets an alert even when app is backgrounded
+    pushService.sendPushToUser(data.userId, {
+      title: data.title,
+      body: data.message,
+      data: { ...data.data, id: notification.id, type: data.type },
+      sound: 'notification_alert.wav',
+    }).catch((err) => logger.error('Failed to send push for notification', { err, notificationId: notification.id }));
+
     return notification;
   } catch (error) {
     logger.error('Failed to create notification', { error, data });

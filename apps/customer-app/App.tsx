@@ -32,7 +32,14 @@ async function registerForPushNotificationsAsync() {
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+        allowCriticalAlerts: true,
+      },
+    });
     finalStatus = status;
   }
 
@@ -60,13 +67,14 @@ async function registerForPushNotificationsAsync() {
     console.log('Failed to register push token:', e);
   }
 
-  // Configure Android notification channel
+  // Configure Android notification channel with custom sound
   if (Platform.OS === 'android') {
     Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+      name: 'Booking Updates',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#CE1126',
+      sound: 'notification_alert.wav',
     });
   }
 
