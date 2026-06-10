@@ -780,6 +780,7 @@ export interface VerifyPaymentResult extends PaymentResult {
   salonName?: string;
   isGroupBooking?: boolean;
   totalPeople?: number;
+  status?: string; // 'SUCCESS' | 'PROCESSING' | 'FAILED' | 'PENDING'
 }
 
 export async function verifyAndCompletePayment(paymentId: string, reference: string): Promise<VerifyPaymentResult> {
@@ -862,6 +863,7 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
 
   let isSuccess = false;
   let verificationAttempted = false;
+  let providerStatus = 'unknown'; // Track the actual provider status for pending detection
 
   // Step 1: Try the specific provider that was used to initiate the payment
   if (paymentGateway === 'hubtel' || paymentGateway === 'paystack') {
@@ -870,6 +872,7 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       verificationAttempted = true;
       const verification = await providerResult.provider.verifyPayment(reference, providerResult.credentials);
       isSuccess = verification.success;
+      providerStatus = verification.status || 'unknown';
 
       if (verification.data) {
         await prisma.payment.update({
@@ -878,7 +881,7 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
         });
       }
 
-      logger.info(`Payment verification via ${paymentGateway}`, { paymentId, reference, isSuccess });
+      logger.info(`Payment verification via ${paymentGateway}`, { paymentId, reference, isSuccess, providerStatus });
     }
     // If specific provider not found in registry (credentials removed), fall through to active provider
   }
@@ -891,6 +894,7 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       const { provider: paymentProvider, credentials, name: providerName } = activeProvider;
       const verification = await paymentProvider.verifyPayment(reference, credentials);
       isSuccess = verification.success;
+      providerStatus = verification.status || 'unknown';
 
       if (verification.data) {
         await prisma.payment.update({
@@ -1088,6 +1092,32 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       totalPeople: booking.totalPeople,
     };
   } else {
+    // Check if payment is still being processed (pending at provider)
+    // Don't mark as FAILED if the provider just hasn't confirmed yet
+    const isStillPending = payment.status === PaymentStatus.PROCESSING && 
+      !['failed', 'declined', 'cancelled', 'reversed', 'abandoned'].includes(providerStatus.toLowerCase());
+    
+    // Calculate how long the payment has been processing
+    const processingDurationMs = Date.now() - new Date(payment.createdAt).getTime();
+    const MAX_PROCESSING_BEFORE_FAIL = 10 * 60 * 1000; // 10 minutes
+    
+    if (isStillPending && processingDurationMs < MAX_PROCESSING_BEFORE_FAIL) {
+      // Payment is still being processed - DON'T mark as failed, DON'T send notification
+      logger.info(`Payment ${paymentId} still processing at provider (status: ${providerStatus}), not marking as failed`, {
+        providerStatus,
+        processingDurationMs,
+        reference,
+      });
+      
+      return { 
+        success: false, 
+        message: 'Payment is still being processed. Please wait.',
+        bookingConfirmed: false,
+        status: 'PROCESSING',
+      };
+    }
+    
+    // Payment has explicitly failed or timed out - mark as FAILED
     await prisma.payment.update({
       where: { id: paymentId },
       data: { status: PaymentStatus.FAILED },
@@ -1102,10 +1132,13 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
       booking.service?.name || 'Service'
     ).catch((err) => logger.error('Failed to send payment failed notification to customer', { err }));
     
+    logger.info(`Payment ${paymentId} marked as FAILED`, { providerStatus, processingDurationMs, reference });
+    
     return { 
       success: false, 
       message: 'Payment verification failed.',
       bookingConfirmed: false,
+      status: 'FAILED',
     };
   }
 }

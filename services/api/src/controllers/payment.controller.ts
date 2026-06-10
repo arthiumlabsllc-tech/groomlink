@@ -75,6 +75,14 @@ export async function verifyPayment(req: AuthenticatedRequest, res: Response): P
 
     if (result.success) {
       successResponse(res, result);
+    } else if (result.status === 'PROCESSING') {
+      // Payment is still being processed at the provider - return 200 with processing status
+      // so the client can continue polling without treating this as an error
+      successResponse(res, { 
+        success: false, 
+        status: 'PROCESSING', 
+        message: result.message 
+      });
     } else {
       errorResponse(res, 'VERIFICATION_FAILED', result.message, 400);
     }

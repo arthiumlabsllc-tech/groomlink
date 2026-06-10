@@ -12,7 +12,7 @@ export interface PaymentInitializeResponse {
 
 export interface PaymentVerifyResponse {
   success: boolean;
-  status: string;
+  status: string; // 'SUCCESS' | 'PROCESSING' | 'FAILED' | 'CANCELLED'
   message?: string;
   bookingReference?: string;
   amountPaid?: number;

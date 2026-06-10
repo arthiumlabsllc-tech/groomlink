@@ -63,12 +63,15 @@ export default function PaymentProcessingScreen({ route }: Props) {
           return;
         }
 
+        // Only show failed if the server explicitly confirms failure
+        // (not just 'still processing')
         if (result.status === 'FAILED' || result.status === 'CANCELLED') {
           setStatus('failed');
           return;
         }
 
-        // Still pending, increment attempts
+        // Payment is still processing (PROCESSING status) or other non-terminal state
+        // Continue polling
         setAttempts(prev => {
           const next = prev + 1;
           if (next >= MAX_POLL_ATTEMPTS) {
@@ -77,7 +80,14 @@ export default function PaymentProcessingScreen({ route }: Props) {
           return next;
         });
       } catch (error: any) {
-        // Network error, keep polling
+        // API returned 400 (explicit failure) - check response data
+        const responseStatus = error?.response?.data?.data?.status;
+        if (responseStatus === 'FAILED' || responseStatus === 'CANCELLED') {
+          setStatus('failed');
+          return;
+        }
+        
+        // Network error or other error, keep polling
         setAttempts(prev => {
           const next = prev + 1;
           if (next >= MAX_POLL_ATTEMPTS) {
