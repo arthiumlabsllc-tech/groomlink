@@ -22,6 +22,7 @@ import { MainStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
+import { useAccessibility } from '../../hooks/useAccessibility';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -30,6 +31,7 @@ export default function StaffScreen() {
   const queryClient = useQueryClient();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { announce } = useAccessibility();
 
   // Fetch salon to get salon ID
   const { data: salon, isLoading: isLoadingSalon } = useQuery({
@@ -70,6 +72,7 @@ export default function StaffScreen() {
     mutationFn: (staffId: string) => staffApi.deleteStaff(salonId!, staffId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', salonId] });
+      announce('Staff member removed');
     },
     onError: (error: Error) => {
       Alert.alert('Error', `Failed to delete staff member: ${error.message}`);
@@ -120,7 +123,28 @@ export default function StaffScreen() {
       renderRightActions={() => renderRightActions(item)}
       overshootRight={false}
     >
-      <TouchableOpacity onPress={() => handleEditStaff(item)} activeOpacity={0.7}>
+      <TouchableOpacity
+        onPress={() => handleEditStaff(item)}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.fullName}${item.specialty ? `, ${item.specialty}` : ''}, ${item.isActive ? 'active' : 'inactive'}, ${item._count?.bookings || 0} bookings`}
+        accessibilityHint="Double tap to edit. Swipe left to remove."
+        accessibilityActions={[
+          { name: 'activate', label: 'Edit staff member' },
+          { name: 'delete', label: 'Remove staff member' },
+        ]}
+        onAccessibilityAction={(event) => {
+          switch (event.nativeEvent.actionName) {
+            case 'activate':
+              handleEditStaff(item);
+              break;
+            case 'delete':
+              handleDeleteStaff(item);
+              break;
+          }
+        }}
+      >
         <Surface style={[styles.staffCard, !item.isActive && styles.inactiveCard]} elevation={0}>
           <View style={styles.cardHeader}>
             <View style={styles.avatarSection}>

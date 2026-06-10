@@ -27,6 +27,7 @@ import { autoCheckinService } from '../../services/AutoCheckinService';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
+import { a11yBookingLabel } from '../../hooks/useAccessibility';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -178,6 +179,9 @@ export default function BookingsScreen() {
       <Card
         style={styles.bookingCard}
         onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={a11yBookingLabel(item)}
       >
         <Card.Content style={styles.cardContent}>
           <View style={styles.cardHeader}>
@@ -362,6 +366,9 @@ export default function BookingsScreen() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
           onPress={() => setActiveTab('upcoming')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'upcoming' }}
+          accessibilityLabel={`Upcoming bookings tab`}
         >
           <Text
             variant="labelLarge"
@@ -378,6 +385,9 @@ export default function BookingsScreen() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'past' && styles.activeTab]}
           onPress={() => setActiveTab('past')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'past' }}
+          accessibilityLabel={`Past bookings tab`}
         >
           <Text
             variant="labelLarge"

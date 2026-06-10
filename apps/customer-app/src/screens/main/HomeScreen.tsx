@@ -15,6 +15,7 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { findNearestGhanaLocation, isWithinGhana } from '../../utils/ghanaLocations';
 import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
+import { a11ySalonLabel } from '../../hooks/useAccessibility';
 
 // Design System Colors (theme-aware)
 const createColors = (t: AppTheme) => ({
@@ -188,6 +189,9 @@ export default function HomeScreen() {
       key={salon.id}
       style={[styles.salonCard, !isHorizontal && styles.salonCardVertical]}
       onPress={() => navigation.navigate('SalonDetail', { salonId: salon.id })}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={a11ySalonLabel(salon)}
     >
       <View style={styles.cardImageContainer}>
         {salon.images?.[0] ? (

@@ -36,6 +36,7 @@ import { useSocket } from '../../hooks/useSocket';
 import { useWorkerPreference } from '../../hooks/useWorkerPreference';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { a11yCurrency, a11yDuration } from '../../hooks/useAccessibility';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -576,6 +577,11 @@ export default function BookingScreen() {
                     selectedServices.includes(service.id) && styles.serviceItemSelected
                   ]}
                   onPress={() => toggleService(service.id)}
+                  accessible={true}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selectedServices.includes(service.id) }}
+                  accessibilityLabel={`${service.name}, ${a11yDuration(service.duration)}, ${a11yCurrency(service.price)}`}
+                  accessibilityHint="Double tap to toggle selection"
                 >
                   <View style={styles.serviceCheckbox}>
                     <Checkbox
@@ -610,6 +616,10 @@ export default function BookingScreen() {
                 <TouchableOpacity
                   style={[styles.staffItem, !selectedWorker && styles.staffItemSelected]}
                   onPress={() => setSelectedWorker(null)}
+                  accessible={true}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: !selectedWorker }}
+                  accessibilityLabel="Any available stylist"
                 >
                   <View style={[styles.staffAvatar, !selectedWorker && styles.staffAvatarSelected]}>
                     <Ionicons name="shuffle" size={20} color={!selectedWorker ? COLORS.primaryGreen : COLORS.textSecondary} />
@@ -623,6 +633,10 @@ export default function BookingScreen() {
                     key={worker.id}
                     style={[styles.staffItem, selectedWorker === worker.id && styles.staffItemSelected]}
                     onPress={() => setSelectedWorker(worker.id)}
+                    accessible={true}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: selectedWorker === worker.id }}
+                    accessibilityLabel={`${worker.fullName}`}
                   >
                     <View style={[styles.staffAvatar, selectedWorker === worker.id && styles.staffAvatarSelected]}>
                       <Text style={styles.staffInitials}>
@@ -648,6 +662,10 @@ export default function BookingScreen() {
                 style={[styles.groupOptionCard, !isGroupBooking && styles.groupOptionCardSelected]}
                 onPress={() => setIsGroupBooking(false)}
                 activeOpacity={0.8}
+                accessible={true}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: !isGroupBooking }}
+                accessibilityLabel="Just me, solo appointment"
               >
                 <View style={[styles.groupOptionIcon, !isGroupBooking && styles.groupOptionIconSelected]}>
                   <Ionicons name="person" size={24} color={!isGroupBooking ? '#fff' : COLORS.textSecondary} />
@@ -664,6 +682,10 @@ export default function BookingScreen() {
                 style={[styles.groupOptionCard, isGroupBooking && styles.groupOptionCardSelected]}
                 onPress={() => setIsGroupBooking(true)}
                 activeOpacity={0.8}
+                accessible={true}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isGroupBooking }}
+                accessibilityLabel="With guests, book for multiple people"
               >
                 <View style={[styles.groupOptionIcon, isGroupBooking && styles.groupOptionIconSelected]}>
                   <Ionicons name="people" size={24} color={isGroupBooking ? '#fff' : COLORS.textSecondary} />
@@ -888,6 +910,10 @@ export default function BookingScreen() {
                     selectedPaymentMethod === method.id && styles.paymentMethodChipSelected,
                   ]}
                   onPress={() => setSelectedPaymentMethod(method.id)}
+                  accessible={true}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: selectedPaymentMethod === method.id }}
+                  accessibilityLabel={`${method.id === 'MTN_MOMO' ? 'MTN Mobile Money' : method.id === 'VODAFONE_CASH' ? 'Vodafone Cash' : 'AirtelTigo Money'}`}
                 >
                   <View style={[styles.paymentMethodIcon, { backgroundColor: method.color }]}>
                     <Text style={[styles.paymentMethodIconText, { color: method.textColor }]}>

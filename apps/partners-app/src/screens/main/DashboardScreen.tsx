@@ -28,6 +28,7 @@ import SubscriptionStatusCard from '../../components/SubscriptionStatusCard';
 import { AppTheme } from '../../theme/colors';
 import { useAppTheme } from '../../theme/ThemeContext';
 import * as Haptics from 'expo-haptics';
+import { useAccessibility, a11yBookingLabel, a11yCurrency } from '../../hooks/useAccessibility';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -38,6 +39,7 @@ export default function DashboardScreen() {
   const queryClient = useQueryClient();
   const { theme, isDark } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { announce } = useAccessibility();
 
   // Fetch salon data
   const { data: salon, isLoading: salonLoading } = useQuery({
@@ -147,7 +149,13 @@ export default function DashboardScreen() {
     const serviceDuration = item.service?.duration || 0;
 
     return (
-      <TouchableOpacity onPress={() => navigateToBooking(item.id)} activeOpacity={0.7}>
+      <TouchableOpacity
+        onPress={() => navigateToBooking(item.id)}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={a11yBookingLabel(item)}
+      >
         <View style={styles.bookingCard}>
           <View style={styles.bookingTimeColumn}>
             <Text style={styles.bookingTime}>{formatTime(item.startTime)}</Text>
@@ -230,10 +238,13 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={styles.notificationButton}
                 onPress={() => navigation.navigate('Notifications')}
+                accessibilityRole="button"
+                accessibilityLabel={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+                accessibilityHint="Opens your notifications"
               >
                 <Ionicons name="notifications-outline" size={24} color={theme.text} />
                 {unreadCount > 0 && (
-                  <View style={styles.notificationBadge}>
+                  <View style={styles.notificationBadge} accessibilityElementsHidden={true}>
                     <Text style={styles.notificationBadgeText}>{unreadCount}</Text>
                   </View>
                 )}
@@ -271,15 +282,15 @@ export default function DashboardScreen() {
             {/* Overview Section Header */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Overview</Text>
-              <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
+              <TouchableOpacity onPress={onRefresh} style={styles.refreshButton} accessibilityRole="button" accessibilityLabel="Refresh dashboard data">
                 <Ionicons name="refresh" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {/* Stats Grid */}
-            <View style={styles.statsGrid}>
+            <View style={styles.statsGrid} accessibilityRole="summary">
               {/* Today's Bookings */}
-              <View style={styles.statsCard}>
+              <View style={styles.statsCard} accessible={true} accessibilityLabel={`Today's bookings: ${todayBookings.length}`}>
                 <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.successBg }]}>
                     <Ionicons name="calendar" size={18} color={theme.success} />
@@ -293,7 +304,7 @@ export default function DashboardScreen() {
               </View>
 
               {/* Weekly Revenue */}
-              <View style={styles.statsCard}>
+              <View style={styles.statsCard} accessible={true} accessibilityLabel={`Weekly revenue: ${a11yCurrency(weeklyRevenue)}`}>
                 <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.accentBg }]}>
                     <Ionicons name="cash" size={18} color={theme.accent} />
@@ -307,7 +318,7 @@ export default function DashboardScreen() {
               </View>
 
               {/* Pending */}
-              <View style={styles.statsCard}>
+              <View style={styles.statsCard} accessible={true} accessibilityLabel={`Pending bookings: ${pendingBookings.length}`}>
                 <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.pendingBg }]}>
                     <Ionicons name="time" size={18} color={theme.pending} />
@@ -321,7 +332,7 @@ export default function DashboardScreen() {
               </View>
 
               {/* Rating */}
-              <View style={styles.statsCard}>
+              <View style={styles.statsCard} accessible={true} accessibilityLabel={`Average rating: ${stats?.averageRating ? stats.averageRating.toFixed(1) + ' stars' : 'no ratings yet'}`}>
                 <View style={styles.statsCardContent}>
                   <View style={[styles.statsIconCircle, { backgroundColor: theme.infoBg }]}>
                     <Ionicons name="star" size={18} color={theme.info} />
@@ -350,6 +361,9 @@ export default function DashboardScreen() {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate('EditSalon')}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Edit Salon"
+                accessibilityHint="Edit your salon details and hours"
               >
                 <View style={[styles.quickActionIconCircle, { backgroundColor: theme.warningBg }]}>
                   <Ionicons name="create" size={22} color={theme.warning} />
@@ -361,6 +375,9 @@ export default function DashboardScreen() {
                 style={styles.quickActionCard}
                 onPress={() => navigation.getParent()?.navigate('Services')}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Add Service"
+                accessibilityHint="Go to services to add a new service"
               >
                 <View style={[styles.quickActionIconCircle, { backgroundColor: theme.accentBg }]}>
                   <Ionicons name="add-circle" size={22} color={theme.accent} />
@@ -372,6 +389,9 @@ export default function DashboardScreen() {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate('QRScanner')}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Scan QR code"
+                accessibilityHint="Open the QR code scanner for check-ins"
               >
                 <View style={[styles.quickActionIconCircle, { backgroundColor: theme.infoBg }]}>
                   <Ionicons name="qr-code" size={22} color={theme.info} />
@@ -383,6 +403,9 @@ export default function DashboardScreen() {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate('Pricing')}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Subscription plans"
+                accessibilityHint="View and manage your subscription"
               >
                 <View style={[styles.quickActionIconCircle, { backgroundColor: theme.successBg }]}>
                   <Ionicons name="diamond" size={22} color={theme.success} />
@@ -394,6 +417,8 @@ export default function DashboardScreen() {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate('Notifications')}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="View all notifications"
               >
                 <View style={[styles.quickActionIconCircle, { backgroundColor: theme.dangerBg }]}>
                   <Ionicons name="notifications" size={22} color={theme.danger} />

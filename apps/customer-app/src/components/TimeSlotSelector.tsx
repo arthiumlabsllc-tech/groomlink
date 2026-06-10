@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { AppTheme } from '../theme/colors';
+import { a11yTimeSlotLabel } from '../hooks/useAccessibility';
 
 // Theme-aware color factory
 const createColors = (t: AppTheme) => ({
@@ -188,6 +189,10 @@ export default function TimeSlotSelector({
         onPress={() => hasEnoughCapacity && onTimeSelect(slot.time)}
         disabled={!hasEnoughCapacity}
         activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={a11yTimeSlotLabel(slot)}
+        accessibilityState={{ selected: isSelected, disabled: !hasEnoughCapacity }}
       >
         {slot.isBreak && <View style={styles.breakStripes} />}
         <RNText style={[styles.slotText, { color: textColor }]}>

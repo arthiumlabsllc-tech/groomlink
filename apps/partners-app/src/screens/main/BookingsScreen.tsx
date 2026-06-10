@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
+import { useAccessibility, a11yBookingLabel } from '../../hooks/useAccessibility';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -155,7 +156,13 @@ export default function BookingsScreen() {
   };
 
   const renderBookingItem = ({ item }: { item: Booking }) => (
-    <TouchableOpacity onPress={() => navigateToBooking(item.id)} activeOpacity={0.7}>
+    <TouchableOpacity
+      onPress={() => navigateToBooking(item.id)}
+      activeOpacity={0.7}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={a11yBookingLabel(item)}
+    >
       <Surface style={styles.bookingCard} elevation={0}>
         {/* Status Bar */}
         <View style={[styles.statusBar, { backgroundColor: getStatusColor(item.status) }]} />

@@ -131,10 +131,10 @@ export default function BookingConfirmationScreen() {
       >
         {/* Success Section */}
         <View style={styles.successContainer}>
-          <View style={styles.successCircle}>
+          <View style={styles.successCircle} accessible={true} accessibilityLabel="Success">
             <Ionicons name="checkmark" size={48} color="#fff" />
           </View>
-          <Text variant="headlineSmall" style={styles.successTitle}>
+          <Text variant="headlineSmall" style={styles.successTitle} accessibilityRole="header">
             Booking Confirmed!
           </Text>
           <Text variant="bodyMedium" style={styles.successSubtitle}>
@@ -160,7 +160,7 @@ export default function BookingConfirmationScreen() {
             <Text variant="headlineMedium" style={styles.referenceNumber}>
               {booking.isGroupBooking ? generateGroupReference() : generateReference()}
             </Text>
-            <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+            <TouchableOpacity onPress={handleShare} style={styles.shareButton} accessibilityRole="button" accessibilityLabel="Share booking details">
               <Ionicons name="share-outline" size={20} color={COLORS.accentGold} />
               <Text variant="bodyMedium" style={styles.shareText}>Share Booking</Text>
             </TouchableOpacity>

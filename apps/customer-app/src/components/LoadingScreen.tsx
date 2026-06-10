@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Image,
   Animated,
   StyleSheet,
   Text,
+  AccessibilityInfo,
 } from 'react-native';
 
 // Customer app: salon-themed splash – light background with black logo
@@ -16,8 +17,17 @@ function LoadingDots() {
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+
     const createDotAnimation = (dot: Animated.Value, delay: number) =>
       Animated.loop(
         Animated.sequence([
@@ -49,7 +59,17 @@ function LoadingDots() {
       a2.stop();
       a3.stop();
     };
-  }, [dot1, dot2, dot3]);
+  }, [dot1, dot2, dot3, reduceMotion]);
+
+  if (reduceMotion) {
+    return (
+      <View style={styles.dotsContainer} accessibilityLabel="Loading">
+        <View style={[styles.dot, { opacity: 1 }]} />
+        <View style={[styles.dot, { opacity: 0.6 }]} />
+        <View style={[styles.dot, { opacity: 0.3 }]} />
+      </View>
+    );
+  }
 
   const dotStyle = (anim: Animated.Value) => ({
     opacity: anim.interpolate({
@@ -79,8 +99,20 @@ export default function LoadingScreen() {
   const illustrationOpacity = useRef(new Animated.Value(0)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const dotsOpacity = useRef(new Animated.Value(0)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      illustrationOpacity.setValue(1);
+      logoOpacity.setValue(1);
+      dotsOpacity.setValue(1);
+      return;
+    }
+
     // Fade-in the illustration
     Animated.timing(illustrationOpacity, {
       toValue: 1,
@@ -103,10 +135,10 @@ export default function LoadingScreen() {
       delay: 800,
       useNativeDriver: true,
     }).start();
-  }, [illustrationOpacity, logoOpacity, dotsOpacity]);
+  }, [illustrationOpacity, logoOpacity, dotsOpacity, reduceMotion]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessible={true} accessibilityLabel="Loading salons and barbershops, please wait">
       {/* Full-screen brand illustration */}
       <Animated.View
         style={[

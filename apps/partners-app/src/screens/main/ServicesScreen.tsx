@@ -23,6 +23,7 @@ import { MainStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
+import { useAccessibility, a11yCurrency, a11yDuration } from '../../hooks/useAccessibility';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -41,6 +42,7 @@ export default function ServicesScreen() {
   const queryClient = useQueryClient();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { announce } = useAccessibility();
 
   // Fetch salon to get salon ID
   const { data: salon, isLoading: isLoadingSalon } = useQuery({
@@ -80,8 +82,9 @@ export default function ServicesScreen() {
   const toggleMutation = useMutation({
     mutationFn: ({ serviceId, isActive }: { serviceId: string; isActive: boolean }) =>
       servicesApi.toggleServiceStatus(salonId!, serviceId, isActive),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['services', salonId] });
+      announce(variables.isActive ? 'Service activated' : 'Service deactivated');
     },
     onError: (error: Error) => {
       Alert.alert('Error', `Failed to update service: ${error.message}`);
@@ -93,6 +96,7 @@ export default function ServicesScreen() {
     mutationFn: (serviceId: string) => servicesApi.deleteService(salonId!, serviceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services', salonId] });
+      announce('Service deleted');
     },
     onError: (error: Error) => {
       Alert.alert('Error', `Failed to delete service: ${error.message}`);
@@ -154,7 +158,28 @@ export default function ServicesScreen() {
       renderRightActions={() => renderRightActions(item)}
       overshootRight={false}
     >
-      <TouchableOpacity onPress={() => handleEditService(item)} activeOpacity={0.7}>
+      <TouchableOpacity
+        onPress={() => handleEditService(item)}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.name}, ${SERVICE_CATEGORIES[item.category] || item.category}, ${a11yCurrency(item.price)}, ${a11yDuration(item.duration)}, ${item.isActive ? 'active' : 'inactive'}`}
+        accessibilityHint="Double tap to edit. Swipe left to delete."
+        accessibilityActions={[
+          { name: 'activate', label: 'Edit service' },
+          { name: 'delete', label: 'Delete service' },
+        ]}
+        onAccessibilityAction={(event) => {
+          switch (event.nativeEvent.actionName) {
+            case 'activate':
+              handleEditService(item);
+              break;
+            case 'delete':
+              handleDeleteService(item);
+              break;
+          }
+        }}
+      >
         <Surface style={[styles.serviceCard, !item.isActive && styles.inactiveCard]} elevation={0}>
           <View style={styles.cardHeader}>
             <View style={styles.serviceInfo}>
@@ -167,6 +192,8 @@ export default function ServicesScreen() {
               value={item.isActive}
               onValueChange={() => handleToggleStatus(item)}
               color="#006B3F"
+              accessibilityLabel={`${item.name} is ${item.isActive ? 'active' : 'inactive'}. Toggle to ${item.isActive ? 'deactivate' : 'activate'}`}
+              accessibilityRole="switch"
             />
           </View>
           

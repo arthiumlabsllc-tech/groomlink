@@ -290,7 +290,12 @@ export default function ProfileScreen() {
                 labelStyle={styles.avatarLabel}
               />
             )}
-            <TouchableOpacity style={styles.editAvatarButton} onPress={pickImage}>
+            <TouchableOpacity
+              style={styles.editAvatarButton}
+              onPress={pickImage}
+              accessibilityRole="button"
+              accessibilityLabel="Change profile photo"
+            >
               <Ionicons name="camera" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -453,6 +458,8 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.logoutButton}
             onPress={() => setShowLogoutDialog(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Logout from your account"
           >
             <Ionicons name="log-out-outline" size={22} color={COLORS.accentRed} />
             <Text style={styles.logoutText}>Logout</Text>

@@ -31,6 +31,7 @@ import { MainStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { a11yCurrency, a11yDuration } from '../../hooks/useAccessibility';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -255,7 +256,10 @@ export default function SalonDetailScreen() {
     }
 
     return (
-      <View key={item.id} style={styles.serviceItem}>
+      <View key={item.id} style={styles.serviceItem}
+        accessible={true}
+        accessibilityLabel={`${item.name || 'Service'}, ${item.duration ? a11yDuration(item.duration) : ''}, ${a11yCurrency(item.price)}`}
+      >
         <View style={styles.serviceInfo}>
           <Text variant="titleSmall" style={styles.serviceName}>{item.name || 'Unnamed Service'}</Text>
           {item.description && (
@@ -478,6 +482,8 @@ export default function SalonDetailScreen() {
                             styles.dot,
                             index === activeImageIndex && styles.dotActive,
                           ]}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Image ${index + 1} of ${heroImages.length}${index === activeImageIndex ? ', current' : ''}`}
                         />
                       ))}
                     </View>
@@ -607,7 +613,7 @@ export default function SalonDetailScreen() {
                   <View>
                     {/* Queue Stats */}
                     <View style={styles.queueStats}>
-                      <View style={styles.queueStat}>
+                      <View style={styles.queueStat} accessible={true} accessibilityLabel={`${queueStatus?.totalWaiting || 0} people waiting`}>
                         <View style={[styles.queueIconContainer, { backgroundColor: `${COLORS.primaryGreen}15` }]}>
                           <Ionicons name="people" size={24} color={COLORS.primaryGreen} />
                         </View>
@@ -618,7 +624,7 @@ export default function SalonDetailScreen() {
                           <Text variant="bodySmall" style={styles.queueStatLabel}>waiting</Text>
                         </View>
                       </View>
-                      <View style={styles.queueStat}>
+                      <View style={styles.queueStat} accessible={true} accessibilityLabel={`Approximately ${queueStatus?.averageWait || 0} minutes wait`}>
                         <View style={[styles.queueIconContainer, { backgroundColor: `${COLORS.accentGold}25` }]}>
                           <Ionicons name="time-outline" size={24} color={COLORS.primaryGreen} />
                         </View>
@@ -647,6 +653,8 @@ export default function SalonDetailScreen() {
                           style={[styles.leaveQueueButton, leavingQueue && styles.buttonDisabled]}
                           onPress={handleLeaveQueue}
                           disabled={leavingQueue}
+                          accessibilityRole="button"
+                          accessibilityLabel="Leave the queue"
                         >
                           {leavingQueue ? (
                             <ActivityIndicator size="small" color={COLORS.accentRed} />
@@ -662,6 +670,8 @@ export default function SalonDetailScreen() {
                       <TouchableOpacity
                         style={styles.joinQueueButton}
                         onPress={() => setShowJoinModal(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Join walk-in queue"
                       >
                         <Ionicons name="add-circle-outline" size={20} color="#fff" />
                         <Text style={styles.joinQueueButtonText}>Join Walk-in Queue</Text>
@@ -722,6 +732,8 @@ export default function SalonDetailScreen() {
                 <TouchableOpacity
                   onPress={() => setShowJoinModal(false)}
                   style={styles.closeButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close modal"
                 >
                   <Ionicons name="close" size={24} color={COLORS.textSecondary} />
                 </TouchableOpacity>
@@ -862,7 +874,12 @@ export default function SalonDetailScreen() {
 
       {/* Book Now Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
+        <TouchableOpacity
+          style={styles.bookButton}
+          onPress={handleBookNow}
+          accessibilityRole="button"
+          accessibilityLabel={`Book an appointment at ${salon?.businessName || 'this salon'}`}
+        >
           <Ionicons name="calendar" size={20} color="#fff" />
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
