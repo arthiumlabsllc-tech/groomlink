@@ -32,7 +32,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v6-remove-media-permissions"
+        "key": "v7-16kb-donotstrip"
       }
     }
   },
