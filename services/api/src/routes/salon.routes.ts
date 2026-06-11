@@ -35,6 +35,7 @@ router.put('/:id/completion-settings', authenticateToken, requireRole(UserRole.S
 // Payout account settings (salon owner only)
 router.get('/:id/payout-account', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.getPayoutAccount);
 router.post('/:id/payout-account', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.setupPayoutAccount);
+router.get('/:id/payout-balance', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.getPayoutBalance);
 
 // Payout reference data (public)
 router.get('/payouts/banks', payoutController.getSupportedBanks);

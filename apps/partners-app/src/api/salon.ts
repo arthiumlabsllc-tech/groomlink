@@ -20,6 +20,16 @@ export interface CreateSalonData {
   ghanaPostGPS?: string;
 }
 
+export interface PayoutBalance {
+  availableBalance: number;
+  paidOutBalance: number;
+  refundedBalance: number;
+  totalRevenue: number;
+  heldCount: number;
+  releasedCount: number;
+  refundedCount: number;
+}
+
 export const salonApi = {
   // Create a new salon
   create: async (data: CreateSalonData): Promise<Salon> => {
@@ -47,6 +57,12 @@ export const salonApi = {
   // Get salon stats
   getSalonStats: async (salonId: string): Promise<DashboardStats> => {
     const response = await apiClient.get(`/salons/${salonId}/stats`);
+    return response.data.data;
+  },
+
+  // Get payout balance summary
+  getPayoutBalance: async (salonId: string): Promise<PayoutBalance> => {
+    const response = await apiClient.get(`/salons/${salonId}/payout-balance`);
     return response.data.data;
   },
 

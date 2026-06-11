@@ -145,3 +145,96 @@ export function getSupportedMomoProviders(req: Request, res: Response): void {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
 }
+
+/**
+ * Get payout balance summary for a salon
+ * GET /salons/:id/payout-balance
+ */
+export async function getPayoutBalance(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id: salonId } = req.params;
+
+    // Verify salon ownership
+    const salon = await prisma.salon.findUnique({
+      where: { id: salonId },
+      select: { ownerId: true },
+    });
+
+    if (!salon) {
+      errorResponse(res, 'NOT_FOUND', 'Salon not found', 404);
+      return;
+    }
+
+    // Check ownership
+    if (salon.ownerId !== req.user.id && req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+      errorResponse(res, 'FORBIDDEN', 'You do not have permission to view payout balance for this salon', 403);
+      return;
+    }
+
+    // Calculate payout balances from escrow accounts
+    const [
+      heldResult,
+      releasedResult,
+      refundedResult,
+    ] = await Promise.all([
+      // Money held in escrow (not yet paid out)
+      prisma.escrowAccount.aggregate({
+        where: {
+          salonId,
+          status: 'held',
+        },
+        _sum: { providerAmount: true },
+        _count: true,
+      }),
+      // Money already paid out
+      prisma.escrowAccount.aggregate({
+        where: {
+          salonId,
+          status: 'released',
+        },
+        _sum: { providerAmount: true },
+        _count: true,
+      }),
+      // Refunded amount
+      prisma.escrowAccount.aggregate({
+        where: {
+          salonId,
+          status: 'refunded',
+        },
+        _sum: { amountHeld: true },
+        _count: true,
+      }),
+    ]);
+
+    // Total revenue from successful payments
+    const totalRevenueResult = await prisma.payment.aggregate({
+      where: {
+        booking: { salonId },
+        status: 'SUCCESS',
+      },
+      _sum: { amount: true },
+    });
+
+    const availableBalance = Number(heldResult._sum.providerAmount || 0);
+    const paidOutBalance = Number(releasedResult._sum.providerAmount || 0);
+    const refundedBalance = Number(refundedResult._sum.amountHeld || 0);
+    const totalRevenue = Number(totalRevenueResult._sum.amount || 0);
+
+    successResponse(res, {
+      availableBalance,     // Money in escrow waiting to be paid out
+      paidOutBalance,       // Money already paid out to salon
+      refundedBalance,      // Money refunded to customers
+      totalRevenue,         // Total revenue from all successful payments
+      heldCount: heldResult._count,
+      releasedCount: releasedResult._count,
+      refundedCount: refundedResult._count,
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}

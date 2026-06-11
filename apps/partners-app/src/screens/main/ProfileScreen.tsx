@@ -81,6 +81,13 @@ export default function ProfileScreen() {
     enabled: !!salon?.id,
   });
 
+  // Fetch payout balance
+  const { data: payoutBalance } = useQuery({
+    queryKey: ['payoutBalance', salon?.id],
+    queryFn: () => (salon ? salonApi.getPayoutBalance(salon.id) : null),
+    enabled: !!salon?.id,
+  });
+
   // Update profile mutation
   const updateMutation = useMutation({
     mutationFn: (data: { firstName?: string; lastName?: string; email?: string }) =>
@@ -256,6 +263,75 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>Revenue</Text>
           </View>
         </View>
+
+        {/* Payout Section */}
+        <Surface style={styles.section} elevation={0}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="wallet-outline" size={20} color="#006B3F" />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Payouts
+            </Text>
+          </View>
+          <Divider style={styles.sectionDivider} />
+          
+          {/* Available Balance - Highlighted */}
+          <View style={styles.balanceCard}>
+            <View style={styles.balanceHeader}>
+              <Ionicons name="cash-outline" size={24} color="#006B3F" />
+              <Text style={styles.balanceLabel}>Available to Withdraw</Text>
+            </View>
+            <Text style={styles.balanceValue}>
+              GH₵{(payoutBalance?.availableBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+          </View>
+
+          <Divider style={styles.sectionDivider} />
+
+          {/* Balance Details */}
+          <View style={styles.balanceDetails}>
+            <View style={styles.balanceDetailRow}>
+              <View style={styles.detailLeft}>
+                <Ionicons name="arrow-up-circle-outline" size={18} color="#10B981" />
+                <Text style={styles.detailLabel}>Total Paid Out</Text>
+              </View>
+              <Text style={[styles.detailValue, { color: '#10B981' }]}>
+                GH₵{(payoutBalance?.paidOutBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+            </View>
+
+            <View style={styles.balanceDetailRow}>
+              <View style={styles.detailLeft}>
+                <Ionicons name="hourglass-outline" size={18} color="#F59E0B" />
+                <Text style={styles.detailLabel}>Pending ({payoutBalance?.heldCount || 0})</Text>
+              </View>
+              <Text style={[styles.detailValue, { color: '#F59E0B' }]}>
+                GH₵{(payoutBalance?.availableBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+            </View>
+
+            <View style={styles.balanceDetailRow}>
+              <View style={styles.detailLeft}>
+                <Ionicons name="refresh-circle-outline" size={18} color="#EF4444" />
+                <Text style={styles.detailLabel}>Refunded</Text>
+              </View>
+              <Text style={[styles.detailValue, { color: '#EF4444' }]}>
+                GH₵{(payoutBalance?.refundedBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+            </View>
+          </View>
+
+          <Divider style={styles.sectionDivider} />
+
+          {/* Payout Account Link */}
+          <TouchableOpacity 
+            style={styles.payoutAccountRow}
+            onPress={() => navigation.navigate('EditSalon')}
+          >
+            <Ionicons name="card-outline" size={18} color="#006B3F" />
+            <Text style={styles.payoutAccountText}>Manage Payout Account</Text>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+        </Surface>
 
         {/* Edit Profile Section */}
         {isEditing ? (
@@ -706,5 +782,62 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 12,
     color: theme.textTertiary,
     opacity: 0.7,
+  },
+  // Payout Styles
+  balanceCard: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  balanceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  balanceLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#006B3F',
+  },
+  balanceValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#006B3F',
+  },
+  balanceDetails: {
+    paddingHorizontal: 16,
+  },
+  balanceDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  detailLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: theme.textSecondary,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  payoutAccountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+  },
+  payoutAccountText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#006B3F',
   },
 });
