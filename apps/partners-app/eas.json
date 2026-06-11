@@ -32,7 +32,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v7-16kb-donotstrip"
+        "key": "v8-16kb-donotstrip-script"
       }
     }
   },
