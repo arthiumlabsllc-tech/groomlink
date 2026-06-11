@@ -1,13 +1,12 @@
 const { withAndroidManifest } = require('@expo/config-plugins');
 
 /**
- * Expo config plugin that adds Android 16 (API 36) compatibility opt-outs
- * to the AndroidManifest.xml at build time.
- *
- * 1. Adds `android:enableOnBackInvokedCallback="false"` to .MainActivity
+ * Expo config plugin that:
+ * 1. Removes READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, READ_EXTERNAL_STORAGE,
+ *    WRITE_EXTERNAL_STORAGE permissions (not needed for photo picker one-time access).
+ * 2. Adds `android:enableOnBackInvokedCallback="false"` to .MainActivity
  *    to temporarily opt out of predictive back gestures.
- *
- * 2. Adds a <property> element inside <application>:
+ * 3. Adds a <property> element inside <application>:
  *    android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY = true
  *    to prevent forced resize on large screens (600dp+) for Android 16+.
  */
@@ -15,6 +14,20 @@ function withAndroid16Compat(config) {
   return withAndroidManifest(config, (config) => {
     const manifest = config.modResults;
     const application = manifest.manifest.application[0];
+
+    // Remove photo/video permissions that trigger Google Play rejection
+    const permissionsToRemove = [
+      'android.permission.READ_MEDIA_IMAGES',
+      'android.permission.READ_MEDIA_VIDEO',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+    ];
+
+    if (manifest.manifest['uses-permission']) {
+      manifest.manifest['uses-permission'] = manifest.manifest['uses-permission'].filter(
+        (perm) => !permissionsToRemove.includes(perm.$['android:name'])
+      );
+    }
 
     // Add PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY to <application>
     if (!application['property']) {

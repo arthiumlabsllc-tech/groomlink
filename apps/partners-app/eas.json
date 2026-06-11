@@ -32,7 +32,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v5-16kb-aligned-no-webp"
+        "key": "v6-remove-media-permissions"
       }
     }
   },

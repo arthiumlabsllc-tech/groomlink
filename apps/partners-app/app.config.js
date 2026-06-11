@@ -48,10 +48,7 @@ export default {
         "POST_NOTIFICATIONS",
         "FOREGROUND_SERVICE",
         "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
+        "SCHEDULE_EXACT_ALARM"
       ]
     },
     web: {
