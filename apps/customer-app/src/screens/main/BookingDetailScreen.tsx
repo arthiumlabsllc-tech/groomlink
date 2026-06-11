@@ -227,16 +227,17 @@ export default function BookingDetailScreen() {
   const canCancel = booking && (booking.status === 'PENDING' || booking.status === 'CONFIRMED');
   const canReschedule = booking && booking.status === 'CONFIRMED';
 
-  // Check if booking is in the past and needs completion confirmation
-  const isPastBooking = booking && new Date(booking.scheduledDate || booking.date || '') < new Date();
+  // Check if booking needs customer completion confirmation
+  // After new flow: salon marks service done (status=COMPLETED, serviceCompleted=true)
+  // but escrow is held until customer confirms
   const needsCompletionConfirmation = booking && 
-    isPastBooking && 
-    booking.status === 'CONFIRMED' && 
-    !booking.serviceCompleted &&
+    booking.status === 'COMPLETED' && 
+    booking.serviceCompleted &&
     !booking.customerConfirmed &&
     !booking.disputeRaised;
 
   // Check if booking is confirmed and upcoming (for QR code)
+  const isPastBooking = booking && new Date(booking.scheduledDate || booking.date || '') < new Date();
   const isUpcomingConfirmed = booking && 
     booking.status === 'CONFIRMED' && 
     !isPastBooking;

@@ -58,13 +58,13 @@ export const salonApi = {
 
   // Get completion settings
   getCompletionSettings: async (salonId: string): Promise<CompletionSettings> => {
-    const response = await apiClient.get(`/salon/${salonId}/completion-settings`);
+    const response = await apiClient.get(`/salons/${salonId}/completion-settings`);
     return response.data.data;
   },
 
   // Update completion settings
   updateCompletionSettings: async (salonId: string, settings: Partial<CompletionSettings>): Promise<CompletionSettings> => {
-    const response = await apiClient.put(`/salon/${salonId}/completion-settings`, settings);
+    const response = await apiClient.put(`/salons/${salonId}/completion-settings`, settings);
     return response.data.data;
   },
 

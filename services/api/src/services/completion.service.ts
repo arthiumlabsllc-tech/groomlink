@@ -11,7 +11,8 @@ import QRCode from 'qrcode';
  * Manual completion by salon owner
  * - Verifies salon ownership
  * - Verifies appointment time has passed
- * - Releases escrow and updates booking
+ * - Marks service as completed but does NOT release escrow
+ * - Notifies customer to confirm completion (escrow released on customer confirmation)
  */
 export async function manualComplete(bookingId: string, completedById: string) {
   try {
@@ -59,10 +60,10 @@ export async function manualComplete(bookingId: string, completedById: string) {
       throw new Error(`Cannot release escrow with status: ${booking.escrow.status}`);
     }
 
-    // Release escrow
-    await releaseEscrow(booking.escrow.id);
+    // DO NOT release escrow here - wait for customer confirmation
+    // Escrow stays in 'held' status until customer confirms
 
-    // Update booking
+    // Update booking - mark service as completed, awaiting customer confirmation
     const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
       data: {
@@ -79,45 +80,46 @@ export async function manualComplete(bookingId: string, completedById: string) {
       },
     });
 
-    // Send SMS to customer
+    // Send SMS to customer asking them to confirm
     if (booking.customer?.phoneNumber) {
-      const customerMessage = `Your service at ${booking.salon.businessName} has been completed. Payment of GHS ${booking.escrow.amountHeld} has been released to the salon. Thank you for using GroomLink!`;
+      const customerMessage = `Your service at ${booking.salon.businessName} has been marked as complete. Please open GroomLink to confirm and release payment of GHS ${booking.escrow.amountHeld}. If there's an issue, you can raise a dispute.`;
       smsService.sendSMS({
         to: booking.customer.phoneNumber,
         message: customerMessage,
-      }).catch((err) => logger.error('Failed to send completion SMS to customer', { err }));
+      }).catch((err) => logger.error('Failed to send completion confirmation SMS to customer', { err }));
     }
 
-    // Send SMS to salon owner
+    // Send push notification to customer to confirm
+    pushService.sendPushToUser(
+      booking.customerId,
+      {
+        title: 'Service Completed - Please Confirm',
+        body: `Your service at ${booking.salon.businessName} is done. Tap to confirm and release payment.`,
+        data: { type: 'completion_confirmation', bookingId: booking.id },
+      }
+    ).catch((err) => logger.error('Failed to send push for completion confirmation', { err }));
+
+    // Send SMS to salon owner confirming they marked it done
     if (booking.salon.owner?.phoneNumber) {
-      const salonMessage = `Payment for booking ${booking.reference || bookingId} has been released. Funds will arrive in your account within 1-2 business days. GroomLink`;
+      const salonMessage = `You've marked booking ${booking.reference || bookingId} as complete. Payment will be released once the customer confirms. GroomLink`;
       smsService.sendSMS({
         to: booking.salon.owner.phoneNumber,
         message: salonMessage,
       }).catch((err) => logger.error('Failed to send completion SMS to salon', { err }));
     }
 
-    logger.info(`Booking manually completed: ${bookingId}`, {
+    logger.info(`Booking marked complete by salon, awaiting customer confirmation: ${bookingId}`, {
       completedBy: completedById,
       escrowId: booking.escrow.id,
     });
 
-    // Emit socket event to salon for audible notification
+    // Emit socket event to salon
     emitBookingCompleted(booking.salonId, {
       bookingId: updatedBooking.id,
       customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
       serviceName: booking.service?.name || 'Service',
       totalAmount: booking.escrow.amountHeld.toString(),
     });
-
-    // Send push notification (works when app is backgrounded)
-    pushService.pushServiceCompleted(
-      booking.salonId,
-      `${booking.customer.firstName} ${booking.customer.lastName}`,
-      booking.service?.name || 'Service',
-      booking.id,
-      booking.escrow.amountHeld.toString()
-    ).catch((err) => logger.error('Failed to send push for manual completion', { err }));
 
     return updatedBooking;
   } catch (error) {

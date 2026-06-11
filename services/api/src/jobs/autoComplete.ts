@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { sendSMS } from '../services/sms.service';
 import { releaseEscrow } from '../services/escrow.service';
+import * as pushService from '../services/pushNotification.service';
 
 /**
  * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
@@ -12,39 +13,52 @@ import { releaseEscrow } from '../services/escrow.service';
  * This means `new Date()` returns Ghana time, which aligns with UTC since
  * Ghana is in the GMT timezone (no daylight saving time).
  * 
- * All auto-completion timing and date comparisons assume Ghana timezone.
- * The hoursSinceAppointment calculation uses local time which matches Ghana time.
+ * SAFETY-NET AUTO-RELEASE:
+ * This job now serves as a 48-hour safety net for the two-party confirmation system.
+ * Flow:
+ * 1. Salon marks service complete -> customer gets notified
+ * 2. Customer confirms -> escrow released immediately (handled in completion.service.ts)
+ * 3. If customer doesn't confirm within 48h -> this job auto-releases escrow
+ * 
+ * Additionally, sends reminders to customers who haven't confirmed:
+ * - 2 hours after salon marks done: first reminder
+ * - 24 hours after salon marks done: urgent reminder
+ * - 48 hours after salon marks done: auto-release as safety net
  */
 
 /**
- * Start the auto-completion cron job
- * Runs every 30 minutes to check for bookings that need completion reminders or auto-completion
+ * Start the auto-completion safety-net cron job
+ * Runs every 30 minutes to check for bookings awaiting customer confirmation
  */
 export const startAutoCompletionJob = (): void => {
   // Run every 30 minutes
   cron.schedule('*/30 * * * *', async () => {
     try {
-      await checkAndAutoCompleteBookings();
+      await checkAndAutoReleaseBookings();
     } catch (error) {
-      logger.error('Auto-completion job error:', error);
+      logger.error('Auto-completion safety-net job error:', error);
     }
   });
 
-  logger.info('Auto-completion cron job started (every 30 minutes)');
+  logger.info('Auto-completion safety-net cron job started (every 30 minutes)');
 };
 
 /**
- * Check for pending bookings and process completion reminders and auto-completion
+ * Check for completed bookings awaiting customer confirmation and process reminders/auto-release
  */
-async function checkAndAutoCompleteBookings(): Promise<void> {
+async function checkAndAutoReleaseBookings(): Promise<void> {
   const now = new Date();
 
-  // Find confirmed bookings where appointment time has passed and not yet completed
-  const pendingBookings = await prisma.booking.findMany({
+  // Find bookings where salon marked complete but customer hasn't confirmed
+  const pendingConfirmation = await prisma.booking.findMany({
     where: {
-      status: BookingStatus.CONFIRMED,
-      serviceCompleted: false,
-      date: { lte: now },
+      status: BookingStatus.COMPLETED,
+      serviceCompleted: true,
+      customerConfirmed: false,
+      disputeRaised: false,
+      escrow: {
+        status: 'held',
+      },
     },
     include: {
       salon: {
@@ -52,7 +66,6 @@ async function checkAndAutoCompleteBookings(): Promise<void> {
           id: true,
           businessName: true,
           ownerId: true,
-          autoCompletionHours: true,
           completionReminderEnabled: true,
           phoneNumber: true,
         },
@@ -69,6 +82,7 @@ async function checkAndAutoCompleteBookings(): Promise<void> {
         select: {
           id: true,
           status: true,
+          amountHeld: true,
         },
       },
       completionReminders: {
@@ -86,37 +100,34 @@ async function checkAndAutoCompleteBookings(): Promise<void> {
     },
   });
 
-  if (pendingBookings.length === 0) {
-    logger.debug('No pending bookings found for auto-completion check');
+  if (pendingConfirmation.length === 0) {
+    logger.debug('No bookings pending customer confirmation');
     return;
   }
 
-  logger.info(`Found ${pendingBookings.length} pending bookings for completion check`);
+  logger.info(`Found ${pendingConfirmation.length} bookings pending customer confirmation`);
 
-  for (const booking of pendingBookings) {
+  for (const booking of pendingConfirmation) {
     try {
-      await processBookingForCompletion(booking, now);
+      await processBookingForSafetyNet(booking, now);
     } catch (error) {
-      logger.error(`Error processing booking ${booking.id} for auto-completion:`, error);
+      logger.error(`Error processing booking ${booking.id} for safety-net:`, error);
     }
   }
 }
 
 /**
- * Process a single booking for completion reminders or auto-completion
+ * Process a single booking for customer confirmation reminders or safety-net auto-release
  */
-async function processBookingForCompletion(
+async function processBookingForSafetyNet(
   booking: {
     id: string;
     reference: string;
-    date: Date;
-    startTime: string;
-    serviceCompleted: boolean;
+    serviceCompletedAt: Date | null;
     salon: {
       id: string;
       businessName: string;
       ownerId: string;
-      autoCompletionHours: number;
       completionReminderEnabled: boolean;
       phoneNumber: string;
     };
@@ -126,97 +137,49 @@ async function processBookingForCompletion(
       lastName: string;
       phoneNumber: string | null;
     };
-    escrow: { id: string; status: string } | null;
+    escrow: { id: string; status: string; amountHeld: any } | null;
     completionReminders: { id: string; reminderType: string; sentAt: Date }[];
     service: { name: string } | null;
   },
   now: Date
 ): Promise<void> {
-  // Calculate hours since appointment
-  // Booking has date (DateTime) and startTime (String like "09:00")
-  const bookingDate = new Date(booking.date);
-  const [hours, minutes] = booking.startTime.split(':').map(Number);
-  bookingDate.setHours(hours, minutes, 0, 0);
+  // Calculate hours since salon marked service complete
+  const completedAt = booking.serviceCompletedAt || now;
+  const hoursSinceCompletion = (now.getTime() - new Date(completedAt).getTime()) / (1000 * 60 * 60);
 
-  const hoursSinceAppointment = (now.getTime() - bookingDate.getTime()) / (1000 * 60 * 60);
-
-  // Skip if appointment hasn't started yet
-  if (hoursSinceAppointment < 0) {
+  // Skip if just completed (give customer time to respond naturally)
+  if (hoursSinceCompletion < 2) {
     return;
   }
 
-  const reminderCount = booking.completionReminders.length;
-  const autoCompleteHours = booking.salon.autoCompletionHours || 2;
+  // Count reminders sent specifically for customer confirmation
+  const customerReminders = booking.completionReminders.filter(
+    r => r.reminderType === 'customer_confirm_reminder' || r.reminderType === 'customer_confirm_urgent'
+  );
+  const reminderCount = customerReminders.length;
 
-  // First reminder: right after appointment (0-0.5h, 0 reminders sent)
-  if (hoursSinceAppointment >= 0 && hoursSinceAppointment < 0.5 && reminderCount === 0) {
-    if (booking.salon.completionReminderEnabled) {
-      await sendFirstReminder(booking);
-    }
+  // First reminder: 2 hours after salon marks done (0 reminders sent)
+  if (hoursSinceCompletion >= 2 && hoursSinceCompletion < 3 && reminderCount === 0) {
+    await sendCustomerConfirmReminder(booking);
     return;
   }
 
-  // Urgent reminder: 1 hour after (1-1.5h, 1 reminder sent)
-  if (hoursSinceAppointment >= 1 && hoursSinceAppointment < 1.5 && reminderCount === 1) {
-    if (booking.salon.completionReminderEnabled) {
-      await sendUrgentReminder(booking);
-    }
+  // Urgent reminder: 24 hours after salon marks done (1 reminder sent)
+  if (hoursSinceCompletion >= 24 && hoursSinceCompletion < 25 && reminderCount === 1) {
+    await sendCustomerUrgentReminder(booking);
     return;
   }
 
-  // Auto-complete after configured hours
-  if (hoursSinceAppointment >= autoCompleteHours) {
-    await autoCompleteBooking(booking, hoursSinceAppointment);
+  // Safety-net auto-release: 48 hours after salon marks done
+  if (hoursSinceCompletion >= 48) {
+    await safetyNetRelease(booking, hoursSinceCompletion);
   }
 }
 
 /**
- * Send the first completion reminder to the salon owner
+ * Send first reminder to customer to confirm service completion
  */
-async function sendFirstReminder(booking: {
-  id: string;
-  reference: string;
-  startTime: string;
-  salon: {
-    id: string;
-    businessName: string;
-    ownerId: string;
-    phoneNumber: string;
-  };
-  customer: {
-    firstName: string;
-    lastName: string;
-  };
-  service: { name: string } | null;
-}): Promise<void> {
-  // Create CompletionReminder record
-  await prisma.completionReminder.create({
-    data: {
-      bookingId: booking.id,
-      reminderType: 'manual',
-      sentToId: booking.salon.ownerId,
-    },
-  });
-
-  // Send SMS to salon owner
-  const message = `GroomLink: The appointment with ${booking.customer.firstName} ${booking.customer.lastName}${booking.service ? ` for ${booking.service.name}` : ''} at ${booking.startTime} has ended. Please mark the service as completed in your dashboard.`;
-
-  try {
-    await sendSMS({
-      to: booking.salon.phoneNumber,
-      message,
-    });
-    logger.info(`First completion reminder sent for booking ${booking.id} to salon ${booking.salon.id}`);
-  } catch (smsError) {
-    logger.error(`Failed to send first reminder SMS for booking ${booking.id}:`, smsError);
-    // Continue even if SMS fails - the reminder record was created
-  }
-}
-
-/**
- * Send an urgent completion reminder to the salon owner
- */
-async function sendUrgentReminder(booking: {
+async function sendCustomerConfirmReminder(booking: {
   id: string;
   reference: string;
   salon: {
@@ -224,44 +187,108 @@ async function sendUrgentReminder(booking: {
     businessName: string;
     ownerId: string;
     phoneNumber: string;
-    autoCompletionHours: number;
   };
   customer: {
+    id: string;
     firstName: string;
     lastName: string;
+    phoneNumber: string | null;
   };
   service: { name: string } | null;
 }): Promise<void> {
-  // Create CompletionReminder record
+  // Create reminder record
   await prisma.completionReminder.create({
     data: {
       bookingId: booking.id,
-      reminderType: 'auto_pending',
-      sentToId: booking.salon.ownerId,
+      reminderType: 'customer_confirm_reminder',
+      sentToId: booking.customer.id,
     },
   });
 
-  const autoCompleteHours = booking.salon.autoCompletionHours || 2;
+  // Send SMS to customer
+  if (booking.customer.phoneNumber) {
+    const message = `GroomLink: ${booking.salon.businessName} has marked your${booking.service ? ` ${booking.service.name}` : ''} service as complete. Please open the app to confirm and release payment. If there was an issue, you can raise a dispute.`;
+    try {
+      await sendSMS({ to: booking.customer.phoneNumber, message });
+      logger.info(`Customer confirmation reminder sent for booking ${booking.id}`);
+    } catch (smsError) {
+      logger.error(`Failed to send customer reminder for booking ${booking.id}:`, smsError);
+    }
+  }
 
-  // Send urgent SMS to salon owner
-  const message = `URGENT GroomLink: Service completion pending for booking ${booking.reference}. Auto-completion will occur in ${Math.max(0.5, autoCompleteHours - 1).toFixed(1)} hours. Mark as completed now to avoid automatic processing.`;
+  // Send push notification
+  pushService.sendPushToUser(
+    booking.customer.id,
+    {
+      title: 'Please Confirm Your Service',
+      body: `Was your service at ${booking.salon.businessName} completed satisfactorily? Tap to confirm.`,
+      data: { type: 'completion_confirmation', bookingId: booking.id },
+    }
+  ).catch((err) => logger.error('Failed to send push reminder', { err }));
+}
 
-  try {
-    await sendSMS({
-      to: booking.salon.phoneNumber,
-      message,
-    });
-    logger.info(`Urgent completion reminder sent for booking ${booking.id} to salon ${booking.salon.id}`);
-  } catch (smsError) {
-    logger.error(`Failed to send urgent reminder SMS for booking ${booking.id}:`, smsError);
-    // Continue even if SMS fails - the reminder record was created
+/**
+ * Send urgent reminder to customer (24h mark)
+ */
+async function sendCustomerUrgentReminder(booking: {
+  id: string;
+  reference: string;
+  salon: {
+    id: string;
+    businessName: string;
+    ownerId: string;
+    phoneNumber: string;
+  };
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string | null;
+  };
+  service: { name: string } | null;
+}): Promise<void> {
+  // Create reminder record
+  await prisma.completionReminder.create({
+    data: {
+      bookingId: booking.id,
+      reminderType: 'customer_confirm_urgent',
+      sentToId: booking.customer.id,
+    },
+  });
+
+  // Send urgent SMS
+  if (booking.customer.phoneNumber) {
+    const message = `REMINDER - GroomLink: Your service at ${booking.salon.businessName} needs confirmation. Payment will be auto-released in 24 hours if not confirmed or disputed. Open the app now.`;
+    try {
+      await sendSMS({ to: booking.customer.phoneNumber, message });
+      logger.info(`Urgent customer confirmation reminder sent for booking ${booking.id}`);
+    } catch (smsError) {
+      logger.error(`Failed to send urgent customer reminder for booking ${booking.id}:`, smsError);
+    }
+  }
+
+  // Send push notification
+  pushService.sendPushToUser(
+    booking.customer.id,
+    {
+      title: 'Urgent: Confirm Your Service',
+      body: `Payment for your service at ${booking.salon.businessName} will be auto-released in 24h. Tap to confirm or dispute.`,
+      data: { type: 'completion_confirmation', bookingId: booking.id },
+    }
+  ).catch((err) => logger.error('Failed to send urgent push reminder', { err }));
+
+  // Also notify salon owner of the status
+  if (booking.salon.phoneNumber) {
+    const salonMsg = `GroomLink: Customer hasn't confirmed booking ${booking.reference} yet. Payment will auto-release in 24 hours as a safety measure.`;
+    sendSMS({ to: booking.salon.phoneNumber, message: salonMsg }).catch(() => {});
   }
 }
 
 /**
- * Auto-complete a booking and release escrow funds
+ * Safety-net auto-release: Release escrow after 48h without customer confirmation
+ * This protects salon owners from unresponsive customers
  */
-async function autoCompleteBooking(
+async function safetyNetRelease(
   booking: {
     id: string;
     reference: string;
@@ -277,26 +304,24 @@ async function autoCompleteBooking(
       lastName: string;
       phoneNumber: string | null;
     };
-    escrow: { id: string; status: string } | null;
+    escrow: { id: string; status: string; amountHeld: any } | null;
     completionReminders: { id: string; reminderType: string; sentAt: Date }[];
   },
-  hoursSinceAppointment: number
+  hoursSinceCompletion: number
 ): Promise<void> {
-  logger.info(`Auto-completing booking ${booking.id} after ${hoursSinceAppointment.toFixed(1)} hours`);
+  logger.info(`Safety-net auto-release for booking ${booking.id} after ${hoursSinceCompletion.toFixed(1)} hours`);
 
-  // Update booking status
+  // Mark customer as auto-confirmed (safety net)
   await prisma.booking.update({
     where: { id: booking.id },
     data: {
-      status: BookingStatus.COMPLETED,
-      serviceCompleted: true,
-      serviceCompletedAt: new Date(),
-      completionMethod: 'auto',
+      customerConfirmed: true,
+      customerConfirmedAt: new Date(),
       completedAt: new Date(),
     },
   });
 
-  // Create completion reminder record for the auto-completion
+  // Create completion reminder record for the safety-net release
   await prisma.completionReminder.create({
     data: {
       bookingId: booking.id,
@@ -305,40 +330,33 @@ async function autoCompleteBooking(
     },
   });
 
-  // Release escrow if held
+  // Release escrow
   if (booking.escrow && booking.escrow.status === 'held') {
     try {
       await releaseEscrow(booking.escrow.id);
-      logger.info(`Escrow released for auto-completed booking ${booking.id}`);
+      logger.info(`Escrow released (safety-net) for booking ${booking.id}`);
     } catch (escrowError) {
       logger.error(`Failed to release escrow for booking ${booking.id}:`, escrowError);
-      // Continue - the booking is marked complete, escrow can be released manually
     }
   }
 
-  // Send notification to salon owner
-  const salonMessage = `GroomLink: Booking ${booking.reference} has been auto-completed. Funds have been released to your account.`;
+  // Notify salon owner
+  const salonMessage = `GroomLink: Payment for booking ${booking.reference} has been auto-released (48h safety net). Funds will arrive in 1-2 business days.`;
   try {
-    await sendSMS({
-      to: booking.salon.phoneNumber,
-      message: salonMessage,
-    });
+    await sendSMS({ to: booking.salon.phoneNumber, message: salonMessage });
   } catch (smsError) {
-    logger.error(`Failed to send auto-completion SMS to salon for booking ${booking.id}:`, smsError);
+    logger.error(`Failed to send safety-net SMS to salon for booking ${booking.id}:`, smsError);
   }
 
-  // Send notification to customer
+  // Notify customer
   if (booking.customer.phoneNumber) {
-    const customerMessage = `GroomLink: Your appointment at ${booking.salon.businessName} has been marked as completed. Thank you for using GroomLink!`;
+    const customerMessage = `GroomLink: Payment of GHS ${booking.escrow?.amountHeld || ''} for your service at ${booking.salon.businessName} has been released to the provider (48h auto-confirmation).`;
     try {
-      await sendSMS({
-        to: booking.customer.phoneNumber,
-        message: customerMessage,
-      });
+      await sendSMS({ to: booking.customer.phoneNumber, message: customerMessage });
     } catch (smsError) {
-      logger.error(`Failed to send auto-completion SMS to customer for booking ${booking.id}:`, smsError);
+      logger.error(`Failed to send safety-net SMS to customer for booking ${booking.id}:`, smsError);
     }
   }
 
-  logger.info(`Booking ${booking.id} auto-completed successfully`);
+  logger.info(`Booking ${booking.id} safety-net release completed successfully`);
 }

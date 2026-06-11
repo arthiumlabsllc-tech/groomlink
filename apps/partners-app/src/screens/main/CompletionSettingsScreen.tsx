@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,7 +29,7 @@ export default function CompletionSettingsScreen() {
 
   const [completionSettings, setCompletionSettings] = useState<CompletionSettings>({
     autoCompletionHours: 2,
-    requiresCustomerConfirmation: false,
+    requiresCustomerConfirmation: true,
     completionReminderEnabled: true,
     qrCheckinEnabled: false,
   });
@@ -102,65 +101,24 @@ export default function CompletionSettingsScreen() {
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color={theme.info} />
           <Text style={styles.infoText}>
-            Configure how services are marked as completed. These settings apply to all bookings.
+            Payment is released when your customer confirms service completion. A 48-hour safety net ensures funds are never stuck.
           </Text>
         </View>
 
-        {/* Auto-completion hours */}
+        {/* Settings */}
         <Surface style={styles.section} elevation={0}>
+          {/* Two-party confirmation info */}
           <View style={styles.menuItem}>
-            <View style={[styles.menuIcon, { backgroundColor: theme.infoBg }]}>
-              <Ionicons name="time-outline" size={20} color={theme.info} />
+            <View style={[styles.menuIcon, { backgroundColor: theme.successBg }]}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={theme.success} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Auto-completion</Text>
+              <Text style={styles.menuTitle}>Two-Party Confirmation</Text>
               <Text style={styles.menuSubtitle}>
-                Automatically complete after {completionSettings.autoCompletionHours} hour(s)
+                You mark service done, customer confirms, then payment is released
               </Text>
             </View>
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity
-                style={[styles.stepperButton, completionSettings.autoCompletionHours <= 1 && styles.stepperButtonDisabled]}
-                onPress={() => {
-                  if (completionSettings.autoCompletionHours > 1) {
-                    handleChange('autoCompletionHours', completionSettings.autoCompletionHours - 1);
-                  }
-                }}
-                disabled={completionSettings.autoCompletionHours <= 1}
-              >
-                <Ionicons name="remove" size={18} color={completionSettings.autoCompletionHours <= 1 ? theme.textTertiary : theme.info} />
-              </TouchableOpacity>
-              <Text style={styles.stepperValue}>{completionSettings.autoCompletionHours}</Text>
-              <TouchableOpacity
-                style={[styles.stepperButton, completionSettings.autoCompletionHours >= 6 && styles.stepperButtonDisabled]}
-                onPress={() => {
-                  if (completionSettings.autoCompletionHours < 6) {
-                    handleChange('autoCompletionHours', completionSettings.autoCompletionHours + 1);
-                  }
-                }}
-                disabled={completionSettings.autoCompletionHours >= 6}
-              >
-                <Ionicons name="add" size={18} color={completionSettings.autoCompletionHours >= 6 ? theme.textTertiary : theme.info} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Divider style={styles.menuDivider} />
-
-          {/* Customer confirmation */}
-          <View style={styles.menuItem}>
-            <View style={[styles.menuIcon, { backgroundColor: theme.warningBg }]}>
-              <Ionicons name="checkmark-circle-outline" size={20} color={theme.warning} />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Customer Confirmation</Text>
-              <Text style={styles.menuSubtitle}>Require customer to confirm completion</Text>
-            </View>
-            <Switch
-              value={completionSettings.requiresCustomerConfirmation}
-              onValueChange={(value) => handleChange('requiresCustomerConfirmation', value)}
-              color={theme.accent}
-            />
+            <Ionicons name="lock-closed" size={18} color={theme.textTertiary} />
           </View>
 
           <Divider style={styles.menuDivider} />
@@ -283,29 +241,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   menuDivider: {
     marginHorizontal: 16,
   },
-  stepperContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepperButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: theme.infoBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepperButtonDisabled: {
-    backgroundColor: theme.surfaceVariant,
-  },
-  stepperValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.text,
-    minWidth: 24,
-    textAlign: 'center',
-  },
+
   saveButton: {
     marginTop: 20,
     borderRadius: 10,
