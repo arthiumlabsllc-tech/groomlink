@@ -83,6 +83,14 @@ export async function verifyPayment(req: AuthenticatedRequest, res: Response): P
         status: 'PROCESSING', 
         message: result.message 
       });
+    } else if (result.status === 'FAILED') {
+      // Payment explicitly failed - return 200 with FAILED status
+      // so the client can properly detect and stop polling
+      successResponse(res, { 
+        success: false, 
+        status: 'FAILED', 
+        message: result.message 
+      });
     } else {
       errorResponse(res, 'VERIFICATION_FAILED', result.message, 400);
     }

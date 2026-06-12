@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import BookingScreen from '../screens/main/BookingScreen';
 import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen';
 import PaymentProcessingScreen from '../screens/main/PaymentProcessingScreen';
@@ -49,7 +50,12 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Main tabs - always rendered and accessible */}
+      {/* Welcome screen shown to non-authenticated users as entry point */}
+      {!isAuthenticated && (
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      )}
+
+      {/* Main tabs - always accessible (guest can browse) */}
       <Stack.Screen name="MainTabs" component={MainNavigator} />
 
       {/* Auth flow - presented as a modal so users don't lose browsing context */}

@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions, useWindowDimensions, Animated } from 'react-native';
-import { Text, Card, Button, Searchbar, ActivityIndicator, Avatar, Chip } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions, useWindowDimensions, Animated, Modal, FlatList, TextInput } from 'react-native';
+import { Text, Card, Button, Searchbar, ActivityIndicator, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
-import { findNearestGhanaLocation, isWithinGhana } from '../../utils/ghanaLocations';
+import { findNearestGhanaLocation, isWithinGhana, GHANA_LOCATIONS, GhanaLocation } from '../../utils/ghanaLocations';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
 import { a11ySalonLabel } from '../../hooks/useAccessibility';
 import * as Haptics from 'expo-haptics';
@@ -62,6 +63,9 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [homeServiceOnly, setHomeServiceOnly] = useState(false);
+  const [detectedArea, setDetectedArea] = useState<GhanaLocation | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const { numColumns, isTablet } = useResponsiveColumns();
   const [location, setLocation] = useState<LocationState>({
     lat: null,
@@ -84,6 +88,32 @@ export default function HomeScreen() {
   useEffect(() => {
     requestLocationPermission();
   }, []);
+
+  // Resolve detected area when location changes
+  useEffect(() => {
+    if (location.lat && location.lng) {
+      const nearest = findNearestGhanaLocation(location.lat, location.lng, 30);
+      setDetectedArea(nearest);
+    }
+  }, [location.lat, location.lng]);
+
+  // Handle manual location selection from picker
+  const handleLocationSelect = useCallback((loc: GhanaLocation) => {
+    setLocation({ lat: loc.latitude, lng: loc.longitude, permissionDenied: false });
+    setDetectedArea(loc);
+    setShowLocationPicker(false);
+    setLocationSearchQuery('');
+  }, []);
+
+  // Filtered locations for the picker
+  const filteredLocations = useMemo(() => {
+    if (!locationSearchQuery.trim()) return GHANA_LOCATIONS;
+    const q = locationSearchQuery.toLowerCase();
+    return GHANA_LOCATIONS.filter(loc =>
+      loc.city.toLowerCase().includes(q) ||
+      loc.region.toLowerCase().includes(q)
+    );
+  }, [locationSearchQuery]);
 
   const requestLocationPermission = async () => {
     try {
@@ -218,6 +248,16 @@ export default function HomeScreen() {
           <Ionicons name="star" size={12} color={COLORS.accentGold} />
           <Text style={styles.ratingBadgeText}>{(salon.rating ?? 0).toFixed(1)}</Text>
         </View>
+        {/* Favorite button with high-contrast background */}
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Add to favorites"
+          accessibilityRole="button"
+        >
+          <Ionicons name="heart-outline" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
         {isHorizontal && salon.isFeatured && (
           <View style={styles.featuredBadge}>
             <Ionicons name="star" size={10} color={COLORS.primaryGreen} />
@@ -274,24 +314,14 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with greeting */}
+        {/* Compact App Bar */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View style={styles.headerLeft}>
-              <Image
-                source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
-              <Animated.View style={[styles.greetingContainer, { opacity: greetingFade, transform: [{ translateY: greetingSlide }] }]}>
-                <Text variant="bodyMedium" style={styles.greetingLabel} numberOfLines={1}>
-                  {getGreeting()},
-                </Text>
-                <Text variant="headlineSmall" style={styles.greetingName} numberOfLines={1}>
-                  {getUserName()}
-                </Text>
-              </Animated.View>
-            </View>
+            <Image
+              source={isDark ? require('../../../assets/logo-full-white.png') : require('../../../assets/logo-full-black.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
             <View style={styles.headerRight}>
               <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.bellContainer}>
                 <MaterialCommunityIcons name="bell-outline" size={24} color={COLORS.textPrimary} />
@@ -304,20 +334,31 @@ export default function HomeScreen() {
               <TouchableOpacity style={styles.avatarButton} onPress={() => navigation.getParent()?.navigate('Profile')}>
                 {user?.avatar ? (
                   <Image
-                    source={{ uri: user.avatar }}
+                    source={{ uri: resolveImageUrl(user.avatar)! }}
                     style={styles.userAvatarImage}
                   />
                 ) : (
-                  <Avatar.Text
-                    size={44}
-                    label={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`}
-                    style={styles.userAvatar}
-                    labelStyle={styles.userAvatarLabel}
-                  />
+                  <View style={styles.userAvatarFallback}>
+                    <Ionicons name="person" size={20} color={COLORS.textSecondary} />
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+
+        {/* Greeting in body */}
+        <Animated.View style={[styles.greetingSection, { opacity: greetingFade, transform: [{ translateY: greetingSlide }] }]}>
+          <Text variant="bodyMedium" style={styles.greetingLabel} numberOfLines={1}>
+            {getGreeting()},
+          </Text>
+          <Text variant="headlineSmall" style={styles.greetingName} numberOfLines={1}>
+            {getUserName()}
+          </Text>
+        </Animated.View>
+
+        {/* Search & Location */}
+        <View style={styles.searchSection}>
           
           <Searchbar
             placeholder="Search salons, services..."
@@ -329,6 +370,25 @@ export default function HomeScreen() {
             placeholderTextColor={COLORS.textSecondary}
             onSubmitEditing={() => navigation.getParent()?.navigate('Search', { query: searchQuery })}
           />
+
+          {/* Location Detector Bar */}
+          <TouchableOpacity
+            style={styles.locationBar}
+            onPress={() => setShowLocationPicker(true)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={detectedArea ? `Current location: ${detectedArea.city}, ${detectedArea.region}. Tap to change.` : 'Tap to set your location'}
+          >
+            <Ionicons name="location" size={16} color={COLORS.primaryGreen} />
+            <Text style={styles.locationBarText} numberOfLines={1}>
+              {detectedArea
+                ? `${detectedArea.city}, ${detectedArea.region}`
+                : location.permissionDenied
+                  ? 'Set your location'
+                  : 'Detecting location...'}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         {/* Service Categories */}
@@ -424,6 +484,55 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Location Picker Modal */}
+      <Modal
+        visible={showLocationPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowLocationPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.locationPickerOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLocationPicker(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.locationPickerContainer}>
+            <View style={styles.locationPickerHeader}>
+              <Text style={styles.locationPickerTitle}>Choose Location</Text>
+              <TouchableOpacity onPress={() => setShowLocationPicker(false)}>
+                <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.locationPickerSearch}
+              placeholder="Search city or region..."
+              placeholderTextColor={COLORS.textSecondary}
+              value={locationSearchQuery}
+              onChangeText={setLocationSearchQuery}
+              autoFocus
+            />
+            <FlatList
+              data={filteredLocations}
+              keyExtractor={(item) => `${item.city}-${item.region}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.locationPickerItem}
+                  onPress={() => handleLocationSelect(item)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="location-outline" size={20} color={COLORS.primaryGreen} />
+                  <View>
+                    <Text style={styles.locationPickerItemCity}>{item.city}</Text>
+                    <Text style={styles.locationPickerItemRegion}>{item.region} Region</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              keyboardShouldPersistTaps="handled"
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -434,34 +543,23 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     backgroundColor: COLORS.background,
   },
   header: {
-    padding: 16,
-    backgroundColor: COLORS.cardBackground,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.background,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
   },
   headerLogo: {
     width: 120,
     height: 36,
   },
-  greetingContainer: {
-    flex: 1,
+  greetingSection: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   greetingLabel: {
     color: COLORS.textSecondary,
@@ -500,19 +598,24 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   avatarButton: {
     borderRadius: 22,
   },
-  userAvatar: {
-    backgroundColor: COLORS.primaryGreen,
+  userAvatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
-    borderColor: COLORS.primaryGreen,
+    borderColor: COLORS.border,
   },
-  userAvatarLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   searchBar: {
     elevation: 0,
@@ -603,6 +706,22 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.textPrimary,
+  },
+  favoriteButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   featuredBadge: {
     position: 'absolute',
@@ -759,5 +878,76 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   homeServiceTextActive: {
     color: '#fff',
+  },
+  locationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.background,
+    gap: 8,
+  },
+  locationBarText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+  },
+  locationPickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  locationPickerContainer: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+    paddingBottom: 24,
+  },
+  locationPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  locationPickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  locationPickerSearch: {
+    margin: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.background,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  locationPickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
+    gap: 12,
+  },
+  locationPickerItemCity: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+  },
+  locationPickerItemRegion: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });

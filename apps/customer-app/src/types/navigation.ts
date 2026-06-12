@@ -65,6 +65,8 @@ export type TabParamList = {
 
 // Root stack - the unified navigation structure
 export type RootStackParamList = {
+  // Welcome screen (shown to first-time / non-authenticated users)
+  Welcome: undefined;
   // Main tabs (always rendered)
   MainTabs: undefined;
   // Auth flow (presented as modal)

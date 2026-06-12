@@ -80,6 +80,8 @@ services:
       PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
       PAYSTACK_CALLBACK_URL: ${PAYSTACK_CALLBACK_URL:-https://groomlinkgh.com/api/payments/callback/paystack}
     # REMOVED: ports - API should only be accessible via Nginx
+    volumes:
+      - api-uploads:/app/uploads
     expose:
       - "3000"  # Expose to Nginx only, not to internet
     depends_on:
@@ -192,6 +194,7 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  api-uploads:
 
 networks:
   groomlink-network:

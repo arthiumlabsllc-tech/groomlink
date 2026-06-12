@@ -104,12 +104,12 @@ export default function BookingDetailScreen() {
 
   const confirmCompletionMutation = useMutation({
     mutationFn: () => bookingApi.confirmCompletion(bookingId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
       Alert.alert(
         'Service Confirmed',
-        'Thank you for confirming your service completion. Payment has been released to the salon.',
+        'Payment has been released to the salon. Thank you!',
         [
           {
             text: 'Rate Now',

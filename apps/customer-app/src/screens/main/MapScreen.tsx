@@ -15,13 +15,14 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import MapView, { Marker, Callout, Region } from 'react-native-maps';
+import { Marker, Callout, Region } from 'react-native-maps';
+import MapView from 'react-native-map-clustering';
 import * as Location from 'expo-location';
 import { salonApi } from '../../api/salon';
 import { Salon } from '../../types';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
-import { isWithinGhana } from '../../utils/ghanaLocations';
+import { isWithinGhana, GHANA_LOCATIONS } from '../../utils/ghanaLocations';
 
 // Use OpenStreetMap tiles (free, no API key required)
 // react-native-maps uses Apple Maps on iOS and Google Maps on Android by default
@@ -298,11 +299,26 @@ export default function MapScreen() {
     }
   }, [userLocation]);
 
-  // Handle search (simple text search - in real app would geocode)
+  // Handle search - geocode Ghana locations from GHANA_LOCATIONS database
   const handleSearch = useCallback(() => {
-    // For now, just refresh the current region
-    refetch();
-  }, [refetch]);
+    if (!searchQuery.trim()) { refetch(); return; }
+    const query = searchQuery.trim().toLowerCase();
+    const match = GHANA_LOCATIONS.find(loc =>
+      loc.city.toLowerCase().includes(query) ||
+      loc.region.toLowerCase().includes(query)
+    );
+    if (match) {
+      setRegion({
+        latitude: match.latitude,
+        longitude: match.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05 * ASPECT_RATIO,
+      });
+      setSearchQuery(match.city + ', ' + match.region);
+    } else {
+      Alert.alert('Location Not Found', 'Try searching for a Ghana city or region (e.g. Kumasi, Tema, Accra).');
+    }
+  }, [searchQuery, refetch]);
 
   const renderMarker = (salon: Salon) => {
     // Skip salons without coordinates
@@ -530,6 +546,13 @@ export default function MapScreen() {
               showsScale
               mapType="standard"
               onMapReady={() => console.log('Map loaded successfully')}
+              clusterColor="#006B3F"
+              clusterTextColor="#fff"
+              clusterFontFamily="System"
+              radius={50}
+              minZoomLevel={0}
+              maxZoomLevel={20}
+              animationEnabled={true}
             >
               {filteredSalons.map(renderMarker)}
             </MapView>

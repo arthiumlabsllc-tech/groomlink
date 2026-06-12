@@ -43,6 +43,9 @@ COPY --from=builder /app/dist ./dist
 # Copy email template assets
 COPY uploads/assets/ ./uploads/assets/
 
+# Create avatars directory for user uploads
+RUN mkdir -p ./uploads/avatars
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001

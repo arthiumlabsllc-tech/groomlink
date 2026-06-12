@@ -29,6 +29,7 @@ import { authApi } from '../../api/auth';
 import Constants from 'expo-constants';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { resolveImageUrl } from '../../utils/imageUrl';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -58,7 +59,7 @@ export default function ProfileScreen() {
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [profileImage, setProfileImage] = useState<string | null>(user?.avatar || null);
+  const [profileImage, setProfileImage] = useState<string | null>(resolveImageUrl(user?.avatar) || null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
@@ -115,7 +116,7 @@ export default function ProfileScreen() {
   // Load avatar from user on mount
   useEffect(() => {
     if (user?.avatar) {
-      setProfileImage(user.avatar);
+      setProfileImage(resolveImageUrl(user.avatar));
     }
   }, [user?.avatar]);
 
@@ -150,10 +151,10 @@ export default function ProfileScreen() {
           
           const response = await authApi.uploadAvatar(formData);
           
-          if (response?.data?.avatar) {
-            setProfileImage(response.data.avatar);
+          if (response?.data?.avatarUrl) {
+            setProfileImage(resolveImageUrl(response.data.avatarUrl));
             // Update auth store user with new avatar
-            setUser({ ...user, avatar: response.data.avatar } as any);
+            setUser({ ...user, avatar: response.data.avatarUrl } as any);
           }
         } catch (error: any) {
           console.error('Failed to upload image:', error);

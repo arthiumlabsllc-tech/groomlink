@@ -159,31 +159,48 @@ export async function customerConfirmComplete(bookingId: string, userId: string)
       throw new Error('Unauthorized: This booking does not belong to you');
     }
 
-    // Verify not already completed
-    if (booking.serviceCompleted) {
-      throw new Error('Booking is already marked as completed');
+    // If customer already confirmed (e.g. 48h safety-net auto-released), return success gracefully
+    if (booking.customerConfirmed) {
+      logger.info(`Customer confirmation already done for booking ${bookingId} (likely auto-released)`);
+      // Return the current booking state - payment was already released
+      const currentBooking = await prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: { salon: true, customer: true, escrow: true },
+      });
+      return currentBooking;
     }
 
-    // Verify escrow exists and is held
+    // Verify escrow exists
     if (!booking.escrow) {
       throw new Error('Escrow account not found for this booking');
     }
+
+    // If escrow already released (safety-net beat the customer), handle gracefully
     if (booking.escrow.status !== 'held') {
-      throw new Error(`Cannot release escrow with status: ${booking.escrow.status}`);
+      logger.info(`Escrow already ${booking.escrow.status} for booking ${bookingId} - marking customer confirmed`);
+      // Just mark customer as confirmed since payment already went through
+      const updatedBooking = await prisma.booking.update({
+        where: { id: bookingId },
+        data: {
+          customerConfirmed: true,
+          customerConfirmedAt: new Date(),
+        },
+        include: { salon: true, customer: true, escrow: true },
+      });
+      return updatedBooking;
     }
 
-    // Release escrow
+    // Release escrow - this is the normal flow (customer confirms before 48h)
     await releaseEscrow(booking.escrow.id);
 
     // Update booking
     const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
       data: {
-        serviceCompleted: true,
-        serviceCompletedAt: new Date(),
-        completionMethod: 'customer_confirmation',
         customerConfirmed: true,
         customerConfirmedAt: new Date(),
+        completionMethod: 'customer_confirmation',
+        completedAt: new Date(),
         status: 'COMPLETED',
       },
       include: {

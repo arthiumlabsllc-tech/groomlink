@@ -6,6 +6,7 @@ import logger from '../config/logger';
 import { bookingConfig } from '../config/booking';
 import { getIO } from '../config/socket';
 import { sendReminderSMS } from '../services/sms.service';
+import * as pushService from '../services/pushNotification.service';
 import { startAutoCompletionJob } from './autoComplete';
 import { checkExpiredSponsorships } from '../services/sponsorship.service';
 import { cleanupOrphanedPayments } from '../services/payment.service';
@@ -93,12 +94,18 @@ async function sendAppointmentReminders(): Promise<void> {
       include: {
         customer: {
           select: {
+            id: true,
             phoneNumber: true,
           },
         },
         salon: {
           select: {
             businessName: true,
+          },
+        },
+        service: {
+          select: {
+            name: true,
           },
         },
         guests: {
@@ -144,6 +151,16 @@ async function sendAppointmentReminders(): Promise<void> {
         // Wait for all reminders to be sent
         if (reminderPromises.length > 0) {
           await Promise.all(reminderPromises);
+
+          // Send push notification to customer
+          pushService.sendPushToUser(
+            booking.customer.id,
+            {
+              title: '⏰ Appointment Reminder',
+              body: `Your appointment at ${booking.salon.businessName}${booking.service ? ` for ${booking.service.name}` : ''} is in about 2 hours (${booking.startTime}). See you soon!`,
+              data: { type: 'appointment_reminder', bookingId: booking.id },
+            }
+          ).catch((err) => logger.error('Failed to send appointment reminder push', { err, bookingId: booking.id }));
 
           // Mark reminder as sent
           await prisma.booking.update({

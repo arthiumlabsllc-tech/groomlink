@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '../theme/ThemeContext';
 import HomeScreen from '../screens/main/HomeScreen';
 import SearchScreen from '../screens/main/SearchScreen';
 import MapScreen from '../screens/main/MapScreen';
@@ -20,15 +21,11 @@ import {
   TabParamList,
 } from '../types/navigation';
 
-// Design System Colors
-const COLORS = {
+// Brand colors (constant)
+const BRAND = {
   primaryGreen: '#006B3F',
   accentGold: '#FCD116',
   accentRed: '#CE1126',
-  background: '#F9FAFB',
-  cardBackground: '#FFFFFF',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -84,6 +81,7 @@ function ProfileStack() {
 
 export default function MainNavigator() {
   const insets = useSafeAreaInsets();
+  const { theme } = useAppTheme();
 
   return (
     <Tab.Navigator
@@ -106,17 +104,24 @@ export default function MainNavigator() {
           return (
             <View style={styles.iconContainer}>
               <Ionicons name={iconName} size={size} color={color} />
-              {focused && <View style={styles.activeIndicator} />}
+              {focused && <View style={[styles.activeIndicator, { backgroundColor: theme.tabActive }]} />}
             </View>
           );
         },
-        tabBarActiveTintColor: COLORS.primaryGreen,
-        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarActiveTintColor: theme.tabActive,
+        tabBarInactiveTintColor: theme.tabInactive,
         tabBarStyle: {
-          ...styles.tabBar,
-          paddingBottom: Math.max(insets.bottom, 12),
+          backgroundColor: theme.tabBar,
+          borderTopWidth: 1,
+          borderTopColor: theme.tabBarBorder,
           height: 60 + Math.max(insets.bottom, 12),
+          paddingBottom: Math.max(insets.bottom, 12),
           paddingTop: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+          elevation: 8,
         },
         tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
@@ -132,19 +137,6 @@ export default function MainNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: COLORS.cardBackground,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    height: 80,
-    paddingBottom: 20,
-    paddingTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 8,
-  },
   tabBarLabel: {
     fontSize: 12,
     fontWeight: '500',
@@ -159,7 +151,6 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.primaryGreen,
     marginTop: 2,
   },
 });

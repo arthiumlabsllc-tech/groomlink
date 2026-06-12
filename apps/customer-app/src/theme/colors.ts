@@ -39,8 +39,8 @@ export const DARK_THEME = {
   pendingBg: 'rgba(252, 209, 22, 0.15)',
 
   // Navigation
-  tabBar: '#1A1A1A',
-  tabBarBorder: '#333333',
+  tabBar: '#121212',
+  tabBarBorder: '#2D2D2D',
   tabActive: '#CE1126',
   tabInactive: '#6B7280',
 
@@ -87,7 +87,7 @@ export const LIGHT_THEME = {
   pendingBg: 'rgba(212, 160, 23, 0.1)',
 
   // Navigation
-  tabBar: '#FFFFFF',
+  tabBar: '#F9FAFB',
   tabBarBorder: '#E5E7EB',
   tabActive: '#CE1126',
   tabInactive: '#9CA3AF',

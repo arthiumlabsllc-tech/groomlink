@@ -23,6 +23,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { openDirections } from '../../utils/directions';
 import { salonApi } from '../../api/salon';
 import { reviewApi } from '../../api/review';
 import { queueApi, QueueStatus, MyQueuePosition } from '../../api/queue';
@@ -547,6 +548,18 @@ export default function SalonDetailScreen() {
               {salon?.address ?? 'No address'}, {salon?.city ?? ''}
             </Text>
           </View>
+
+          {salon?.latitude != null && salon?.longitude != null && (
+            <TouchableOpacity
+              style={styles.directionsButton}
+              onPress={() => openDirections(salon.latitude!, salon.longitude!, salon.businessName)}
+              accessibilityRole="button"
+              accessibilityLabel={`Get directions to ${salon.businessName}`}
+            >
+              <Ionicons name="navigate-outline" size={18} color={COLORS.primaryGreen} />
+              <Text style={styles.directionsButtonText}>Get Directions</Text>
+            </TouchableOpacity>
+          )}
           
           {salon?.phoneNumber && (
             <View style={styles.phoneContainer}>
@@ -1108,6 +1121,23 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.primaryGreen,
+    marginBottom: 10,
+  },
+  directionsButtonText: {
+    color: COLORS.primaryGreen,
+    fontSize: 14,
+    fontWeight: '600',
   },
   address: {
     color: COLORS.textSecondary,

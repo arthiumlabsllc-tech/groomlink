@@ -856,6 +856,16 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     };
   }
 
+  // If payment is already marked as FAILED, return immediately without re-notifying
+  if (payment.status === PaymentStatus.FAILED) {
+    return { 
+      success: false, 
+      message: 'Payment has failed.',
+      bookingConfirmed: false,
+      status: 'FAILED',
+    };
+  }
+
   // Determine which provider to use for verification
   // Check if payment was initiated with a specific gateway (stored in providerData.gateway)
   const paymentProviderData = payment.providerData as { gateway?: string } | null;
@@ -1094,18 +1104,30 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
   } else {
     // Check if payment is still being processed (pending at provider)
     // Don't mark as FAILED if the provider just hasn't confirmed yet
-    const isStillPending = payment.status === PaymentStatus.PROCESSING && 
-      !['failed', 'declined', 'cancelled', 'reversed', 'abandoned'].includes(providerStatus.toLowerCase());
     
     // Calculate how long the payment has been processing
     const processingDurationMs = Date.now() - new Date(payment.createdAt).getTime();
-    const MAX_PROCESSING_BEFORE_FAIL = 10 * 60 * 1000; // 10 minutes
+    const MIN_GRACE_PERIOD = 5 * 60 * 1000; // 5 minutes minimum before allowing failure
+    const MAX_PROCESSING_BEFORE_FAIL = 10 * 60 * 1000; // 10 minutes max
+    
+    // During the grace period, ALWAYS return PROCESSING unless provider explicitly confirmed success
+    // This prevents premature failure when:
+    // - Paystack returns 'abandoned' (user hasn't approved mobile money yet)
+    // - Provider API errors return 'pending'/'unknown'
+    // - Network issues cause temporary verification failures
+    const isWithinGracePeriod = processingDurationMs < MIN_GRACE_PERIOD;
+    
+    // After grace period, only continue processing if status is genuinely pending
+    const isExplicitlyFailed = ['failed', 'declined', 'cancelled', 'reversed'].includes(providerStatus.toLowerCase());
+    const isStillPending = (payment.status === PaymentStatus.PROCESSING || payment.status === PaymentStatus.PENDING) && 
+      (isWithinGracePeriod || !isExplicitlyFailed);
     
     if (isStillPending && processingDurationMs < MAX_PROCESSING_BEFORE_FAIL) {
       // Payment is still being processed - DON'T mark as failed, DON'T send notification
       logger.info(`Payment ${paymentId} still processing at provider (status: ${providerStatus}), not marking as failed`, {
         providerStatus,
         processingDurationMs,
+        isWithinGracePeriod,
         reference,
       });
       

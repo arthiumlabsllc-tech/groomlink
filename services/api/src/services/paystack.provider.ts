@@ -170,15 +170,15 @@ export class PaystackProvider implements IPaymentProvider {
       const data = response.data;
 
       if (!data.status) {
-        logger.error('Paystack verification failed', {
+        logger.warn('Paystack verification response returned status=false (transaction may not exist yet)', {
           reference,
           message: data.message,
         });
 
         return {
           success: false,
-          status: 'failed',
-          message: data.message || 'Payment verification failed',
+          status: 'pending',
+          message: data.message || 'Payment not yet confirmed by provider',
         };
       }
 
@@ -201,16 +201,17 @@ export class PaystackProvider implements IPaymentProvider {
         customerPhone: transaction.customer?.phone,
       };
     } catch (error: any) {
-      logger.error('Paystack verify payment error', {
+      logger.warn('Paystack verify payment network/API error (not a payment failure)', {
         message: error.message,
+        statusCode: error.response?.status,
         response: error.response?.data,
         reference,
       });
 
       return {
         success: false,
-        status: 'failed',
-        message: 'Failed to verify payment with Paystack',
+        status: 'pending',
+        message: 'Unable to confirm payment status - still processing',
       };
     }
   }

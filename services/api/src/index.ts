@@ -164,6 +164,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Also serve uploads under /api path for email template compatibility
 app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+// Return 404 for any upload files that don't exist (prevent fall-through to auth routes)
+app.use('/api/uploads', (_req, res) => {
+  res.status(404).json({ success: false, message: 'File not found' });
+});
+app.use('/uploads', (_req, res) => {
+  res.status(404).json({ success: false, message: 'File not found' });
+});
 
 // Suspicious-request detector (runs after body parsing so it can inspect JSON bodies)
 app.use(securityProbe);

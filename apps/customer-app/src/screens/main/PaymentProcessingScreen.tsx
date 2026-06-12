@@ -25,7 +25,7 @@ export default function PaymentProcessingScreen({ route }: Props) {
   const [attempts, setAttempts] = useState(0);
   const [showWebView, setShowWebView] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
-  const MAX_POLL_ATTEMPTS = 60; // ~180 seconds (3s intervals) - increased for mobile money
+  const MAX_POLL_ATTEMPTS = 200; // ~600 seconds / 10 minutes (3s intervals) - matches backend grace period
 
   // Spin animation
   useEffect(() => {

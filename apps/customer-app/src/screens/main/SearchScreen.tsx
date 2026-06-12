@@ -6,6 +6,9 @@ import {
   RefreshControl,
   TouchableOpacity,
   Image,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import {
   Text,
@@ -24,6 +27,12 @@ import { TabParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
+import * as Haptics from 'expo-haptics';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -83,6 +92,7 @@ export default function SearchScreen() {
   const [homeServiceOnly, setHomeServiceOnly] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const filters: SearchFilters = {
     search: searchQuery || undefined,
@@ -173,6 +183,11 @@ export default function SearchScreen() {
     );
   };
 
+  const toggleFilters = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFiltersExpanded(prev => !prev);
+  }, []);
+
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.searchContainer}>
@@ -189,7 +204,26 @@ export default function SearchScreen() {
           elevation={0}
         />
       </View>
-      
+
+      {/* Collapsible filter toggle */}
+      <TouchableOpacity
+        style={styles.filterToggle}
+        onPress={toggleFilters}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="options-outline" size={18} color={COLORS.textSecondary} />
+        <Text style={styles.filterToggleText}>
+          {filtersExpanded ? 'Hide Filters' : 'Show Filters'}
+        </Text>
+        <Ionicons
+          name={filtersExpanded ? 'chevron-up' : 'chevron-down'}
+          size={16}
+          color={COLORS.textSecondary}
+        />
+      </TouchableOpacity>
+
+      {filtersExpanded && (
+        <View>
       <View style={styles.filterSection}>
         <Text variant="labelMedium" style={styles.filterLabel}>Category</Text>
         <FlatList
@@ -265,6 +299,8 @@ export default function SearchScreen() {
           ))}
         </View>
       </View>
+        </View>
+      )}
     </View>
   );
 
@@ -341,6 +377,19 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   filterSection: {
     marginTop: 16,
+  },
+  filterToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  filterToggleText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
   },
   filterLabel: {
     marginBottom: 10,
