@@ -346,8 +346,18 @@ export default function ProfileScreen() {
           {/* Payout Actions */}
           <View style={styles.payoutActions}>
             <TouchableOpacity 
-              style={styles.requestPayoutButton}
-              onPress={() => Alert.alert('Coming Soon', 'Payout request feature will be available soon.')}
+              style={[
+                styles.requestPayoutButton,
+                (!payoutBalance || payoutBalance.availableBalance <= 0) && styles.requestPayoutButtonDisabled,
+              ]}
+              onPress={() => {
+                if (payoutBalance && payoutBalance.availableBalance > 0) {
+                  navigation.navigate('RequestPayout', {
+                    availableBalance: payoutBalance.availableBalance,
+                    salonId: salon?.id,
+                  });
+                }
+              }}
               disabled={!payoutBalance || payoutBalance.availableBalance <= 0}
             >
               <Ionicons name="download-outline" size={18} color={payoutBalance && payoutBalance.availableBalance > 0 ? '#FFFFFF' : '#9CA3AF'} />
@@ -877,6 +887,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
+  },
+  requestPayoutButtonDisabled: {
+    backgroundColor: '#E5E7EB',
   },
   requestPayoutText: {
     fontSize: 14,

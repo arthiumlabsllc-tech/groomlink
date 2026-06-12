@@ -20,6 +20,7 @@ import PricingScreen from '../screens/main/PricingScreen';
 import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import NotificationsListScreen from '../screens/main/NotificationsListScreen';
 import CompletionSettingsScreen from '../screens/main/CompletionSettingsScreen';
+import RequestPayoutScreen from '../screens/main/RequestPayoutScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 import { AppTheme } from '../theme/colors';
 import { useAppTheme } from '../theme/ThemeContext';
@@ -195,6 +196,16 @@ function ProfileStack() {
         name="CompletionSettings"
         component={CompletionSettingsScreen}
         options={{ title: 'Completion Settings' }}
+      />
+      <Stack.Screen
+        name="RequestPayout"
+        component={RequestPayoutScreen}
+        options={{ title: 'Request Payout' }}
+      />
+      <Stack.Screen
+        name="EditSalon"
+        component={EditSalonScreen}
+        options={{ title: 'Salon Settings' }}
       />
     </Stack.Navigator>
   );

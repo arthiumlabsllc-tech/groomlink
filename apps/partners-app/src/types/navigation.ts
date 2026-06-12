@@ -23,6 +23,7 @@ export type MainStackParamList = {
   PlatformFeedback: undefined;
   Notifications: undefined;
   CompletionSettings: undefined;
+  RequestPayout: { availableBalance: number; salonId?: string };
 };
 
 export interface Service {

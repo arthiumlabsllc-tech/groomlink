@@ -121,6 +121,14 @@ export default function EditSalonScreen() {
   const [type, setType] = useState('BARBERSHOP');
   const [openingHours, setOpeningHours] = useState<HoursState>(defaultHours);
 
+  // Payout account state
+  const [payoutType, setPayoutType] = useState<'bank' | 'mobile_money'>('mobile_money');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [bankCode, setBankCode] = useState('');
+  const [momoProvider, setMomoProvider] = useState<'mtn' | 'vod' | 'tgo'>('mtn');
+  const [momoNumber, setMomoNumber] = useState('');
+
   // Image state
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -153,6 +161,27 @@ export default function EditSalonScreen() {
       setDescription(salon.description || '');
       setType(salon.type || 'BARBERSHOP');
       setGalleryImages(salon.images || []);
+
+      // Initialize payout account fields
+      const salonAny = salon as any;
+      if (salonAny.payoutType) {
+        setPayoutType(salonAny.payoutType);
+      }
+      if (salonAny.bankAccountNumber) {
+        setBankAccountNumber(salonAny.bankAccountNumber);
+      }
+      if (salonAny.bankAccountName) {
+        setBankAccountName(salonAny.bankAccountName);
+      }
+      if (salonAny.bankCode) {
+        setBankCode(salonAny.bankCode);
+      }
+      if (salonAny.momoProvider) {
+        setMomoProvider(salonAny.momoProvider);
+      }
+      if (salonAny.momoNumber) {
+        setMomoNumber(salonAny.momoNumber);
+      }
 
       // Try operatingHours first, then openingHours for backward compat
       const rawHours = (salon as any).operatingHours || salon.openingHours;
@@ -355,7 +384,7 @@ export default function EditSalonScreen() {
   const handleSave = () => {
     if (!validateForm() || !salon) return;
 
-    const data: Partial<CreateSalonData & { operatingHours?: HoursState }> = {
+    const data: Partial<CreateSalonData & { operatingHours?: HoursState; payoutType?: string; bankAccountNumber?: string; bankAccountName?: string; bankCode?: string; momoProvider?: string; momoNumber?: string }> = {
       businessName: businessName.trim(),
       address: address.trim(),
       city: city.trim(),
@@ -368,6 +397,13 @@ export default function EditSalonScreen() {
       workingDays: getWorkingDaysFromHours(openingHours),
       openingTime: getOpeningTime(openingHours),
       closingTime: getClosingTime(openingHours),
+      // Payout account fields
+      payoutType,
+      bankAccountNumber: payoutType === 'bank' ? bankAccountNumber.trim() : undefined,
+      bankAccountName: payoutType === 'bank' ? bankAccountName.trim() : undefined,
+      bankCode: payoutType === 'bank' ? bankCode.trim() : undefined,
+      momoProvider: payoutType === 'mobile_money' ? momoProvider : undefined,
+      momoNumber: payoutType === 'mobile_money' ? momoNumber.trim() : undefined,
     };
 
     updateMutation.mutate(data);
@@ -844,6 +880,200 @@ export default function EditSalonScreen() {
             ))}
           </Surface>
 
+          {/* ─── Payout Account Section ─── */}
+          <Surface style={styles.section} elevation={0}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="wallet" size={20} color="#006B3F" />
+              <Text style={styles.sectionTitle}>Payout Account</Text>
+            </View>
+            <Divider style={styles.sectionDivider} />
+
+            <Text style={styles.payoutSectionLabel}>Select Payout Method</Text>
+            <View style={styles.payoutTypeRow}>
+              <TouchableOpacity
+                style={[
+                  styles.payoutTypeButton,
+                  payoutType === 'mobile_money' && styles.payoutTypeButtonSelected,
+                ]}
+                onPress={() => setPayoutType('mobile_money')}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="phone-portrait-outline"
+                  size={20}
+                  color={payoutType === 'mobile_money' ? '#FFFFFF' : '#006B3F'}
+                />
+                <Text
+                  style={[
+                    styles.payoutTypeText,
+                    payoutType === 'mobile_money' && styles.payoutTypeTextSelected,
+                  ]}
+                >
+                  Mobile Money
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.payoutTypeButton,
+                  payoutType === 'bank' && styles.payoutTypeButtonSelected,
+                ]}
+                onPress={() => setPayoutType('bank')}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="business-outline"
+                  size={20}
+                  color={payoutType === 'bank' ? '#FFFFFF' : '#006B3F'}
+                />
+                <Text
+                  style={[
+                    styles.payoutTypeText,
+                    payoutType === 'bank' && styles.payoutTypeTextSelected,
+                  ]}
+                >
+                  Bank Account
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {payoutType === 'mobile_money' ? (
+              <>
+                <Text style={styles.payoutFieldLabel}>Mobile Money Provider</Text>
+                <View style={styles.momoProviderRow}>
+                  {(
+                    [
+                      { value: 'mtn' as const, label: 'MTN', color: '#FFCC00' },
+                      { value: 'vod' as const, label: 'Vodafone', color: '#E60000' },
+                      { value: 'tgo' as const, label: 'AirtelTigo', color: '#0066CC' },
+                    ] as const
+                  ).map((provider) => (
+                    <TouchableOpacity
+                      key={provider.value}
+                      style={[
+                        styles.momoProviderButton,
+                        momoProvider === provider.value && [
+                          styles.momoProviderButtonSelected,
+                          { borderColor: provider.color },
+                        ],
+                      ]}
+                      onPress={() => setMomoProvider(provider.value)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.momoProviderDot,
+                          { backgroundColor: provider.color },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.momoProviderText,
+                          momoProvider === provider.value && styles.momoProviderTextSelected,
+                        ]}
+                      >
+                        {provider.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TextInput
+                  label="Mobile Money Number *"
+                  value={momoNumber}
+                  onChangeText={setMomoNumber}
+                  mode="outlined"
+                  outlineColor={theme.border}
+                  activeOutlineColor={theme.accent}
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
+                  style={styles.input}
+                  keyboardType="phone-pad"
+                  placeholder="024 XXX XXXX"
+                  left={
+                    <TextInput.Icon
+                      icon="phone-outline"
+                      color={theme.textSecondary}
+                    />
+                  }
+                  theme={{ roundness: 10 }}
+                />
+              </>
+            ) : (
+              <>
+                <TextInput
+                  label="Bank Account Number *"
+                  value={bankAccountNumber}
+                  onChangeText={setBankAccountNumber}
+                  mode="outlined"
+                  outlineColor={theme.border}
+                  activeOutlineColor={theme.accent}
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
+                  style={styles.input}
+                  keyboardType="number-pad"
+                  placeholder="Enter account number"
+                  left={
+                    <TextInput.Icon
+                      icon="card-outline"
+                      color={theme.textSecondary}
+                    />
+                  }
+                  theme={{ roundness: 10 }}
+                />
+
+                <TextInput
+                  label="Account Holder Name *"
+                  value={bankAccountName}
+                  onChangeText={setBankAccountName}
+                  mode="outlined"
+                  outlineColor={theme.border}
+                  activeOutlineColor={theme.accent}
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
+                  style={styles.input}
+                  placeholder="Enter account holder name"
+                  left={
+                    <TextInput.Icon
+                      icon="person-outline"
+                      color={theme.textSecondary}
+                    />
+                  }
+                  theme={{ roundness: 10 }}
+                />
+
+                <TextInput
+                  label="Bank Code (Optional)"
+                  value={bankCode}
+                  onChangeText={setBankCode}
+                  mode="outlined"
+                  outlineColor={theme.border}
+                  activeOutlineColor={theme.accent}
+                  textColor={theme.text}
+                  placeholderTextColor={theme.textSecondary}
+                  style={styles.input}
+                  placeholder="e.g., 044"
+                  left={
+                    <TextInput.Icon
+                      icon="information-circle-outline"
+                      color={theme.textSecondary}
+                    />
+                  }
+                  theme={{ roundness: 10 }}
+                />
+                <HelperText type="info" style={styles.helperText}>
+                  Bank code can be found in your bank's documentation
+                </HelperText>
+              </>
+            )}
+
+            <View style={styles.payoutInfoBox}>
+              <Ionicons name="information-circle" size={18} color="#006B3F" />
+              <Text style={styles.payoutInfoText}>
+                This account will be used for all payout requests. Ensure the details are accurate to avoid delays.
+              </Text>
+            </View>
+          </Surface>
+
           {/* Save Button */}
           <View style={styles.buttonContainer}>
             <Button
@@ -1204,6 +1434,100 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   timeMenuScroll: {
     maxHeight: 280,
+  },
+  // Payout Account Styles
+  payoutSectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 12,
+  },
+  payoutTypeRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  payoutTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+  },
+  payoutTypeButtonSelected: {
+    backgroundColor: '#006B3F',
+    borderColor: '#006B3F',
+  },
+  payoutTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  payoutTypeTextSelected: {
+    color: '#FFFFFF',
+  },
+  payoutFieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.textSecondary,
+    marginBottom: 8,
+  },
+  momoProviderRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  momoProviderButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+  },
+  momoProviderButtonSelected: {
+    backgroundColor: theme.successBg,
+  },
+  momoProviderDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  momoProviderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  momoProviderTextSelected: {
+    color: '#006B3F',
+  },
+  payoutInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: theme.successBg,
+    marginTop: 12,
+  },
+  payoutInfoText: {
+    flex: 1,
+    fontSize: 12,
+    color: theme.textSecondary,
+    lineHeight: 18,
+  },
+  helperText: {
+    marginTop: -8,
+    marginBottom: 8,
   },
   buttonContainer: {
     marginTop: 8,
