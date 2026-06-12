@@ -181,52 +181,50 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
     // Demo account bypass for App Store review
     // REMOVE AFTER APPROVAL: This allows Apple reviewers to login without email access
     if (email === 'demo@groomlinkgh.com' && code === '123456') {
-      const result = await authService.verifyEmailOTPAndLogin(email, code, role || 'CUSTOMER');
+      // Find the demo user
+      const user = await prisma.user.findUnique({
+        where: { email: 'demo@groomlinkgh.com' },
+      });
       
-      if (result) {
-        successResponse(res, result);
+      if (!user) {
+        errorResponse(res, 'INVALID_OTP', 'Demo account not found. Please contact support.', 400);
         return;
       }
       
-      // If account doesn't exist yet, auto-create it
-      const newUser = await prisma.user.create({
-        data: {
-          email: 'demo@groomlink.com',
-          firstName: 'Demo',
-          lastName: 'User',
-          role: 'CUSTOMER',
-          phoneNumber: '+233241234567',
-          isVerified: true,
-        },
-      });
-      
+      // Generate tokens directly without OTP verification
       const accessToken = generateToken({
-        userId: newUser.id,
-        phoneNumber: newUser.phoneNumber,
-        role: newUser.role,
+        userId: user.id,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
       });
       
       const refreshToken = await generateRefreshToken({
-        userId: newUser.id,
-        phoneNumber: newUser.phoneNumber,
-        role: newUser.role,
+        userId: user.id,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+      });
+      
+      // Update last login
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date(), isVerified: true },
       });
       
       successResponse(res, {
         user: {
-          id: newUser.id,
-          phoneNumber: newUser.phoneNumber,
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          email: newUser.email,
-          role: newUser.role,
-          isVerified: newUser.isVerified,
+          id: user.id,
+          phoneNumber: user.phoneNumber,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isVerified,
         },
         tokens: {
           accessToken,
           refreshToken,
         },
-        isNewUser: true,
+        isNewUser: false,
       });
       return;
     }
