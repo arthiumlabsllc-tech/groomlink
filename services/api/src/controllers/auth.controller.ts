@@ -4,6 +4,8 @@ import * as authService from '../services/auth.service';
 import { RoleMismatchError } from '../services/auth.service';
 import * as securityAlert from '../services/security-alert.service';
 import { z } from 'zod';
+import prisma from '../config/database';
+import { generateToken, generateRefreshToken } from '../utils/jwt';
 
 const phoneSchema = z.object({
   phoneNumber: z.string().regex(/^\+233[0-9]{9}$/, 'Invalid phone number format. Use +233XXXXXXXXX'),
@@ -179,11 +181,54 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
     // Demo account bypass for App Store review
     // REMOVE AFTER APPROVAL: This allows Apple reviewers to login without email access
     if (email === 'demo@groomlink.com' && code === '123456') {
-      const result = await authService.verifyEmailOTPAndLogin(email, code, role);
+      const result = await authService.verifyEmailOTPAndLogin(email, code, role || 'CUSTOMER');
+      
       if (result) {
         successResponse(res, result);
         return;
       }
+      
+      // If account doesn't exist yet, auto-create it
+      const newUser = await prisma.user.create({
+        data: {
+          email: 'demo@groomlink.com',
+          firstName: 'Demo',
+          lastName: 'User',
+          role: 'CUSTOMER',
+          phoneNumber: '+233241234567',
+          isVerified: true,
+        },
+      });
+      
+      const accessToken = generateToken({
+        userId: newUser.id,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+      });
+      
+      const refreshToken = await generateRefreshToken({
+        userId: newUser.id,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+      });
+      
+      successResponse(res, {
+        user: {
+          id: newUser.id,
+          phoneNumber: newUser.phoneNumber,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          email: newUser.email,
+          role: newUser.role,
+          isVerified: newUser.isVerified,
+        },
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
+        isNewUser: true,
+      });
+      return;
     }
     
     const result = await authService.verifyEmailOTPAndLogin(email, code, role);
