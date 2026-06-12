@@ -237,7 +237,7 @@ export default function BookingsScreen() {
         accessibilityRole="button"
         accessibilityLabel={a11yBookingLabel(item)}
       >
-        <Card.Content style={styles.cardContent}>
+        <Card.Content style={[styles.cardContent, isTablet && styles.cardContentTablet]}>
           <View style={styles.cardHeader}>
             <View style={styles.salonInfo}>
               <Text variant="titleMedium" style={styles.salonName}>
@@ -580,6 +580,7 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   columnWrapper: {
     justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
   bookingCard: {
     flex: 1,
@@ -592,9 +593,13 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 4,
+    minWidth: 0,
   },
   cardContent: {
     padding: 16,
+  },
+  cardContentTablet: {
+    padding: 12,
   },
   cardHeader: {
     flexDirection: 'row',
