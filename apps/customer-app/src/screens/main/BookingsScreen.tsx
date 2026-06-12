@@ -299,7 +299,7 @@ export default function BookingsScreen() {
               </View>
             )}
             {item.status === 'COMPLETED' && !item.review && (
-              <View style={styles.cardActions}>
+              <View style={styles.pastCardActions}>
                 <TouchableOpacity
                   style={styles.rebookButton}
                   onPress={() => handleRebook(item)}
@@ -317,7 +317,7 @@ export default function BookingsScreen() {
               </View>
             )}
             {item.status === 'COMPLETED' && item.review && (
-              <View style={styles.cardActions}>
+              <View style={styles.pastCardActions}>
                 <TouchableOpacity
                   style={styles.rebookButton}
                   onPress={() => handleRebook(item)}
@@ -663,6 +663,8 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 16,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   totalAmount: {
     fontWeight: '700',
@@ -784,6 +786,14 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  pastCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   cancelButton: {
     flexDirection: 'row',

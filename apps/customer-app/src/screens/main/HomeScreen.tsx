@@ -835,14 +835,16 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     gap: 8,
     paddingRight: 16,
     paddingVertical: 4,
+    alignItems: 'center',
   },
   categoryChip: {
     backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
-    minHeight: 44,
+    height: 44,
     borderRadius: 22,
-    paddingHorizontal: 4,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
   },
   categoryChipSelected: {
     backgroundColor: COLORS.primaryGreen,
@@ -850,9 +852,11 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   categoryChipText: {
     color: COLORS.textSecondary,
+    lineHeight: 20,
   },
   categoryChipTextSelected: {
     color: '#fff',
+    lineHeight: 20,
   },
   homeServiceToggle: {
     flexDirection: 'row',

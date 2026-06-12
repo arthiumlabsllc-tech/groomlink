@@ -82,11 +82,16 @@ export default function ProfileScreen() {
   });
 
   // Fetch payout balance
-  const { data: payoutBalance } = useQuery({
+  const { data: payoutBalance, error: payoutError } = useQuery({
     queryKey: ['payoutBalance', salon?.id],
     queryFn: () => (salon ? salonApi.getPayoutBalance(salon.id) : null),
     enabled: !!salon?.id,
   });
+
+  // Debug payout balance errors
+  if (payoutError) {
+    console.log('Payout balance error:', payoutError);
+  }
 
   // Update profile mutation
   const updateMutation = useMutation({
@@ -280,9 +285,13 @@ export default function ProfileScreen() {
               <Ionicons name="cash-outline" size={24} color="#006B3F" />
               <Text style={styles.balanceLabel}>Available to Withdraw</Text>
             </View>
-            <Text style={styles.balanceValue}>
-              GH₵{(payoutBalance?.availableBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Text>
+            {payoutBalance ? (
+              <Text style={styles.balanceValue}>
+                GH₵{(payoutBalance.availableBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+            ) : (
+              <ActivityIndicator size="small" color="#006B3F" style={{ marginTop: 8 }} />
+            )}
           </View>
 
           <Divider style={styles.sectionDivider} />
@@ -294,9 +303,13 @@ export default function ProfileScreen() {
                 <Ionicons name="arrow-up-circle-outline" size={18} color="#10B981" />
                 <Text style={styles.detailLabel}>Total Paid Out</Text>
               </View>
-              <Text style={[styles.detailValue, { color: '#10B981' }]}>
-                GH₵{(payoutBalance?.paidOutBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Text>
+              {payoutBalance ? (
+                <Text style={[styles.detailValue, { color: '#10B981' }]}>
+                  GH₵{(payoutBalance.paidOutBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              ) : (
+                <ActivityIndicator size="small" color="#10B981" />
+              )}
             </View>
 
             <View style={styles.balanceDetailRow}>
@@ -304,9 +317,13 @@ export default function ProfileScreen() {
                 <Ionicons name="hourglass-outline" size={18} color="#F59E0B" />
                 <Text style={styles.detailLabel}>Pending ({payoutBalance?.heldCount || 0})</Text>
               </View>
-              <Text style={[styles.detailValue, { color: '#F59E0B' }]}>
-                GH₵{(payoutBalance?.availableBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Text>
+              {payoutBalance ? (
+                <Text style={[styles.detailValue, { color: '#F59E0B' }]}>
+                  GH₵{(payoutBalance.availableBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              ) : (
+                <ActivityIndicator size="small" color="#F59E0B" />
+              )}
             </View>
 
             <View style={styles.balanceDetailRow}>
@@ -314,23 +331,38 @@ export default function ProfileScreen() {
                 <Ionicons name="refresh-circle-outline" size={18} color="#EF4444" />
                 <Text style={styles.detailLabel}>Refunded</Text>
               </View>
-              <Text style={[styles.detailValue, { color: '#EF4444' }]}>
-                GH₵{(payoutBalance?.refundedBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Text>
+              {payoutBalance ? (
+                <Text style={[styles.detailValue, { color: '#EF4444' }]}>
+                  GH₵{(payoutBalance.refundedBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              ) : (
+                <ActivityIndicator size="small" color="#EF4444" />
+              )}
             </View>
           </View>
 
           <Divider style={styles.sectionDivider} />
 
-          {/* Payout Account Link */}
-          <TouchableOpacity 
-            style={styles.payoutAccountRow}
-            onPress={() => navigation.navigate('EditSalon')}
-          >
-            <Ionicons name="card-outline" size={18} color="#006B3F" />
-            <Text style={styles.payoutAccountText}>Manage Payout Account</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
+          {/* Payout Actions */}
+          <View style={styles.payoutActions}>
+            <TouchableOpacity 
+              style={styles.requestPayoutButton}
+              onPress={() => Alert.alert('Coming Soon', 'Payout request feature will be available soon.')}
+              disabled={!payoutBalance || payoutBalance.availableBalance <= 0}
+            >
+              <Ionicons name="download-outline" size={18} color={payoutBalance && payoutBalance.availableBalance > 0 ? '#FFFFFF' : '#9CA3AF'} />
+              <Text style={[styles.requestPayoutText, { color: payoutBalance && payoutBalance.availableBalance > 0 ? '#FFFFFF' : '#9CA3AF' }]}>
+                Request Payout
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.payoutAccountRow}
+              onPress={() => navigation.navigate('EditSalon')}
+            >
+              <Ionicons name="card-outline" size={18} color="#006B3F" />
+              <Text style={styles.payoutAccountText}>Manage Account</Text>
+            </TouchableOpacity>
+          </View>
         </Surface>
 
         {/* Edit Profile Section */}
@@ -829,15 +861,40 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  payoutActions: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  requestPayoutButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#006B3F',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  requestPayoutText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   payoutAccountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
   },
   payoutAccountText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#006B3F',
   },
 });
