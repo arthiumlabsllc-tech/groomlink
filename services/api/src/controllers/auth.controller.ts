@@ -175,6 +175,17 @@ export async function requestEmailOTP(req: Request, res: Response): Promise<void
 export async function verifyEmailOTP(req: Request, res: Response): Promise<void> {
   try {
     const { email, code, role } = verifyEmailOTPSchema.parse(req.body);
+    
+    // Demo account bypass for App Store review
+    // REMOVE AFTER APPROVAL: This allows Apple reviewers to login without email access
+    if (email === 'demo@groomlink.com' && code === '123456') {
+      const result = await authService.verifyEmailOTPAndLogin(email, code, role);
+      if (result) {
+        successResponse(res, result);
+        return;
+      }
+    }
+    
     const result = await authService.verifyEmailOTPAndLogin(email, code, role);
     
     if (result) {
