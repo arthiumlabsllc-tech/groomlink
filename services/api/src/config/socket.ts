@@ -230,6 +230,31 @@ export function initializeSocket(server: HttpServer): SocketIOServer {
       }
     });
 
+    // Typing indicator relay for live chat
+    socket.on('typing:start', (data: { ticketId: string; userName?: string }) => {
+      if (data?.ticketId) {
+        const userId = (socket.data as any)?.userId;
+        // Relay to the ticket room (other participants see it)
+        socket.to(`ticket:${data.ticketId}`).emit('chat:typing', {
+          ticketId: data.ticketId,
+          userId: userId || socket.id,
+          isTyping: true,
+          userName: data.userName,
+        });
+      }
+    });
+
+    socket.on('typing:stop', (data: { ticketId: string }) => {
+      if (data?.ticketId) {
+        const userId = (socket.data as any)?.userId;
+        socket.to(`ticket:${data.ticketId}`).emit('chat:typing', {
+          ticketId: data.ticketId,
+          userId: userId || socket.id,
+          isTyping: false,
+        });
+      }
+    });
+
     socket.on('disconnect', () => {
       const uid = (socket.data as any)?.userId as string | undefined;
       if (uid) removeOnlineUser(uid);

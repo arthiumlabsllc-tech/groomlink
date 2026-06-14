@@ -309,6 +309,13 @@ class ApiClient {
     });
   }
 
+  async assignTicket(id: string, assignedToId?: string) {
+    return this.request<{ success: boolean; data: any }>(`/support/tickets/${id}/assign`, {
+      method: 'PUT',
+      body: JSON.stringify({ assignedToId }),
+    });
+  }
+
   async transferChat(ticketId: string, data: { toAgentId?: string; department?: string; reason?: string }) {
     return this.request<{
       success: boolean;

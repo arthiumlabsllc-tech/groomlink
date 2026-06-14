@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 export interface ChatSocketHandlers {
   onTicketCreated?: (payload: any) => void;
   onMessageNew?: (payload: { ticketId: string; message: any }) => void;
+  onTyping?: (payload: { ticketId: string; userId: string; isTyping: boolean; userName?: string }) => void;
 }
 
 /**
@@ -42,6 +43,10 @@ export function useChatSocket(
       handlersRef.current.onMessageNew?.(payload);
     });
 
+    socket.on('chat:typing', (payload: { ticketId: string; userId: string; isTyping: boolean; userName?: string }) => {
+      handlersRef.current.onTyping?.(payload);
+    });
+
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
@@ -68,4 +73,7 @@ export function useChatSocket(
       }
     };
   }, [ticketId]);
+
+  // Return socket ref so caller can emit typing events
+  return socketRef;
 }
