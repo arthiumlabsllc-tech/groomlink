@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useImpersonation } from '../hooks/useImpersonation';
 import Icon from './Icon';
@@ -7,6 +8,14 @@ export default function Header() {
   const { user, logout } = useAuth();
   const { isImpersonating, endImpersonation, isLoading: isEndingImpersonation } = useImpersonation();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      navigate(`/users?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   return (
     <header className="h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-card flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
@@ -19,6 +28,9 @@ export default function Header() {
             <input
               type="text"
               placeholder="Search users, salons..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchSubmit}
               className="w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 bg-gray-50/80 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-700/60 rounded-full text-xs sm:text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-support-600 focus:border-support-600 focus:bg-white dark:focus:bg-gray-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
@@ -39,9 +51,10 @@ export default function Header() {
           </button>
         )}
         {/* Notifications */}
-        <button className="relative p-2 sm:p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all duration-200 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center">
+        <button 
+          onClick={() => navigate('/live-chat')}
+          className="relative p-2 sm:p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all duration-200 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center">
           <Icon name="notifications" size={20} />
-          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-ghana-red rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></span>
         </button>
 
         {/* User menu */}
@@ -82,9 +95,9 @@ export default function Header() {
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'support@groomlinkgh.com'}</p>
                 </div>
-                <a href="/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Link to="/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   Profile Settings
-                </a>
+                </Link>
                 <button
                   onClick={logout}
                   className="flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm text-ghana-red dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

@@ -13,6 +13,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <title>GroomLink Support</title>
+    <script>
+      // Prevent FOUC: apply dark class before React mounts
+      (function() {
+        var t = localStorage.getItem('theme');
+        var d = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (d) document.documentElement.classList.add('dark');
+      })();
+    </script>
   </head>
   <body>
     <div id="app-loader">
@@ -30,6 +38,9 @@
         background: #fff;
         position: relative;
         overflow: hidden;
+      }
+      html.dark #app-loader {
+        background: #0F1419;
       }
       #app-loader::before {
         content: '';

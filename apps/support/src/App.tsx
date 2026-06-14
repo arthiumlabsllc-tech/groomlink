@@ -5,6 +5,7 @@ import { useImpersonation } from './hooks/useImpersonation';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
@@ -15,11 +16,17 @@ import Tickets from './pages/Tickets';
 import LiveChat from './pages/LiveChat';
 import Settings from './pages/Settings';
 
+function SessionManager() {
+  const { isAuthenticated } = useAuth();
+  // Only run session timeout for authenticated users
+  if (isAuthenticated) {
+    useSessionTimeout();
+  }
+  return null;
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  
-  // Enable session timeout for authenticated users
-  useSessionTimeout();
   
   if (isLoading) {
     return <LoadingScreen />;
@@ -114,12 +121,15 @@ function ImpersonationEndHandler() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ImpersonationEndHandler />
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <SessionManager />
+          <ImpersonationEndHandler />
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

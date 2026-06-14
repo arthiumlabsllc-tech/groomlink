@@ -10,7 +10,7 @@ type EmailStep = 'email' | 'verify';
 export default function Login() {
   const navigate = useNavigate();
   const { loginWithEmailOTP } = useAuth();
-  const isDark = useDarkMode();
+  const { isDark } = useDarkMode();
   
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);

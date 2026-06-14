@@ -72,6 +72,7 @@ export default function Tickets() {
   const [isSending, setIsSending] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchTickets = async () => {
     setIsLoading(true);
@@ -166,7 +167,7 @@ export default function Tickets() {
         {/* Mobile Back Button */}
         <button 
           onClick={handleBackToList}
-          className="md:hidden flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="md:hidden flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
         >
           <Icon name="chevron_left" size={20} />
           Back to tickets
@@ -199,7 +200,7 @@ export default function Tickets() {
           </div>
 
           {/* User info */}
-          <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100">
+          <div className="px-5 py-4 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-ghana-green to-support-700 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-sm">
@@ -228,39 +229,51 @@ export default function Tickets() {
           <div className="p-5 space-y-4 max-h-[50vh] overflow-y-auto">
             {/* Original message */}
             <div className="flex gap-3">
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                <Icon name="person" size={16} className="text-gray-500" />
+              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                <Icon name="person" size={16} className="text-gray-500 dark:text-gray-400" />
               </div>
               <div className="flex-1">
-                <div className="bg-gray-100 rounded-2xl rounded-tl-none p-4">
-                  <p className="text-gray-700">{selectedTicket.description}</p>
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-none p-4">
+                  <p className="text-gray-700 dark:text-gray-200">{selectedTicket.description}</p>
                 </div>
-                <p className="text-xs text-gray-400 mt-1 ml-1">{formatDateTime(selectedTicket.createdAt)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{formatDateTime(selectedTicket.createdAt)}</p>
               </div>
             </div>
 
             {/* Conversation messages */}
-            {selectedTicket.messages?.map((msg) => (
-              <div key={msg.id} className="flex gap-3">
-                <div className="w-8 h-8 bg-ghana-green rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-semibold text-xs">
-                    {msg.sender?.firstName?.charAt(0) || (msg.isFromUser ? 'U' : 'A')}
-                  </span>
+            {selectedTicket.messages?.map((msg) => {
+              const isAgent = !msg.isFromUser;
+              return (
+              <div key={msg.id} className={cn('flex gap-3', isAgent ? 'flex-row-reverse' : 'flex-row')}>
+                <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0', isAgent ? 'bg-ghana-green' : 'bg-gray-200 dark:bg-gray-700')}>
+                  {isAgent ? (
+                    <span className="text-white font-semibold text-xs">
+                      {msg.sender?.firstName?.charAt(0) || 'A'}
+                    </span>
+                  ) : (
+                    <Icon name="person" size={16} className="text-gray-500 dark:text-gray-400" />
+                  )}
                 </div>
-                <div className="flex-1">
-                  <div className="bg-support-50 rounded-2xl rounded-tl-none p-4 border border-support-100">
-                    <p className="text-gray-700">{msg.content}</p>
+                <div className={cn('flex-1', isAgent ? 'text-right' : '')}>
+                  <div className={cn(
+                    'inline-block max-w-full px-4 py-3 rounded-2xl text-sm',
+                    isAgent
+                      ? 'bg-ghana-green text-white rounded-tr-none'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-tl-none'
+                  )}>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1 ml-1">
+                  <p className={cn('text-xs mt-1', isAgent ? 'text-gray-400 dark:text-gray-500 mr-1' : 'text-gray-400 dark:text-gray-500 ml-1')}>
                     {msg.sender ? `${msg.sender.firstName}` : (msg.isFromUser ? 'User' : 'Agent')} • {formatDateTime(msg.createdAt)}
                   </p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Reply input */}
-          <div className="p-5 border-t border-gray-100 bg-gray-50/30">
+          <div className="p-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/30">
             <div className="flex gap-3 mb-4">
               <input
                 type="text"
@@ -342,8 +355,18 @@ export default function Tickets() {
         <p className="text-gray-500 mt-1">Manage customer support tickets.</p>
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="card-v2 p-2">
+      {/* Search + Status Filter Tabs */}
+      <div className="card-v2 p-4 space-y-3">
+        <div className="relative">
+          <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tickets by subject or user..."
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-ghana-green/30"
+          />
+        </div>
         <div className="flex flex-wrap gap-1">
           {statusTabs.map((tab) => (
             <button
@@ -385,8 +408,19 @@ export default function Tickets() {
           <p className="text-gray-500">There are no support tickets matching your criteria.</p>
         </div>
       ) : (
-        <div className="card-v2 divide-y divide-gray-100 overflow-hidden">
-          {tickets.map((ticket) => {
+        <div className="card-v2 divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden">
+          {tickets
+            .filter((ticket) => {
+              if (!searchQuery.trim()) return true;
+              const q = searchQuery.toLowerCase();
+              return (
+                ticket.subject.toLowerCase().includes(q) ||
+                ticket.description.toLowerCase().includes(q) ||
+                `${ticket.user?.firstName || ''} ${ticket.user?.lastName || ''}`.toLowerCase().includes(q) ||
+                (ticket.guestName || '').toLowerCase().includes(q)
+              );
+            })
+            .map((ticket) => {
             const priorityBorderClass = ticket.priority === 'HIGH' 
               ? 'border-l-4 border-l-red-500' 
               : ticket.priority === 'MEDIUM' 
@@ -398,7 +432,7 @@ export default function Tickets() {
             return (
             <div
               key={ticket.id}
-              className={cn("p-5 hover:bg-gray-50 cursor-pointer transition-colors", priorityBorderClass)}
+              className={cn("p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors", priorityBorderClass)}
               onClick={() => handleTicketClick(ticket)}
             >
               <div className="flex items-start justify-between gap-4">
@@ -420,8 +454,8 @@ export default function Tickets() {
                     <p className="text-sm text-gray-500 mt-1 line-clamp-2">{ticket.description}</p>
                     <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-gray-600">
+                        <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                             {ticket.user ? ticket.user.firstName?.charAt(0) : 'G'}
                           </span>
                         </div>
@@ -431,7 +465,7 @@ export default function Tickets() {
                             : (ticket.guestName || 'Guest')}
                         </span>
                       </div>
-                      <span className="text-gray-300">•</span>
+                      <span className="text-gray-300 dark:text-gray-600">•</span>
                       <div className="flex items-center gap-1">
                         <Icon name="schedule" size={14} />
                         <span>{formatDateTime(ticket.createdAt)}</span>
@@ -457,7 +491,7 @@ export default function Tickets() {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Previous
           </button>
@@ -467,7 +501,7 @@ export default function Tickets() {
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Next
           </button>

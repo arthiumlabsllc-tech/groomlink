@@ -227,32 +227,32 @@ export default function Salons() {
               
               <div className="space-y-2.5 text-sm text-gray-600 mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center">
                     <Icon name="person" size={16} className="text-gray-400" />
                   </div>
-                  <span className="font-medium">{salon.owner.firstName} {salon.owner.lastName}</span>
+                  <span className="font-medium dark:text-gray-200">{salon.owner.firstName} {salon.owner.lastName}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center">
                     <Icon name="call" size={16} className="text-gray-400" />
                   </div>
                   <span>{formatPhoneNumber(salon.phoneNumber)}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center">
                     <Icon name="star" size={16} filled className="text-ghana-yellow" />
                   </div>
                   <span className="text-ghana-yellow font-medium">{salon.rating || '4.0'}</span>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-4 border-t border-gray-100">
+              <div className="flex gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => {
                     setSelectedSalon(salon);
                     setShowDetailModal(true);
                   }}
-                  className="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center justify-center gap-2 btn-ripple"
+                  className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2 btn-ripple"
                 >
                   <Icon name="visibility" size={16} />
                   View
@@ -277,17 +277,17 @@ export default function Salons() {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Previous
           </button>
-          <span className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg">
+          <span className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
             Page {page} of {totalPages}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Next
           </button>
@@ -297,15 +297,15 @@ export default function Salons() {
       {/* Desktop Detail Modal */}
       {showDetailModal && selectedSalon && (
         <div className="hidden md:flex fixed inset-0 bg-black/40 backdrop-blur-md items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-elevated max-w-md w-full p-6 animate-slide-up">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-elevated max-w-md w-full p-6 animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <Icon name="store" size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 font-heading">{selectedSalon.businessName}</h3>
-                  <p className="text-sm text-gray-500">{selectedSalon.city}</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white font-heading">{selectedSalon.businessName}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedSalon.city}</p>
                 </div>
               </div>
               <button 
@@ -317,38 +317,38 @@ export default function Salons() {
             </div>
             
             <div className="space-y-3 mb-6">
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">Status</span>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Status</span>
                 <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold', getStatusColor(selectedSalon.status))}>
                   {selectedSalon.status}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">Address</span>
-                <span className="text-gray-900 text-right max-w-[60%]">{selectedSalon.address}</span>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Address</span>
+                <span className="text-gray-900 dark:text-white text-right max-w-[60%]">{selectedSalon.address}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">Phone</span>
-                <span className="text-gray-900">{formatPhoneNumber(selectedSalon.phoneNumber)}</span>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Phone</span>
+                <span className="text-gray-900 dark:text-white">{formatPhoneNumber(selectedSalon.phoneNumber)}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">Owner</span>
-                <span className="text-gray-900">{selectedSalon.owner.firstName} {selectedSalon.owner.lastName}</span>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Owner</span>
+                <span className="text-gray-900 dark:text-white">{selectedSalon.owner.firstName} {selectedSalon.owner.lastName}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">Owner Phone</span>
-                <span className="text-gray-900">{formatPhoneNumber(selectedSalon.owner.phoneNumber)}</span>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Owner Phone</span>
+                <span className="text-gray-900 dark:text-white">{formatPhoneNumber(selectedSalon.owner.phoneNumber)}</span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-gray-500">Registered</span>
-                <span className="text-gray-900">{formatDate(selectedSalon.createdAt)}</span>
+                <span className="text-gray-500 dark:text-gray-400">Registered</span>
+                <span className="text-gray-900 dark:text-white">{formatDate(selectedSalon.createdAt)}</span>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button 
                 onClick={() => setShowDetailModal(false)} 
-                className="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
+                className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
               >
                 Close
               </button>

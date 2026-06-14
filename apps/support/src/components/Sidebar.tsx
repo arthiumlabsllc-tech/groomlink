@@ -73,7 +73,9 @@ export default function Sidebar() {
               </p>
               <div className="space-y-1">
                 {items.map((item) => {
-                  const isActive = location.pathname === item.href;
+                  const isActive = item.href === '/'
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.name}

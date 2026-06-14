@@ -159,7 +159,7 @@ export default function Dashboard() {
     { name: 'Total Users', value: stats?.totalUsers || 0, icon: 'group', color: 'border-l-blue-500', iconBg: 'bg-blue-100 text-blue-600', href: '/users' },
     { name: 'Total Salons', value: stats?.totalSalons || 0, icon: 'store', color: 'border-l-purple-500', iconBg: 'bg-purple-100 text-purple-600', href: '/salons' },
     { name: 'Open Tickets', value: stats?.openTickets || 0, icon: 'confirmation_number', color: 'border-l-yellow-500', iconBg: 'bg-yellow-100 text-yellow-600', href: '/tickets' },
-    { name: 'Active Bookings', value: stats?.activeBookings || 0, icon: 'schedule', color: 'border-l-green-500', iconBg: 'bg-green-100 text-green-600' },
+    { name: 'Active Bookings', value: stats?.activeBookings || 0, icon: 'schedule', color: 'border-l-green-500', iconBg: 'bg-green-100 text-green-600', href: '/tickets' },
   ];
 
   const quickStats = [

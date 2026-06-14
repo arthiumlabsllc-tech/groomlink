@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 import { api, API_BASE_URL } from '../api';
 import { useChatSocket } from '../hooks/useChatSocket';
 import { cn } from '../lib';
-import { playNotificationSound, initNotificationSound } from '../utils/notificationSound';
+import { playNotificationSound, initNotificationSound, fireDesktopNotification } from '../utils/notificationSound';
 
 interface ChatMessage {
   id: string;
@@ -119,12 +119,16 @@ export default function LiveChat() {
     onTicketCreated: () => {
       // Play notification sound for new chat
       playNotificationSound();
+      fireDesktopNotification('New Live Chat', 'A new support conversation has been started.');
       loadThreads();
     },
     onMessageNew: ({ ticketId, message }) => {
       // Play notification sound if message is from user and agent is not viewing this thread
       if (message.isFromUser && ticketId !== activeId) {
         playNotificationSound();
+        const thread = threads.find(t => t.id === ticketId);
+        const senderName = thread ? formatThreadName(thread) : 'Customer';
+        fireDesktopNotification(`New message from ${senderName}`, message.content?.substring(0, 100) || 'New message');
       }
       
       // Append to the open thread

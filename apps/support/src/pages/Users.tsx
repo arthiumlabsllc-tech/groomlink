@@ -182,7 +182,7 @@ export default function Users() {
               <button
                 onClick={() => fetchUsers(page - 1, selectedRole, searchQuery)}
                 disabled={page <= 1 || isLoading}
-                className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
               >
                 Previous
               </button>
@@ -190,7 +190,7 @@ export default function Users() {
               <button
                 onClick={() => fetchUsers(page + 1, selectedRole, searchQuery)}
                 disabled={page >= totalPages || isLoading}
-                className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
               >
                 Next
               </button>
@@ -222,8 +222,8 @@ export default function Users() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-gray-600 font-bold text-lg">
+                    <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center">
+                      <span className="text-gray-600 dark:text-gray-300 font-bold text-lg">
                         {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                       </span>
                     </div>
@@ -260,7 +260,7 @@ export default function Users() {
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-3">
                     <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium', getStatusColor(user.status))}>
                       {user.status}

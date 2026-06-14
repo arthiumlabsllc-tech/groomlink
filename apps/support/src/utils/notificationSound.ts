@@ -1,15 +1,35 @@
 /**
  * Notification sound utility for support dashboard
  * Plays a subtle alert sound when new chats/messages arrive
+ * Also supports desktop browser notifications
  */
 
 let audioContext: AudioContext | null = null;
 
+interface SupportSettings {
+  soundNotifications?: boolean;
+  desktopNotifications?: boolean;
+}
+
+/** Read current support settings from localStorage */
+export function getSupportSettings(): SupportSettings {
+  try {
+    const raw = localStorage.getItem('support_settings');
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { soundNotifications: true, desktopNotifications: false };
+}
+
 /**
  * Play a notification sound using Web Audio API
  * Creates a pleasant two-tone chime without requiring external files
+ * Respects the user's soundNotifications setting
  */
 export function playNotificationSound() {
+  // Respect user's sound notification setting
+  const settings = getSupportSettings();
+  if (settings.soundNotifications === false) return;
+
   try {
     // Create audio context on first user interaction (browser policy)
     if (!audioContext) {
@@ -81,4 +101,31 @@ export function initNotificationSound() {
   
   // Also try to initialize immediately (works if user has already interacted)
   init();
+}
+
+/**
+ * Fire a desktop browser notification (if permission granted and setting enabled)
+ */
+export function fireDesktopNotification(title: string, body: string) {
+  const settings = getSupportSettings();
+  if (!settings.desktopNotifications) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, { body, icon: '/logo.png' });
+  } catch (e) {
+    console.warn('Desktop notification failed:', e);
+  }
+}
+
+/**
+ * Request desktop notification permission from the user
+ * Returns the permission result
+ */
+export async function requestDesktopNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
+  if (!('Notification' in window)) return 'unsupported';
+  try {
+    return await Notification.requestPermission();
+  } catch {
+    return 'unsupported';
+  }
 }

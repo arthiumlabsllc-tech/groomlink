@@ -1,20 +1,22 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './useAuth';
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
 export function useSessionTimeout() {
   const navigate = useNavigate();
+  const { logout: authLogout } = useAuth();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
+  const doLogout = useCallback(() => {
+    // Call the auth logout which calls api.logout() and cleans up state
+    authLogout();
     navigate('/login');
     
     // Show notification on next page
     sessionStorage.setItem('session_expired', 'true');
-  }, [navigate]);
+  }, [authLogout, navigate]);
 
   const resetTimer = useCallback(() => {
     if (timeoutRef.current) {
@@ -22,9 +24,9 @@ export function useSessionTimeout() {
     }
     
     timeoutRef.current = setTimeout(() => {
-      logout();
+      doLogout();
     }, INACTIVITY_TIMEOUT);
-  }, [logout]);
+  }, [doLogout]);
 
   useEffect(() => {
     // Events to track user activity

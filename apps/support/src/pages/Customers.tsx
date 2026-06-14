@@ -140,14 +140,14 @@ export default function Customers() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Registration Form */}
-        <div className="card-v2 p-4 sm:p-6">
+        <div className="card-v2 p-4 sm:p-6 dark:bg-gray-800/50">
           <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <div className="w-10 h-10 bg-ghana-green/10 rounded-xl flex items-center justify-center">
               <Icon name="person_add" size={20} className="text-ghana-green" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900 font-heading text-sm sm:text-base">Register New Customer</h2>
-              <p className="text-xs sm:text-sm text-gray-500">Fill in the details below</p>
+              <h2 className="font-semibold text-gray-900 dark:text-white font-heading text-sm sm:text-base">Register New Customer</h2>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Fill in the details below</p>
             </div>
           </div>
 
@@ -183,7 +183,7 @@ export default function Customers() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Email Address <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -194,7 +194,7 @@ export default function Customers() {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="customer@example.com"
                   className={cn(
-                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
+                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200 dark:bg-gray-800 dark:text-white dark:border-gray-600",
                     errors.email ? "border-red-300 bg-red-50" : "border-gray-300"
                   )}
                 />
@@ -205,7 +205,7 @@ export default function Customers() {
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   First Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -216,7 +216,7 @@ export default function Customers() {
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     placeholder="John"
                     className={cn(
-                      "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
+                      "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200 dark:bg-gray-800 dark:text-white dark:border-gray-600",
                       errors.firstName ? "border-red-300 bg-red-50" : "border-gray-300"
                     )}
                   />
@@ -225,7 +225,7 @@ export default function Customers() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Last Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -234,7 +234,7 @@ export default function Customers() {
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   placeholder="Doe"
                   className={cn(
-                    "w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
+                    "w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200 dark:bg-gray-800 dark:text-white dark:border-gray-600",
                     errors.lastName ? "border-red-300 bg-red-50" : "border-gray-300"
                   )}
                 />
@@ -244,7 +244,7 @@ export default function Customers() {
 
             {/* Phone Number */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Phone Number <span className="text-gray-400 text-xs">(optional)</span>
               </label>
               <div className="relative">
@@ -255,7 +255,7 @@ export default function Customers() {
                   onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                   placeholder="+233 XX XXX XXXX or 0XX XXX XXXX"
                   className={cn(
-                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200",
+                    "w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-support-500/30 focus:border-support-500 transition-all duration-200 dark:bg-gray-800 dark:text-white dark:border-gray-600",
                     errors.phoneNumber ? "border-red-300 bg-red-50" : "border-gray-300"
                   )}
                 />
@@ -287,12 +287,12 @@ export default function Customers() {
 
         {/* Recent Customers */}
         <div className="card-v2 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-            <h2 className="font-semibold text-gray-900 font-heading">Recently Created Customers</h2>
-            <p className="text-sm text-gray-500">Latest customers in the system</p>
+          <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <h2 className="font-semibold text-gray-900 dark:text-white font-heading">Recently Created Customers</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Latest customers in the system</p>
           </div>
           
-          <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[500px] overflow-y-auto">
             {isLoadingRecent ? (
               <div className="p-4 space-y-3">
                 {[...Array(5)].map((_, i) => (
@@ -308,24 +308,24 @@ export default function Customers() {
               </div>
             ) : recentCustomers.length > 0 ? (
               recentCustomers.map((customer) => (
-                <div key={customer.id} className="p-4 hover:bg-gray-50 transition-colors">
+                <div key={customer.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold text-sm">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-700 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 dark:text-blue-300 font-semibold text-sm">
                         {customer.firstName?.charAt(0)}{customer.lastName?.charAt(0)}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
+                      <p className="font-medium text-gray-900 dark:text-white truncate">
                         {customer.firstName} {customer.lastName}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">{customer.email}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{customer.email}</p>
                     </div>
                     <div className="text-right">
                       {customer.phoneNumber && (
-                        <p className="text-sm text-gray-500">{formatPhoneNumber(customer.phoneNumber)}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{formatPhoneNumber(customer.phoneNumber)}</p>
                       )}
-                      <p className="text-xs text-gray-400">{formatDate(customer.createdAt)}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(customer.createdAt)}</p>
                     </div>
                   </div>
                 </div>
@@ -335,7 +335,7 @@ export default function Customers() {
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Icon name="person" size={24} className="text-gray-400" />
                 </div>
-                <p className="text-gray-500">No customers found</p>
+                <p className="text-gray-500 dark:text-gray-400">No customers found</p>
               </div>
             )}
           </div>
