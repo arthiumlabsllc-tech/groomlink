@@ -253,4 +253,7 @@ router.post('/chat/threads/:id/read', authenticateToken, requireSupportOrHigher,
   }
 });
 
+// Transfer chat to another agent or department
+router.post('/chat/:ticketId/transfer', authenticateToken, requireSupportOrHigher, supportTicketController.transferChat);
+
 export default router;

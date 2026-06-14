@@ -116,4 +116,10 @@ export const authApi = {
     });
     return response.data;
   },
+
+  // Delete user account (GDPR/Ghana DPA compliance)
+  deleteAccount: async () => {
+    const response = await apiClient.delete('/users/account');
+    return response.data;
+  },
 };

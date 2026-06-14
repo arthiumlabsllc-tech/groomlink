@@ -309,6 +309,20 @@ class ApiClient {
     });
   }
 
+  async transferChat(ticketId: string, data: { toAgentId?: string; department?: string; reason?: string }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        transfer: any;
+        systemMessage: string;
+      };
+    }>(`/support/chat/${ticketId}/transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  }
+
   // Dashboard stats - uses support/stats endpoint (SUPPORT+ role)
   async getStats() {
     return this.request<{ 

@@ -24,6 +24,7 @@ export type MainStackParamList = {
   Notifications: undefined;
   CompletionSettings: undefined;
   RequestPayout: { availableBalance: number; salonId?: string };
+  Chat: undefined;
 };
 
 export interface Service {

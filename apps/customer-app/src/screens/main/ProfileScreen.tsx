@@ -63,6 +63,8 @@ export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: Partial<{ firstName: string; lastName: string; email: string }>) =>
@@ -97,6 +99,30 @@ export default function ProfileScreen() {
     } catch (error) {
       // Still logout even if API call fails
       logout();
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setShowDeleteAccountDialog(false);
+    setIsDeletingAccount(true);
+    
+    try {
+      await authApi.deleteAccount();
+      
+      // Clear all local data
+      await authApi.logout();
+      logout();
+      
+      Alert.alert(
+        'Account Deleted',
+        'Your account has been permanently deleted. All your data has been removed from our systems.',
+        [{ text: 'OK', onPress: () => {} }]
+      );
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to delete account. Please contact support.';
+      Alert.alert('Delete Account Failed', message);
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -454,6 +480,22 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Contact Support Section */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity 
+            style={styles.contactSupportButton}
+            onPress={() => navigation.navigate('Chat')}
+            accessibilityRole="button"
+            accessibilityLabel="Contact support via live chat"
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={COLORS.primaryGreen} />
+            <Text style={styles.contactSupportText}>Contact Support</Text>
+          </TouchableOpacity>
+          <Text style={styles.contactSupportSubtext}>
+            Chat with our team in real-time
+          </Text>
+        </View>
+
         {/* Logout Section */}
         <View style={styles.logoutSection}>
           <TouchableOpacity 
@@ -465,6 +507,22 @@ export default function ProfileScreen() {
             <Ionicons name="log-out-outline" size={22} color={COLORS.accentRed} />
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Delete Account Section */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity 
+            style={styles.deleteAccountButton}
+            onPress={() => setShowDeleteAccountDialog(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Delete your account permanently"
+          >
+            <Ionicons name="trash-outline" size={22} color={COLORS.accentRed} />
+            <Text style={styles.deleteAccountText}>Delete Account</Text>
+          </TouchableOpacity>
+          <Text style={styles.deleteAccountWarning}>
+            This action is permanent and cannot be undone
+          </Text>
         </View>
 
         {/* Arthium Labs Footer */}
@@ -517,6 +575,46 @@ export default function ProfileScreen() {
           <Dialog.Actions>
             <Button onPress={() => setShowLanguageDialog(false)} textColor={COLORS.primaryGreen}>
               OK
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Delete Account Confirmation Dialog */}
+        <Dialog
+          visible={showDeleteAccountDialog}
+          onDismiss={() => !isDeletingAccount && setShowDeleteAccountDialog(false)}
+          style={styles.dialog}
+        >
+          <Dialog.Title style={[styles.dialogTitle, { color: COLORS.accentRed }]}>Delete Account</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={[styles.dialogText, { marginBottom: 12 }]}>
+              Are you sure you want to permanently delete your account?
+            </Text>
+            <Text variant="bodyMedium" style={[styles.dialogText, { fontWeight: '600', color: COLORS.accentRed }]}>
+              ⚠️ This action CANNOT be undone!
+            </Text>
+            <View style={{ marginTop: 12, paddingLeft: 8 }}>
+              <Text variant="bodySmall" style={styles.dialogText}>• All your personal data will be deleted</Text>
+              <Text variant="bodySmall" style={styles.dialogText}>• Booking history will be removed</Text>
+              <Text variant="bodySmall" style={styles.dialogText}>• Reviews and ratings will be deleted</Text>
+              <Text variant="bodySmall" style={styles.dialogText}>• This account cannot be recovered</Text>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button 
+              onPress={() => setShowDeleteAccountDialog(false)} 
+              textColor={COLORS.textSecondary}
+              disabled={isDeletingAccount}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onPress={handleDeleteAccount} 
+              textColor={COLORS.accentRed}
+              loading={isDeletingAccount}
+              disabled={isDeletingAccount}
+            >
+              Delete Permanently
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -735,6 +833,54 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     color: COLORS.accentRed,
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Delete Account
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: `${COLORS.accentRed}10`,
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: `${COLORS.accentRed}30`,
+  },
+  deleteAccountText: {
+    color: COLORS.accentRed,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteAccountWarning: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.7,
+  },
+  // Contact Support
+  contactSupportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: `${COLORS.primaryGreen}30`,
+  },
+  contactSupportText: {
+    color: COLORS.primaryGreen,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contactSupportSubtext: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.7,
   },
   bottomPadding: {
     height: 32,

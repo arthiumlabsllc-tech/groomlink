@@ -173,9 +173,9 @@ export default function Tickets() {
         </button>
 
         {/* Ticket Detail Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           {/* Header */}
-          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-ghana-green/5 to-transparent">
+          <div className="p-5 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-ghana-green/5 dark:from-ghana-green/10 to-transparent">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -377,7 +377,7 @@ export default function Tickets() {
           ))}
         </div>
       ) : tickets.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="chat" size={32} className="text-gray-400" />
           </div>
@@ -461,7 +461,7 @@ export default function Tickets() {
           >
             Previous
           </button>
-          <span className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg">
+          <span className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
             Page {page} of {totalPages}
           </span>
           <button

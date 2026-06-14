@@ -577,6 +577,18 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </Surface>
 
+        {/* Contact Support Button */}
+        <TouchableOpacity 
+          style={styles.contactSupportButton} 
+          onPress={() => navigation.navigate('Chat' as never)}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: '#E8F5E9' }]}>
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#006B3F" />
+          </View>
+          <Text style={styles.contactSupportText}>Contact Support</Text>
+          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+        </TouchableOpacity>
+
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <View style={[styles.menuIcon, { backgroundColor: '#FEF2F2' }]}>
@@ -793,6 +805,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   menuDivider: {
     marginHorizontal: 16,
+  },
+  contactSupportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 4,
+  },
+  contactSupportText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#006B3F',
+    marginLeft: 12,
+    flex: 1,
   },
   logoutButton: {
     flexDirection: 'row',

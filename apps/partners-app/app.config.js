@@ -97,6 +97,7 @@ export default {
           cameraPermission: "GroomLink Partners needs camera access to scan QR codes and upload salon photos."
         }
       ],
+      "./plugins/with-16kb-page-size",
       "./plugins/android-manifest-fixes",
       "./plugins/expo-sdk-fix",
       "./plugins/ios-xcode-compat-fix"

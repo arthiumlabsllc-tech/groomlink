@@ -50,11 +50,19 @@ export default function Header() {
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-100/80 dark:hover:bg-gray-800/80 transition-all duration-200"
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-ghana-green to-support-700 rounded-full flex items-center justify-center shadow-md">
-              <span className="text-white font-semibold text-sm">
-                {user?.firstName?.charAt(0) || 'S'}
-              </span>
-            </div>
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={`${user.firstName} ${user.lastName}`}
+                className="w-9 h-9 rounded-full object-cover border-2 border-ghana-green shadow-md"
+              />
+            ) : (
+              <div className="w-9 h-9 bg-gradient-to-br from-ghana-green to-support-700 rounded-full flex items-center justify-center shadow-md">
+                <span className="text-white font-semibold text-sm">
+                  {user?.firstName?.charAt(0) || 'S'}
+                </span>
+              </div>
+            )}
             <div className="hidden md:block text-left pr-2">
               <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                 {user?.firstName} {user?.lastName}

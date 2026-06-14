@@ -18,6 +18,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 import { successResponse, errorResponse } from '../utils/response';
 import * as chatService from '../services/chat.service';
+import * as aiAssistant from '../services/ai-assistant.service';
 import { TicketSource } from '@prisma/client';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -128,10 +129,10 @@ export async function getGuestMessages(req: GuestRequest, res: Response): Promis
         messages: {
           orderBy: { createdAt: 'asc' },
           include: {
-            sender: { select: { id: true, firstName: true, lastName: true } },
+            sender: { select: { id: true, firstName: true, lastName: true, avatar: true } },
           },
         },
-        assignedTo: { select: { id: true, firstName: true, lastName: true } },
+        assignedTo: { select: { id: true, firstName: true, lastName: true, avatar: true } },
       },
     });
     if (!ticket) {
@@ -165,6 +166,53 @@ export async function sendGuestMessage(req: GuestRequest, res: Response): Promis
       errorResponse(res, 'CONVERSATION_CLOSED', 'This conversation is closed', 400);
       return;
     }
+    
+    // Check if AI should respond first
+    const aiAnalysis = aiAssistant.analyzeMessage(validation.data.content);
+    
+    if (aiAnalysis.shouldAnswer && aiAnalysis.answer) {
+      // AI responds immediately
+      const aiMessage = await chatService.appendMessage({
+        ticketId,
+        content: aiAnalysis.answer,
+        isFromUser: false,
+        senderId: null, // System message (no specific agent)
+      });
+      
+      // Also save the user's message
+      await chatService.appendMessage({
+        ticketId,
+        content: validation.data.content,
+        isFromUser: true,
+        senderId: null,
+      });
+      
+      successResponse(res, chatService.formatMessage(aiMessage), 201);
+      return;
+    }
+    
+    // If AI needs escalation and no agent is assigned yet, add system message
+    if (aiAnalysis.needsEscalation) {
+      const currentTicket = await prisma.supportTicket.findUnique({
+        where: { id: ticketId },
+        select: { assignedToId: true },
+      });
+      
+      if (!currentTicket?.assignedToId) {
+        // Add escalation message
+        await chatService.appendMessage({
+          ticketId,
+          content: aiAssistant.getEscalationMessage(),
+          isFromUser: false,
+          senderId: null,
+        });
+        
+        // Notify support agents about escalation
+        // (This will be handled by Socket.io in the routes)
+      }
+    }
+    
+    // Save user message normally
     const message = await chatService.appendMessage({
       ticketId,
       content: validation.data.content,

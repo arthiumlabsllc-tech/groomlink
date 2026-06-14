@@ -61,8 +61,8 @@ export default function Salons() {
           Back to salons
         </button>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-transparent">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-purple-50 dark:from-purple-900/20 to-transparent">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
                 <Icon name="store" size={32} className="text-white" />
@@ -78,14 +78,14 @@ export default function Salons() {
           </div>
           
           <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
               <span className="text-gray-500">Status</span>
               <span className={cn('px-3 py-1.5 rounded-full text-xs font-semibold', getStatusColor(selectedSalon.status))}>
                 {selectedSalon.status}
               </span>
             </div>
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
-              <span className="text-gray-500">Rating</span>
+            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+              <span className="text-gray-500 dark:text-gray-400">Rating</span>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Icon key={star} name="star" size={16} filled={star <= (selectedSalon.rating || 4)} className={star <= (selectedSalon.rating || 4) ? 'text-ghana-yellow' : 'text-gray-300'} />
@@ -93,32 +93,32 @@ export default function Salons() {
                 <span className="ml-1 text-sm text-gray-600">({selectedSalon.rating || 4.0})</span>
               </div>
             </div>
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
-              <span className="text-gray-500">Address</span>
-              <span className="text-gray-900 text-right max-w-[60%]">{selectedSalon.address}</span>
+            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+              <span className="text-gray-500 dark:text-gray-400">Address</span>
+              <span className="text-gray-900 dark:text-white text-right max-w-[60%]">{selectedSalon.address}</span>
             </div>
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
-              <span className="text-gray-500">Phone</span>
-              <span className="text-gray-900">{formatPhoneNumber(selectedSalon.phoneNumber)}</span>
+            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+              <span className="text-gray-500 dark:text-gray-400">Phone</span>
+              <span className="text-gray-900 dark:text-white">{formatPhoneNumber(selectedSalon.phoneNumber)}</span>
             </div>
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
-              <span className="text-gray-500">Owner</span>
-              <span className="text-gray-900">{selectedSalon.owner.firstName} {selectedSalon.owner.lastName}</span>
+            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+              <span className="text-gray-500 dark:text-gray-400">Owner</span>
+              <span className="text-gray-900 dark:text-white">{selectedSalon.owner.firstName} {selectedSalon.owner.lastName}</span>
             </div>
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
-              <span className="text-gray-500">Owner Phone</span>
-              <span className="text-gray-900">{formatPhoneNumber(selectedSalon.owner.phoneNumber)}</span>
+            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+              <span className="text-gray-500 dark:text-gray-400">Owner Phone</span>
+              <span className="text-gray-900 dark:text-white">{formatPhoneNumber(selectedSalon.owner.phoneNumber)}</span>
             </div>
             <div className="flex items-center justify-between py-3">
-              <span className="text-gray-500">Registered</span>
-              <span className="text-gray-900">{formatDate(selectedSalon.createdAt)}</span>
+              <span className="text-gray-500 dark:text-gray-400">Registered</span>
+              <span className="text-gray-900 dark:text-white">{formatDate(selectedSalon.createdAt)}</span>
             </div>
           </div>
 
-          <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-3">
+          <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex gap-3">
             <button 
               onClick={() => setShowDetailModal(false)} 
-              className="flex-1 py-3 px-4 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
+              className="flex-1 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
             >
               Close
             </button>

@@ -9,6 +9,7 @@ interface User {
   email?: string;
   role: string;
   status: string;
+  avatar?: string | null;
 }
 
 interface AuthContextType {
@@ -44,24 +45,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async () => {
     try {
-      // In a real app, you'd fetch the profile from an endpoint
-      // For now, we'll just check the token exists
       const token = localStorage.getItem('auth_token');
       if (token) {
-        // Decode JWT to get user info (basic check)
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({
-          id: payload.userId,
-          firstName: payload.firstName || 'Support',
-          lastName: payload.lastName || 'Agent',
-          phoneNumber: payload.phoneNumber || '',
-          role: payload.role,
-          status: 'ACTIVE',
-        });
+        // Fetch full profile from API to get avatar
+        const response = await api.getAgentProfile();
+        if (response.success) {
+          setUser({
+            id: response.data.user.id,
+            firstName: response.data.user.firstName,
+            lastName: response.data.user.lastName,
+            phoneNumber: '',
+            email: response.data.user.email || undefined,
+            role: response.data.user.role,
+            status: response.data.user.status,
+            avatar: response.data.user.avatar,
+          });
+        } else {
+          // Fallback to decoding JWT if profile fetch fails
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUser({
+            id: payload.userId,
+            firstName: payload.firstName || 'Support',
+            lastName: payload.lastName || 'Agent',
+            phoneNumber: payload.phoneNumber || '',
+            role: payload.role,
+            status: 'ACTIVE',
+            avatar: null,
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      api.logout();
+      // Fallback to JWT decoding
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUser({
+            id: payload.userId,
+            firstName: payload.firstName || 'Support',
+            lastName: payload.lastName || 'Agent',
+            phoneNumber: payload.phoneNumber || '',
+            role: payload.role,
+            status: 'ACTIVE',
+            avatar: null,
+          });
+        }
+      } catch {
+        api.logout();
+      }
     } finally {
       setIsLoading(false);
     }

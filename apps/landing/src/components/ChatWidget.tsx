@@ -51,6 +51,12 @@ interface ChatMessage {
   content: string;
   isFromUser: boolean;
   createdAt: string;
+  sender?: { 
+    id: string; 
+    firstName?: string; 
+    lastName?: string; 
+    avatar?: string | null;
+  } | null;
 }
 
 interface SavedSession {
@@ -96,6 +102,9 @@ export default function ChatWidget() {
   const [error, setError] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Extract active agent from messages
+  const activeAgent = messages.find(m => !m.isFromUser && m.sender)?.sender || null;
 
   // Restore prior session on mount
   useEffect(() => {
@@ -216,6 +225,31 @@ export default function ChatWidget() {
       if (Array.isArray(json.data.ticket.messages)) {
         setMessages(json.data.ticket.messages);
       }
+      
+      // Add AI welcome message
+      const welcomeMessage: ChatMessage = {
+        id: `welcome-${Date.now()}`,
+        content: `Hi ${name.trim()}! 👋 I'm GroomLink's virtual assistant.\n\n` +
+          `I can help you with:\n` +
+          `• 📝 Account registration\n` +
+          `• 📅 Booking appointments\n` +
+          `• 💳 Payment questions\n` +
+          `• 🔄 Cancellations & rescheduling\n` +
+          `• 📍 Service locations\n` +
+          `• 💈 Partner salon registration\n` +
+          `• 🔒 Safety & security\n\n` +
+          `What would you like to know?`,
+        isFromUser: false,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: 'ai-assistant',
+          firstName: 'GroomLink',
+          lastName: 'Assistant',
+          avatar: null,
+        },
+      };
+      setMessages((prev) => [...prev, welcomeMessage]);
+      
       setDraft('');
     } catch (err: any) {
       setError(err?.message || 'Could not start chat. Please try again.');
@@ -302,19 +336,67 @@ export default function ChatWidget() {
       {open && (
         <div className="fixed bottom-44 right-4 z-50 w-[calc(100%-2rem)] max-w-sm md:right-8 md:bottom-28 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200" style={{ height: '520px', maxHeight: '80vh' }}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#006B3F] to-[#004d2d] text-white px-4 py-3 flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-sm">GroomLink Support</p>
-              <p className="text-xs opacity-80">We typically reply in a few minutes</p>
+          <div className="bg-gradient-to-r from-[#006B3F] to-[#004d2d] text-white px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              {/* Left: Agent info */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {activeAgent ? (
+                  <>
+                    {/* Agent avatar */}
+                    {activeAgent.avatar ? (
+                      <img
+                        src={activeAgent.avatar}
+                        alt={`${activeAgent.firstName || ''} ${activeAgent.lastName || ''}`}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-white/30 shadow-md flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center flex-shrink-0 shadow-md">
+                        <span className="text-white font-semibold text-sm">
+                          {activeAgent.firstName?.charAt(0) || 'S'}
+                        </span>
+                      </div>
+                    )}
+                    {/* Agent name and status */}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">
+                        {activeAgent.firstName && activeAgent.lastName
+                          ? `${activeAgent.firstName} ${activeAgent.lastName}`
+                          : 'Support Agent'}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                        <p className="text-xs opacity-90">Online • Ready to help</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Default support icon */}
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm">GroomLink Support</p>
+                      <p className="text-xs opacity-80">We typically reply in a few minutes</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              {/* Right: Actions */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {session && (
+                  <button
+                    onClick={endChat}
+                    className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm"
+                  >
+                    End chat
+                  </button>
+                )}
+              </div>
             </div>
-            {session && (
-              <button
-                onClick={endChat}
-                className="text-xs underline opacity-80 hover:opacity-100"
-              >
-                End chat
-              </button>
-            )}
           </div>
 
           {/* Body */}
@@ -329,22 +411,63 @@ export default function ChatWidget() {
             ) : messages.length === 0 ? (
               <div className="text-center text-sm text-gray-500 mt-6">Loading…</div>
             ) : (
-              messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`flex ${m.isFromUser ? 'justify-end' : 'justify-start'}`}
-                >
+              messages.map((m) => {
+                // Check if this is a system message (agent join notification)
+                const isSystemMessage = !m.isFromUser && 
+                  m.content.includes('has joined the chat');
+                
+                if (isSystemMessage) {
+                  return (
+                    <div key={m.id} className="flex justify-center my-2">
+                      <div className="bg-gradient-to-r from-[#006B3F]/10 to-[#004d2d]/10 border border-[#006B3F]/20 rounded-full px-4 py-2">
+                        <p className="text-xs text-[#006B3F] font-medium">
+                          ✨ {m.content}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return (
                   <div
-                    className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
-                      m.isFromUser
-                        ? 'bg-[#006B3F] text-white rounded-br-sm'
-                        : 'bg-white text-gray-900 rounded-bl-sm shadow-sm border border-gray-100'
-                    }`}
+                    key={m.id}
+                    className={`flex ${m.isFromUser ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                    {!m.isFromUser && m.sender && (
+                      <div className="flex items-start gap-2 max-w-[85%]">
+                        {/* Agent avatar */}
+                        {m.sender.avatar ? (
+                          <img
+                            src={m.sender.avatar.startsWith('http') ? m.sender.avatar : `${API_BASE}${m.sender.avatar}`}
+                            alt={`${m.sender.firstName || ''} ${m.sender.lastName || ''}`}
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#006B3F] to-[#004d2d] flex items-center justify-center flex-shrink-0 text-white text-xs font-semibold">
+                            {m.sender.firstName?.charAt(0) || 'S'}
+                          </div>
+                        )}
+                        {/* Message bubble with agent name */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1 ml-1">
+                            {m.sender.firstName && m.sender.lastName 
+                              ? `${m.sender.firstName} ${m.sender.lastName}` 
+                              : 'Support Agent'}
+                          </p>
+                          <div className="bg-white text-gray-900 rounded-2xl rounded-bl-sm shadow-sm border border-gray-100 px-3 py-2">
+                            <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {m.isFromUser && (
+                      <div className="max-w-[80%] bg-[#006B3F] text-white rounded-2xl rounded-br-sm px-3 py-2">
+                        <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
             <div ref={messagesEndRef} />
           </div>

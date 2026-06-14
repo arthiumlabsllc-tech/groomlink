@@ -123,6 +123,7 @@ export async function getTicketById(req: AuthenticatedRequest, res: Response): P
                 id: true,
                 firstName: true,
                 lastName: true,
+                avatar: true,
               },
             },
           },
@@ -315,6 +316,15 @@ export async function assignTicket(req: AuthenticatedRequest, res: Response): Pr
 
     const { assignedToId } = validation.data;
 
+    // If assigning to an agent, get their info for the notification
+    let agentInfo = null;
+    if (assignedToId) {
+      agentInfo = await prisma.user.findUnique({
+        where: { id: assignedToId },
+        select: { id: true, firstName: true, lastName: true, avatar: true },
+      });
+    }
+
     const ticket = await prisma.supportTicket.update({
       where: { id },
       data: { assignedToId: assignedToId || null },
@@ -332,6 +342,7 @@ export async function assignTicket(req: AuthenticatedRequest, res: Response): Pr
             id: true,
             firstName: true,
             lastName: true,
+            avatar: true,
           },
         },
         messages: {
@@ -344,12 +355,26 @@ export async function assignTicket(req: AuthenticatedRequest, res: Response): Pr
                 id: true,
                 firstName: true,
                 lastName: true,
+                avatar: true,
               },
             },
           },
         },
       },
     });
+
+    // Create system message when agent joins (for guest tickets too)
+    if (assignedToId && agentInfo) {
+      const joinMessage = `${agentInfo.firstName} ${agentInfo.lastName} has joined the chat.`;
+      await prisma.ticketMessage.create({
+        data: {
+          ticketId: id,
+          content: joinMessage,
+          isFromUser: false,
+          senderId: assignedToId,
+        },
+      });
+    }
 
     // Create notification for user if assigned (skip for guest tickets)
     if (assignedToId && ticket.userId) {
@@ -569,5 +594,122 @@ export async function updateAgentStatus(req: AuthenticatedRequest, res: Response
     successResponse(res, { settings });
   } catch (error) {
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+// Transfer chat to another agent or department
+export async function transferChat(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { ticketId } = req.params;
+    const { toAgentId, department, reason } = req.body;
+    const fromAgentId = req.user!.id;
+
+    // Validate input
+    if (!toAgentId && !department) {
+      errorResponse(res, 'INVALID_INPUT', 'Must specify either toAgentId or department', 400);
+      return;
+    }
+
+    // Verify ticket exists
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, subject: true },
+    });
+
+    if (!ticket) {
+      errorResponse(res, 'NOT_FOUND', 'Ticket not found', 404);
+      return;
+    }
+
+    // Verify toAgent exists if specified
+    if (toAgentId) {
+      const toAgent = await prisma.user.findUnique({
+        where: { id: toAgentId },
+        select: { id: true, firstName: true, lastName: true, role: true },
+      });
+
+      if (!toAgent) {
+        errorResponse(res, 'NOT_FOUND', 'Target agent not found', 404);
+        return;
+      }
+
+      if (!['SUPPORT', 'ADMIN', 'SUPER_ADMIN'].includes(toAgent.role)) {
+        errorResponse(res, 'INVALID_AGENT', 'Target user is not a support agent', 400);
+        return;
+      }
+    }
+
+    // Create transfer record
+    const transfer = await prisma.ticketTransfer.create({
+      data: {
+        ticketId,
+        fromAgentId,
+        toAgentId: toAgentId || undefined,
+        department: department || null,
+        reason: reason || null,
+      },
+      include: {
+        fromAgent: { select: { firstName: true, lastName: true } },
+        toAgent: { select: { firstName: true, lastName: true, id: true } },
+      },
+    });
+
+    // Update ticket assignment if transferring to specific agent
+    if (toAgentId) {
+      await prisma.supportTicket.update({
+        where: { id: ticketId },
+        data: { assignedToId: toAgentId },
+      });
+    }
+
+    // Add system message about transfer
+    const fromName = `${transfer.fromAgent.firstName} ${transfer.fromAgent.lastName}`;
+    let systemMessage = `Chat transferred from ${fromName}`;
+    
+    if (toAgentId && transfer.toAgent) {
+      const toName = `${transfer.toAgent.firstName} ${transfer.toAgent.lastName}`;
+      systemMessage += ` to ${toName}`;
+    } else if (department) {
+      systemMessage += ` to ${department} department`;
+    }
+    
+    if (reason) {
+      systemMessage += `. Reason: ${reason}`;
+    }
+
+    await prisma.ticketMessage.create({
+      data: {
+        ticketId,
+        content: systemMessage,
+        isFromUser: false,
+        senderId: fromAgentId,
+      },
+    });
+
+    // Notify the new agent via socket if assigned to specific agent
+    if (toAgentId) {
+      const { emitToUser } = await import('../config/socket');
+      emitToUser(toAgentId, 'chat:transferred', {
+        ticketId,
+        subject: ticket.subject,
+        fromAgent: fromName,
+        reason: reason || null,
+      });
+    }
+
+    // Also notify all support agents about the transfer
+    const { emitToSupport } = await import('../config/socket');
+    emitToSupport('chat:transfer', {
+      ticketId,
+      fromAgentId,
+      toAgentId: toAgentId || null,
+      department: department || null,
+      fromAgent: fromName,
+      toAgent: transfer.toAgent ? `${transfer.toAgent.firstName} ${transfer.toAgent.lastName}` : null,
+    });
+
+    successResponse(res, { transfer, systemMessage });
+  } catch (error) {
+    errorResponse(res, 'TRANSFER_FAILED', (error as Error).message, 500);
   }
 }

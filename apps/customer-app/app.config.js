@@ -25,11 +25,17 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.arthiumlabsllc.groomlink",
       buildNumber: "1.0.0",
+      // Deep linking: groomlink:// scheme (matches Android intentFilters)
+      urlSchemes: ["groomlink"],
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "GroomLink uses your location to find nearby barbershops.",
         NSCameraUsageDescription: "GroomLink needs camera access to upload profile photos.",
         NSPhotoLibraryUsageDescription: "GroomLink needs photo library access to upload profile photos.",
-        ITSAppUsesNonExemptEncryption: false
+        ITSAppUsesNonExemptEncryption: false,
+        // Required: declare URL schemes the app queries (Apple Maps directions)
+        LSApplicationQueriesSchemes: ["maps", "googlechromes", "comgooglemaps"],
+        // Privacy: declare that the app does not track users across apps/websites
+        NSUserTrackingUsageDescription: "GroomLink does not track you across other apps or websites."
       }
     },
     android: {
@@ -110,6 +116,8 @@ export default {
           locationAlwaysAndWhenInUsePermission: "GroomLink needs your location to find nearby salons and barbershops."
         }
       ],
+      "./plugins/with-16kb-page-size",
+      "./plugins/with-privacy-manifest",
       "./plugins/android-manifest-fixes",
       "./plugins/expo-sdk-fix",
       "./plugins/ios-xcode-compat-fix"

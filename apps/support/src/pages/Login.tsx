@@ -168,7 +168,7 @@ export default function Login() {
 
         {/* Form Card */}
         <div className="w-full max-w-sm relative z-10">
-          <div className="bg-white lg:rounded-2xl lg:shadow-lg p-6 sm:p-8 rounded-2xl shadow-elevated">
+          <div className="bg-white dark:bg-gray-900 lg:rounded-2xl lg:shadow-lg p-6 sm:p-8 rounded-2xl shadow-elevated">
             {/* Step Dots */}
             <div className="flex items-center justify-center gap-3 mb-8">
               <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${stepNumber >= 1 ? 'bg-ghana-green scale-110' : 'bg-gray-300'}`} />

@@ -38,6 +38,7 @@ export type BookingsStackParamList = {
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   PlatformFeedback: undefined;
+  Chat: undefined;
 };
 
 // Keep MainStackParamList for backward compatibility with existing screen imports

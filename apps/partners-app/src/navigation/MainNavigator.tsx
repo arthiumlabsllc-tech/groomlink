@@ -21,6 +21,7 @@ import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import NotificationsListScreen from '../screens/main/NotificationsListScreen';
 import CompletionSettingsScreen from '../screens/main/CompletionSettingsScreen';
 import RequestPayoutScreen from '../screens/main/RequestPayoutScreen';
+import ChatScreen from '../screens/support/ChatScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 import { AppTheme } from '../theme/colors';
 import { useAppTheme } from '../theme/ThemeContext';
@@ -206,6 +207,11 @@ function ProfileStack() {
         name="EditSalon"
         component={EditSalonScreen}
         options={{ title: 'Salon Settings' }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

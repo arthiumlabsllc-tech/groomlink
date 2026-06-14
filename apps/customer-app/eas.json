@@ -28,12 +28,17 @@
     "production": {
       "autoIncrement": true,
       "node": "18.19.0",
+      "android": {
+        "image": "latest",
+        "gradleCommand": ":app:bundleRelease",
+        "buildType": "app-bundle"
+      },
       "ios": {
         "autoIncrement": true,
         "image": "latest"
       },
       "cache": {
-        "key": "v9-pin-expo-clipboard"
+        "key": "v11-16kb-page-size-fix-final"
       }
     }
   },

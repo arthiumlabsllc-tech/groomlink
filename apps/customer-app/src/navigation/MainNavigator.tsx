@@ -12,6 +12,7 @@ import BookingsScreen from '../screens/main/BookingsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import ChatScreen from '../screens/support/ChatScreen';
 import {
   HomeStackParamList,
   SearchStackParamList,
@@ -75,6 +76,7 @@ function ProfileStack() {
   return (
     <ProfileStackNav.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStackNav.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStackNav.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
     </ProfileStackNav.Navigator>
   );
 }

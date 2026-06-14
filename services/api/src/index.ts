@@ -160,18 +160,6 @@ app.use('/api/auth/login', authLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static files for uploaded avatars and email assets
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-// Also serve uploads under /api path for email template compatibility
-app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
-// Return 404 for any upload files that don't exist (prevent fall-through to auth routes)
-app.use('/api/uploads', (_req, res) => {
-  res.status(404).json({ success: false, message: 'File not found' });
-});
-app.use('/uploads', (_req, res) => {
-  res.status(404).json({ success: false, message: 'File not found' });
-});
-
 // Suspicious-request detector (runs after body parsing so it can inspect JSON bodies)
 app.use(securityProbe);
 
@@ -185,8 +173,21 @@ app.use(morgan('dev', {
 // Maintenance mode check (after cors/helmet, before routes)
 app.use(maintenanceCheck);
 
-// API routes
+// Serve static files for uploaded avatars and email assets (BEFORE routes to bypass auth)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Also serve uploads under /api path for email template compatibility
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// API routes (MUST come after static file serving)
 app.use('/api', routes);
+
+// Return 404 for any upload files that don't exist (prevent fall-through to auth routes)
+app.use('/api/uploads', (_req, res) => {
+  res.status(404).json({ success: false, message: 'File not found' });
+});
+app.use('/uploads', (_req, res) => {
+  res.status(404).json({ success: false, message: 'File not found' });
+});
 
 // Error handling
 app.use(notFoundHandler);

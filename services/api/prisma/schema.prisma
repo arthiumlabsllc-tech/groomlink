@@ -145,6 +145,8 @@ model User {
   tickets                 SupportTicket[]       @relation("UserTickets")
   assignedTickets         SupportTicket[]       @relation("AssignedTickets")
   ticketMessages          TicketMessage[]
+  transfersFrom           TicketTransfer[]      @relation("TransferFrom")
+  transfersTo             TicketTransfer[]      @relation("TransferTo")
   groupPaymentsPaidBy     GroupBookingPayment[] @relation("GroupPaymentsPaidBy")
   customerEscrows         EscrowAccount[]       @relation("CustomerEscrows")
   providerEscrows         EscrowAccount[]       @relation("ProviderEscrows")
@@ -955,6 +957,7 @@ model SupportTicket {
   assignedToId String?         @map("assigned_to_id")
   assignedTo   User?           @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
   messages     TicketMessage[]
+  transfers    TicketTransfer[]
 
   // Timestamps
   createdAt     DateTime @default(now()) @map("created_at")
@@ -991,6 +994,24 @@ model TicketMessage {
   @@index([senderId])
   @@index([createdAt])
   @@map("ticket_messages")
+}
+
+model TicketTransfer {
+  id          String   @id @default(uuid())
+  ticketId    String   @map("ticket_id")
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromAgentId String   @map("from_agent_id")
+  fromAgent   User     @relation("TransferFrom", fields: [fromAgentId], references: [id], onDelete: Cascade)
+  toAgentId   String?  @map("to_agent_id")
+  toAgent     User?    @relation("TransferTo", fields: [toAgentId], references: [id], onDelete: SetNull)
+  department  String?  // Category: "Billing", "Technical", "General", "Escalations"
+  reason      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@index([fromAgentId])
+  @@index([toAgentId])
+  @@map("ticket_transfers")
 }
 
 model BannedEmail {

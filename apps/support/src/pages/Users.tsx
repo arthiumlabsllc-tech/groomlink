@@ -285,7 +285,7 @@ export default function Users() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Icon name="search" size={32} className="text-gray-400" />
             </div>
@@ -297,7 +297,7 @@ export default function Users() {
       {/* Impersonation Modal */}
       {showImpersonateModal && selectedUser && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-elevated max-w-md w-full p-6 animate-slide-up">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-elevated max-w-md w-full p-6 animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 font-heading">Impersonate User</h3>
               <button 

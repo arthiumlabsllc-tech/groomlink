@@ -116,7 +116,7 @@ export async function appendMessage(input: AppendMessageInput) {
       senderId: input.senderId ?? undefined,
     },
     include: {
-      sender: { select: { id: true, firstName: true, lastName: true } },
+      sender: { select: { id: true, firstName: true, lastName: true, avatar: true } },
     },
   });
 
@@ -220,7 +220,12 @@ export function formatMessage(m: any) {
     isFromUser: m.isFromUser,
     createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : m.createdAt,
     readAt: m.readAt instanceof Date ? m.readAt.toISOString() : m.readAt ?? null,
-    sender: m.sender ?? null,
+    sender: m.sender ? {
+      id: m.sender.id,
+      firstName: m.sender.firstName,
+      lastName: m.sender.lastName,
+      avatar: m.sender.avatar ?? null,
+    } : null,
   };
 }
 

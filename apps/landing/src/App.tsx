@@ -22,6 +22,7 @@ import Explore from './pages/Explore'
 import PartnerWithUs from './pages/PartnerWithUs'
 import Support from './pages/Support'
 import About from './pages/About'
+import Download from './pages/Download'
 import ComingSoon from './pages/ComingSoon'
 import NotFound from './pages/NotFound'
 
@@ -144,9 +145,9 @@ function App() {
           <Route path="/careers" element={<ComingSoon />} />
           <Route path="/blog" element={<ComingSoon />} />
           <Route path="/press" element={<ComingSoon />} />
-          <Route path="/download" element={<ComingSoon />} />
-          <Route path="/app" element={<ComingSoon />} />
-          <Route path="/get-app" element={<ComingSoon />} />
+          <Route path="/download" element={<Download />} />
+          <Route path="/app" element={<Download />} />
+          <Route path="/get-app" element={<Download />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

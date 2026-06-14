@@ -185,13 +185,13 @@ export default function LiveChat() {
   return (
     <div className="flex h-[calc(100vh-4rem)] -m-6">
       {/* Sidebar - thread list */}
-      <aside className="w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col">
+      <aside className="w-80 lg:w-96 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col">
         <div className="p-4 border-b border-gray-100 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Live Chat</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Live Chat</h2>
             <button
               onClick={loadThreads}
-              className="text-gray-500 hover:text-ghana-green transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-ghana-green transition-colors"
               aria-label="Refresh"
             >
               <Icon name="refresh" size={18} />
@@ -207,14 +207,14 @@ export default function LiveChat() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search conversations…"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green/30"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green/30 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
           <div className="flex gap-2">
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
-              className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5"
+              className="flex-1 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 dark:text-white"
             >
               <option value="ALL">All sources</option>
               <option value="LANDING">Landing</option>
@@ -226,7 +226,7 @@ export default function LiveChat() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5"
+              className="flex-1 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 dark:text-white"
             >
               <option value="ALL">All statuses</option>
               <option value="OPEN">Open</option>
@@ -238,9 +238,9 @@ export default function LiveChat() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {loadingList && filteredThreads.length === 0 ? (
-            <div className="p-6 text-center text-sm text-gray-500">Loading…</div>
+            <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">Loading…</div>
           ) : filteredThreads.length === 0 ? (
-            <div className="p-6 text-center text-sm text-gray-500">
+            <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
               No conversations yet.
             </div>
           ) : (
@@ -297,32 +297,37 @@ export default function LiveChat() {
       {/* Main thread view */}
       <section className="flex-1 flex flex-col bg-gray-50">
         {!activeId || !activeTicket ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
-            <Icon name="chat" size={48} className="mb-3 text-gray-300" />
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+            <Icon name="chat" size={48} className="mb-3 text-gray-300 dark:text-gray-600" />
             <p className="text-sm">Select a conversation to start replying.</p>
           </div>
         ) : (
           <>
-            <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">
-                  {activeTicket.user
-                    ? `${activeTicket.user.firstName} ${activeTicket.user.lastName}`
-                    : activeTicket.guestName || activeTicket.guestEmail || 'Anonymous visitor'}
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {activeTicket.subject} ·{' '}
-                  <span className="capitalize">{activeTicket.status?.replace('_', ' ').toLowerCase()}</span>
-                </p>
+            <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    {activeTicket.user
+                      ? `${activeTicket.user.firstName} ${activeTicket.user.lastName}`
+                      : activeTicket.guestName || activeTicket.guestEmail || 'Anonymous visitor'}
+                  </h3>
+                  <span className={`px-2 py-0.5 text-xs rounded-full ${
+                    activeTicket.status === 'OPEN' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                    activeTicket.status === 'IN_PROGRESS' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                    'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                  }`}>
+                    {activeTicket.status?.replace('_', ' ')}
+                  </span>
+                </div>
+                {activeTicket.user?.email || activeTicket.guestEmail ? (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {activeTicket.user?.email || activeTicket.guestEmail}
+                  </span>
+                ) : null}
               </div>
-              {activeTicket.user?.email || activeTicket.guestEmail ? (
-                <span className="text-xs text-gray-500">
-                  {activeTicket.user?.email || activeTicket.guestEmail}
-                </span>
-              ) : null}
             </header>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-3">
+            <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50 dark:bg-gray-950">
               {messages.map((m) => (
                 <div
                   key={m.id}
@@ -332,7 +337,7 @@ export default function LiveChat() {
                     className={cn(
                       'max-w-[70%] px-4 py-2.5 rounded-2xl shadow-sm',
                       m.isFromUser
-                        ? 'bg-white text-gray-900 rounded-bl-sm'
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'
                         : 'bg-ghana-green text-white rounded-br-sm',
                     )}
                   >
@@ -340,7 +345,7 @@ export default function LiveChat() {
                     <p
                       className={cn(
                         'text-[10px] mt-1',
-                        m.isFromUser ? 'text-gray-400' : 'text-white/70',
+                        m.isFromUser ? 'text-gray-400 dark:text-gray-500' : 'text-white/70',
                       )}
                     >
                       {formatTime(m.createdAt)}
@@ -351,7 +356,7 @@ export default function LiveChat() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="bg-white border-t border-gray-200 px-4 py-3">
+            <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
               <div className="flex items-end gap-2">
                 <textarea
                   value={reply}
@@ -364,7 +369,7 @@ export default function LiveChat() {
                   }}
                   placeholder="Type a reply… (Enter to send, Shift+Enter for newline)"
                   rows={2}
-                  className="flex-1 resize-none px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green/30"
+                  className="flex-1 resize-none px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-ghana-green/30 dark:bg-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
                 <button
                   onClick={handleSend}
