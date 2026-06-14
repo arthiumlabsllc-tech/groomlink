@@ -32,7 +32,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v8-16kb-donotstrip-script"
+        "key": "v9-sdk53-upgrade"
       }
     }
   },

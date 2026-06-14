@@ -40,7 +40,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 
 if (isPnpmMonorepo) {
   // Monorepo (local development with pnpm)
-  config.watchFolders = [projectRoot, monorepoRoot];
+  config.watchFolders = [...(config.watchFolders || []), projectRoot, monorepoRoot];
 
   config.resolver.nodeModulesPaths = [
     path.resolve(projectRoot, 'node_modules'),
