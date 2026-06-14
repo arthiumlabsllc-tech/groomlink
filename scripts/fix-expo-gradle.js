@@ -6,9 +6,9 @@
  *    This error occurs with AGP 8.7+ where components.release may not exist.
  * 
  * 2. Patches app/build.gradle to add pickFirsts + doNotStrip for .so files
- *    and injects a Gradle task that uses llvm-objcopy --elf-features=+16k_page_size
- *    (NDK 28+) to fix precompiled .so files from React Native/Expo that were built
- *    with NDK 26 and have 4KB ELF page alignment.
+ *    and injects a pure Groovy ELF64 patcher (via doLast on merge/strip tasks)
+ *    that rewrites p_align from 4096 → 16384 for all PT_LOAD segments in 64-bit
+ *    .so files. No external tools (NDK llvm-objcopy, patchelf) needed.
  */
 
 const fs = require('fs');
@@ -166,13 +166,10 @@ injectAlignmentTask();
 console.log('[fix-expo-gradle] Done');
 
 /**
- * Injects a pure Groovy Gradle task into app/build.gradle that patches
- * ELF64 program headers in-place, rewriting p_align from 4096 to 16384
- * for all PT_LOAD segments in 64-bit .so files.
- *
- * React Native 0.76 ships .so files compiled with NDK 26 (4KB alignment).
- * Google Play requires 16KB alignment for Android 15+.
- * This patcher modifies the ELF headers directly — no external tools needed.
+ * Injects a pure Groovy ELF64 patcher via doLast on merge + strip tasks.
+ * This guarantees the patching runs as part of those tasks directly.
+ * Also patches after strip tasks (which may re-process .so files).
+ * Searches ALL known build intermediate directories.
  */
 function injectAlignmentTask() {
   const possiblePaths = [
@@ -196,132 +193,120 @@ function injectAlignmentTask() {
 
   let content = fs.readFileSync(filePath, 'utf8');
 
-  if (content.includes('align16KB')) {
-    console.log('[fix-expo-gradle] Alignment task already injected, skipping');
+  if (content.includes('patchElf16KB')) {
+    console.log('[fix-expo-gradle] ELF patcher already injected, skipping');
     return;
   }
 
-  // Append the pure Groovy ELF patcher at the end of app/build.gradle
-  const alignmentTask = `
+  // Append the ELF patcher at the end of app/build.gradle
+  const alignmentBlock = `
 
 // ============================================================
-// 16KB Page Size ELF Patcher — Pure Groovy, no external tools
-// Fixes precompiled .so files from RN 0.76 / Expo SDK 52 that
-// were built with NDK 26 and have 4KB ELF page alignment.
-// Rewrites p_align in ELF64 PT_LOAD segments from 4096 to 16384.
+// 16KB Page Size ELF Patcher — Pure Groovy, doLast injection
+// Rewrites p_align in ELF64 PT_LOAD segments from 4096 → 16384.
+// Injected via doLast on merge + strip tasks.
 // ============================================================
 afterEvaluate {
-    tasks.configureEach { task ->
-        if (task.name.contains("merge") &&
-            (task.name.contains("JniLib") || task.name.contains("NativeLib"))) {
-
-            def variantName = task.name.replace("merge", "")
-                                       .replace("JniLibFolders", "")
-                                       .replace("JniLib", "")
-                                       .replace("NativeLibs", "")
-            def alignTaskName = "align16KB\\\${variantName}"
-
-            def alignTask
-            try {
-                alignTask = project.tasks.findByName(alignTaskName)
-                if (!alignTask) {
-                    alignTask = project.tasks.create(alignTaskName) {
-                        doLast {
-                            def readUShort = { byte[] buf, int off ->
-                                (buf[off] & 0xFF) | ((buf[off+1] & 0xFF) << 8)
+    def patchElf16KB = { String taskDisplayName ->
+        def readUShort = { byte[] buf, int off ->
+            (buf[off] & 0xFF) | ((buf[off+1] & 0xFF) << 8)
+        }
+        def readLong = { byte[] buf, int off ->
+            long v = 0
+            for (int i = 7; i >= 0; i--) { v = (v << 8) | (buf[off + i] & 0xFFL) }
+            return v
+        }
+        def writeLong = { byte[] buf, int off, long val ->
+            for (int i = 0; i < 8; i++) { buf[off + i] = (byte)(val & 0xFF); val >>= 8 }
+        }
+        def searchDirs = [
+            file("\\\${buildDir}/intermediates/merged_jni_libs"),
+            file("\\\${buildDir}/intermediates/merged_native_libs"),
+            file("\\\${buildDir}/intermediates/stripped_native_libs"),
+            file("\\\${buildDir}/intermediates/transforms"),
+            file("\\\${buildDir}/intermediates/merged_jni_libs/release"),
+            file("\\\${buildDir}/intermediates/merged_native_libs/release"),
+            file("\\\${buildDir}/intermediates/stripped_native_libs/release"),
+        ]
+        int totalFixed = 0
+        int totalSkipped = 0
+        searchDirs.each { dir ->
+            if (!dir.exists()) return
+            fileTree(dir: dir, include: ['**/arm64-v8a/*.so', '**/x86_64/*.so']).each { soFile ->
+                try {
+                    def raf = new RandomAccessFile(soFile, "rw")
+                    try {
+                        def ident = new byte[64]
+                        raf.readFully(ident)
+                        if (ident[0] != 0x7F || ident[1] != 0x45 || ident[2] != 0x4C || ident[3] != 0x46) return
+                        if (ident[4] != 2) return
+                        long e_phoff = readLong(ident, 32)
+                        int e_phentsize = readUShort(ident, 54)
+                        int e_phnum = readUShort(ident, 56)
+                        if (e_phoff == 0 || e_phnum == 0) return
+                        boolean modified = false
+                        for (int i = 0; i < e_phnum; i++) {
+                            long phOffset = e_phoff + ((long)i * e_phentsize)
+                            def phdr = new byte[e_phentsize]
+                            raf.seek(phOffset)
+                            raf.readFully(phdr)
+                            int p_type = (phdr[0] & 0xFF) | ((phdr[1] & 0xFF) << 8) |
+                                         ((phdr[2] & 0xFF) << 16) | ((phdr[3] & 0xFF) << 24)
+                            if (p_type != 1) continue
+                            long p_offset = readLong(phdr, 8)
+                            long p_vaddr  = readLong(phdr, 16)
+                            long p_align  = readLong(phdr, 48)
+                            if (p_align >= 16384L) continue
+                            long offMod = p_offset % 16384L
+                            long vaddrMod = p_vaddr % 16384L
+                            if (offMod == vaddrMod) {
+                                raf.seek(phOffset + 48)
+                                def buf = new byte[8]
+                                writeLong(buf, 0, 16384L)
+                                raf.write(buf)
+                                modified = true
+                            } else {
+                                totalSkipped++
+                                logger.warn "[16KB] SKIP \\\${soFile.name} seg \\\${i}: off%16K=\\\${offMod} vaddr%16K=\\\${vaddrMod}"
                             }
-                            def readLong = { byte[] buf, int off ->
-                                long v = 0
-                                for (int i = 7; i >= 0; i--) { v = (v << 8) | (buf[off + i] & 0xFFL) }
-                                return v
-                            }
-                            def writeLong = { byte[] buf, int off, long val ->
-                                for (int i = 0; i < 8; i++) { buf[off + i] = (byte)(val & 0xFF); val >>= 8 }
-                            }
-
-                            def mergedDir = file("\\\${buildDir}/intermediates/merged_jni_libs")
-                            if (!mergedDir.exists()) {
-                                mergedDir = file("\\\${buildDir}/intermediates/merged_native_libs")
-                            }
-                            if (!mergedDir.exists()) {
-                                logger.lifecycle "[16KB] merged dir not found, skipping"
-                                return
-                            }
-
-                            int fixed = 0
-                            int skipped = 0
-                            fileTree(dir: mergedDir, include: ['**/arm64-v8a/*.so', '**/x86_64/*.so']).each { soFile ->
-                                try {
-                                    def raf = new RandomAccessFile(soFile, "rw")
-                                    try {
-                                        def ident = new byte[64]
-                                        raf.readFully(ident)
-                                        if (ident[0] != 0x7F || ident[1] != 0x45 || ident[2] != 0x4C || ident[3] != 0x46) return
-                                        if (ident[4] != 2) return
-
-                                        long e_phoff = readLong(ident, 32)
-                                        int e_phentsize = readUShort(ident, 54)
-                                        int e_phnum = readUShort(ident, 56)
-                                        if (e_phoff == 0 || e_phnum == 0) return
-
-                                        boolean modified = false
-                                        for (int i = 0; i < e_phnum; i++) {
-                                            long phOffset = e_phoff + ((long)i * e_phentsize)
-                                            def phdr = new byte[e_phentsize]
-                                            raf.seek(phOffset)
-                                            raf.readFully(phdr)
-
-                                            int p_type = (phdr[0] & 0xFF) | ((phdr[1] & 0xFF) << 8) |
-                                                         ((phdr[2] & 0xFF) << 16) | ((phdr[3] & 0xFF) << 24)
-                                            if (p_type != 1) continue
-
-                                            long p_offset = readLong(phdr, 8)
-                                            long p_vaddr  = readLong(phdr, 16)
-                                            long p_align  = readLong(phdr, 48)
-
-                                            if (p_align < 16384L) {
-                                                long offMod = p_offset % 16384L
-                                                long vaddrMod = p_vaddr % 16384L
-                                                if (offMod == vaddrMod) {
-                                                    raf.seek(phOffset + 48)
-                                                    def buf = new byte[8]
-                                                    writeLong(buf, 0, 16384L)
-                                                    raf.write(buf)
-                                                    modified = true
-                                                } else {
-                                                    skipped++
-                                                    logger.warn "[16KB] Cannot align \\\${soFile.name} seg \\\${i}: offset%16K=\\\${offMod} != vaddr%16K=\\\${vaddrMod}"
-                                                }
-                                            }
-                                        }
-                                        if (modified) fixed++
-                                    } finally { raf.close() }
-                                } catch (Exception e) {
-                                    logger.warn "[16KB] Failed to patch \\\${soFile.name}: \\\${e.message}"
-                                }
-                            }
-                            logger.lifecycle "[16KB] Patched \\\${fixed} .so files to 16KB page alignment (\\\${skipped} skipped)"
                         }
-                    }
-                }
-            } catch (Exception e) {
-                logger.warn "[16KB] Could not create \\\${alignTaskName}: \\\${e.message}"
-                return
-            }
-
-            task.finalizedBy alignTask
-
-            tasks.configureEach { pkgTask ->
-                if (pkgTask.name.contains("Package") && pkgTask.name.toLowerCase().contains(variantName.toLowerCase())) {
-                    pkgTask.dependsOn alignTask
+                        if (modified) {
+                            totalFixed++
+                            logger.lifecycle "[16KB] PATCHED \\\${soFile.absolutePath}"
+                        }
+                    } finally { raf.close() }
+                } catch (Exception e) {
+                    logger.warn "[16KB] ERROR \\\${soFile.name}: \\\${e.message}"
                 }
             }
+        }
+        logger.lifecycle "[16KB] \\\${taskDisplayName}: patched=\\\${totalFixed}, skipped=\\\${totalSkipped}"
+    }
+    tasks.withType(Task) { task ->
+        def name = task.name
+        if (name.contains("merge") && (name.contains("JniLib") || name.contains("NativeLib"))) {
+            task.doLast {
+                logger.lifecycle "[16KB] >>> Patching after \\\${name}"
+                patchElf16KB(name)
+            }
+        }
+        if (name.contains("strip") && (name.contains("Native") || name.contains("Debug") || name.contains("Symbol"))) {
+            task.doLast {
+                logger.lifecycle "[16KB] >>> Patching after \\\${name}"
+                patchElf16KB(name)
+            }
+        }
+    }
+    tasks.register("patch16KBVerify") {
+        doLast {
+            logger.lifecycle "[16KB] Running standalone ELF verification..."
+            patchElf16KB("patch16KBVerify")
         }
     }
 }
 `;
 
-  content += alignmentTask;
+  content += alignmentBlock;
   fs.writeFileSync(filePath, content, 'utf8');
-  console.log('[fix-expo-gradle] Injected pure Groovy ELF patcher into', filePath);
+  console.log('[fix-expo-gradle] Injected doLast ELF patcher into', filePath);
 }
