@@ -1,20 +1,29 @@
 /**
  * fix-expo-gradle.js
- *
+ * 
  * EAS Build post-install hook.
  *
- * 1. Patches expo-modules-core ExpoModulesCorePlugin.gradle to fix:
+ * 1. Patches .so files in node_modules to 16KB alignment (p_align 4096→16384)
+ *    before npx expo prebuild runs. The patched files get copied into the AAB.
+ * 
+ * 2. Patches expo-modules-core ExpoModulesCorePlugin.gradle to fix:
  *    "Could not get unknown property 'release' for SoftwareComponent container"
  *    This error occurs with AGP 8.7+ where components.release may not exist.
- *
- * NOTE: 16KB page size compliance is handled by the config plugin
- *       (./plugins/with-16kb-page-size.js) which applies during `npx expo prebuild`.
- *       It sets useLegacyPackaging=true + extractNativeLibs=true so .so files
- *       are stored compressed — Google Play skips alignment check for compressed libs.
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// Step 1: Patch .so files in node_modules
+console.log('[fix-expo-gradle] Patching .so files in node_modules...');
+const { execSync } = require('child_process');
+try {
+  execSync(`node "${path.join(__dirname, 'patch-so-elf.js')}"`, { stdio: 'inherit' });
+} catch (err) {
+  console.error('[fix-expo-gradle] Failed to patch .so files:', err.message);
+}
+
+// Step 2: Patch ExpoModulesCorePlugin.gradle
 
 function patchExpoModulesCorePlugin() {
   const possiblePaths = [
