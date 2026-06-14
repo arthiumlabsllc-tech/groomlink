@@ -3,8 +3,7 @@
  * 
  * EAS Build post-install hook.
  *
- * 1. Patches .so files in node_modules to 16KB alignment (p_align 4096→16384)
- *    before npx expo prebuild runs. The patched files get copied into the AAB.
+ * 1. Copies fix-16kb.gradle into android/app/ for 16KB page size compliance
  * 
  * 2. Patches expo-modules-core ExpoModulesCorePlugin.gradle to fix:
  *    "Could not get unknown property 'release' for SoftwareComponent container"
@@ -14,16 +13,42 @@
 const fs = require('fs');
 const path = require('path');
 
-// Step 1: Patch .so files in node_modules
-console.log('[fix-expo-gradle] Patching .so files in node_modules...');
-const { execSync } = require('child_process');
-try {
-  execSync(`node "${path.join(__dirname, 'patch-so-elf.js')}"`, { stdio: 'inherit' });
-} catch (err) {
-  console.error('[fix-expo-gradle] Failed to patch .so files:', err.message);
+// Step 1: Copy fix-16kb.gradle into android/app/ (belt-and-suspenders with config plugin)
+function copyGradleFixScript() {
+  const gradleSource = path.join(__dirname, 'fix-16kb.gradle');
+  const possibleDests = [
+    path.resolve(process.cwd(), 'android', 'app', 'fix-16kb.gradle'),
+    path.resolve(__dirname, '..', 'apps', 'customer-app', 'android', 'app', 'fix-16kb.gradle'),
+    path.resolve(__dirname, '..', 'apps', 'partners-app', 'android', 'app', 'fix-16kb.gradle'),
+  ];
+
+  if (!fs.existsSync(gradleSource)) {
+    console.log('[fix-expo-gradle] fix-16kb.gradle not found at', gradleSource);
+    return;
+  }
+
+  for (const dest of possibleDests) {
+    const destDir = path.dirname(dest);
+    if (fs.existsSync(destDir)) {
+      fs.copyFileSync(gradleSource, dest);
+      console.log('[fix-expo-gradle] Copied fix-16kb.gradle to', dest);
+
+      // Also ensure 'apply from' exists in build.gradle
+      const buildGradle = path.join(destDir, 'build.gradle');
+      if (fs.existsSync(buildGradle)) {
+        let content = fs.readFileSync(buildGradle, 'utf8');
+        if (!content.includes('fix-16kb.gradle')) {
+          content += "\napply from: './fix-16kb.gradle'\n";
+          fs.writeFileSync(buildGradle, content, 'utf8');
+          console.log('[fix-expo-gradle] Added apply from fix-16kb.gradle to', buildGradle);
+        }
+      }
+      break;
+    }
+  }
 }
 
-// Step 2: Patch ExpoModulesCorePlugin.gradle
+copyGradleFixScript();
 
 function patchExpoModulesCorePlugin() {
   const possiblePaths = [

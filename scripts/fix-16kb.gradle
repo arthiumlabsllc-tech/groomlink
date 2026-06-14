@@ -1,0 +1,169 @@
+/**
+ * fix-16kb.gradle
+ *
+ * Standalone Gradle script that patches ELF64 .so files for 16KB page size compliance.
+ * Applied via: apply from: './fix-16kb.gradle' in app/build.gradle
+ *
+ * This file is PURE GROOVY with no JavaScript escaping issues.
+ * It hooks into the stripReleaseDebugSymbols task (the LAST task before packaging)
+ * and patches p_align from 4096 to 16384 for all PT_LOAD segments.
+ */
+
+afterEvaluate {
+
+    // Define the ELF patching closure
+    def patchElfFiles = { File baseDir ->
+        if (!baseDir.exists()) {
+            logger.lifecycle("[16KB] Directory not found: ${baseDir}")
+            return 0
+        }
+
+        int patchedCount = 0
+        def soFiles = fileTree(dir: baseDir, includes: ['**/arm64-v8a/**/*.so', '**/x86_64/**/*.so'])
+
+        soFiles.each { File soFile ->
+            try {
+                RandomAccessFile raf = new RandomAccessFile(soFile, "rw")
+                try {
+                    byte[] ident = new byte[64]
+                    raf.readFully(ident)
+
+                    // Check ELF magic: 0x7F 'E' 'L' 'F'
+                    if (ident[0] != (byte)0x7F || ident[1] != (byte)0x45 ||
+                        ident[2] != (byte)0x4C || ident[3] != (byte)0x46) {
+                        return // not ELF
+                    }
+                    // Must be 64-bit (EI_CLASS = 2)
+                    if (ident[4] != (byte)2) {
+                        return // 32-bit, skip
+                    }
+
+                    // Read ELF64 header fields (little-endian)
+                    long e_phoff = readInt64LE(ident, 32)
+                    int e_phentsize = readInt16LE(ident, 54)
+                    int e_phnum = readInt16LE(ident, 56)
+
+                    if (e_phoff == 0 || e_phnum == 0 || e_phentsize < 56) return
+
+                    boolean modified = false
+
+                    for (int i = 0; i < e_phnum; i++) {
+                        long phdrOffset = e_phoff + ((long) i * (long) e_phentsize)
+                        byte[] phdr = new byte[e_phentsize]
+                        raf.seek(phdrOffset)
+                        raf.readFully(phdr)
+
+                        // p_type at offset 0 (4 bytes LE) - PT_LOAD = 1
+                        int pType = readInt32LE(phdr, 0)
+                        if (pType != 1) continue
+
+                        // ELF64 Phdr: p_offset at 8, p_vaddr at 16, p_align at 48
+                        long pOffset = readInt64LE(phdr, 8)
+                        long pVaddr = readInt64LE(phdr, 16)
+                        long pAlign = readInt64LE(phdr, 48)
+
+                        if (pAlign >= 16384L) continue // already OK
+
+                        // Safety check: (p_offset % 16384) must equal (p_vaddr % 16384)
+                        long offMod = pOffset % 16384L
+                        long vaddrMod = pVaddr % 16384L
+
+                        if (offMod == vaddrMod) {
+                            // Write p_align = 16384 at offset 48 in this phdr
+                            raf.seek(phdrOffset + 48L)
+                            byte[] newAlign = new byte[8]
+                            writeInt64LE(newAlign, 0, 16384L)
+                            raf.write(newAlign)
+                            modified = true
+                        } else {
+                            logger.warn("[16KB] SKIP ${soFile.name} seg ${i}: " +
+                                "offset%16K=${offMod} != vaddr%16K=${vaddrMod}")
+                        }
+                    }
+
+                    if (modified) {
+                        patchedCount++
+                        logger.lifecycle("[16KB] PATCHED: ${soFile.absolutePath}")
+                    }
+                } finally {
+                    raf.close()
+                }
+            } catch (Exception e) {
+                logger.warn("[16KB] ERROR on ${soFile.name}: ${e.message}")
+            }
+        }
+
+        return patchedCount
+    }
+
+    // Helper: read 2-byte unsigned little-endian
+    ext.readInt16LE = { byte[] buf, int off ->
+        return ((buf[off] & 0xFF) | ((buf[off + 1] & 0xFF) << 8))
+    }
+
+    // Helper: read 4-byte signed little-endian
+    ext.readInt32LE = { byte[] buf, int off ->
+        return ((buf[off] & 0xFF) |
+                ((buf[off + 1] & 0xFF) << 8) |
+                ((buf[off + 2] & 0xFF) << 16) |
+                ((buf[off + 3] & 0xFF) << 24))
+    }
+
+    // Helper: read 8-byte signed little-endian
+    ext.readInt64LE = { byte[] buf, int off ->
+        long v = 0L
+        for (int i = 7; i >= 0; i--) {
+            v = (v << 8) | ((long)(buf[off + i] & 0xFF))
+        }
+        return v
+    }
+
+    // Helper: write 8-byte little-endian
+    ext.writeInt64LE = { byte[] buf, int off, long val ->
+        for (int i = 0; i < 8; i++) {
+            buf[off + i] = (byte) (val & 0xFFL)
+            val = val >> 8
+        }
+    }
+
+    // Hook into ALL tasks that might contain .so files
+    def patchTaskNames = []
+
+    tasks.each { Task task ->
+        String name = task.name
+
+        boolean shouldHook = false
+
+        // Match merge tasks
+        if (name.contains("merge") && (name.contains("JniLib") || name.contains("NativeLib"))) {
+            shouldHook = true
+        }
+        // Match strip tasks (strip happens AFTER merge, re-processes .so files)
+        if (name.contains("strip") && name.contains("Debug")) {
+            shouldHook = true
+        }
+
+        if (shouldHook) {
+            task.doLast {
+                logger.lifecycle("[16KB] === Running ELF patcher after task: ${name} ===")
+
+                int total = 0
+                // Search all possible intermediate directories
+                def dirs = [
+                    new File(buildDir, "intermediates/merged_jni_libs"),
+                    new File(buildDir, "intermediates/merged_native_libs"),
+                    new File(buildDir, "intermediates/stripped_native_libs"),
+                ]
+
+                dirs.each { File dir ->
+                    total += patchElfFiles(dir)
+                }
+
+                logger.lifecycle("[16KB] === Task ${name} complete: ${total} files patched ===")
+            }
+            patchTaskNames.add(name)
+        }
+    }
+
+    logger.lifecycle("[16KB] Hooked into ${patchTaskNames.size()} tasks: ${patchTaskNames}")
+}
