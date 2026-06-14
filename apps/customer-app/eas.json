@@ -38,7 +38,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v11-16kb-page-size-fix-final"
+        "key": "v12-sdk53-upgrade"
       }
     }
   },

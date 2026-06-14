@@ -10,6 +10,7 @@ export default {
     name: "GroomLink",
     slug: "groomlink-customer",
     version: "1.0.0",
+    scheme: "groomlink",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
@@ -25,8 +26,8 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.arthiumlabsllc.groomlink",
       buildNumber: "1.0.0",
-      // Deep linking: groomlink:// scheme (matches Android intentFilters)
-      urlSchemes: ["groomlink"],
+      // Deep linking handled via top-level scheme property (SDK 53+)
+      // urlSchemes removed — use scheme: "groomlink" at top level
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "GroomLink uses your location to find nearby barbershops.",
         NSCameraUsageDescription: "GroomLink needs camera access to upload profile photos.",
@@ -116,7 +117,7 @@ export default {
           locationAlwaysAndWhenInUsePermission: "GroomLink needs your location to find nearby salons and barbershops."
         }
       ],
-      "./plugins/with-16kb-page-size",
+      // 16KB page size handled natively by RN 0.79+ (SDK 53)
       "./plugins/with-privacy-manifest",
       "./plugins/android-manifest-fixes",
       "./plugins/expo-sdk-fix",
