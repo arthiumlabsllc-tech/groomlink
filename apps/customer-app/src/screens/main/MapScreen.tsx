@@ -549,7 +549,6 @@ export default function MapScreen() {
 
               minZoomLevel={0}
               maxZoomLevel={20}
-              animationEnabled={true}
             >
               {filteredSalons.map(renderMarker)}
             </MapView>
