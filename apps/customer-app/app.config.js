@@ -92,10 +92,7 @@ export default {
           android: {
             compileSdkVersion: 35,
             targetSdkVersion: 35,
-            minSdkVersion: 24,
-            ndkVersion: "26.1.10909125",
-            kotlinVersion: "1.9.25",
-            javaVersion: "17"
+            minSdkVersion: 24
           },
           ios: {
             deploymentTarget: "15.1",
