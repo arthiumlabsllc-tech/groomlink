@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { Marker, Callout, Region } from 'react-native-maps';
-import MapView from 'react-native-map-clustering';
+import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import { salonApi } from '../../api/salon';
 import { Salon } from '../../types';
@@ -546,10 +546,7 @@ export default function MapScreen() {
               showsScale
               mapType="standard"
               onMapReady={() => console.log('Map loaded successfully')}
-              clusterColor="#006B3F"
-              clusterTextColor="#fff"
-              clusterFontFamily="System"
-              radius={50}
+
               minZoomLevel={0}
               maxZoomLevel={20}
               animationEnabled={true}

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GroomLink Customer - Play Store Screenshots</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#e8eaed;padding:40px 20px}
+h1{text-align:center;margin-bottom:8px;color:#1a1a2e;font-size:26px}
+.sub{text-align:center;color:#666;margin-bottom:30px;font-size:14px}
+.instructions{text-align:center;background:#fff8e1;padding:14px 20px;border-radius:10px;margin:0 auto 40px;max-width:700px;font-size:13px;color:#5d4037;line-height:1.6}
+.grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:center}
+.screenshot{width:540px;height:960px;position:relative;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);flex-shrink:0}
+.bg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 0 0}
+.bg-top{flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:40px 30px 20px}
+.phone-frame{width:240px;height:480px;background:#111;border-radius:32px;padding:8px;box-shadow:0 15px 40px rgba(0,0,0,0.3);position:relative}
+.phone-screen{width:100%;height:100%;border-radius:24px;overflow:hidden;position:relative}
+.status-bar{height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:10px;color:#fff;background:rgba(0,0,0,0.3)}
+.notch{width:80px;height:18px;background:#111;border-radius:0 0 12px 12px;position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:5}
+.bg-bottom{width:100%;padding:30px 36px 40px;text-align:center}
+.bg-bottom .title{font-size:26px;font-weight:800;color:#1a1a2e;margin-bottom:8px;line-height:1.2}
+.bg-bottom .subtitle{font-size:15px;color:#555;line-height:1.4;font-weight:400}
+.screen-content{padding:0;height:100%;overflow:hidden}
+
+/* Screen 1 - Home */
+.s1 .bg{background:linear-gradient(135deg,#006B3F 0%,#004d2e 50%,#003320 100%)}
+.s1 .phone-screen{background:#f9fafb}
+.s1 .sc-header{background:#006B3F;padding:14px 12px 10px;color:#fff}
+.s1 .sc-greeting{font-size:9px;opacity:0.8}
+.s1 .sc-name{font-size:13px;font-weight:700;margin-top:2px}
+.s1 .sc-search{background:rgba(255,255,255,0.2);border-radius:16px;padding:6px 10px;margin-top:8px;display:flex;align-items:center;gap:6px;font-size:9px;color:rgba(255,255,255,0.7)}
+.s1 .sc-cats{display:flex;gap:6px;padding:8px 12px;overflow:hidden}
+.s1 .sc-cat{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:3px 8px;font-size:7px;color:#374151;white-space:nowrap}
+.s1 .sc-cat.active{background:#CE1126;color:#fff;border-color:#CE1126}
+.s1 .sc-section-title{font-size:10px;font-weight:700;padding:4px 12px;color:#111}
+.s1 .sc-salons{display:flex;gap:8px;padding:0 12px;overflow:hidden}
+.s1 .sc-salon-card{background:#fff;border-radius:10px;overflow:hidden;width:110px;box-shadow:0 2px 8px rgba(0,0,0,0.08);flex-shrink:0}
+.s1 .sc-salon-img{height:60px;background:linear-gradient(135deg,#CE1126,#FCD116)}
+.s1 .sc-salon-info{padding:6px 8px}
+.s1 .sc-salon-name{font-size:8px;font-weight:700;color:#111}
+.s1 .sc-salon-meta{font-size:6px;color:#6b7280;margin-top:2px}
+.s1 .sc-rating{color:#FCD116;font-size:7px;margin-top:2px}
+.s1 .sc-tab-bar{display:flex;justify-content:space-around;padding:8px 12px;border-top:1px solid #e5e7eb;margin-top:auto;background:#fff}
+.s1 .sc-tab{font-size:7px;color:#9ca3af;text-align:center}
+.s1 .sc-tab.active{color:#CE1126;font-weight:600}
+
+/* Screen 2 - Search */
+.s2 .bg{background:linear-gradient(135deg,#CE1126 0%,#8b0c1c 100%)}
+.s2 .phone-screen{background:#f9fafb}
+.s2 .sc-header{background:#fff;padding:12px;border-bottom:1px solid #e5e7eb}
+.s2 .sc-search-bar{background:#f3f4f6;border-radius:20px;padding:8px 12px;display:flex;align-items:center;gap:6px}
+.s2 .sc-search-icon{color:#9ca3af;font-size:12px}
+.s2 .sc-search-text{font-size:9px;color:#374151}
+.s2 .sc-filters{display:flex;gap:6px;padding:10px 12px}
+.s2 .sc-filter{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:4px 8px;font-size:7px;display:flex;align-items:center;gap:3px}
+.s2 .sc-results{padding:0 12px}
+.s2 .sc-result{background:#fff;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.s2 .sc-result-img{width:50px;height:50px;border-radius:8px;flex-shrink:0}
+.s2 .sc-result-img.r1{background:linear-gradient(135deg,#006B3F,#00a86b)}
+.s2 .sc-result-img.r2{background:linear-gradient(135deg,#D4A017,#FCD116)}
+.s2 .sc-result-img.r3{background:linear-gradient(135deg,#CE1126,#ff6b6b)}
+.s2 .sc-result-name{font-size:9px;font-weight:700;color:#111}
+.s2 .sc-result-loc{font-size:7px;color:#6b7280;margin-top:2px}
+.s2 .sc-result-rating{font-size:7px;color:#D4A017;margin-top:3px;font-weight:600}
+.s2 .sc-result-price{font-size:7px;color:#006B3F;font-weight:600;margin-top:1px}
+
+/* Screen 3 - Salon Detail */
+.s3 .bg{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)}
+.s3 .phone-screen{background:#f9fafb}
+.s3 .sc-hero{height:100px;background:linear-gradient(135deg,#006B3F,#CE1126);position:relative}
+.s3 .sc-hero-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.6));padding:8px 10px;color:#fff}
+.s3 .sc-hero-name{font-size:11px;font-weight:800}
+.s3 .sc-hero-loc{font-size:7px;opacity:0.9;margin-top:1px}
+.s3 .sc-detail-body{padding:8px 10px}
+.s3 .sc-rating-row{display:flex;align-items:center;gap:4px;margin-bottom:6px}
+.s3 .sc-stars{color:#FCD116;font-size:9px}
+.s3 .sc-rating-text{font-size:7px;color:#6b7280}
+.s3 .sc-services-title{font-size:8px;font-weight:700;margin-bottom:4px}
+.s3 .sc-service{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:7px}
+.s3 .sc-service-name{color:#111}
+.s3 .sc-service-price{color:#006B3F;font-weight:700}
+.s3 .sc-book-btn{background:#CE1126;color:#fff;border-radius:16px;padding:6px;text-align:center;font-size:9px;font-weight:700;margin-top:8px}
+
+/* Screen 4 - Booking */
+.s4 .bg{background:linear-gradient(135deg,#FCD116 0%,#D4A017 50%,#b8860b 100%)}
+.s4 .phone-screen{background:#f9fafb}
+.s4 .sc-header{background:#CE1126;padding:10px 12px;color:#fff}
+.s4 .sc-header-title{font-size:11px;font-weight:700}
+.s4 .sc-step{display:flex;align-items:center;gap:6px;margin-top:6px}
+.s4 .sc-step-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.3)}
+.s4 .sc-step-dot.active{background:#fff}
+.s4 .sc-step-dot.done{background:#10B981}
+.s4 .sc-body{padding:10px 12px}
+.s4 .sc-section{margin-bottom:10px}
+.s4 .sc-section-label{font-size:8px;font-weight:700;color:#111;margin-bottom:4px}
+.s4 .sc-date-row{display:flex;gap:4px;overflow:hidden}
+.s4 .sc-date{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px 8px;text-align:center;font-size:7px;min-width:32px}
+.s4 .sc-date.active{background:#CE1126;color:#fff;border-color:#CE1126}
+.s4 .sc-date-day{font-weight:600}
+.s4 .sc-date-num{font-size:10px;font-weight:800;margin-top:1px}
+.s4 .sc-time-row{display:flex;flex-wrap:wrap;gap:4px}
+.s4 .sc-time{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:3px 8px;font-size:7px}
+.s4 .sc-time.active{background:#006B3F;color:#fff;border-color:#006B3F}
+.s4 .sc-confirm-btn{background:#CE1126;color:#fff;border-radius:16px;padding:6px;text-align:center;font-size:9px;font-weight:700;margin-top:10px}
+
+/* Screen 5 - Map */
+.s5 .bg{background:linear-gradient(135deg,#006B3F 0%,#004d2e 100%)}
+.s5 .phone-screen{background:#e8f5e9}
+.s5 .sc-map{height:100%;position:relative;background:linear-gradient(180deg,#c8e6c9 0%,#a5d6a7 30%,#81c784 60%,#66bb6a 100%)}
+.s5 .sc-road{position:absolute;background:rgba(255,255,255,0.6)}
+.s5 .sc-road-h{height:3px;width:100%;top:45%}
+.s5 .sc-road-v{width:3px;height:100%;left:55%}
+.s5 .sc-road-h2{height:2px;width:70%;top:70%;left:15%}
+.s5 .sc-pin{position:absolute;width:20px;height:20px;background:#CE1126;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3)}
+.s5 .sc-pin::after{content:'';width:8px;height:8px;background:#fff;border-radius:50%;position:absolute;top:6px;left:6px}
+.s5 .sc-pin.p1{top:30%;left:25%}
+.s5 .sc-pin.p2{top:50%;left:60%}
+.s5 .sc-pin.p3{top:65%;left:35%}
+.s5 .sc-pin.p4{top:25%;left:70%}
+.s5 .sc-pin-label{position:absolute;top:100%;left:50%;transform:translateX(-50%) rotate(45deg);background:#fff;border-radius:4px;padding:2px 4px;font-size:6px;font-weight:700;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+.s5 .sc-map-search{position:absolute;top:8px;left:8px;right:8px;background:#fff;border-radius:16px;padding:6px 10px;font-size:8px;color:#6b7280;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.s5 .sc-locate-btn{position:absolute;bottom:50px;right:10px;width:28px;height:28px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);font-size:12px}
+.s5 .sc-bottom-card{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:12px 12px 0 0;padding:8px 12px;box-shadow:0 -4px 12px rgba(0,0,0,0.1)}
+.s5 .sc-bc-name{font-size:9px;font-weight:700}
+.s5 .sc-bc-loc{font-size:7px;color:#6b7280}
+.s5 .sc-bc-btn{background:#CE1126;color:#fff;border-radius:10px;padding:3px 10px;font-size:7px;font-weight:600;text-align:center;margin-top:4px;display:inline-block}
+
+/* Screen 6 - My Bookings */
+.s6 .bg{background:linear-gradient(135deg,#374151 0%,#1f2937 100%)}
+.s6 .phone-screen{background:#f9fafb}
+.s6 .sc-header{background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
+.s6 .sc-header-title{font-size:12px;font-weight:700;color:#111}
+.s6 .sc-tabs{display:flex;padding:0 12px;gap:0;border-bottom:1px solid #e5e7eb}
+.s6 .sc-tab{padding:6px 10px;font-size:8px;color:#6b7280;border-bottom:2px solid transparent}
+.s6 .sc-tab.active{color:#CE1126;border-bottom-color:#CE1126;font-weight:700}
+.s6 .sc-bookings{padding:8px 12px}
+.s6 .sc-booking{background:#fff;border-radius:10px;padding:8px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;gap:8px}
+.s6 .sc-booking-img{width:44px;height:44px;border-radius:8px;flex-shrink:0}
+.s6 .sc-booking-img.b1{background:linear-gradient(135deg,#006B3F,#00a86b)}
+.s6 .sc-booking-img.b2{background:linear-gradient(135deg,#D4A017,#FCD116)}
+.s6 .sc-booking-info{flex:1}
+.s6 .sc-booking-name{font-size:8px;font-weight:700;color:#111}
+.s6 .sc-booking-date{font-size:7px;color:#6b7280;margin-top:2px}
+.s6 .sc-booking-status{font-size:6px;font-weight:700;padding:2px 6px;border-radius:8px;display:inline-block;margin-top:3px}
+.s6 .sc-status-confirmed{background:#d1fae5;color:#065f46}
+.s6 .sc-status-pending{background:#fef3c7;color:#92400e}
+.s6 .sc-status-done{background:#e5e7eb;color:#374151}
+
+/* Screen 7 - Live Chat */
+.s7 .bg{background:linear-gradient(135deg,#CE1126 0%,#006B3F 100%)}
+.s7 .phone-screen{background:#f9fafb}
+.s7 .sc-header{background:#006B3F;padding:10px 12px;color:#fff;display:flex;align-items:center;gap:8px}
+.s7 .sc-avatar{width:24px;height:24px;background:#FCD116;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#006B3F}
+.s7 .sc-chat-name{font-size:9px;font-weight:700}
+.s7 .sc-chat-status{font-size:6px;color:rgba(255,255,255,0.7)}
+.s7 .sc-messages{padding:8px 10px;flex:1;display:flex;flex-direction:column;gap:6px}
+.s7 .sc-msg{max-width:75%;padding:6px 10px;border-radius:12px;font-size:8px;line-height:1.4}
+.s7 .sc-msg-received{background:#fff;color:#111;border-bottom-left-radius:4px;align-self:flex-start;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.s7 .sc-msg-sent{background:#006B3F;color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.s7 .sc-msg-time{font-size:5px;opacity:0.6;margin-top:2px}
+.s7 .sc-input-bar{display:flex;gap:6px;padding:8px 10px;border-top:1px solid #e5e7eb;align-items:center}
+.s7 .sc-input{flex:1;background:#f3f4f6;border-radius:16px;padding:6px 10px;font-size:8px;color:#9ca3af}
+.s7 .sc-send-btn{width:24px;height:24px;background:#006B3F;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px}
+
+/* Screen 8 - Notifications */
+.s8 .bg{background:linear-gradient(135deg,#1a1a2e 0%,#0f3460 100%)}
+.s8 .phone-screen{background:#f9fafb}
+.s8 .sc-header{background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb}
+.s8 .sc-header-title{font-size:12px;font-weight:700;color:#111}
+.s8 .sc-notifs{padding:6px 10px}
+.s8 .sc-notif{display:flex;gap:8px;padding:8px;border-radius:10px;margin-bottom:4px}
+.s8 .sc-notif.unread{background:#eff6ff}
+.s8 .sc-notif-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.s8 .sc-notif-icon.green{background:#d1fae5;color:#006B3F}
+.s8 .sc-notif-icon.gold{background:#fef3c7;color:#D4A017}
+.s8 .sc-notif-icon.red{background:#fee2e2;color:#CE1126}
+.s8 .sc-notif-title{font-size:8px;font-weight:700;color:#111}
+.s8 .sc-notif-body{font-size:7px;color:#6b7280;margin-top:1px;line-height:1.3}
+.s8 .sc-notif-time{font-size:6px;color:#9ca3af;margin-top:2px}
+</style>
+</head>
+<body>
+<h1>GroomLink Customer App - Play Store Screenshots</h1>
+<p class="sub">8 Screenshots | Right-click each screenshot > Save as image (1080 x 1920)</p>
+<div class="instructions">
+  <strong>How to use:</strong> Open this page in Chrome. Press F12 (DevTools) > Toggle Device Toolbar (Ctrl+Shift+M) > Set custom size to 1080 x 1920. Screenshot each card below, or use a screenshot tool to capture each one individually.
+</div>
+
+<div class="grid">
+
+<!-- Screenshot 1: Home / Discover -->
+<div class="screenshot s1">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-greeting">Good morning 👋</div>
+    <div class="sc-name">Welcome back, Kwame</div>
+    <div class="sc-search"><span>🔍</span> Search barbershops near you...</div>
+  </div>
+  <div class="sc-cats">
+    <div class="sc-cat active">All</div>
+    <div class="sc-cat">✂️ Haircut</div>
+    <div class="sc-cat">Dreadlocks</div>
+    <div class="sc-cat">Braiding</div>
+    <div class="sc-cat">Beard</div>
+  </div>
+  <div class="sc-section-title">Nearby Salons</div>
+  <div class="sc-salons">
+    <div class="sc-salon-card">
+      <div class="sc-salon-img"></div>
+      <div class="sc-salon-info">
+        <div class="sc-salon-name">Royal Cuts GH</div>
+        <div class="sc-salon-meta">📍 Osu, Accra • 1.2 km</div>
+        <div class="sc-rating">⭐ 4.8 (124)</div>
+      </div>
+    </div>
+    <div class="sc-salon-card">
+      <div class="sc-salon-img" style="background:linear-gradient(135deg,#006B3F,#00a86b)"></div>
+      <div class="sc-salon-info">
+        <div class="sc-salon-name">Fresh Fade Studio</div>
+        <div class="sc-salon-meta">📍 East Legon • 2.5 km</div>
+        <div class="sc-rating">⭐ 4.6 (89)</div>
+      </div>
+    </div>
+  </div>
+  <div class="sc-section-title" style="margin-top:8px">Popular Now</div>
+  <div class="sc-salons">
+    <div class="sc-salon-card">
+      <div class="sc-salon-img" style="background:linear-gradient(135deg,#D4A017,#b8860b)"></div>
+      <div class="sc-salon-info">
+        <div class="sc-salon-name">Gold Touch Barbers</div>
+        <div class="sc-salon-meta">📍 Tema • 5.0 km</div>
+        <div class="sc-rating">⭐ 4.9 (201)</div>
+      </div>
+    </div>
+    <div class="sc-salon-card">
+      <div class="sc-salon-img" style="background:linear-gradient(135deg,#1a1a2e,#374151)"></div>
+      <div class="sc-salon-info">
+        <div class="sc-salon-name">Elite Grooming Hub</div>
+        <div class="sc-salon-meta">📍 Cantonments • 3.1 km</div>
+        <div class="sc-rating">⭐ 4.7 (67)</div>
+      </div>
+    </div>
+  </div>
+  <div class="sc-tab-bar" style="margin-top:auto">
+    <div class="sc-tab active">🏠 Home</div>
+    <div class="sc-tab">🔍 Search</div>
+    <div class="sc-tab">🗺️ Map</div>
+    <div class="sc-tab">📅 Bookings</div>
+    <div class="sc-tab">👤 Profile</div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Discover Nearby Salons</div>
+  <div class="subtitle">Find the best barbershops and salons near you across Ghana</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 2: Search -->
+<div class="screenshot s2">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-search-bar"><span class="sc-search-icon">🔍</span><span class="sc-search-text">Royal Cuts</span></div>
+  </div>
+  <div class="sc-filters">
+    <div class="sc-filter">📍 Location ▾</div>
+    <div class="sc-filter">⭐ Rating ▾</div>
+    <div class="sc-filter">💰 Price ▾</div>
+  </div>
+  <div class="sc-results">
+    <div class="sc-result">
+      <div class="sc-result-img r1"></div>
+      <div>
+        <div class="sc-result-name">Royal Cuts GH</div>
+        <div class="sc-result-loc">📍 Oxford Street, Osu, Accra</div>
+        <div class="sc-result-rating">⭐ 4.8 • 124 reviews</div>
+        <div class="sc-result-price">From GH₵ 30</div>
+      </div>
+    </div>
+    <div class="sc-result">
+      <div class="sc-result-img r2"></div>
+      <div>
+        <div class="sc-result-name">Royal Barber Lounge</div>
+        <div class="sc-result-loc">📍 Spintex Road, Accra</div>
+        <div class="sc-result-rating">⭐ 4.5 • 67 reviews</div>
+        <div class="sc-result-price">From GH₵ 25</div>
+      </div>
+    </div>
+    <div class="sc-result">
+      <div class="sc-result-img r3"></div>
+      <div>
+        <div class="sc-result-name">Royal Hair Studio</div>
+        <div class="sc-result-loc">📍 East Legon, Accra</div>
+        <div class="sc-result-rating">⭐ 4.9 • 203 reviews</div>
+        <div class="sc-result-price">From GH₵ 45</div>
+      </div>
+    </div>
+    <div class="sc-result">
+      <div class="sc-result-img r1" style="background:linear-gradient(135deg,#374151,#6b7280)"></div>
+      <div>
+        <div class="sc-result-name">Royal Touch Grooming</div>
+        <div class="sc-result-loc">📍 Kumasi Central</div>
+        <div class="sc-result-rating">⭐ 4.6 • 45 reviews</div>
+        <div class="sc-result-price">From GH₵ 20</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Search & Filter Easily</div>
+  <div class="subtitle">Find salons by name, location, rating, and price range</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 3: Salon Detail -->
+<div class="screenshot s3">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-hero">
+    <div class="sc-hero-overlay">
+      <div class="sc-hero-name">Royal Cuts GH</div>
+      <div class="sc-hero-loc">📍 Osu, Accra • Open now</div>
+    </div>
+  </div>
+  <div class="sc-detail-body">
+    <div class="sc-rating-row">
+      <span class="sc-stars">⭐⭐⭐⭐⭐</span>
+      <span class="sc-rating-text">4.8 (124 reviews)</span>
+    </div>
+    <div class="sc-services-title">Services</div>
+    <div class="sc-service"><span class="sc-service-name">✂️ Classic Haircut</span><span class="sc-service-price">GH₵ 30</span></div>
+    <div class="sc-service"><span class="sc-service-name">🧔 Beard Trim</span><span class="sc-service-price">GH₵ 15</span></div>
+    <div class="sc-service"><span class="sc-service-name">💈 Haircut + Beard</span><span class="sc-service-price">GH₵ 40</span></div>
+    <div class="sc-service"><span class="sc-service-name">👦 Kids Haircut</span><span class="sc-service-price">GH₵ 20</span></div>
+    <div class="sc-service"><span class="sc-service-name">🪮 Dreadlocks</span><span class="sc-service-price">GH₵ 80</span></div>
+    <div class="sc-service"><span class="sc-service-name">💅 Manicure</span><span class="sc-service-price">GH₵ 35</span></div>
+    <div class="sc-book-btn">Book Appointment</div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">View Services & Prices</div>
+  <div class="subtitle">Browse the full service menu with transparent pricing before you book</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 4: Booking -->
+<div class="screenshot s4">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Book Appointment</div>
+    <div class="sc-step">
+      <div class="sc-step-dot done"></div>
+      <div class="sc-step-dot active"></div>
+      <div class="sc-step-dot"></div>
+    </div>
+  </div>
+  <div class="sc-body">
+    <div class="sc-section">
+      <div class="sc-section-label">📅 Select Date</div>
+      <div class="sc-date-row">
+        <div class="sc-date"><div class="sc-date-day">Mon</div><div class="sc-date-num">12</div></div>
+        <div class="sc-date active"><div class="sc-date-day">Tue</div><div class="sc-date-num">13</div></div>
+        <div class="sc-date"><div class="sc-date-day">Wed</div><div class="sc-date-num">14</div></div>
+        <div class="sc-date"><div class="sc-date-day">Thu</div><div class="sc-date-num">15</div></div>
+        <div class="sc-date"><div class="sc-date-day">Fri</div><div class="sc-date-num">16</div></div>
+        <div class="sc-date"><div class="sc-date-day">Sat</div><div class="sc-date-num">17</div></div>
+      </div>
+    </div>
+    <div class="sc-section">
+      <div class="sc-section-label">🕐 Select Time</div>
+      <div class="sc-time-row">
+        <div class="sc-time">9:00 AM</div>
+        <div class="sc-time">9:30 AM</div>
+        <div class="sc-time active">10:00 AM</div>
+        <div class="sc-time">10:30 AM</div>
+        <div class="sc-time">11:00 AM</div>
+        <div class="sc-time">11:30 AM</div>
+        <div class="sc-time">12:00 PM</div>
+        <div class="sc-time">2:00 PM</div>
+      </div>
+    </div>
+    <div class="sc-section">
+      <div class="sc-section-label">✂️ Selected Service</div>
+      <div style="background:#fff;border-radius:8px;padding:6px 8px;display:flex;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <span style="font-size:8px;font-weight:600">💈 Haircut + Beard Combo</span>
+        <span style="font-size:8px;font-weight:700;color:#006B3F">GH₵ 40</span>
+      </div>
+    </div>
+    <div class="sc-confirm-btn">Confirm Booking — GH₵ 40</div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Book in Seconds</div>
+  <div class="subtitle">Pick a date, time, and service — confirm your appointment instantly</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 5: Map -->
+<div class="screenshot s5">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column;height:100%">
+  <div class="sc-map">
+    <div class="sc-road sc-road-h"></div>
+    <div class="sc-road sc-road-v"></div>
+    <div class="sc-road sc-road-h2"></div>
+    <div class="sc-pin p1"><div class="sc-pin-label">Royal Cuts</div></div>
+    <div class="sc-pin p2"><div class="sc-pin-label">Fresh Fade</div></div>
+    <div class="sc-pin p3"><div class="sc-pin-label">Gold Touch</div></div>
+    <div class="sc-pin p4"></div>
+    <div class="sc-map-search">🔍 Search salons on map...</div>
+    <div class="sc-locate-btn">📍</div>
+    <div class="sc-bottom-card">
+      <div class="sc-bc-name">Royal Cuts GH ⭐ 4.8</div>
+      <div class="sc-bc-loc">📍 1.2 km away • Open until 8 PM</div>
+      <div class="sc-bc-btn">View & Book</div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Find on Map</div>
+  <div class="subtitle">See nearby salons on an interactive map with real-time distance</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 6: My Bookings -->
+<div class="screenshot s6">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">My Bookings</div>
+    <span style="font-size:10px">🔔</span>
+  </div>
+  <div class="sc-tabs">
+    <div class="sc-tab active">Upcoming</div>
+    <div class="sc-tab">Past</div>
+    <div class="sc-tab">Cancelled</div>
+  </div>
+  <div class="sc-bookings">
+    <div class="sc-booking">
+      <div class="sc-booking-img b1"></div>
+      <div class="sc-booking-info">
+        <div class="sc-booking-name">Royal Cuts GH</div>
+        <div class="sc-booking-date">📅 Tue, Jun 13 • 10:00 AM</div>
+        <div class="sc-booking-date">✂️ Haircut + Beard</div>
+        <div class="sc-booking-status sc-status-confirmed">✓ Confirmed</div>
+      </div>
+    </div>
+    <div class="sc-booking">
+      <div class="sc-booking-img b2"></div>
+      <div class="sc-booking-info">
+        <div class="sc-booking-name">Fresh Fade Studio</div>
+        <div class="sc-booking-date">📅 Fri, Jun 16 • 2:00 PM</div>
+        <div class="sc-booking-date">✂️ Classic Haircut</div>
+        <div class="sc-booking-status sc-status-pending">⏳ Pending</div>
+      </div>
+    </div>
+    <div class="sc-booking">
+      <div class="sc-booking-img b1" style="background:linear-gradient(135deg,#374151,#6b7280)"></div>
+      <div class="sc-booking-info">
+        <div class="sc-booking-name">Gold Touch Barbers</div>
+        <div class="sc-booking-date">📅 Sat, Jun 10 • 11:00 AM</div>
+        <div class="sc-booking-date">✂️ Dreadlocks</div>
+        <div class="sc-booking-status sc-status-done">✓ Completed</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Track Your Appointments</div>
+  <div class="subtitle">View upcoming, past, and cancelled bookings — all in one place</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 7: Live Chat -->
+<div class="screenshot s7">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column;height:100%">
+  <div class="sc-header">
+    <div class="sc-avatar">GL</div>
+    <div>
+      <div class="sc-chat-name">GroomLink Support</div>
+      <div class="sc-chat-status">Online • Usually replies instantly</div>
+    </div>
+  </div>
+  <div class="sc-messages">
+    <div class="sc-msg sc-msg-received">
+      <div>Hello! 👋 Welcome to GroomLink Support. How can we help you today?</div>
+      <div class="sc-msg-time">10:30 AM</div>
+    </div>
+    <div class="sc-msg sc-msg-sent">
+      <div>Hi! I'd like to reschedule my appointment at Royal Cuts.</div>
+      <div class="sc-msg-time">10:31 AM</div>
+    </div>
+    <div class="sc-msg sc-msg-received">
+      <div>Of course! I can help you reschedule. Let me pull up your booking details. ✨</div>
+      <div class="sc-msg-time">10:31 AM</div>
+    </div>
+    <div class="sc-msg sc-msg-sent">
+      <div>Thank you! I need it moved to Friday at 2 PM.</div>
+      <div class="sc-msg-time">10:32 AM</div>
+    </div>
+    <div class="sc-msg sc-msg-received">
+      <div>Done! ✅ Your appointment has been rescheduled to Friday, June 16 at 2:00 PM. You'll get a confirmation notification.</div>
+      <div class="sc-msg-time">10:33 AM</div>
+    </div>
+  </div>
+  <div class="sc-input-bar">
+    <div class="sc-input">Type a message...</div>
+    <div class="sc-send-btn">➤</div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">24/7 Live Support</div>
+  <div class="subtitle">Get instant help from our support team — anytime, anywhere</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 8: Notifications -->
+<div class="screenshot s8">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Notifications</div>
+  </div>
+  <div class="sc-notifs">
+    <div class="sc-notif unread">
+      <div class="sc-notif-icon green">✓</div>
+      <div>
+        <div class="sc-notif-title">Booking Confirmed</div>
+        <div class="sc-notif-body">Your haircut at Royal Cuts GH is confirmed for Tue, Jun 13 at 10:00 AM</div>
+        <div class="sc-notif-time">2 minutes ago</div>
+      </div>
+    </div>
+    <div class="sc-notif unread">
+      <div class="sc-notif-icon gold">⭐</div>
+      <div>
+        <div class="sc-notif-title">Rate Your Experience</div>
+        <div class="sc-notif-body">How was your visit to Gold Touch Barbers? Leave a review!</div>
+        <div class="sc-notif-time">1 hour ago</div>
+      </div>
+    </div>
+    <div class="sc-notif">
+      <div class="sc-notif-icon red">🎉</div>
+      <div>
+        <div class="sc-notif-title">Special Offer!</div>
+        <div class="sc-notif-body">Get 20% off your next booking at Fresh Fade Studio this weekend</div>
+        <div class="sc-notif-time">Yesterday</div>
+      </div>
+    </div>
+    <div class="sc-notif">
+      <div class="sc-notif-icon green">📅</div>
+      <div>
+        <div class="sc-notif-title">Appointment Reminder</div>
+        <div class="sc-notif-body">You have an appointment tomorrow at 2:00 PM at Royal Cuts GH</div>
+        <div class="sc-notif-time">2 days ago</div>
+      </div>
+    </div>
+    <div class="sc-notif">
+      <div class="sc-notif-icon gold">💰</div>
+      <div>
+        <div class="sc-notif-title">Payment Successful</div>
+        <div class="sc-notif-body">GH₵ 40 paid for Haircut + Beard at Royal Cuts GH</div>
+        <div class="sc-notif-time">3 days ago</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Never Miss a Thing</div>
+  <div class="subtitle">Real-time notifications for bookings, reminders, and special offers</div>
+</div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

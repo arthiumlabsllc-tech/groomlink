@@ -16,7 +16,7 @@
       "ios": {
         "simulator": true
       },
-      "node": "18.19.0"
+      "node": "20.18.0"
     },
     "preview-device": {
       "distribution": "internal",
@@ -26,13 +26,13 @@
     },
     "production": {
       "autoIncrement": true,
-      "node": "18.19.0",
+      "node": "20.18.0",
       "ios": {
         "autoIncrement": true,
         "image": "latest"
       },
       "cache": {
-        "key": "v9-sdk53-upgrade"
+        "key": "v10-remove-dead-deps"
       }
     }
   },

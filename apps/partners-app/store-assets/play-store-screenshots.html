@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GroomLink Partners - Play Store Screenshots</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#e8eaed;padding:40px 20px}
+h1{text-align:center;margin-bottom:8px;color:#1a1a2e;font-size:26px}
+.sub{text-align:center;color:#666;margin-bottom:30px;font-size:14px}
+.instructions{text-align:center;background:#e8f5e9;padding:14px 20px;border-radius:10px;margin:0 auto 40px;max-width:700px;font-size:13px;color:#2e7d32;line-height:1.6}
+.grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:center}
+.screenshot{width:540px;height:960px;position:relative;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);flex-shrink:0}
+.bg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.bg-top{flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:40px 30px 20px}
+.phone-frame{width:240px;height:480px;background:#111;border-radius:32px;padding:8px;box-shadow:0 15px 40px rgba(0,0,0,0.3);position:relative}
+.phone-screen{width:100%;height:100%;border-radius:24px;overflow:hidden;position:relative}
+.notch{width:80px;height:18px;background:#111;border-radius:0 0 12px 12px;position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:5}
+.bg-bottom{width:100%;padding:30px 36px 40px;text-align:center}
+.bg-bottom .title{font-size:26px;font-weight:800;color:#1a1a2e;margin-bottom:8px;line-height:1.2}
+.bg-bottom .subtitle{font-size:15px;color:#555;line-height:1.4;font-weight:400}
+.screen-content{padding:0;height:100%;overflow:hidden}
+
+/* Screen 1 - Dashboard */
+.s1 .bg{background:linear-gradient(135deg,#006B3F 0%,#004d2e 50%,#003320 100%)}
+.s1 .phone-screen{background:#f9fafb}
+.s1 .sc-header{background:#006B3F;padding:12px;color:#fff}
+.s1 .sc-greeting{font-size:8px;opacity:0.8}
+.s1 .sc-salon-name{font-size:11px;font-weight:700;margin-top:1px}
+.s1 .sc-stats{display:flex;gap:6px;padding:8px 10px}
+.s1 .sc-stat{flex:1;background:#fff;border-radius:10px;padding:8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.s1 .sc-stat-value{font-size:14px;font-weight:800;color:#006B3F}
+.s1 .sc-stat-label{font-size:6px;color:#6b7280;margin-top:1px}
+.s1 .sc-section-title{font-size:9px;font-weight:700;padding:6px 10px 4px;color:#111}
+.s1 .sc-today{padding:0 10px}
+.s1 .sc-booking-item{background:#fff;border-radius:8px;padding:6px 8px;margin-bottom:4px;display:flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.s1 .sc-time-badge{background:#e8f5e9;color:#006B3F;border-radius:6px;padding:3px 5px;font-size:7px;font-weight:700;min-width:36px;text-align:center}
+.s1 .sc-client-name{font-size:8px;font-weight:600;color:#111}
+.s1 .sc-service-name{font-size:6px;color:#6b7280}
+.s1 .sc-status{font-size:6px;font-weight:700;padding:1px 5px;border-radius:6px;margin-left:auto}
+.s1 .sc-status.confirmed{background:#d1fae5;color:#065f46}
+.s1 .sc-status.pending{background:#fef3c7;color:#92400e}
+.s1 .sc-status.in-progress{background:#dbeafe;color:#1e40af}
+.s1 .sc-tab-bar{display:flex;justify-content:space-around;padding:8px 8px;border-top:1px solid #e5e7eb;margin-top:auto;background:#fff}
+.s1 .sc-tab{font-size:6px;color:#9ca3af;text-align:center}
+.s1 .sc-tab.active{color:#006B3F;font-weight:600}
+
+/* Screen 2 - Bookings Management */
+.s2 .bg{background:linear-gradient(135deg,#D4A017 0%,#b8860b 100%)}
+.s2 .phone-screen{background:#f9fafb}
+.s2 .sc-header{background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
+.s2 .sc-header-title{font-size:12px;font-weight:700;color:#111}
+.s2 .sc-date-strip{display:flex;gap:4px;padding:6px 10px;background:#fff;border-bottom:1px solid #f3f4f6}
+.s2 .sc-date{background:#f3f4f6;border-radius:8px;padding:3px 7px;text-align:center;font-size:7px;min-width:28px}
+.s2 .sc-date.active{background:#006B3F;color:#fff}
+.s2 .sc-date-day{font-weight:600}
+.s2 .sc-date-num{font-size:9px;font-weight:800}
+.s2 .sc-bookings{padding:6px 10px}
+.s2 .sc-booking{background:#fff;border-radius:10px;padding:8px;margin-bottom:5px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border-left:3px solid #006B3F}
+.s2 .sc-booking.pending-booking{border-left-color:#D4A017}
+.s2 .sc-booking-top{display:flex;justify-content:space-between;align-items:center}
+.s2 .sc-booking-name{font-size:9px;font-weight:700;color:#111}
+.s2 .sc-booking-time{font-size:7px;color:#006B3F;font-weight:600}
+.s2 .sc-booking-service{font-size:7px;color:#6b7280;margin-top:2px}
+.s2 .sc-booking-actions{display:flex;gap:4px;margin-top:4px}
+.s2 .sc-action{padding:2px 8px;border-radius:10px;font-size:6px;font-weight:600}
+.s2 .sc-action-confirm{background:#d1fae5;color:#065f46}
+.s2 .sc-action-decline{background:#fee2e2;color:#991b1b}
+
+/* Screen 3 - Queue Management */
+.s3 .bg{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)}
+.s3 .phone-screen{background:#f9fafb}
+.s3 .sc-header{background:#006B3F;padding:10px 12px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.s3 .sc-header-title{font-size:12px;font-weight:700}
+.s3 .sc-queue-count{background:rgba(255,255,255,0.2);border-radius:12px;padding:2px 8px;font-size:8px}
+.s3 .sc-queue{padding:8px 10px}
+.s3 .sc-queue-item{background:#fff;border-radius:10px;padding:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.s3 .sc-queue-num{width:22px;height:22px;border-radius:50%;background:#006B3F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.s3 .sc-queue-num.current{background:#CE1126}
+.s3 .sc-queue-num.waiting{background:#e5e7eb;color:#6b7280}
+.s3 .sc-queue-info{flex:1}
+.s3 .sc-queue-name{font-size:8px;font-weight:700;color:#111}
+.s3 .sc-queue-service{font-size:6px;color:#6b7280}
+.s3 .sc-queue-time{font-size:6px;color:#9ca3af}
+.s3 .sc-queue-btn{padding:3px 6px;border-radius:6px;font-size:6px;font-weight:700}
+.s3 .sc-queue-btn.start{background:#006B3F;color:#fff}
+.s3 .sc-queue-btn.done{background:#d1fae5;color:#065f46}
+.s3 .sc-now-serving{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:6px 10px;margin-bottom:8px;text-align:center}
+.s3 .sc-now-serving-label{font-size:7px;color:#1e40af;font-weight:700}
+.s3 .sc-now-serving-name{font-size:12px;font-weight:800;color:#1e3a5f;margin-top:2px}
+
+/* Screen 4 - Services */
+.s4 .bg{background:linear-gradient(135deg,#CE1126 0%,#8b0c1c 100%)}
+.s4 .phone-screen{background:#f9fafb}
+.s4 .sc-header{background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
+.s4 .sc-header-title{font-size:12px;font-weight:700;color:#111}
+.s4 .sc-add-btn{background:#006B3F;color:#fff;border-radius:12px;padding:3px 8px;font-size:7px;font-weight:700}
+.s4 .sc-services{padding:8px 10px}
+.s4 .sc-service{background:#fff;border-radius:10px;padding:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.s4 .sc-service-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.s4 .sc-service-icon.hair{background:#fee2e2}
+.s4 .sc-service-icon.beard{background:#fef3c7}
+.s4 .sc-service-icon.nails{background:#ede9fe}
+.s4 .sc-service-icon.dreads{background:#d1fae5}
+.s4 .sc-service-info{flex:1}
+.s4 .sc-service-name{font-size:9px;font-weight:700;color:#111}
+.s4 .sc-service-meta{font-size:6px;color:#6b7280;margin-top:1px}
+.s4 .sc-service-price{font-size:10px;font-weight:800;color:#006B3F}
+.s4 .sc-toggle{width:26px;height:14px;border-radius:7px;background:#006B3F;position:relative}
+.s4 .sc-toggle::after{content:'';width:10px;height:10px;background:#fff;border-radius:50%;position:absolute;top:2px;right:2px}
+.s4 .sc-toggle.off{background:#e5e7eb}
+.s4 .sc-toggle.off::after{right:auto;left:2px}
+
+/* Screen 5 - QR Scanner */
+.s5 .bg{background:linear-gradient(135deg,#006B3F 0%,#004d2e 100%)}
+.s5 .phone-screen{background:#111}
+.s5 .sc-header{padding:10px 12px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.s5 .sc-header-title{font-size:11px;font-weight:700}
+.s5 .sc-close{font-size:16px;opacity:0.7}
+.s5 .sc-viewfinder{width:160px;height:160px;margin:30px auto;border:3px solid #006B3F;border-radius:16px;position:relative;box-shadow:0 0 0 2000px rgba(0,0,0,0.5)}
+.s5 .sc-corner{position:absolute;width:16px;height:16px;border:3px solid #FCD116}
+.s5 .sc-corner.tl{top:-2px;left:-2px;border-right:none;border-bottom:none;border-radius:4px 0 0 0}
+.s5 .sc-corner.tr{top:-2px;right:-2px;border-left:none;border-bottom:none;border-radius:0 4px 0 0}
+.s5 .sc-corner.bl{bottom:-2px;left:-2px;border-right:none;border-top:none;border-radius:0 0 0 4px}
+.s5 .sc-corner.br{bottom:-2px;right:-2px;border-left:none;border-top:none;border-radius:0 0 4px 0}
+.s5 .sc-scan-line{position:absolute;top:20%;left:5%;right:5%;height:2px;background:#006B3F;box-shadow:0 0 8px #006B3F}
+.s5 .sc-instruction{text-align:center;color:#fff;font-size:9px;margin-top:20px;opacity:0.8}
+.s5 .sc-result-card{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;padding:12px}
+.s5 .sc-result-name{font-size:10px;font-weight:700;color:#111}
+.s5 .sc-result-booking{font-size:7px;color:#6b7280;margin-top:2px}
+.s5 .sc-result-btn{background:#006B3F;color:#fff;border-radius:12px;padding:5px;text-align:center;font-size:8px;font-weight:700;margin-top:6px}
+
+/* Screen 6 - Staff Management */
+.s6 .bg{background:linear-gradient(135deg,#374151 0%,#1f2937 100%)}
+.s6 .phone-screen{background:#f9fafb}
+.s6 .sc-header{background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
+.s6 .sc-header-title{font-size:12px;font-weight:700;color:#111}
+.s6 .sc-add-btn{background:#006B3F;color:#fff;border-radius:12px;padding:3px 8px;font-size:7px;font-weight:700}
+.s6 .sc-staff{padding:8px 10px}
+.s6 .sc-staff-card{background:#fff;border-radius:12px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.s6 .sc-staff-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.s6 .sc-staff-avatar.a1{background:#dbeafe;color:#1e40af}
+.s6 .sc-staff-avatar.a2{background:#d1fae5;color:#065f46}
+.s6 .sc-staff-avatar.a3{background:#fef3c7;color:#92400e}
+.s6 .sc-staff-info{flex:1}
+.s6 .sc-staff-name{font-size:9px;font-weight:700;color:#111}
+.s6 .sc-staff-role{font-size:7px;color:#6b7280;margin-top:1px}
+.s6 .sc-staff-stats{display:flex;gap:8px;margin-top:3px}
+.s6 .sc-staff-stat{font-size:6px;color:#9ca3af}
+.s6 .sc-staff-stat strong{color:#006B3F}
+.s6 .sc-staff-status{padding:2px 6px;border-radius:8px;font-size:6px;font-weight:700}
+.s6 .sc-status-available{background:#d1fae5;color:#065f46}
+.s6 .sc-status-busy{background:#fef3c7;color:#92400e}
+.s6 .sc-status-off{background:#e5e7eb;color:#6b7280}
+
+/* Screen 7 - Earnings */
+.s7 .bg{background:linear-gradient(135deg,#FCD116 0%,#D4A017 50%,#b8860b 100%)}
+.s7 .phone-screen{background:#f9fafb}
+.s7 .sc-header{background:#006B3F;padding:10px 12px;color:#fff}
+.s7 .sc-header-title{font-size:11px;font-weight:700}
+.s7 .sc-balance-card{background:linear-gradient(135deg,#006B3F,#004d2e);margin:8px 10px;border-radius:14px;padding:14px;color:#fff}
+.s7 .sc-balance-label{font-size:7px;opacity:0.8}
+.s7 .sc-balance-amount{font-size:20px;font-weight:800;margin-top:2px}
+.s7 .sc-balance-sub{font-size:7px;opacity:0.7;margin-top:2px}
+.s7 .sc-payout-btn{background:#FCD116;color:#1a1a2e;border-radius:14px;padding:5px 14px;font-size:8px;font-weight:700;display:inline-block;margin-top:8px}
+.s7 .sc-revenue-row{display:flex;gap:6px;padding:0 10px;margin-bottom:8px}
+.s7 .sc-revenue-card{flex:1;background:#fff;border-radius:10px;padding:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.s7 .sc-revenue-value{font-size:12px;font-weight:800;color:#006B3F}
+.s7 .sc-revenue-label{font-size:6px;color:#6b7280;margin-top:1px}
+.s7 .sc-chart{padding:0 10px;margin-bottom:8px}
+.s7 .sc-chart-title{font-size:8px;font-weight:700;margin-bottom:4px}
+.s7 .sc-bars{display:flex;align-items:flex-end;gap:4px;height:60px}
+.s7 .sc-bar{flex:1;background:#d1fae5;border-radius:4px 4px 0 0;position:relative;min-height:8px}
+.s7 .sc-bar.highlight{background:#006B3F}
+.s7 .sc-bar-label{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);font-size:5px;color:#6b7280}
+
+/* Screen 8 - Notifications */
+.s8 .bg{background:linear-gradient(135deg,#1a1a2e 0%,#0f3460 100%)}
+.s8 .phone-screen{background:#f9fafb}
+.s8 .sc-header{background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb}
+.s8 .sc-header-title{font-size:12px;font-weight:700;color:#111}
+.s8 .sc-notifs{padding:6px 10px}
+.s8 .sc-notif{display:flex;gap:8px;padding:8px;border-radius:10px;margin-bottom:4px}
+.s8 .sc-notif.unread{background:#ecfdf5}
+.s8 .sc-notif-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.s8 .sc-notif-icon.green{background:#d1fae5;color:#006B3F}
+.s8 .sc-notif-icon.gold{background:#fef3c7;color:#D4A017}
+.s8 .sc-notif-icon.red{background:#fee2e2;color:#CE1126}
+.s8 .sc-notif-icon.blue{background:#dbeafe;color:#1e40af}
+.s8 .sc-notif-title{font-size:8px;font-weight:700;color:#111}
+.s8 .sc-notif-body{font-size:7px;color:#6b7280;margin-top:1px;line-height:1.3}
+.s8 .sc-notif-time{font-size:6px;color:#9ca3af;margin-top:2px}
+</style>
+</head>
+<body>
+<h1>GroomLink Partners App - Play Store Screenshots</h1>
+<p class="sub">8 Screenshots | Right-click each screenshot > Save as image (1080 x 1920)</p>
+<div class="instructions">
+  <strong>How to use:</strong> Open this page in Chrome. Press F12 (DevTools) > Toggle Device Toolbar (Ctrl+Shift+M) > Set custom size to 1080 x 1920. Screenshot each card below, or use a screenshot tool to capture each one individually.
+</div>
+
+<div class="grid">
+
+<!-- Screenshot 1: Dashboard -->
+<div class="screenshot s1">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-greeting">Good morning 👋</div>
+    <div class="sc-salon-name">Royal Cuts GH</div>
+  </div>
+  <div class="sc-stats">
+    <div class="sc-stat">
+      <div class="sc-stat-value">GH₵ 2,450</div>
+      <div class="sc-stat-label">This Week</div>
+    </div>
+    <div class="sc-stat">
+      <div class="sc-stat-value">18</div>
+      <div class="sc-stat-label">Today's Bookings</div>
+    </div>
+    <div class="sc-stat">
+      <div class="sc-stat-value">4.8 ⭐</div>
+      <div class="sc-stat-label">Rating</div>
+    </div>
+  </div>
+  <div class="sc-section-title">Today's Schedule</div>
+  <div class="sc-today">
+    <div class="sc-booking-item">
+      <div class="sc-time-badge">9:00</div>
+      <div><div class="sc-client-name">Kwame Asante</div><div class="sc-service-name">✂️ Haircut + Beard</div></div>
+      <div class="sc-status confirmed">✓ Done</div>
+    </div>
+    <div class="sc-booking-item">
+      <div class="sc-time-badge">10:00</div>
+      <div><div class="sc-client-name">Ama Serwaa</div><div class="sc-service-name">🪮 Braiding</div></div>
+      <div class="sc-status in-progress">▶ In Progress</div>
+    </div>
+    <div class="sc-booking-item">
+      <div class="sc-time-badge">11:30</div>
+      <div><div class="sc-client-name">Kofi Mensah</div><div class="sc-service-name">💈 Classic Cut</div></div>
+      <div class="sc-status pending">⏳ Upcoming</div>
+    </div>
+    <div class="sc-booking-item">
+      <div class="sc-time-badge">2:00</div>
+      <div><div class="sc-client-name">Abena Osei</div><div class="sc-service-name">💅 Manicure</div></div>
+      <div class="sc-status pending">⏳ Upcoming</div>
+    </div>
+  </div>
+  <div class="sc-tab-bar" style="margin-top:auto">
+    <div class="sc-tab active">📊 Dashboard</div>
+    <div class="sc-tab">👥 Queue</div>
+    <div class="sc-tab">📅 Bookings</div>
+    <div class="sc-tab">✂️ Services</div>
+    <div class="sc-tab">👤 Profile</div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Your Business Dashboard</div>
+  <div class="subtitle">Monitor revenue, bookings, and ratings — all at a glance</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 2: Bookings Management -->
+<div class="screenshot s2">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Appointments</div>
+    <span style="font-size:10px">🔔 3</span>
+  </div>
+  <div class="sc-date-strip">
+    <div class="sc-date"><div class="sc-date-day">Mon</div><div class="sc-date-num">12</div></div>
+    <div class="sc-date active"><div class="sc-date-day">Tue</div><div class="sc-date-num">13</div></div>
+    <div class="sc-date"><div class="sc-date-day">Wed</div><div class="sc-date-num">14</div></div>
+    <div class="sc-date"><div class="sc-date-day">Thu</div><div class="sc-date-num">15</div></div>
+    <div class="sc-date"><div class="sc-date-day">Fri</div><div class="sc-date-num">16</div></div>
+    <div class="sc-date"><div class="sc-date-day">Sat</div><div class="sc-date-num">17</div></div>
+  </div>
+  <div class="sc-bookings">
+    <div class="sc-booking">
+      <div class="sc-booking-top">
+        <div class="sc-booking-name">Kwame Asante</div>
+        <div class="sc-booking-time">9:00 AM</div>
+      </div>
+      <div class="sc-booking-service">✂️ Haircut + Beard Trim — GH₵ 40</div>
+      <div class="sc-booking-actions">
+        <div class="sc-action sc-action-confirm">✓ Confirmed</div>
+      </div>
+    </div>
+    <div class="sc-booking pending-booking">
+      <div class="sc-booking-top">
+        <div class="sc-booking-name">Esi Boateng</div>
+        <div class="sc-booking-time">10:30 AM</div>
+      </div>
+      <div class="sc-booking-service">🪮 Dreadlocks — GH₵ 80</div>
+      <div class="sc-booking-actions">
+        <div class="sc-action sc-action-confirm">✓ Accept</div>
+        <div class="sc-action sc-action-decline">✗ Decline</div>
+      </div>
+    </div>
+    <div class="sc-booking">
+      <div class="sc-booking-top">
+        <div class="sc-booking-name">Yaw Darko</div>
+        <div class="sc-booking-time">12:00 PM</div>
+      </div>
+      <div class="sc-booking-service">💈 Classic Haircut — GH₵ 30</div>
+      <div class="sc-booking-actions">
+        <div class="sc-action sc-action-confirm">✓ Confirmed</div>
+      </div>
+    </div>
+    <div class="sc-booking pending-booking">
+      <div class="sc-booking-top">
+        <div class="sc-booking-name">Adwoa Mensah</div>
+        <div class="sc-booking-time">2:00 PM</div>
+      </div>
+      <div class="sc-booking-service">💅 Manicure + Pedicure — GH₵ 55</div>
+      <div class="sc-booking-actions">
+        <div class="sc-action sc-action-confirm">✓ Accept</div>
+        <div class="sc-action sc-action-decline">✗ Decline</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Manage Appointments</div>
+  <div class="subtitle">Accept, confirm, or decline bookings with a single tap</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 3: Queue Management -->
+<div class="screenshot s3">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Walk-in Queue</div>
+    <div class="sc-queue-count">5 waiting</div>
+  </div>
+  <div class="sc-now-serving">
+    <div class="sc-now-serving-label">🔴 NOW SERVING</div>
+    <div class="sc-now-serving-name">Kwame Asante</div>
+  </div>
+  <div class="sc-queue">
+    <div class="sc-queue-item">
+      <div class="sc-queue-num current">1</div>
+      <div class="sc-queue-info">
+        <div class="sc-queue-name">Ama Serwaa</div>
+        <div class="sc-queue-service">✂️ Haircut</div>
+        <div class="sc-queue-time">Arrived 10:15 AM</div>
+      </div>
+      <div class="sc-queue-btn start">▶ Start</div>
+    </div>
+    <div class="sc-queue-item">
+      <div class="sc-queue-num">2</div>
+      <div class="sc-queue-info">
+        <div class="sc-queue-name">Kofi Mensah</div>
+        <div class="sc-queue-service">💈 Cut + Beard</div>
+        <div class="sc-queue-time">Arrived 10:30 AM</div>
+      </div>
+    </div>
+    <div class="sc-queue-item">
+      <div class="sc-queue-num">3</div>
+      <div class="sc-queue-info">
+        <div class="sc-queue-name">Abena Osei</div>
+        <div class="sc-queue-service">🪮 Braiding</div>
+        <div class="sc-queue-time">Arrived 10:45 AM</div>
+      </div>
+    </div>
+    <div class="sc-queue-item">
+      <div class="sc-queue-num waiting">4</div>
+      <div class="sc-queue-info">
+        <div class="sc-queue-name">Yaw Boateng</div>
+        <div class="sc-queue-service">🧔 Beard Trim</div>
+        <div class="sc-queue-time">Arrived 11:00 AM</div>
+      </div>
+    </div>
+    <div class="sc-queue-item">
+      <div class="sc-queue-num waiting">5</div>
+      <div class="sc-queue-info">
+        <div class="sc-queue-name">Efua Sutherland</div>
+        <div class="sc-queue-service">💅 Nails</div>
+        <div class="sc-queue-time">Arrived 11:10 AM</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Smart Queue System</div>
+  <div class="subtitle">Manage walk-in customers with an organized digital queue</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 4: Services -->
+<div class="screenshot s4">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Services</div>
+    <div class="sc-add-btn">+ Add Service</div>
+  </div>
+  <div class="sc-services">
+    <div class="sc-service">
+      <div class="sc-service-icon hair">✂️</div>
+      <div class="sc-service-info">
+        <div class="sc-service-name">Classic Haircut</div>
+        <div class="sc-service-meta">⏱ 30 min • 24 bookings this week</div>
+      </div>
+      <div class="sc-service-price">GH₵ 30</div>
+      <div class="sc-toggle"></div>
+    </div>
+    <div class="sc-service">
+      <div class="sc-service-icon beard">🧔</div>
+      <div class="sc-service-info">
+        <div class="sc-service-name">Beard Trim</div>
+        <div class="sc-service-meta">⏱ 15 min • 18 bookings this week</div>
+      </div>
+      <div class="sc-service-price">GH₵ 15</div>
+      <div class="sc-toggle"></div>
+    </div>
+    <div class="sc-service">
+      <div class="sc-service-icon hair">💈</div>
+      <div class="sc-service-info">
+        <div class="sc-service-name">Haircut + Beard Combo</div>
+        <div class="sc-service-meta">⏱ 45 min • 31 bookings this week</div>
+      </div>
+      <div class="sc-service-price">GH₵ 40</div>
+      <div class="sc-toggle"></div>
+    </div>
+    <div class="sc-service">
+      <div class="sc-service-icon dreads">🪮</div>
+      <div class="sc-service-info">
+        <div class="sc-service-name">Dreadlocks</div>
+        <div class="sc-service-meta">⏱ 2 hrs • 8 bookings this week</div>
+      </div>
+      <div class="sc-service-price">GH₵ 80</div>
+      <div class="sc-toggle"></div>
+    </div>
+    <div class="sc-service">
+      <div class="sc-service-icon nails">💅</div>
+      <div class="sc-service-info">
+        <div class="sc-service-name">Manicure</div>
+        <div class="sc-service-meta">⏱ 30 min • 12 bookings this week</div>
+      </div>
+      <div class="sc-service-price">GH₵ 35</div>
+      <div class="sc-toggle"></div>
+    </div>
+    <div class="sc-service">
+      <div class="sc-service-icon nails">💆</div>
+      <div class="sc-service-info">
+        <div class="sc-service-name">Head Massage</div>
+        <div class="sc-service-meta">⏱ 20 min • 5 bookings this week</div>
+      </div>
+      <div class="sc-service-price">GH₵ 25</div>
+      <div class="sc-toggle off"></div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Customize Your Services</div>
+  <div class="subtitle">Set prices, durations, and toggle services on or off instantly</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 5: QR Scanner -->
+<div class="screenshot s5">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column;height:100%">
+  <div class="sc-header">
+    <div class="sc-header-title">Scan Check-in QR</div>
+    <div class="sc-close">✕</div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative">
+    <div class="sc-viewfinder">
+      <div class="sc-corner tl"></div>
+      <div class="sc-corner tr"></div>
+      <div class="sc-corner bl"></div>
+      <div class="sc-corner br"></div>
+      <div class="sc-scan-line"></div>
+    </div>
+    <div class="sc-instruction">Point camera at customer's QR code to check in</div>
+  </div>
+  <div class="sc-result-card">
+    <div class="sc-result-name">✓ Customer Found!</div>
+    <div class="sc-result-booking">Kwame Asante • Haircut + Beard • 10:00 AM</div>
+    <div class="sc-result-btn">Confirm Check-in</div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">QR Code Check-in</div>
+  <div class="subtitle">Scan customer QR codes for instant, contactless check-in</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 6: Staff -->
+<div class="screenshot s6">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Team</div>
+    <div class="sc-add-btn">+ Add Staff</div>
+  </div>
+  <div class="sc-staff">
+    <div class="sc-staff-card">
+      <div class="sc-staff-avatar a1">KA</div>
+      <div class="sc-staff-info">
+        <div class="sc-staff-name">Kwame Addo</div>
+        <div class="sc-staff-role">Senior Barber</div>
+        <div class="sc-staff-stats">
+          <div class="sc-staff-stat"><strong>28</strong> cuts this week</div>
+          <div class="sc-staff-stat">⭐ <strong>4.9</strong></div>
+        </div>
+      </div>
+      <div class="sc-staff-status sc-status-available">Available</div>
+    </div>
+    <div class="sc-staff-card">
+      <div class="sc-staff-avatar a2">AS</div>
+      <div class="sc-staff-info">
+        <div class="sc-staff-name">Ama Serwaa</div>
+        <div class="sc-staff-role">Hair Stylist</div>
+        <div class="sc-staff-stats">
+          <div class="sc-staff-stat"><strong>19</strong> cuts this week</div>
+          <div class="sc-staff-stat">⭐ <strong>4.8</strong></div>
+        </div>
+      </div>
+      <div class="sc-staff-status sc-status-busy">With Client</div>
+    </div>
+    <div class="sc-staff-card">
+      <div class="sc-staff-avatar a3">KM</div>
+      <div class="sc-staff-info">
+        <div class="sc-staff-name">Kofi Mensah</div>
+        <div class="sc-staff-role">Nail Technician</div>
+        <div class="sc-staff-stats">
+          <div class="sc-staff-stat"><strong>15</strong> services this week</div>
+          <div class="sc-staff-stat">⭐ <strong>4.7</strong></div>
+        </div>
+      </div>
+      <div class="sc-staff-status sc-status-available">Available</div>
+    </div>
+    <div class="sc-staff-card">
+      <div class="sc-staff-avatar a1" style="background:#e5e7eb;color:#6b7280">JO</div>
+      <div class="sc-staff-info">
+        <div class="sc-staff-name">Jojo Owusu</div>
+        <div class="sc-staff-role">Barber</div>
+        <div class="sc-staff-stats">
+          <div class="sc-staff-stat"><strong>22</strong> cuts this week</div>
+          <div class="sc-staff-stat">⭐ <strong>4.6</strong></div>
+        </div>
+      </div>
+      <div class="sc-staff-status sc-status-off">Day Off</div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Manage Your Team</div>
+  <div class="subtitle">Track staff availability, performance, and client ratings</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 7: Earnings -->
+<div class="screenshot s7">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Earnings & Payouts</div>
+  </div>
+  <div class="sc-balance-card">
+    <div class="sc-balance-label">Available Balance</div>
+    <div class="sc-balance-amount">GH₵ 1,850.00</div>
+    <div class="sc-balance-sub">Next payout: Tomorrow by 6 PM</div>
+    <div class="sc-payout-btn">💰 Request Payout</div>
+  </div>
+  <div class="sc-revenue-row">
+    <div class="sc-revenue-card">
+      <div class="sc-revenue-value">GH₵ 450</div>
+      <div class="sc-revenue-label">Today</div>
+    </div>
+    <div class="sc-revenue-card">
+      <div class="sc-revenue-value">GH₵ 2,450</div>
+      <div class="sc-revenue-label">This Week</div>
+    </div>
+    <div class="sc-revenue-card">
+      <div class="sc-revenue-value">GH₵ 9,800</div>
+      <div class="sc-revenue-label">This Month</div>
+    </div>
+  </div>
+  <div class="sc-chart">
+    <div class="sc-chart-title">Weekly Revenue</div>
+    <div class="sc-bars">
+      <div class="sc-bar" style="height:45%"><span class="sc-bar-label">Mon</span></div>
+      <div class="sc-bar" style="height:65%"><span class="sc-bar-label">Tue</span></div>
+      <div class="sc-bar" style="height:55%"><span class="sc-bar-label">Wed</span></div>
+      <div class="sc-bar" style="height:80%"><span class="sc-bar-label">Thu</span></div>
+      <div class="sc-bar highlight" style="height:90%"><span class="sc-bar-label">Fri</span></div>
+      <div class="sc-bar highlight" style="height:100%"><span class="sc-bar-label">Sat</span></div>
+      <div class="sc-bar" style="height:35%"><span class="sc-bar-label">Sun</span></div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Track Your Earnings</div>
+  <div class="subtitle">Monitor daily, weekly, and monthly revenue with instant payouts</div>
+</div>
+</div>
+</div>
+
+<!-- Screenshot 8: Notifications -->
+<div class="screenshot s8">
+<div class="bg">
+<div class="bg-top">
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+<div class="screen-content" style="display:flex;flex-direction:column">
+  <div class="sc-header">
+    <div class="sc-header-title">Notifications</div>
+  </div>
+  <div class="sc-notifs">
+    <div class="sc-notif unread">
+      <div class="sc-notif-icon green">📅</div>
+      <div>
+        <div class="sc-notif-title">New Booking</div>
+        <div class="sc-notif-body">Kwame Asante booked Haircut + Beard for Tue, Jun 13 at 10:00 AM</div>
+        <div class="sc-notif-time">2 minutes ago</div>
+      </div>
+    </div>
+    <div class="sc-notif unread">
+      <div class="sc-notif-icon gold">💰</div>
+      <div>
+        <div class="sc-notif-title">Payout Processed</div>
+        <div class="sc-notif-body">GH₵ 1,200 has been sent to your Mobile Money wallet</div>
+        <div class="sc-notif-time">1 hour ago</div>
+      </div>
+    </div>
+    <div class="sc-notif">
+      <div class="sc-notif-icon blue">⭐</div>
+      <div>
+        <div class="sc-notif-title">New Review</div>
+        <div class="sc-notif-body">Ama Serwaa rated your salon 5 stars: "Excellent service!"</div>
+        <div class="sc-notif-time">3 hours ago</div>
+      </div>
+    </div>
+    <div class="sc-notif">
+      <div class="sc-notif-icon red">🔔</div>
+      <div>
+        <div class="sc-notif-title">Appointment Cancelled</div>
+        <div class="sc-notif-body">Yaw Darko cancelled his 2:00 PM appointment</div>
+        <div class="sc-notif-time">Yesterday</div>
+      </div>
+    </div>
+    <div class="sc-notif">
+      <div class="sc-notif-icon green">👥</div>
+      <div>
+        <div class="sc-notif-title">Staff Update</div>
+        <div class="sc-notif-body">Kofi Mensah marked himself as Available</div>
+        <div class="sc-notif-time">Yesterday</div>
+      </div>
+    </div>
+    <div class="sc-notif">
+      <div class="sc-notif-icon gold">📊</div>
+      <div>
+        <div class="sc-notif-title">Weekly Report</div>
+        <div class="sc-notif-body">You earned GH₵ 2,450 this week — 15% more than last week!</div>
+        <div class="sc-notif-time">2 days ago</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-bottom">
+  <div class="title">Stay Informed</div>
+  <div class="subtitle">Instant alerts for bookings, payouts, reviews, and team updates</div>
+</div>
+</div>
+</div>
+
+</div>
+</body>
+</html>
