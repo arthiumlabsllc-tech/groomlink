@@ -5,8 +5,10 @@
  *    "Could not get unknown property 'release' for SoftwareComponent container"
  *    This error occurs with AGP 8.7+ where components.release may not exist.
  * 
- * 2. Patches app/build.gradle to add doNotStrip for .so files
- *    to ensure 16KB page alignment for Android 15+ / Google Play.
+ * 2. Patches app/build.gradle to add pickFirsts + doNotStrip for .so files
+ *    and injects a Gradle task that uses llvm-objcopy --elf-features=+16k_page_size
+ *    (NDK 28+) to fix precompiled .so files from React Native/Expo that were built
+ *    with NDK 26 and have 4KB ELF page alignment.
  */
 
 const fs = require('fs');
@@ -160,4 +162,141 @@ function patchExpoModulesCorePlugin() {
 
 patchBuildGradleFor16KB();
 patchExpoModulesCorePlugin();
+injectAlignmentTask();
 console.log('[fix-expo-gradle] Done');
+
+/**
+ * Injects a Gradle task into app/build.gradle that uses llvm-objcopy
+ * from NDK 28+ to rewrite the ELF page alignment of precompiled .so files.
+ *
+ * React Native 0.76 ships .so files compiled with NDK 26 (4KB alignment).
+ * Google Play requires 16KB alignment for Android 15+.
+ * llvm-objcopy --elf-features=+16k_page_size rewrites the ELF headers
+ * of precompiled .so files to mark them as 16KB-compatible.
+ *
+ * This is the official fix from Android:
+ * https://developer.android.com/guide/practices/page-sizes#precompiled
+ */
+function injectAlignmentTask() {
+  const possiblePaths = [
+    path.resolve(process.cwd(), 'android', 'app', 'build.gradle'),
+    path.resolve(__dirname, '..', 'apps', 'customer-app', 'android', 'app', 'build.gradle'),
+    path.resolve(__dirname, '..', 'apps', 'partners-app', 'android', 'app', 'build.gradle'),
+  ];
+
+  let filePath = null;
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      filePath = p;
+      break;
+    }
+  }
+
+  if (!filePath) {
+    console.log('[fix-expo-gradle] app/build.gradle not found, skipping alignment task');
+    return;
+  }
+
+  let content = fs.readFileSync(filePath, 'utf8');
+
+  if (content.includes('align16KB')) {
+    console.log('[fix-expo-gradle] Alignment task already injected, skipping');
+    return;
+  }
+
+  // Append the alignment task at the end of app/build.gradle
+  const alignmentTask = `
+
+// ============================================================
+// 16KB Page Size Fix for precompiled .so files (RN 0.76 / NDK 26)
+// Uses llvm-objcopy from NDK 28+ to rewrite ELF alignment.
+// Official Android fix: https://developer.android.com/guide/practices/page-sizes#precompiled
+// ============================================================
+afterEvaluate {
+    def ndkDir = android.ndkDirectory
+    def objcopy = null
+
+    // Find llvm-objcopy in NDK toolchain
+    if (ndkDir != null && ndkDir.exists()) {
+        fileTree(dir: ndkDir, include: '**/llvm-objcopy').each { f ->
+            objcopy = f.absolutePath
+        }
+    }
+
+    if (objcopy != null) {
+        logger.lifecycle "[16KB] Found llvm-objcopy: \${objcopy}"
+
+        // Hook into every merge*JniLib* / merge*NativeLib* task
+        tasks.configureEach { task ->
+            if (task.name.contains("merge") &&
+                (task.name.contains("JniLib") || task.name.contains("NativeLib"))) {
+
+                def variantName = task.name.replace("merge", "")
+                                           .replace("JniLibFolders", "")
+                                           .replace("JniLib", "")
+                                           .replace("NativeLibs", "")
+                def alignTaskName = "align16KB\${variantName}"
+
+                // Register alignment task (idempotent — safe if already exists)
+                def alignTask
+                try {
+                    alignTask = project.tasks.findByName(alignTaskName)
+                    if (!alignTask) {
+                        alignTask = project.tasks.create(alignTaskName) {
+                            doLast {
+                                def mergedDir = file("\${buildDir}/intermediates/merged_jni_libs")
+                                if (!mergedDir.exists()) {
+                                    mergedDir = file("\${buildDir}/intermediates/merged_native_libs")
+                                }
+                                if (!mergedDir.exists()) {
+                                    logger.lifecycle "[16KB] merged dir not found, skipping"
+                                    return
+                                }
+                                int fixed = 0
+                                fileTree(dir: mergedDir, include: ['**/arm64-v8a/*.so', '**/x86_64/*.so']).each { soFile ->
+                                    try {
+                                        exec {
+                                            commandLine objcopy, '--elf-features=+16k_page_size', soFile.absolutePath
+                                        }
+                                        fixed++
+                                    } catch (Exception e) {
+                                        logger.warn "[16KB] objcopy failed on \${soFile.name}: \${e.message}"
+                                    }
+                                }
+                                logger.lifecycle "[16KB] Rewrote \${fixed} .so files to 16KB page alignment"
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warn "[16KB] Could not create \${alignTaskName}: \${e.message}"
+                    return
+                }
+
+                // Run alignment AFTER merge completes
+                task.finalizedBy alignTask
+
+                // Ensure package task runs AFTER alignment
+                tasks.configureEach { pkgTask ->
+                    if (pkgTask.name.contains("package") &&
+                        (pkgTask.name.contains("Release") || pkgTask.name.contains("Debug")) &&
+                        pkgTask.name.contains(variantName.substring(0, Math.min(1, variantName.length())).toLowerCase() + variantName.substring(1))) {
+                        // Skip — handled by finalizedBy chain
+                    }
+                    // Broader: any packaging task that mentions the variant
+                    if (pkgTask.name.contains("Package") && pkgTask.name.toLowerCase().contains(variantName.toLowerCase())) {
+                        pkgTask.dependsOn alignTask
+                    }
+                }
+            }
+        }
+    } else {
+        logger.warn "[16KB] WARNING: llvm-objcopy not found. Ensure NDK 28+ is configured."
+        logger.warn "[16KB] Precompiled .so files may not be 16KB-aligned."
+    }
+}
+`;
+
+  content += alignmentTask;
+  fs.writeFileSync(filePath, content, 'utf8');
+  console.log('[fix-expo-gradle] Injected llvm-objcopy 16KB alignment task into', filePath);
+}
