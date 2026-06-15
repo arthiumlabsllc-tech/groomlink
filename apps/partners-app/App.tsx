@@ -4,9 +4,10 @@ import { NavigationContainer, DefaultTheme as NavDefaultTheme } from '@react-nav
 import { PaperProvider, DefaultTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
-import { Platform, Alert, View } from 'react-native';
+import { Platform, Alert, View, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
 import LoadingScreen from './src/components/LoadingScreen';
@@ -99,13 +100,19 @@ const queryClient = new QueryClient({
   },
 });
 
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});
+
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AppInner />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AppInner />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
