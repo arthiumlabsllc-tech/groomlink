@@ -91,11 +91,10 @@ export default function ChatWidget() {
           {/* Body */}
           <div className="flex-1 overflow-y-auto bg-gray-50 px-3 py-3 space-y-2">
             {!hasSession ? (
-              <div className="text-center text-sm text-gray-500 mt-6">
-                <p className="mb-2">👋 Hi there! How can we help you today?</p>
-                <p className="text-xs text-gray-400">
-                  Send us a message and we'll get back to you shortly.
-                </p>
+              <div className="flex justify-start">
+                <div className="max-w-[85%] px-3 py-2 rounded-2xl text-sm bg-white text-gray-900 rounded-bl-sm shadow-sm border border-gray-100">
+                  <p className="whitespace-pre-wrap break-words">{"Hello! \u{1F44B} I'm GroomLink's virtual assistant. I can help you with:\n\n\u2022 \u{1F4DD} Account registration\n\u2022 \u{1F4C5} Booking appointments\n\u2022 \u{1F4B3} Payment questions\n\u2022 \u{1F504} Cancellations & rescheduling\n\u2022 \u{1F4CD} Service locations\n\u2022 \u{1F488} Partner salon registration\n\u2022 \u{1F512} Safety & security\n\nWhat would you like to know?"}</p>
+                </div>
               </div>
             ) : messages.length === 0 ? (
               <div className="text-center text-sm text-gray-500 mt-6">Loading…</div>

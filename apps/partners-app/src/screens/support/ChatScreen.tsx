@@ -123,6 +123,19 @@ export default function ChatScreen() {
     );
   };
 
+  const AI_GREETING = "Hello! \u{1F44B} I'm GroomLink's virtual assistant. I can help you with:\n\n\u2022 \u{1F4DD} Account registration\n\u2022 \u{1F4C5} Booking appointments\n\u2022 \u{1F4B3} Payment questions\n\u2022 \u{1F504} Cancellations & rescheduling\n\u2022 \u{1F4CD} Service locations\n\u2022 \u{1F488} Partner salon registration\n\u2022 \u{1F512} Safety & security\n\nWhat would you like to know?";
+
+  // Show AI greeting immediately when user opens chat (before any messages)
+  const displayMessages = (!hasSession && messages.length === 0)
+    ? [{
+        id: 'ai-greeting',
+        content: AI_GREETING,
+        isFromUser: false,
+        createdAt: new Date().toISOString(),
+        sender: { id: 'ai', firstName: 'GroomLink', lastName: 'Assistant', avatar: null },
+      }]
+    : messages;
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="chatbubbles-outline" size={80} color={COLORS.primary} />
@@ -187,11 +200,11 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {messages.length === 0 ? (
+        {displayMessages.length === 0 ? (
           renderEmptyState()
         ) : (
           <FlatList
-            data={messages}
+            data={displayMessages}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.messagesList}
