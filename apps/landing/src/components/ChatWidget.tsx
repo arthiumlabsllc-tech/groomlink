@@ -221,35 +221,10 @@ export default function ChatWidget() {
       };
       saveSession(newSession);
       setSession(newSession);
-      // Seed the message list with the initial message that came back
+      // Seed the message list with messages from the API (includes AI welcome)
       if (Array.isArray(json.data.ticket.messages)) {
         setMessages(json.data.ticket.messages);
       }
-      
-      // Add AI welcome message
-      const welcomeMessage: ChatMessage = {
-        id: `welcome-${Date.now()}`,
-        content: `Hi ${name.trim()}! 👋 I'm GroomLink's virtual assistant.\n\n` +
-          `I can help you with:\n` +
-          `• 📝 Account registration\n` +
-          `• 📅 Booking appointments\n` +
-          `• 💳 Payment questions\n` +
-          `• 🔄 Cancellations & rescheduling\n` +
-          `• 📍 Service locations\n` +
-          `• 💈 Partner salon registration\n` +
-          `• 🔒 Safety & security\n\n` +
-          `What would you like to know?`,
-        isFromUser: false,
-        createdAt: new Date().toISOString(),
-        sender: {
-          id: 'ai-assistant',
-          firstName: 'GroomLink',
-          lastName: 'Assistant',
-          avatar: null,
-        },
-      };
-      setMessages((prev) => [...prev, welcomeMessage]);
-      
       setDraft('');
     } catch (err: any) {
       setError(err?.message || 'Could not start chat. Please try again.');
@@ -281,7 +256,7 @@ export default function ChatWidget() {
       if (!res.ok || !json.success) {
         throw new Error(json.message || json.error?.message || 'Send failed');
       }
-      // Optimistically append
+      // Optimistically append user message
       const sent: ChatMessage = {
         id: json.data?.id || `tmp-${Date.now()}`,
         content,
@@ -291,6 +266,16 @@ export default function ChatWidget() {
       setMessages((prev) =>
         prev.find((m) => m.id === sent.id) ? prev : [...prev, sent],
       );
+      // Trigger an immediate poll to pick up the AI response
+      setTimeout(() => {
+        fetch(`${API_BASE}/guest/support/tickets/${session.ticketId}`,
+          { headers: { Authorization: `Bearer ${session.token}` } },
+        ).then(r => r.json()).then(j => {
+          if (j.success && Array.isArray(j.data?.messages)) {
+            setMessages(j.data.messages);
+          }
+        }).catch(() => {});
+      }, 500);
     } catch (err: any) {
       setError(err?.message || 'Send failed.');
       setDraft(content);

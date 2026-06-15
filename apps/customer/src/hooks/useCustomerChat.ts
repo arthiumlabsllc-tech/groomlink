@@ -253,6 +253,16 @@ export function useCustomerChat(): UseCustomerChatReturn {
         createdAt: json.data?.createdAt || new Date().toISOString(),
       };
       setMessages((prev) => (prev.find((m) => m.id === sent.id) ? prev : [...prev, sent]));
+      // Trigger an immediate poll to pick up the AI response
+      setTimeout(() => {
+        fetch(`${API_BASE}/me/support/tickets/${session.ticketId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then(r => r.json()).then(j => {
+          if (j.success && Array.isArray(j.data?.messages)) {
+            setMessages(j.data.messages);
+          }
+        }).catch(() => {});
+      }, 500);
     } catch (err: any) {
       setError(err?.message || 'Send failed.');
       setDraft(content);

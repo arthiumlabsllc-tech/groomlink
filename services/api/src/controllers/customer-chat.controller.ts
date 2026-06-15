@@ -11,6 +11,7 @@ import prisma from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import * as chatService from '../services/chat.service';
+import * as aiAssistant from '../services/ai-assistant.service';
 import { TicketSource } from '@prisma/client';
 
 const createTicketSchema = z.object({
@@ -123,7 +124,34 @@ export async function createMyTicket(req: AuthenticatedRequest, res: Response): 
       category,
     });
 
-    successResponse(res, chatService.formatTicketForAgents(ticket), 201);
+    // Auto-reply with AI welcome message so user sees it immediately
+    try {
+      await chatService.appendMessage({
+        ticketId: ticket.id,
+        content: aiAssistant.getWelcomeMessage(),
+        isFromUser: false,
+        senderId: null,
+      });
+    } catch (e) {
+      // Non-fatal: welcome message failed but ticket was created
+    }
+
+    // Reload ticket with all messages for the response
+    const fullTicket = await prisma.supportTicket.findUnique({
+      where: { id: ticket.id },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sender: { select: { id: true, firstName: true, lastName: true } },
+          },
+        },
+        assignedTo: { select: { id: true, firstName: true, lastName: true } },
+        user: { select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true } },
+      },
+    });
+
+    successResponse(res, chatService.formatTicketForAgents(fullTicket), 201);
   } catch (error) {
     errorResponse(res, 'CREATE_FAILED', (error as Error).message, 500);
   }
@@ -153,6 +181,48 @@ export async function sendMyMessage(req: AuthenticatedRequest, res: Response): P
       return;
     }
 
+    // AI assistant: analyze the message and respond if it can help
+    const aiAnalysis = aiAssistant.analyzeMessage(validation.data.content);
+
+    if (aiAnalysis.shouldAnswer && aiAnalysis.answer) {
+      // AI responds immediately
+      const aiMessage = await chatService.appendMessage({
+        ticketId: id,
+        content: aiAnalysis.answer,
+        isFromUser: false,
+        senderId: null,
+      });
+
+      // Also save the user's message
+      await chatService.appendMessage({
+        ticketId: id,
+        content: validation.data.content,
+        isFromUser: true,
+        senderId: userId,
+      });
+
+      successResponse(res, chatService.formatMessage(aiMessage), 201);
+      return;
+    }
+
+    // If AI needs escalation and no agent is assigned, add escalation message
+    if (aiAnalysis.needsEscalation) {
+      const currentTicket = await prisma.supportTicket.findUnique({
+        where: { id },
+        select: { assignedToId: true },
+      });
+
+      if (!currentTicket?.assignedToId) {
+        await chatService.appendMessage({
+          ticketId: id,
+          content: aiAssistant.getEscalationMessage(),
+          isFromUser: false,
+          senderId: null,
+        });
+      }
+    }
+
+    // Save user message normally
     const message = await chatService.appendMessage({
       ticketId: id,
       content: validation.data.content,

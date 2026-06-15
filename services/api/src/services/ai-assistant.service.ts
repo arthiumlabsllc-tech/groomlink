@@ -298,6 +298,21 @@ export function analyzeMessage(message: string): {
 }
 
 /**
+ * Get the AI welcome/greeting message shown when a user starts a new chat.
+ */
+export function getWelcomeMessage(): string {
+  return `Hello! 👋 I'm GroomLink's virtual assistant. I can help you with:\n\n` +
+    `• 📝 Account registration\n` +
+    `• 📅 Booking appointments\n` +
+    `• 💳 Payment questions\n` +
+    `• 🔄 Cancellations & rescheduling\n` +
+    `• 📍 Service locations\n` +
+    `• 💈 Partner salon registration\n` +
+    `• 🔒 Safety & security\n\n` +
+    `What would you like to know?`;
+}
+
+/**
  * Get escalation message when AI can't help
  */
 export function getEscalationMessage(): string {

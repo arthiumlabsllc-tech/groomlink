@@ -22,6 +22,7 @@ import {
 } from '../config/socket';
 import { TicketSource } from '@prisma/client';
 import { sendChatReplyEmail } from './email.service';
+import { createNotification } from './notification.service';
 
 export interface AppendMessageInput {
   ticketId: string;
@@ -154,21 +155,17 @@ export async function appendMessage(input: AppendMessageInput) {
     // Notify the customer's user-room directly.
     emitToUser(ticket.userId, MESSAGE_EVENT, { ticketId: input.ticketId, message: formatted });
 
-    // Persist a Notification row so the bell icon / mobile push fires.
-    await prisma.notification
-      .create({
-        data: {
-          userId: ticket.userId,
-          type: 'SYSTEM',
-          title: 'Support reply',
-          message:
-            input.content.length > 120
-              ? `${input.content.slice(0, 117)}...`
-              : input.content,
-          data: { ticketId: input.ticketId, kind: 'chat' },
-        },
-      })
-      .catch((e) => logger.warn('Failed to create chat notification:', e));
+    // Persist a Notification row AND send push notification via notification service
+    createNotification({
+      userId: ticket.userId,
+      type: 'SYSTEM' as any,
+      title: 'Support reply',
+      message:
+        input.content.length > 120
+          ? `${input.content.slice(0, 117)}...`
+          : input.content,
+      data: { ticketId: input.ticketId, kind: 'chat' },
+    }).catch((e) => logger.warn('Failed to create chat notification:', e));
 
     // Email fallback if the user is offline. Best-effort, never blocks.
     if (!isUserOnline(ticket.userId) && ticket.user?.email) {

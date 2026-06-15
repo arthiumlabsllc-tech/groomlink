@@ -105,12 +105,38 @@ export async function createGuestTicket(req: Request, res: Response): Promise<vo
       guestName,
     });
 
+    // Auto-reply with AI welcome message so guest sees it immediately
+    try {
+      await chatService.appendMessage({
+        ticketId: ticket.id,
+        content: aiAssistant.getWelcomeMessage(),
+        isFromUser: false,
+        senderId: null,
+      });
+    } catch (e) {
+      // Non-fatal: welcome message failed but ticket was created
+    }
+
     const guestToken = signGuestToken(ticket.id, guestEmail.toLowerCase());
+
+    // Reload ticket with all messages for the response
+    const fullTicket = await prisma.supportTicket.findUnique({
+      where: { id: ticket.id },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sender: { select: { id: true, firstName: true, lastName: true } },
+          },
+        },
+        assignedTo: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
 
     successResponse(
       res,
       {
-        ticket: chatService.formatTicketForAgents(ticket),
+        ticket: chatService.formatTicketForAgents(fullTicket),
         guestToken,
       },
       201,
