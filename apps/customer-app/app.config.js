@@ -11,7 +11,7 @@ export default {
     slug: "groomlink-customer",
     version: "1.0.0",
     scheme: "groomlink",
-    orientation: "portrait",
+    orientation: "default",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     splash: {
@@ -41,7 +41,7 @@ export default {
     },
     android: {
       package: "com.arthiumlabsllc.groomlink",
-      versionCode: 17,
+      versionCode: 18,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"
@@ -117,6 +117,7 @@ export default {
       // 16KB page size handled natively by RN 0.79+ (SDK 53)
       "./plugins/with-privacy-manifest",
       "./plugins/android-manifest-fixes",
+      "./plugins/with-edge-to-edge",
       "./plugins/expo-sdk-fix",
       "./plugins/ios-xcode-compat-fix"
     ],
