@@ -5,6 +5,8 @@
  * Escalates to human agents when confidence is low or user requests it.
  */
 
+import prisma from '../config/database';
+
 interface FAQEntry {
   keywords: string[];
   answer: string;
@@ -318,4 +320,64 @@ export function getWelcomeMessage(): string {
 export function getEscalationMessage(): string {
   return `I understand you need specialized assistance. Let me connect you with one of our support agents who can help you better. 🤝\n\n` +
     `An agent will be with you shortly. Average wait time: 2-3 minutes.`;
+}
+
+/**
+ * Find an available support agent and assign them to the ticket.
+ * Returns the agent's display name if found, or null if no agent is available.
+ */
+export async function findAndAssignAgent(ticketId: string): Promise<string | null> {
+  // Find available support agents (SUPPORT, ADMIN, SUPER_ADMIN with ACTIVE status)
+  const availableAgent = await prisma.user.findFirst({
+    where: {
+      role: { in: ['SUPPORT', 'ADMIN', 'SUPER_ADMIN'] },
+      status: 'ACTIVE',
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+    orderBy: {
+      // Prefer agents who were least recently assigned (simple round-robin proxy)
+      updatedAt: 'asc',
+    },
+  });
+
+  if (!availableAgent) {
+    return null;
+  }
+
+  // Assign the ticket to the found agent
+  await prisma.supportTicket.update({
+    where: { id: ticketId },
+    data: {
+      assignedToId: availableAgent.id,
+      status: 'OPEN',
+    },
+  });
+
+  const displayName = [availableAgent.firstName, availableAgent.lastName]
+    .filter(Boolean)
+    .join(' ') || 'Support Agent';
+
+  return displayName;
+}
+
+/**
+ * Get the escalation message with the assigned agent's name.
+ */
+export function getAgentAssignedMessage(agentName: string): string {
+  return `I'm connecting you with **${agentName}** from our support team. 🤝\n\n` +
+    `They'll be with you shortly. Average wait time: 2-3 minutes.\n\n` +
+    `In the meantime, feel free to leave any additional details about your issue.`;
+}
+
+/**
+ * Get the message when no agents are available.
+ */
+export function getNoAgentAvailableMessage(): string {
+  return `I understand you need specialized assistance. Unfortunately, no support agents are available right now. 😔\n\n` +
+    `Your message has been queued and an agent will get back to you as soon as possible.\n\n` +
+    `You can also reach us at support@groomlinkgh.com for urgent matters.`;
 }

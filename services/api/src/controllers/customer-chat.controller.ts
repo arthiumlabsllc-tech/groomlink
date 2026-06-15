@@ -185,7 +185,15 @@ export async function sendMyMessage(req: AuthenticatedRequest, res: Response): P
     const aiAnalysis = aiAssistant.analyzeMessage(validation.data.content);
 
     if (aiAnalysis.shouldAnswer && aiAnalysis.answer) {
-      // AI responds immediately
+      // Save user's message FIRST (so it appears before AI response in chat)
+      const userMessage = await chatService.appendMessage({
+        ticketId: id,
+        content: validation.data.content,
+        isFromUser: true,
+        senderId: userId,
+      });
+
+      // Then AI responds (appears after user's message)
       const aiMessage = await chatService.appendMessage({
         ticketId: id,
         content: aiAnalysis.answer,
@@ -193,36 +201,49 @@ export async function sendMyMessage(req: AuthenticatedRequest, res: Response): P
         senderId: null,
       });
 
-      // Also save the user's message
-      await chatService.appendMessage({
-        ticketId: id,
-        content: validation.data.content,
-        isFromUser: true,
-        senderId: userId,
-      });
-
       successResponse(res, chatService.formatMessage(aiMessage), 201);
       return;
     }
 
-    // If AI needs escalation and no agent is assigned, add escalation message
+    // If AI needs escalation, save user message first then handle handoff
     if (aiAnalysis.needsEscalation) {
       const currentTicket = await prisma.supportTicket.findUnique({
         where: { id },
         select: { assignedToId: true },
       });
 
+      // Save user's message first
+      const userMessage = await chatService.appendMessage({
+        ticketId: id,
+        content: validation.data.content,
+        isFromUser: true,
+        senderId: userId,
+      });
+
+      // If no agent is already assigned, try to find and assign one
       if (!currentTicket?.assignedToId) {
-        await chatService.appendMessage({
+        const agentName = await aiAssistant.findAndAssignAgent(id);
+        const escalationContent = agentName
+          ? aiAssistant.getAgentAssignedMessage(agentName)
+          : aiAssistant.getNoAgentAvailableMessage();
+
+        const systemMessage = await chatService.appendMessage({
           ticketId: id,
-          content: aiAssistant.getEscalationMessage(),
+          content: escalationContent,
           isFromUser: false,
           senderId: null,
         });
+
+        successResponse(res, chatService.formatMessage(systemMessage), 201);
+        return;
       }
+
+      // Agent already assigned — just save user message
+      successResponse(res, chatService.formatMessage(userMessage), 201);
+      return;
     }
 
-    // Save user message normally
+    // Save user message normally (no AI match, no escalation)
     const message = await chatService.appendMessage({
       ticketId: id,
       content: validation.data.content,

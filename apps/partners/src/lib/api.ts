@@ -14,6 +14,8 @@ export interface Salon {
   address: string;
   city: string;
   region: string;
+  latitude?: number;
+  longitude?: number;
   rating: number;
   reviewCount: number;
   services: Service[];

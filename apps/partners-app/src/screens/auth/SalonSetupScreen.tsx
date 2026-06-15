@@ -110,6 +110,7 @@ export default function SalonSetupScreen() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationDetected, setLocationDetected] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [geocodedAddress, setGeocodedAddress] = useState<string | null>(null);
 
   // Service Areas (freelancers only)
   const [serviceAreasText, setServiceAreasText] = useState('');
@@ -139,6 +140,64 @@ export default function SalonSetupScreen() {
         setLatitude(loc.coords.latitude);
         setLongitude(loc.coords.longitude);
         setLocationDetected(true);
+
+        // Reverse geocode the detected coordinates into an address
+        try {
+          const [result] = await Location.reverseGeocodeAsync({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          });
+
+          if (result) {
+            // Build a readable address string
+            const parts: string[] = [];
+            if (result.name) parts.push(result.name);
+            if (result.streetNumber) parts.push(result.streetNumber);
+            if (result.street) parts.push(result.street);
+            if (result.subregion) parts.push(result.subregion);
+            const fullAddress = parts.length > 0 ? parts.join(', ') : null;
+
+            if (fullAddress) {
+              setGeocodedAddress(fullAddress);
+              // Auto-fill address field if empty (for business owners)
+              if (!isFreelancer && !address) {
+                setAddress(fullAddress);
+              }
+            }
+
+            // Auto-fill city from the geocoded result
+            if (result.city && !city) {
+              setCity(result.city);
+            }
+
+            // Auto-fill region from the geocoded result
+            if (result.region && !region) {
+              // Map region names to Ghana's standard region names
+              const regionMapping: Record<string, string> = {
+                'Greater Accra': 'Greater Accra',
+                'Ashanti': 'Ashanti',
+                'Western': 'Western',
+                'Central': 'Central',
+                'Eastern': 'Eastern',
+                'Northern': 'Northern',
+                'Upper East': 'Upper East',
+                'Upper West': 'Upper West',
+                'Volta': 'Volta',
+                'Oti': 'Oti',
+                'Bono': 'Bono',
+                'Bono East': 'Bono East',
+                'Ahafo': 'Ahafo',
+                'Savannah': 'Savannah',
+                'North East': 'North East',
+                'Western North': 'Western North',
+              };
+              const mappedRegion = regionMapping[result.region] || result.region;
+              setRegion(mappedRegion);
+            }
+          }
+        } catch (geoErr) {
+          console.log('Reverse geocoding failed:', geoErr);
+        }
       }
     } catch (err) {
       console.log('Location detection failed:', err);
@@ -569,9 +628,19 @@ export default function SalonSetupScreen() {
                 {locationDetected ? (
                   <View style={styles.locationDetected}>
                     <Ionicons name="checkmark-circle" size={20} color="#006B3F" />
-                    <Text style={styles.locationDetectedText}>
-                      Location detected successfully
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.locationDetectedText}>
+                        Location detected successfully
+                      </Text>
+                      {geocodedAddress && (
+                        <Text style={styles.geocodedAddressText} numberOfLines={2}>
+                          {geocodedAddress}
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity onPress={detectLocation} style={styles.refreshLocationButton}>
+                      <Ionicons name="refresh" size={18} color="#006B3F" />
+                    </TouchableOpacity>
                   </View>
                 ) : (
                   <Button
@@ -911,6 +980,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   locationDetectedText: {
     color: '#006B3F',
     fontWeight: '500',
+  },
+  geocodedAddressText: {
+    color: theme.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  refreshLocationButton: {
+    padding: 8,
   },
   detectLocationButton: {
     borderColor: '#006B3F',

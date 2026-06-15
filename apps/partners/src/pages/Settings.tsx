@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Save, Store, Clock, Phone, Mail, MapPin, Globe, Instagram, Facebook, ArrowRight, CheckCircle, Scissors, Users, Calendar, Image, Upload, X, Camera, Loader2, Wifi, Car, Wind, Footprints, Timer, Armchair, Bell, QrCode, Shield, MessageSquare, Wallet, Building2, Smartphone, CreditCard, User, ArrowLeft, Info } from 'lucide-react'
 import Layout from '../components/Layout'
+import GooglePlacesAutocomplete, { PlaceDetails } from '../components/GooglePlacesAutocomplete'
 import { api, Salon, CompletionSettings, PayoutAccount, SetupPayoutAccountPayload } from '../lib/api'
 import { useSalon } from '../store/SalonContext'
 
@@ -98,6 +99,8 @@ export default function Settings() {
     operatingModel: 'APPOINTMENTS_ONLY' as 'APPOINTMENTS_ONLY' | 'WALK_INS_ALLOWED',
     serviceAreas: '' as string, // Comma-separated for freelancers
     ghanaPostGPS: '', // Optional GhanaPost GPS code
+    latitude: null as number | null,
+    longitude: null as number | null,
   })
 
   // Image upload state
@@ -208,6 +211,8 @@ export default function Settings() {
             bufferTimeMinutes: salonData.bufferTimeMinutes || 0,
             operatingModel: salonData.operatingModel || 'APPOINTMENTS_ONLY',
             ghanaPostGPS: (salonData as any).ghanaPostGPS || '',
+            latitude: salonData.latitude || null,
+            longitude: salonData.longitude || null,
           }))
         } else {
           // No salon found - this is a new partner
@@ -358,8 +363,8 @@ export default function Settings() {
         // Business-specific fields
         if (!isFreelancer) {
           createData.address = formData.address
-          createData.latitude = 5.6037 // Default to Accra
-          createData.longitude = -0.1870
+          createData.latitude = formData.latitude ?? 5.6037 // Use detected or default to Accra
+          createData.longitude = formData.longitude ?? -0.1870
           createData.openingTime = getOpeningTime(formData.businessHours)
           createData.closingTime = getClosingTime(formData.businessHours)
           createData.workingDays = getWorkingDays(formData.businessHours)
@@ -404,6 +409,10 @@ export default function Settings() {
           address: formData.address,
           city: formData.city,
           region: formData.region,
+          ...(formData.latitude && formData.longitude && {
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+          }),
           phoneNumber: formData.phoneNumber,
           email: formData.email,
           ghanaPostGPS: formData.ghanaPostGPS.trim() || undefined,
@@ -936,17 +945,22 @@ export default function Settings() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Address <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      className="input-field pl-10"
-                      placeholder="Street address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      required
-                    />
-                  </div>
+                  <GooglePlacesAutocomplete
+                    value={formData.address}
+                    onChange={(addr) => setFormData({ ...formData, address: addr })}
+                    onPlaceSelected={(details: PlaceDetails) => {
+                      setFormData({
+                        ...formData,
+                        address: details.address || details.formattedAddress,
+                        city: details.city || formData.city,
+                        region: details.region || formData.region,
+                        latitude: details.latitude,
+                        longitude: details.longitude,
+                      })
+                    }}
+                    placeholder="Search for your street address..."
+                    className="w-full"
+                  />
                 </div>
               )}
 
@@ -1189,18 +1203,24 @@ export default function Settings() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  className="input-field pl-10 w-full"
-                  placeholder="Street address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                />
-              </div>
+              <GooglePlacesAutocomplete
+                value={formData.address}
+                onChange={(addr) => setFormData({ ...formData, address: addr })}
+                onPlaceSelected={(details: PlaceDetails) => {
+                  setFormData({
+                    ...formData,
+                    address: details.address || details.formattedAddress,
+                    city: details.city || formData.city,
+                    region: details.region || formData.region,
+                    latitude: details.latitude,
+                    longitude: details.longitude,
+                  })
+                }}
+                placeholder="Search for your salon's address..."
+                className="w-full"
+              />
               <p className="text-xs text-gray-500 mt-1">
-                Location coordinates will be automatically determined from your address
+                Search for your exact address to show a pin on the map for customers
               </p>
             </div>
 
