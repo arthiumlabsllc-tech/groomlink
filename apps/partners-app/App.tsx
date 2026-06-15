@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme as NavDefaultTheme } from '@react-navigation/native';
 import { PaperProvider, DefaultTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,6 +24,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -124,8 +126,10 @@ function AppInner() {
   };
 
   const navigationTheme = {
+    ...NavDefaultTheme,
     dark: isDark,
     colors: {
+      ...NavDefaultTheme.colors,
       primary: theme.primary,
       background: theme.background,
       card: theme.surface,

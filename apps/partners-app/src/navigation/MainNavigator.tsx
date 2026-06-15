@@ -44,7 +44,7 @@ function DashboardStack() {
           fontWeight: '600',
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="DashboardMain" component={DashboardScreen} options={{ headerShown: false }} />
@@ -77,7 +77,7 @@ function QueueStack() {
           fontWeight: '600',
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="QueueMain" component={QueueScreen} options={{ headerShown: false }} />
@@ -98,7 +98,7 @@ function BookingsStack() {
           fontWeight: '600',
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="BookingsMain" component={BookingsScreen} options={{ headerShown: false }} />
@@ -128,7 +128,7 @@ function ServicesStack() {
           fontWeight: '600',
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="ServicesMain" component={ServicesScreen} options={{ headerShown: false }} />
@@ -156,7 +156,7 @@ function StaffStack() {
           fontWeight: '600',
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="StaffMain" component={StaffScreen} options={{ headerShown: false }} />
@@ -184,7 +184,7 @@ function ProfileStack() {
           fontWeight: '600',
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ headerShown: false }} />
