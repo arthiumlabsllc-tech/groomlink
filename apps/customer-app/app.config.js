@@ -42,6 +42,7 @@ export default {
     android: {
       package: "com.arthiumlabsllc.groomlink",
       versionCode: 18,
+      edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"

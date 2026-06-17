@@ -35,6 +35,7 @@ export default {
     android: {
       package: "com.arthiumlabsllc.partners",
       versionCode: 6,
+      edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#1a3c2a"
