@@ -265,7 +265,7 @@ function AppShell() {
         <NavigationContainer ref={navigationRef} theme={navigationTheme}>
           <View style={{ flex: 1, backgroundColor: theme.background }}>
             <AppContent />
-            <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={theme.statusBar} />
+            <StatusBar style={isDark ? 'light' : 'dark'} />
           </View>
         </NavigationContainer>
       </QueryClientProvider>

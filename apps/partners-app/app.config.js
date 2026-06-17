@@ -97,7 +97,9 @@ export default {
       ],
       // 16KB page size handled natively by RN 0.79+ (SDK 53)
       "./plugins/android-manifest-fixes",
-      "./plugins/with-edge-to-edge",
+      // with-edge-to-edge REMOVED: built-in react-native-edge-to-edge (via edgeToEdgeEnabled: true)
+      // already sets Theme.EdgeToEdge parent with transparent bars. Custom plugin was
+      // redundantly modifying styles.xml and potentially conflicting with the built-in plugin.
       "./plugins/expo-sdk-fix",
       "./plugins/ios-xcode-compat-fix"
     ],

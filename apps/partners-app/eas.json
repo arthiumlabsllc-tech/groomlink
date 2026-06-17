@@ -37,7 +37,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v10-remove-dead-deps"
+        "key": "v11-edge-to-edge-fix"
       }
     }
   },
