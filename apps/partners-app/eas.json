@@ -37,7 +37,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v11-edge-to-edge-fix"
+        "key": "v12-newarch-off"
       }
     }
   },

@@ -13,6 +13,7 @@ export default {
     orientation: "default",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
+    newArchEnabled: false,
     splash: {
       image: "./assets/loading-barber-01-splash.png",
       resizeMode: "cover",
