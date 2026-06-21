@@ -3,6 +3,8 @@ import logger from '../config/logger';
 import redis from '../config/redis';
 import { EscrowAccount } from '@prisma/client';
 import { initiateHubtelPayout, getHubtelChannel, formatGhanaPhone } from './payout.service';
+import { PaystackProvider } from './paystack.provider';
+import { paymentProviderRegistry } from './payment-provider.registry';
 
 // Ghana phone prefix to mobile money provider mapping (for refund detection)
 const GHANA_PHONE_PREFIX_MAP: Record<string, 'mtn' | 'vodafone' | 'airteltigo'> = {
@@ -41,6 +43,102 @@ function detectMomoProviderFromPhone(phone: string): 'mtn' | 'vodafone' | 'airte
     return GHANA_PHONE_PREFIX_MAP[localPrefix];
   }
   return 'mtn'; // fallback
+}
+
+/**
+ * Get the active payment gateway from SiteSettings (admin dashboard configuration).
+ * Falls back to 'paystack' if not configured, since that's our primary gateway.
+ */
+async function getActivePaymentGateway(): Promise<'paystack' | 'hubtel' | 'theteller'> {
+  try {
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 'default' },
+    });
+    return (settings?.paymentGateway as any) || 'paystack';
+  } catch {
+    return 'paystack';
+  }
+}
+
+/**
+ * Process a refund via Paystack reverse charge (works for both card and MoMo payments).
+ * Returns the refund reference on success, or undefined on failure.
+ */
+async function refundViaPaystack(
+  providerRef: string,
+  amount: number,
+  reason: string
+): Promise<string | undefined> {
+  try {
+    const providerResult = await paymentProviderRegistry.getProvider('paystack');
+    if (!providerResult) {
+      logger.warn('Paystack provider not available for refund');
+      return undefined;
+    }
+
+    const result = await providerResult.provider.processRefund(
+      { transactionReference: providerRef, amount, reason },
+      providerResult.credentials
+    );
+
+    if (result.success) {
+      logger.info('Paystack refund processed', { providerRef, amount, refundRef: result.refundReference });
+      return result.refundReference;
+    }
+
+    logger.warn('Paystack refund failed', { providerRef, message: result.message });
+    return undefined;
+  } catch (error: any) {
+    logger.error('Paystack refund error', { providerRef, error: error.message });
+    return undefined;
+  }
+}
+
+/**
+ * Send a payout via Paystack transfers (bank or mobile money).
+ * Returns the payout reference on success, or undefined on failure.
+ */
+async function payoutViaPaystack(params: {
+  recipientPhone: string;
+  recipientName: string;
+  amount: number;
+  momoProvider?: string;
+  reference: string;
+  description: string;
+}): Promise<string | undefined> {
+  try {
+    const providerResult = await paymentProviderRegistry.getProvider('paystack');
+    if (!providerResult) {
+      logger.warn('Paystack provider not available for payout');
+      return undefined;
+    }
+
+    const result = await providerResult.provider.sendPayout(
+      {
+        recipient: {
+          name: params.recipientName,
+          payoutType: 'mobile_money',
+          mobileMoneyNumber: params.recipientPhone,
+          mobileMoneyProvider: params.momoProvider || 'mtn',
+        },
+        amount: params.amount,
+        reference: params.reference,
+        reason: params.description,
+      },
+      providerResult.credentials
+    );
+
+    if (result.success) {
+      logger.info('Paystack payout sent', { reference: params.reference, amount: params.amount });
+      return result.payoutReference;
+    }
+
+    logger.warn('Paystack payout failed', { reference: params.reference, message: result.message });
+    return undefined;
+  } catch (error: any) {
+    logger.error('Paystack payout error', { reference: params.reference, error: error.message });
+    return undefined;
+  }
 }
 
 /**
@@ -186,37 +284,60 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
       );
     }
 
-    // Initiate Hubtel Send Money payout to salon
+    // Route payout through the active payment gateway (admin-configured)
+    const activeGateway = await getActivePaymentGateway();
     const payoutReference = 'GROOMLINK-PAYOUT-' + escrow.booking.reference + '-' + Date.now();
-    let hubtelPayoutReference: string | undefined;
+    let payoutRef: string | undefined;
+    let payoutGateway = 'unknown';
 
-    try {
-      const payoutResult = await initiateHubtelPayout({
+    // Try Hubtel if admin set it as active gateway
+    if (activeGateway === 'hubtel') {
+      try {
+        const payoutResult = await initiateHubtelPayout({
+          recipientPhone: escrow.salon.momoNumber,
+          recipientName: escrow.salon.businessName,
+          amount: providerAmount,
+          channel: getHubtelChannel(escrow.salon.momoProvider),
+          reference: payoutReference,
+          description: 'Payment for service completion',
+        });
+        payoutRef = payoutResult?.Data?.ClientReference || payoutReference;
+        payoutGateway = 'hubtel';
+        logger.info(`Hubtel payout initiated for escrow ${escrowId}`, {
+          recipient: escrow.salon.momoNumber,
+          amount: providerAmount,
+          payoutRef,
+        });
+      } catch (hubtelError: any) {
+        logger.warn('Hubtel payout failed, falling back to Paystack', {
+          escrowId,
+          error: hubtelError.message,
+        });
+        // Fall through to Paystack fallback
+      }
+    }
+
+    // Try Paystack (when active gateway is paystack, or as Hubtel fallback)
+    if (!payoutRef) {
+      const detectedProvider = detectMomoProviderFromPhone(escrow.salon.momoNumber);
+      const psRef = await payoutViaPaystack({
         recipientPhone: escrow.salon.momoNumber,
         recipientName: escrow.salon.businessName,
-        amount: providerAmount, // GHS (cedis decimal), NOT pesewas
-        channel: getHubtelChannel(escrow.salon.momoProvider),
+        amount: providerAmount,
+        momoProvider: detectedProvider,
         reference: payoutReference,
         description: 'Payment for service completion',
       });
+      if (psRef) {
+        payoutRef = psRef;
+        payoutGateway = 'paystack';
+      }
+    }
 
-      hubtelPayoutReference = payoutResult?.Data?.ClientReference || payoutReference;
-
-      logger.info(`Hubtel payout initiated for escrow ${escrowId}`, {
-        recipient: escrow.salon.momoNumber,
-        amount: providerAmount,
-        hubtelPayoutReference,
-      });
-    } catch (transferError: any) {
-      logger.error('Hubtel payout failed:', {
-        escrowId,
-        error: transferError.message,
-        response: transferError.response?.data
-      });
-
-      // Throw error so the caller knows the transfer failed
-      const errorMessage = transferError.response?.data?.message || transferError.message;
-      throw new Error(`Failed to transfer funds: ${errorMessage}. Please try again or contact support.`);
+    if (!payoutRef) {
+      throw new Error(
+        `Failed to transfer funds via ${activeGateway} or Paystack. Please try again or contact support.`
+      );
     }
     
     // Update escrow status and create transaction
@@ -227,7 +348,8 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
         data: {
           status: 'released',
           releasedAt: new Date(),
-          hubtelPayoutReference,
+          hubtelPayoutReference: payoutGateway === 'hubtel' ? payoutRef : undefined,
+          payoutGateway: payoutGateway,
         }
       });
       
@@ -265,13 +387,14 @@ export async function refundEscrow(
   refundPercentage: number
 ): Promise<{ escrow: EscrowAccount; refundAmount: number }> {
   try {
-    // Fetch escrow with booking and customer relations
+    // Fetch escrow with booking, customer, and payment relations
     const escrow = await prisma.escrowAccount.findUnique({
       where: { id: escrowId },
       include: {
         booking: {
           include: {
             customer: true,
+            payment: true,
           }
         },
       }
@@ -302,41 +425,82 @@ export async function refundEscrow(
       }
     }
     
-    // Send refund via Hubtel Send Money back to the customer
-    let hubtelPayoutReference: string | undefined;
+    // Route refund through the active payment gateway (admin-configured)
+    const activeGateway = await getActivePaymentGateway();
+    let refundRef: string | undefined;
+    let refundGateway = 'unknown';
     const customerPhone = escrow.booking.customer?.phoneNumber;
 
     if (customerPhone) {
       const refundReference = 'GROOMLINK-REFUND-' + escrow.booking.reference + '-' + Date.now();
-      const detectedProvider = detectMomoProviderFromPhone(customerPhone);
 
-      try {
-        const payoutResult = await initiateHubtelPayout({
-          recipientPhone: customerPhone,
-          recipientName: `${escrow.booking.customer.firstName} ${escrow.booking.customer.lastName}`,
-          amount: refundAmount, // GHS (cedis decimal), NOT pesewas
-          channel: getHubtelChannel(detectedProvider),
-          reference: refundReference,
-          description: 'Refund for cancelled booking',
-        });
+      // Try Hubtel if admin set it as active gateway
+      if (activeGateway === 'hubtel') {
+        const detectedProvider = detectMomoProviderFromPhone(customerPhone);
+        try {
+          const payoutResult = await initiateHubtelPayout({
+            recipientPhone: customerPhone,
+            recipientName: `${escrow.booking.customer.firstName} ${escrow.booking.customer.lastName}`,
+            amount: refundAmount,
+            channel: getHubtelChannel(detectedProvider),
+            reference: refundReference,
+            description: 'Refund for cancelled booking',
+          });
+          refundRef = payoutResult?.Data?.ClientReference || refundReference;
+          refundGateway = 'hubtel';
+          logger.info(`Hubtel refund payout initiated for escrow ${escrowId}`, {
+            customerPhone: formatGhanaPhone(customerPhone),
+            refundAmount,
+            refundRef,
+          });
+        } catch (hubtelError: any) {
+          logger.warn('Hubtel refund payout failed, falling back to Paystack', {
+            escrowId,
+            error: hubtelError.message,
+          });
+        }
+      }
 
-        hubtelPayoutReference = payoutResult?.Data?.ClientReference || refundReference;
+      // Try Paystack (when active gateway is paystack, or as Hubtel fallback)
+      if (!refundRef) {
+        const payment = escrow.booking.payment;
+        const providerRef = payment?.providerRef || payment?.paystackTransactionId;
 
-        logger.info(`Hubtel refund payout initiated for escrow ${escrowId}`, {
-          customerPhone: formatGhanaPhone(customerPhone),
-          refundAmount,
-          hubtelPayoutReference,
-        });
-      } catch (refundError: any) {
-        logger.error('Hubtel refund payout failed:', {
-          escrowId,
-          error: refundError.message,
-          response: refundError.response?.data
-        });
-        // Continue with ledger update even if refund payout fails
+        if (providerRef) {
+          const psRef = await refundViaPaystack(
+            providerRef,
+            refundAmount,
+            'Refund for cancelled booking'
+          );
+          if (psRef) {
+            refundRef = psRef;
+            refundGateway = 'paystack';
+          }
+        }
+
+        // Last resort: try Paystack transfer to customer phone
+        if (!refundRef) {
+          const detectedProvider = detectMomoProviderFromPhone(customerPhone);
+          const psRef = await payoutViaPaystack({
+            recipientPhone: customerPhone,
+            recipientName: `${escrow.booking.customer.firstName} ${escrow.booking.customer.lastName}`,
+            amount: refundAmount,
+            momoProvider: detectedProvider,
+            reference: refundReference,
+            description: 'Refund for cancelled booking',
+          });
+          if (psRef) {
+            refundRef = psRef;
+            refundGateway = 'paystack_transfer';
+          }
+        }
+      }
+
+      if (!refundRef) {
+        logger.warn(`All refund payout methods failed for escrow ${escrowId}. Ledger will still be updated.`);
       }
     } else {
-      logger.warn('No customer phone number found for escrow, skipping Hubtel refund payout:', { escrowId });
+      logger.warn('No customer phone number found for escrow, skipping refund payout:', { escrowId });
     }
     
     // Update escrow status and create transaction
@@ -346,7 +510,9 @@ export async function refundEscrow(
         where: { id: escrowId },
         data: {
           status: 'refunded',
-          hubtelPayoutReference,
+          hubtelPayoutReference: refundGateway === 'hubtel' ? refundRef : undefined,
+          payoutGateway: refundGateway,
+          refundTransactionId: refundRef,
         }
       });
       
@@ -358,7 +524,7 @@ export async function refundEscrow(
           amount: refundAmount,
           previousBalance: amountHeld,
           newBalance: amountHeld - refundAmount,
-          reference: hubtelPayoutReference,
+          reference: refundRef,
         }
       });
       

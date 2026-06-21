@@ -6,6 +6,7 @@ import * as smsService from './sms.service';
 import { getPolicyValue, refundEscrow } from './escrow.service';
 import { emitSlotUpdated, emitBookingCancelled } from '../config/socket';
 import { notifyWaitlistOnCancellation } from './waitlist.service';
+import { paymentProviderRegistry } from './payment-provider.registry';
 
 /**
  * Refund calculation result
@@ -661,8 +662,10 @@ export async function rescheduleBooking(
 /**
  * One-Click Refund: Provider initiates a full refund to the customer's original payment method.
  * This is used when a customer cancels and the barber taps "Refund".
- * - Card payments → Paystack refund API (reverse charge to card)
- * - MoMo payments → Hubtel send money (reverse to phone number)
+ * Routes the refund through the active payment gateway configured by admin in SiteSettings.
+ * - If admin set Paystack (default): reverse charge via Paystack refund API
+ * - If admin set Hubtel: send money back via Hubtel payout
+ * - Graceful fallback: if active gateway fails, tries the other gateway
  */
 export async function oneClickRefund(bookingId: string, providerId: string) {
   // Fetch booking with all required relations
@@ -715,49 +718,63 @@ export async function oneClickRefund(bookingId: string, providerId: string) {
   let refundMethod = 'unknown';
   let refundReference: string | undefined;
 
-  // Determine payment gateway and route refund accordingly
+  // Determine active gateway from admin SiteSettings
+  const settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
+  const activeGateway = settings?.paymentGateway || 'paystack';
+
   const payment = booking.payment;
-  const paymentGateway = payment?.paymentGateway || payment?.provider?.toLowerCase() || 'hubtel';
+  const providerRef = payment?.providerRef || payment?.paystackTransactionId;
 
-  if (paymentGateway === 'paystack' && payment?.providerRef) {
-    // Card payment → Paystack refund
-    try {
-      const { PaystackProvider } = await import('./paystack.provider');
-      const provider = new PaystackProvider();
-      const credentials = await getPaystackCredentials();
-
-      const result = await provider.processRefund(
-        {
-          transactionReference: payment.providerRef,
-          amount: refundAmount,
-          reason: `One-click refund for cancelled booking ${booking.reference || bookingId}`,
-        },
-        credentials
-      );
-
-      if (result.success) {
-        refundMethod = 'paystack_card';
-        refundReference = result.refundReference;
-        logger.info('Paystack one-click refund processed', {
-          bookingId,
-          refundAmount,
-          refundReference,
-        });
-      } else {
-        throw new Error(result.message || 'Paystack refund failed');
-      }
-    } catch (error: any) {
-      logger.error('Paystack one-click refund failed, falling back to Hubtel', { bookingId, error: error.message });
-      // Fallback to Hubtel MoMo refund
-      const hubtelRef = await hubtelRefundFallback(booking, refundAmount);
-      refundMethod = 'hubtel_momo_fallback';
+  if (activeGateway === 'hubtel') {
+    // Admin set Hubtel as active — try Hubtel first
+    const hubtelRef = await hubtelRefundFallback(booking, refundAmount);
+    if (hubtelRef) {
+      refundMethod = 'hubtel_momo';
       refundReference = hubtelRef;
+    } else {
+      // Hubtel failed — fallback to Paystack
+      if (providerRef) {
+        const psRef = await paystackRefundDirect(providerRef, refundAmount, booking);
+        if (psRef) {
+          refundMethod = 'paystack_fallback';
+          refundReference = psRef;
+        }
+      }
     }
   } else {
-    // MoMo payment → Hubtel refund (or fallback)
-    const hubtelRef = await hubtelRefundFallback(booking, refundAmount);
-    refundMethod = 'hubtel_momo';
-    refundReference = hubtelRef;
+    // Paystack is active (default) — try Paystack first
+    if (providerRef) {
+      const psRef = await paystackRefundDirect(providerRef, refundAmount, booking);
+      if (psRef) {
+        refundMethod = 'paystack';
+        refundReference = psRef;
+      }
+    }
+
+    // Paystack failed or no providerRef — try Paystack transfer as fallback
+    if (!refundReference && booking.customer?.phoneNumber) {
+      const psTransferRef = await paystackTransferRefund(booking, refundAmount);
+      if (psTransferRef) {
+        refundMethod = 'paystack_transfer';
+        refundReference = psTransferRef;
+      }
+    }
+
+    // Last resort: try Hubtel if configured
+    if (!refundReference) {
+      const hubtelRef = await hubtelRefundFallback(booking, refundAmount);
+      if (hubtelRef) {
+        refundMethod = 'hubtel_momo_fallback';
+        refundReference = hubtelRef;
+      }
+    }
+  }
+
+  if (!refundReference) {
+    logger.error('All refund methods failed for one-click refund', { bookingId, activeGateway });
+    throw new Error(
+      'Refund could not be processed. Please ensure payment gateway credentials are configured in admin settings.'
+    );
   }
 
   // Update escrow status to refunded
@@ -767,6 +784,7 @@ export async function oneClickRefund(bookingId: string, providerId: string) {
       status: 'refunded',
       refundTransactionId: refundReference,
       hubtelPayoutReference: refundMethod.startsWith('hubtel') ? refundReference : booking.escrow.hubtelPayoutReference,
+      payoutGateway: refundMethod.startsWith('hubtel') ? 'hubtel' : 'paystack',
     },
   });
 
@@ -845,23 +863,97 @@ async function hubtelRefundFallback(booking: any, refundAmount: number): Promise
     return result?.Data?.ClientReference || reference;
   } catch (error: any) {
     logger.error('Hubtel refund payout failed', { bookingId: booking.id, error: error.message });
-    return reference;
+    return undefined; // Return undefined so caller knows it failed and can try fallback
   }
 }
 
 /**
- * Helper: Get Paystack credentials from config
+ * Helper: Process Paystack refund via reverse charge
  */
-async function getPaystackCredentials() {
+async function paystackRefundDirect(
+  providerRef: string,
+  refundAmount: number,
+  booking: any
+): Promise<string | undefined> {
   try {
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) {
-      throw new Error('PAYSTACK_SECRET_KEY not configured');
+    const providerResult = await paymentProviderRegistry.getProvider('paystack');
+    if (!providerResult) {
+      logger.warn('Paystack provider not configured for refund');
+      return undefined;
     }
-    return { secretKey };
-  } catch (error) {
-    logger.error('Failed to get Paystack credentials', { error });
-    throw error;
+
+    const result = await providerResult.provider.processRefund(
+      {
+        transactionReference: providerRef,
+        amount: refundAmount,
+        reason: `One-click refund for cancelled booking ${booking.reference || booking.id}`,
+      },
+      providerResult.credentials
+    );
+
+    if (result.success) {
+      logger.info('Paystack one-click refund processed', {
+        bookingId: booking.id,
+        refundAmount,
+        refundRef: result.refundReference,
+      });
+      return result.refundReference;
+    }
+
+    logger.warn('Paystack refund failed', { bookingId: booking.id, message: result.message });
+    return undefined;
+  } catch (error: any) {
+    logger.error('Paystack refund error', { bookingId: booking.id, error: error.message });
+    return undefined;
+  }
+}
+
+/**
+ * Helper: Send refund as Paystack transfer to customer's phone (MoMo)
+ */
+async function paystackTransferRefund(booking: any, refundAmount: number): Promise<string | undefined> {
+  const customerPhone = booking.customer?.phoneNumber;
+  if (!customerPhone) return undefined;
+
+  try {
+    const providerResult = await paymentProviderRegistry.getProvider('paystack');
+    if (!providerResult) return undefined;
+
+    // Detect MoMo provider from phone prefix
+    const phonePrefix = customerPhone.replace(/[^0-9]/g, '').slice(0, 4);
+    let momoProvider = 'mtn';
+    if (phonePrefix === '0200' || phonePrefix === '0201' || customerPhone.startsWith('020')) {
+      momoProvider = 'vodafone';
+    } else if (customerPhone.startsWith('027') || customerPhone.startsWith('026')) {
+      momoProvider = 'airteltigo';
+    }
+
+    const reference = `GROOMLINK-REFUND-${booking.reference || booking.id}-${Date.now()}`;
+    const result = await providerResult.provider.sendPayout(
+      {
+        recipient: {
+          name: `${booking.customer.firstName} ${booking.customer.lastName}`,
+          payoutType: 'mobile_money',
+          mobileMoneyNumber: customerPhone,
+          mobileMoneyProvider: momoProvider,
+        },
+        amount: refundAmount,
+        reference,
+        reason: 'Refund for cancelled booking',
+      },
+      providerResult.credentials
+    );
+
+    if (result.success) {
+      logger.info('Paystack transfer refund sent', { bookingId: booking.id, reference });
+      return result.payoutReference || reference;
+    }
+
+    logger.warn('Paystack transfer refund failed', { bookingId: booking.id, message: result.message });
+    return undefined;
+  } catch (error: any) {
+    logger.error('Paystack transfer refund error', { bookingId: booking.id, error: error.message });
+    return undefined;
   }
 }
 
