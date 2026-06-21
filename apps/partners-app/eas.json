@@ -37,7 +37,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v12-newarch-off"
+        "key": "v13-react-pinned"
       }
     }
   },
