@@ -4,12 +4,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 
-// Lazy-load all screens to prevent crashes during module initialization.
-// Native modules (react-native-maps, react-native-webview, expo-clipboard)
-// are loaded only when their screens are actually navigated to.
-const AuthNavigator = lazy(() => import('./AuthNavigator'));
-const MainNavigator = lazy(() => import('./MainNavigator'));
-const WelcomeScreen = lazy(() => import('../screens/auth/WelcomeScreen'));
+// EAGER: Initial screens loaded immediately for fast startup
+import AuthNavigator from './AuthNavigator';
+import MainNavigator from './MainNavigator';
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
+import LoadingScreen from '../components/LoadingScreen';
+
+// LAZY: Secondary screens loaded on-demand when navigated to
 const BookingScreen = lazy(() => import('../screens/main/BookingScreen'));
 const BookingConfirmationScreen = lazy(() => import('../screens/main/BookingConfirmationScreen'));
 const PaymentProcessingScreen = lazy(() => import('../screens/main/PaymentProcessingScreen'));
@@ -17,7 +18,6 @@ const BookingDetailScreen = lazy(() => import('../screens/main/BookingDetailScre
 const BookingQRCodeScreen = lazy(() => import('../screens/main/BookingQRCodeScreen'));
 const RateBookingScreen = lazy(() => import('../screens/main/RateBookingScreen'));
 const PlatformFeedbackScreen = lazy(() => import('../screens/main/PlatformFeedbackScreen'));
-const LoadingScreen = lazy(() => import('../components/LoadingScreen'));
 
 import { RootStackParamList } from '../types/navigation';
 import { useAppTheme } from '../theme/ThemeContext';

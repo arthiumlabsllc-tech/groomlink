@@ -2,8 +2,10 @@ import React, { Suspense, lazy } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Lazy-load auth screens (OTPScreen uses expo-clipboard, a native module)
-const EmailScreen = lazy(() => import('../screens/auth/EmailScreen'));
+// EAGER: First auth screen loaded immediately
+import EmailScreen from '../screens/auth/EmailScreen';
+
+// LAZY: Secondary auth screens (OTPScreen uses expo-clipboard)
 const OTPScreen = lazy(() => import('../screens/auth/OTPScreen'));
 const ProfileSetupScreen = lazy(() => import('../screens/auth/ProfileSetupScreen'));
 

@@ -6,13 +6,14 @@ import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../theme/ThemeContext';
 
-// Lazy-load all screens to prevent module-load crashes from native dependencies
-// (react-native-maps, react-native-webview, expo-clipboard, etc.)
-const HomeScreen = lazy(() => import('../screens/main/HomeScreen'));
-const SearchScreen = lazy(() => import('../screens/main/SearchScreen'));
-const MapScreen = lazy(() => import('../screens/main/MapScreen'));
-const BookingsScreen = lazy(() => import('../screens/main/BookingsScreen'));
-const ProfileScreen = lazy(() => import('../screens/main/ProfileScreen'));
+// EAGER: Tab screens loaded immediately for fast tab switching
+import HomeScreen from '../screens/main/HomeScreen';
+import SearchScreen from '../screens/main/SearchScreen';
+import BookingsScreen from '../screens/main/BookingsScreen';
+import ProfileScreen from '../screens/main/ProfileScreen';
+import SafeMapScreen from '../screens/main/SafeMapScreen';
+
+// LAZY: Secondary stack screens loaded on-demand
 const SalonDetailScreen = lazy(() => import('../screens/main/SalonDetailScreen'));
 const NotificationsScreen = lazy(() => import('../screens/main/NotificationsScreen'));
 const ChatScreen = lazy(() => import('../screens/support/ChatScreen'));
@@ -75,7 +76,7 @@ function MapStack() {
   return (
     <Suspense fallback={<ScreenLoader />}>
     <MapStackNav.Navigator>
-      <MapStackNav.Screen name="MapMain" component={MapScreen} options={{ headerShown: false }} />
+      <MapStackNav.Screen name="MapMain" component={SafeMapScreen} options={{ headerShown: false }} />
       <MapStackNav.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
     </MapStackNav.Navigator>
     </Suspense>
