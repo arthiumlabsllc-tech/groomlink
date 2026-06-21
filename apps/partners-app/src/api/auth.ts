@@ -100,6 +100,20 @@ export const authApi = {
     return profile;
   },
 
+  // Delete account (GDPR/Ghana DPA)
+  deleteAccount: async (): Promise<{ success: boolean; message?: string }> => {
+    const response = await apiClient.delete('/users/account');
+    if (response.data.success) {
+      // Clear all stored data
+      await SecureStore.deleteItemAsync('accessToken');
+      await SecureStore.deleteItemAsync('refreshToken');
+      await SecureStore.deleteItemAsync('user');
+      await SecureStore.deleteItemAsync('isNewUser');
+      await SecureStore.deleteItemAsync('registrationEmail');
+    }
+    return response.data;
+  },
+
   // Complete registration for new users (sets profile and role)
   completeRegistration: async (data: {
     email: string;

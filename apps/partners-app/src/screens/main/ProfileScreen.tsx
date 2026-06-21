@@ -180,6 +180,54 @@ export default function ProfileScreen() {
     );
   };
 
+  // Handle delete account (multi-step confirmation)
+  const handleDeleteAccount = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      'Delete Account',
+      'This action is permanent and cannot be undone. All your data including booking history, salon details, and payout records will be permanently deleted.\n\nAre you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation step
+            Alert.alert(
+              'Final Confirmation',
+              'Type to confirm: This will permanently delete your account and all associated data. This cannot be reversed.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete My Account',
+                  style: 'destructive',
+                  onPress: performDeleteAccount,
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const performDeleteAccount = async () => {
+    try {
+      const result = await authApi.deleteAccount();
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          'Account Deleted',
+          'Your account has been permanently deleted.',
+          [{ text: 'OK', onPress: () => authLogout() }]
+        );
+      }
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to delete account. Please try again.';
+      Alert.alert('Cannot Delete Account', message);
+    }
+  };
+
   // Handle refresh
   const onRefresh = useCallback(() => {
     refetch();
@@ -597,6 +645,17 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
+        {/* Delete Account Button */}
+        <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
+          <View style={[styles.menuIcon, { backgroundColor: '#FEF2F2' }]}>
+            <Ionicons name="trash-outline" size={20} color="#DC2626" />
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={styles.deleteAccountText}>Delete Account</Text>
+            <Text style={styles.deleteAccountSubtitle}>Permanently remove your account and data</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* App Version */}
         <Text style={styles.version}>
           GroomLink Partners v{APP_VERSION}
@@ -834,6 +893,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '500',
     color: theme.danger,
     marginLeft: 12,
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  deleteAccountText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#DC2626',
+  },
+  deleteAccountSubtitle: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
   version: {
     textAlign: 'center',
