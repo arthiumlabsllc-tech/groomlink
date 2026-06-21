@@ -127,28 +127,36 @@ export default function ComingSoon() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header scrolled={scrolled} />
 
-      <section className="flex-1 flex items-center justify-center pt-32 md:pt-40 pb-24 bg-gradient-to-br from-[#F8F9FA] via-white to-[#F8F9FA]">
-        <div className="section-container">
+      <section className="pt-32 md:pt-36 pb-20 bg-gradient-to-br from-[#006B3F] via-[#00573a] to-[#004d2d] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#FCD116]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#CE1126]/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3" />
+        <div className="section-container relative">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="w-20 h-20 rounded-2xl bg-[#006B3F]/10 flex items-center justify-center mx-auto mb-6">
-              <Icon name={c.icon} size={40} className="text-[#006B3F]" />
+            <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-6">
+              <Icon name={c.icon} size={40} className="text-[#FCD116]" />
             </div>
-            <span className="inline-block text-[#006B3F] font-semibold text-sm uppercase tracking-wider mb-3">
+            <span className="inline-block text-[#FCD116] font-semibold text-sm uppercase tracking-wider mb-3">
               {c.eyebrow}
             </span>
-            <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-bold text-white mb-4 leading-tight">
               {c.title}
             </h1>
-            <p className="text-base sm:text-lg text-gray-600 mb-6 leading-relaxed">
+            <p className="text-base sm:text-lg text-white/80 mb-6 leading-relaxed">
               {c.subtitle}
             </p>
-            <p className="text-sm text-gray-500 mb-8 max-w-xl mx-auto leading-relaxed">
+            <p className="text-sm text-white/60 mb-8 max-w-xl mx-auto leading-relaxed">
               {c.body}
             </p>
+          </div>
+        </div>
+      </section>
 
+      <section className="flex-1 flex items-start justify-center py-16 bg-[#F8F9FA]">
+        <div className="section-container">
+          <div className="max-w-2xl mx-auto text-center">
             {status === 'sent' ? (
               <div className="max-w-md mx-auto bg-green-50 border border-green-200 rounded-xl p-5 text-center">
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#006B3F] flex items-center justify-center">

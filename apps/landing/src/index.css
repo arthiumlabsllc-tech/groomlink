@@ -57,6 +57,94 @@ input, textarea, select { color-scheme: light dark; }
   .text-amber-600 { color: #FBBF24 !important; }
   /* Brand secondary opacity backgrounds */
   .bg-brand-secondary\/15 { background-color: rgba(0, 107, 63, 0.25) !important; }
+
+  /* ===== PartnerWithUs page dark mode fixes ===== */
+  /* Hero section gradient override */
+  .from-white { --tw-gradient-from: #1A1F2E !important; }
+  .via-\[\#f0fdf4\] { --tw-gradient-via: #162032 !important; }
+  .to-white { --tw-gradient-to: #1A1F2E !important; }
+  /* Decorative blur blobs */
+  .bg-\[\#006B3F\]\/5 { background-color: rgba(0, 107, 63, 0.1) !important; }
+  .bg-\[\#CE1126\]\/5 { background-color: rgba(206, 17, 38, 0.1) !important; }
+  /* Trust badge */
+  .bg-\[\#006B3F\]\/10 { background-color: rgba(0, 107, 63, 0.25) !important; }
+  .text-\[\#006B3F\] { color: #4ADE80 !important; }
+  /* Green-50 backgrounds (payment providers, feature badges) */
+  .bg-green-50 { background-color: rgba(0, 107, 63, 0.15) !important; }
+  .border-green-100 { border-color: rgba(0, 107, 63, 0.3) !important; }
+  .bg-gradient-to-br.from-green-50 { --tw-gradient-from: rgba(0, 107, 63, 0.15) !important; }
+  /* Social proof strip border */
+  .border-y { border-color: #2A2F3E !important; }
+  /* Card shadows - reduce for dark bg */
+  .shadow-lg { box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important; }
+  .shadow-xl { box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important; }
+  /* FAQ hover - already handled by hover:bg-gray-50 above */
+  /* "See How It Works" button */
+  .border-\[\#006B3F\]\/20 { border-color: rgba(0, 107, 63, 0.4) !important; }
+  /* Decorative connection lines */
+  .from-\[\#006B3F\]\/30 { --tw-gradient-from: rgba(74, 222, 128, 0.3) !important; }
+  .to-\[\#FCD116\]\/30 { --tw-gradient-to: rgba(252, 209, 22, 0.3) !important; }
+  .from-\[\#FCD116\]\/30 { --tw-gradient-from: rgba(252, 209, 22, 0.3) !important; }
+  .to-\[\#CE1126\]\/30 { --tw-gradient-to: rgba(206, 17, 38, 0.3) !important; }
+  /* Pricing section "bg-[#006B3F]" header stays green - already visible */
+  /* SVG wave bottom - override inline fill attribute from #F8F9FA to dark */
+  path[fill="#F8F9FA"] { fill: #1A1F2E; }
+  /* Phone mockup SVG dark mode overrides */
+  svg rect[fill="#F0FDF4"] { fill: #1A2E1F !important; }
+  svg rect[fill="#DCFCE7"] { fill: #1F3D2B !important; }
+  svg text[fill="#006B3F"] { fill: #4ADE80 !important; }
+  /* Inline SVG stroke attributes using brand dark green */
+  svg [stroke="#006B3F"] { stroke: #4ADE80 !important; }
+
+  /* ===== Legal/Info pages (Privacy, Terms, Delete Account) ===== */
+  /* Theme-aware logo: invert black logo to white in dark mode */
+  img[src*="logo-full-black"] {
+    filter: brightness(0) invert(1) !important;
+  }
+  /* Sticky header background + border */
+  .border-b.border-gray-100 {
+    background-color: #1A1F2E !important;
+    border-color: #2A2F3E !important;
+  }
+  /* Yellow warning boxes */
+  .bg-yellow-50 { background-color: rgba(180, 83, 9, 0.15) !important; }
+  .border-yellow-400 { border-color: #FBBF24 !important; }
+  .text-yellow-800 { color: #FDE68A !important; }
+  .text-yellow-700, .text-yellow-600 { color: #FCD34D !important; }
+  /* Red error/warning boxes */
+  .bg-red-50 { background-color: rgba(206, 17, 38, 0.15) !important; }
+  .border-red-500 { border-color: #EF4444 !important; }
+  .text-red-700 { color: #FCA5A5 !important; }
+  /* Green success boxes (bg-green-50 handled in PartnerWithUs section) */
+  .border-green-200, .border-green-500 { border-color: rgba(0, 107, 63, 0.4) !important; }
+  /* Ghana green tint boxes */
+  .bg-ghana-green\/5, .bg-\[\#006B3F\]\/5 {
+    background-color: rgba(0, 107, 63, 0.15) !important;
+  }
+  .border-ghana-green\/20, .border-ghana-green\/200, .border-\[\#006B3F\]\/20 {
+    border-color: rgba(0, 107, 63, 0.35) !important;
+  }
+  /* Ghana green headings */
+  .text-ghana-green { color: #4ADE80 !important; }
+  /* Shadow adjustments */
+  .shadow-md { box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important; }
+  /* Legal footer (inline bg-[#1a1a2e]) - already dark, keep as is */
+  /* Prose typography overrides for dark mode */
+  .prose { color: #D1D5DB !important; }
+  .prose strong { color: #F3F4F6 !important; }
+  .prose a { color: #60A5FA !important; }
+  .prose h2, .prose h3, .prose h4 { color: #F3F4F6 !important; }
+
+  /* ===== ComingSoon page (careers, blog, press) ===== */
+  .from-\[\#F8F9FA\] { --tw-gradient-from: #1A1F2E !important; }
+  .to-\[\#F8F9FA\] { --tw-gradient-to: #1A1F2E !important; }
+
+  /* ===== About page - stats card shadow ===== */
+  /* Already handled by shadow-xl override above */
+
+  /* ===== Download page ===== */
+  /* Gradient bg already handled by from-[#F8F9FA] and to-[#F8F9FA] overrides */
+
   /* Inputs */
   input, textarea, select {
     background-color: #1F2937 !important;

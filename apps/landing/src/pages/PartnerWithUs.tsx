@@ -152,26 +152,23 @@ export default function PartnerWithUs() {
       <Header scrolled={scrolled} />
 
       {/* ─── 1. Hero Section ─── */}
-      <section className="relative min-h-[92vh] flex items-center pt-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-white via-[#f0fdf4] to-white">
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2l2 3.5-2 3z' fill='%23000' fill-opacity='1'/%3E%3C/svg%3E")` }} />
-        </div>
-        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-[#006B3F]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#CE1126]/5 rounded-full blur-3xl" />
+      <section className="relative min-h-[92vh] flex items-center pt-24 overflow-hidden bg-gradient-to-br from-[#006B3F] via-[#00573a] to-[#004d2d]">
+        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-[#FCD116]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#CE1126]/10 rounded-full blur-3xl" />
 
         <div className="relative z-10 section-container py-16 lg:py-24">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-[#006B3F]/10 rounded-full px-5 py-2.5 mb-8">
+            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-5 py-2.5 mb-8">
               <span className="text-[#FCD116] text-lg">🇬🇭</span>
-              <span className="text-[#006B3F] text-sm font-semibold">Trusted by 500+ Ghanaian salons</span>
+              <span className="text-white text-sm font-semibold">Trusted by 500+ Ghanaian salons</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-gray-900 leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white leading-tight mb-6">
               The #1 Salon & Barbershop Booking Platform in{' '}
-              <span className="text-[#006B3F]">Ghana</span>
+              <span className="text-[#FCD116]">Ghana</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-white/80 mb-10 max-w-2xl mx-auto">
               Get more bookings, get paid instantly, and build a loyal client base. Trusted by salons across Accra, Kumasi, and beyond.
             </p>
 
@@ -179,7 +176,7 @@ export default function PartnerWithUs() {
               <a href="https://partners.groomlinkgh.com" className="inline-flex items-center justify-center gap-2 bg-[#CE1126] text-white font-bold py-4 px-8 rounded-xl hover:bg-[#a80e1f] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-lg">
                 Start Free Now- No Credit Card Required
               </a>
-              <button onClick={scrollToHowItWorks} className="inline-flex items-center justify-center gap-2 bg-white text-[#006B3F] font-semibold py-4 px-8 rounded-xl hover:bg-gray-50 transition-all duration-300 border-2 border-[#006B3F]/20">
+              <button onClick={scrollToHowItWorks} className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm text-white font-semibold py-4 px-8 rounded-xl hover:bg-white/20 transition-all duration-300 border-2 border-white/30">
                 See How It Works
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
               </button>
