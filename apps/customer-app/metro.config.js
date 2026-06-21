@@ -23,8 +23,8 @@ config.resolver.blockList = [
   /.*\/node-cron\/.*/,
   // Block axios 1.13.x node-specific CJS build that imports crypto
   /.*\/axios@1\.1[3-9]\..*/,
-  // Block test standalone directories
-  new RegExp(path.resolve(projectRoot, 'eas-test-standalone').replace(/[/\\]/g, '[/\\\\]') + '.*$'),
+  // Block test standalone directories (escape special regex chars in path)
+  new RegExp(path.resolve(projectRoot, 'eas-test-standalone').replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '.*$'),
 ];
 
 // CRITICAL: In a pnpm workspace with shamefully-hoist, the root may have react@18 (web apps)
