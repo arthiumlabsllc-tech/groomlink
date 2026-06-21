@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { HaircutIcon, BarberIcon, NailsIcon, BraidingIcon, MassageIcon, DreadlocksIcon, MakeupIcon, SkinCareIcon } from './CategoryIcons'
 
 const categories = [
-  { name: 'Haircut', Icon: HaircutIcon },
-  { name: 'Barber', Icon: BarberIcon },
+  { name: 'Styling', Icon: HaircutIcon },
+  { name: 'Cuts & Fades', Icon: BarberIcon },
   { name: 'Nails', Icon: NailsIcon },
   { name: 'Braiding', Icon: BraidingIcon },
   { name: 'Massage', Icon: MassageIcon },

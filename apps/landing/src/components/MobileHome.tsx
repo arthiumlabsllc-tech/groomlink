@@ -40,8 +40,8 @@ import { API_BASE_URL } from '../config'
 const CUSTOMER_APP_URL = 'https://my.groomlinkgh.com'
 
 const categories: Category[] = [
-  { name: 'Hair', icon: <HaircutIcon className="w-7 h-7" />, query: 'Haircut' },
-  { name: 'Barber', icon: <BarberIcon className="w-7 h-7" />, query: 'Beard Trim' },
+  { name: 'Styling', icon: <HaircutIcon className="w-7 h-7" />, query: 'Haircut' },
+  { name: 'Cuts & Fades', icon: <BarberIcon className="w-7 h-7" />, query: 'Beard Trim' },
   { name: 'Nails', icon: <NailsIcon className="w-7 h-7" />, query: 'Nails' },
   { name: 'Braiding', icon: <BraidingIcon className="w-7 h-7" />, query: 'Braiding' },
   { name: 'Massage', icon: <MassageIcon className="w-7 h-7" />, query: 'Massage' },
@@ -669,10 +669,10 @@ function ForSalonOwnersSection() {
     <section className="py-10 px-4 bg-gradient-to-br from-[#006B3F] to-[#004d2d]">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-white mb-2">
-          Grow Your Salon Business with GroomLink
+          Own a Shop? Claim Your Territory
         </h2>
         <p className="text-white/80 text-sm">
-          Join thousands of salon owners reaching more customers every day
+          Fill your chair, grow your clientele, and get paid instantly.
         </p>
       </div>
 
@@ -698,13 +698,21 @@ function ForSalonOwnersSection() {
         ))}
       </div>
 
-      {/* CTA */}
-      <a
-        href="https://partners.groomlinkgh.com"
-        className="block w-full bg-white text-[#006B3F] font-bold py-4 px-6 rounded-xl text-center hover:bg-gray-100 transition-colors"
-      >
-        List Your Salon- It's Free
-      </a>
+      {/* CTA Buttons */}
+      <div className="space-y-3">
+        <a
+          href="https://partners.groomlinkgh.com"
+          className="block w-full bg-white text-[#006B3F] font-bold py-4 px-6 rounded-xl text-center hover:bg-gray-100 transition-colors"
+        >
+          List Your Business
+        </a>
+        <a
+          href="https://partners.groomlinkgh.com"
+          className="block w-full bg-[#FCD116]/20 border border-[#FCD116]/40 text-white font-bold py-3.5 px-6 rounded-xl text-center hover:bg-[#FCD116]/30 transition-colors"
+        >
+          ✂️ Stylist? Get Booked. Create Your Profile.
+        </a>
+      </div>
     </section>
   )
 }
@@ -907,7 +915,7 @@ function DownloadAppSection() {
 function MiniFooter() {
   const quickLinks = [
     { name: 'For Customers', href: '/explore' },
-    { name: 'For Barbershop/Salon', href: 'https://partners.groomlinkgh.com' },
+    { name: 'For Business Owners', href: 'https://partners.groomlinkgh.com' },
     { name: 'Support', href: '/support' },
     { name: 'About', href: '/about' },
   ]

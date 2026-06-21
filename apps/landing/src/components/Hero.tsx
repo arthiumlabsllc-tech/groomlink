@@ -83,7 +83,7 @@ export default function Hero() {
           </div>
 
           {/* Specific CTA Buttons - clearer actions */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-12 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="flex flex-col sm:flex-row gap-3 mb-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <Link 
               to="/explore" 
               className="btn-primary text-center text-base px-6 py-3.5 min-h-12 w-full sm:w-auto inline-flex items-center justify-center gap-2"
@@ -107,10 +107,20 @@ export default function Hero() {
             </a>
           </div>
 
+          {/* Freelancer / Skilled Barber CTA */}
+          <div className="mb-12 animate-fade-in-up" style={{ animationDelay: '0.22s' }}>
+            <a
+              href="https://partners.groomlinkgh.com"
+              className="inline-flex items-center gap-2 bg-brand-gold/20 border border-brand-gold/40 text-white px-5 py-2.5 rounded-full hover:bg-brand-gold/30 transition-all text-sm font-medium"
+            >
+              <span>✂️</span> Stylist? Get booked. Create your profile.
+            </a>
+          </div>
+
           {/* Quick action pills */}
           <div className="flex flex-wrap gap-2 mb-10 animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
             <span className="text-white/60 text-sm mr-2 self-center">Popular:</span>
-            {['Book a Barber', 'Find a Hairstylist', 'Makeup Artists', 'Nail Techs', 'Spa & Massage'].map((tag) => (
+            {['Book a Fade', 'Find a Stylist', 'Makeup Artists', 'Nail Techs', 'Braiders', 'Spa & Massage'].map((tag) => (
               <Link
                 key={tag}
                 to="/explore"

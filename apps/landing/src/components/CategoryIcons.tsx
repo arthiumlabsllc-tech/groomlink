@@ -145,7 +145,9 @@ export const SkinCareIcon = ({ className = "w-8 h-8" }: IconProps) => (
 export const categoryIcons = {
   Hair: HaircutIcon,
   Haircut: HaircutIcon,
+  Styling: HaircutIcon,
   Barber: BarberIcon,
+  'Cuts & Fades': BarberIcon,
   Nails: NailsIcon,
   Braiding: BraidingIcon,
   Massage: MassageIcon,

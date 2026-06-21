@@ -29,8 +29,8 @@ interface Category {
 import { API_BASE_URL } from '../config'
 
 const categories: Category[] = [
-  { name: 'Hair', icon: <HaircutIcon className="w-4 h-4" />, query: 'Haircut' },
-  { name: 'Barber', icon: <BarberIcon className="w-4 h-4" />, query: 'Beard Trim' },
+  { name: 'Styling', icon: <HaircutIcon className="w-4 h-4" />, query: 'Haircut' },
+  { name: 'Cuts & Fades', icon: <BarberIcon className="w-4 h-4" />, query: 'Beard Trim' },
   { name: 'Nails', icon: <NailsIcon className="w-4 h-4" />, query: 'Nails' },
   { name: 'Braiding', icon: <BraidingIcon className="w-4 h-4" />, query: 'Braiding' },
   { name: 'Massage', icon: <MassageIcon className="w-4 h-4" />, query: 'Massage' },

@@ -27,7 +27,7 @@ const footerLinks = {
     { name: 'Customer Login', href: 'https://my.groomlinkgh.com/login' },
   ],
   forSalons: [
-    { name: 'List Your Salon', href: 'https://partners.groomlinkgh.com' },
+    { name: 'List Your Business', href: 'https://partners.groomlinkgh.com' },
     { name: 'Partner Login', href: 'https://partners.groomlinkgh.com/login' },
     { name: 'Success Stories', href: '/partners#stories' },
     { name: 'Pricing', href: '/partners#pricing' },

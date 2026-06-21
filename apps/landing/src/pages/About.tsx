@@ -185,7 +185,7 @@ export default function About() {
                   href="https://partners.groomlinkgh.com"
                   className="inline-flex items-center gap-2 bg-[#FCD116] text-[#006B3F] font-bold px-5 py-3 rounded-xl hover:bg-[#e5bc14] transition-colors"
                 >
-                  List Your Salon
+                  List Your Business
                 </a>
               </div>
             </div>

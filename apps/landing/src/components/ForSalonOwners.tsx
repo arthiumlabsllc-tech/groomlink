@@ -52,12 +52,12 @@ export default function ForSalonOwners() {
           {/* Content */}
           <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
-              Grow Your Salon Business with{' '}
-              <span className="text-brand-gold">GroomLink</span>
+              Own a Shop?{' '}
+              <span className="text-brand-gold">Claim Your Territory.</span>
             </h2>
             
             <p className="text-white/80 text-lg mb-8">
-              Reach more customers, fill your calendar, and get paid instantly.
+              Fill your chair, grow your clientele, and get paid instantly to Mobile Money.
             </p>
 
             {/* Benefits List */}
@@ -76,14 +76,23 @@ export default function ForSalonOwners() {
               ))}
             </ul>
 
-            {/* CTA Button */}
-            <a
-              href="https://partners.groomlinkgh.com"
-              className={`inline-block bg-white text-brand-secondary font-bold py-4 px-8 rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+            {/* CTA Buttons */}
+            <div className={`flex flex-col sm:flex-row gap-3 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
               style={{ transitionDelay: '500ms' }}
             >
-              List Your Salon
-            </a>
+              <a
+                href="https://partners.groomlinkgh.com"
+                className="inline-block bg-white text-brand-secondary font-bold py-4 px-8 rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl text-center"
+              >
+                List Your Business
+              </a>
+              <a
+                href="https://partners.groomlinkgh.com"
+                className="inline-block bg-brand-gold/20 border border-brand-gold/40 text-white font-bold py-4 px-8 rounded-lg hover:bg-brand-gold/30 transition-all duration-300 text-center inline-flex items-center justify-center gap-2"
+              >
+                <span>✂️</span> Stylist? Get Booked
+              </a>
+            </div>
           </div>
 
           {/* Visual/Stats */}
