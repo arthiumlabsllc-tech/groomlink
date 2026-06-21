@@ -104,6 +104,92 @@ input, textarea, select { color-scheme: light dark; }
     background: linear-gradient(90deg, #1F2937 25%, #2A3446 50%, #1F2937 75%) !important;
     background-size: 200% 100% !important;
   }
+
+  /* ===== Component classes with @apply backgrounds (NOT caught by utility overrides) ===== */
+  .card,
+  .card-horizontal,
+  .stat-card,
+  .card-v2 {
+    background-color: #1A1F2E !important;
+    border-color: #2A2F3E !important;
+  }
+  .card-v2:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3), 0 4px 10px rgba(0,0,0,0.2) !important;
+  }
+  .btn-secondary {
+    background-color: #1A1F2E !important;
+    color: #4ADE80 !important;
+    border-color: #4ADE80 !important;
+  }
+  .btn-secondary:hover {
+    background-color: #232937 !important;
+  }
+  .chip {
+    border-color: #374151 !important;
+    color: #D1D5DB !important;
+  }
+  .chip-active {
+    background-color: #CE1126 !important;
+    color: #fff !important;
+    border-color: #CE1126 !important;
+  }
+  .input-field {
+    background-color: #1F2937 !important;
+    border-color: #4B5563 !important;
+    color: #F9FAFB !important;
+  }
+
+  /* Tab pills */
+  .tab-pill-inactive {
+    background-color: #2A2F3E !important;
+    color: #9CA3AF !important;
+  }
+  .tab-pill-inactive:hover {
+    background-color: #323849 !important;
+  }
+
+  /* ===== Custom semantic text colors from Tailwind config ===== */
+  .text-text-primary { color: #F3F4F6 !important; }
+  .text-text-secondary { color: #9CA3AF !important; }
+  .text-text-tertiary { color: #6B7280 !important; }
+
+  /* Custom semantic backgrounds */
+  .bg-surface { background-color: #232937 !important; }
+  .bg-divider { background-color: #2A2F3E !important; }
+  .border-border { border-color: #374151 !important; }
+  .divide-divider > :not([hidden]) ~ :not([hidden]) { border-color: #2A2F3E !important; }
+
+  /* Section headings */
+  .section-title { color: #F3F4F6 !important; }
+  .section-subtitle { color: #9CA3AF !important; }
+
+  /* Gradient stops */
+  .via-white { --tw-gradient-via: #1A1F2E !important; }
+  .to-white { --tw-gradient-to: #1A1F2E !important; }
+  .from-gray-50 { --tw-gradient-from: #232937 !important; }
+  .via-gray-50 { --tw-gradient-via: #232937 !important; }
+  .to-gray-50 { --tw-gradient-to: #232937 !important; }
+
+  /* Chat widget dark bg override */
+  .bg-white.rounded-2xl.shadow-2xl {
+    background-color: #1A1F2E !important;
+    border-color: #374151 !important;
+  }
+
+  /* Toggle switch off state */
+  .toggle-switch-off {
+    background-color: #4B5563 !important;
+  }
+
+  /* Notification items */
+  .hover\:bg-gray-50\/80:hover {
+    background-color: rgba(42, 47, 62, 0.8) !important;
+  }
+
+  /* Footer */
+  footer.bg-white\/50 {
+    background-color: rgba(26, 31, 46, 0.5) !important;
+  }
 }
 
 html {
