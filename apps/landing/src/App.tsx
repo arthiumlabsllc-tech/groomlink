@@ -62,13 +62,13 @@ function FloatingPartnerBanner() {
             </svg>
           </div>
           <div>
-            <p className="text-white font-bold text-base mb-1">Own a Salon or Barbershop?</p>
-            <p className="text-white/70 text-sm mb-3">List for free & get more bookings</p>
+            <p className="text-white font-bold text-base mb-1">Own a Shop? Claim Your Territory</p>
+            <p className="text-white/70 text-sm mb-3">List for free & fill your chair with more bookings</p>
             <a
               href="https://partners.groomlinkgh.com"
               className="inline-flex items-center gap-2 bg-[#FCD116] text-[#006B3F] font-extrabold text-sm px-5 py-2.5 rounded-xl hover:bg-[#e5bc14] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
-              Partner With Us
+              Get Started
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
           </div>

@@ -1017,7 +1017,7 @@ function FloatingPartnerCTA() {
             <Icon name="storefront" size={24} className="text-[#006B3F]" />
           </div>
           <div className="flex-1">
-            <p className="text-white font-bold text-sm">Own a Salon or Barbershop?</p>
+            <p className="text-white font-bold text-sm">Own a Shop? Claim Your Territory</p>
             <p className="text-white/70 text-xs">List free & get more bookings today</p>
           </div>
           <div className="bg-[#FCD116] text-[#006B3F] font-extrabold text-xs px-3 py-2 rounded-lg flex-shrink-0">
@@ -1114,9 +1114,9 @@ export default function MobileHome() {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
         <div className="relative flex items-center justify-center gap-2">
           <span className="text-[#FCD116] animate-bounce-gentle">&#9733;</span>
-          <span className="text-xs font-bold">SALON/BARBERSHOP OWNER?</span>
+          <span className="text-xs font-bold">OWN A SHOP? CLAIM YOUR TERRITORY</span>
           <span className="bg-[#FCD116] text-[#006B3F] font-extrabold text-[10px] px-2 py-0.5 rounded-full">
-            PARTNER WITH US
+            GET STARTED
           </span>
           <span className="text-[#FCD116] animate-bounce-gentle" style={{ animationDelay: '0.3s' }}>&#9733;</span>
         </div>

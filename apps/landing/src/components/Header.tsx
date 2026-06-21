@@ -51,10 +51,10 @@ export default function Header({ scrolled }: HeaderProps) {
           >
             <span className="text-[#FCD116] text-lg sm:text-xl animate-bounce-gentle">&#9733;</span>
             <span className="text-xs sm:text-sm md:text-base">
-              ARE YOU A SALON/BARBERSHOP OWNER?
+              OWN A SHOP? CLAIM YOUR TERRITORY
             </span>
             <span className="bg-[#FCD116] text-[#006B3F] font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full group-hover:scale-110 transition-transform shadow-md">
-              PARTNER WITH US
+              GET STARTED
             </span>
             <span className="text-[#FCD116] text-lg sm:text-xl animate-bounce-gentle" style={{ animationDelay: '0.3s' }}>&#9733;</span>
           </a>
