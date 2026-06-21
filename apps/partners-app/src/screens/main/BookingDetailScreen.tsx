@@ -107,6 +107,39 @@ export default function BookingDetailScreen() {
     },
   });
 
+  // One-Click Refund mutation
+  const refundMutation = useMutation({
+    mutationFn: () => bookingsApi.oneClickRefund(bookingId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+      queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+      Alert.alert(
+        'Refund Initiated',
+        `GH\u20B5${data.refundAmount?.toFixed(2) || '0.00'} will be back in the customer\'s account within 24 hours.`,
+        [{ text: 'OK' }]
+      );
+    },
+    onError: (error: any) => {
+      const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to process refund.';
+      Alert.alert('Refund Error', msg);
+    },
+  });
+
+  const handleOneClickRefund = () => {
+    Alert.alert(
+      'Initiate Refund',
+      'This will refund the full amount to the customer\'s original payment method (MoMo or Card).\n\nProceed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Refund',
+          style: 'default',
+          onPress: () => refundMutation.mutate(),
+        },
+      ]
+    );
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
@@ -408,10 +441,29 @@ export default function BookingDetailScreen() {
         );
       case 'CANCELLED':
         return (
-          <View style={[styles.readOnlyNotice, { backgroundColor: '#FEF2F2' }]}>
-            <Ionicons name="close-circle" size={24} color="#EF4444" />
-            <Text variant="bodyMedium" style={[styles.readOnlyText, { color: '#EF4444' }]}>
-              This booking has been cancelled.
+          <View style={styles.cancelledSection}>
+            <View style={[styles.readOnlyNotice, { backgroundColor: '#FEF2F2' }]}>
+              <Ionicons name="close-circle" size={24} color="#EF4444" />
+              <Text variant="bodyMedium" style={[styles.readOnlyText, { color: '#EF4444' }]}>
+                This booking has been cancelled.
+              </Text>
+            </View>
+            {/* One-Click Refund Button */}
+            <Button
+              mode="contained"
+              onPress={handleOneClickRefund}
+              loading={refundMutation.isPending}
+              disabled={refundMutation.isPending}
+              style={styles.refundButton}
+              buttonColor="#006B3F"
+              contentStyle={styles.buttonContent}
+              theme={{ roundness: 12 }}
+              icon="cash-refund"
+            >
+              {refundMutation.isPending ? 'Processing...' : 'Refund Customer'}
+            </Button>
+            <Text variant="bodySmall" style={styles.refundHint}>
+              Refunds to customer's original payment method (MoMo/Card)
             </Text>
           </View>
         );
@@ -1135,6 +1187,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   readOnlyText: {
     color: theme.success,
     fontWeight: '500',
+  },
+  cancelledSection: {
+    marginTop: 16,
+  },
+  refundButton: {
+    marginTop: 16,
+  },
+  refundHint: {
+    textAlign: 'center',
+    color: theme.textSecondary,
+    marginTop: 8,
   },
   dialog: {
     borderRadius: 16,

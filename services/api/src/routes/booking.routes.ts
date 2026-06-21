@@ -51,6 +51,9 @@ router.get('/:id/qr-code', authenticateToken, requireRole(UserRole.CUSTOMER), bo
 // Cancellation route (POST for customer or provider)
 router.post('/:id/cancel', authenticateToken, requireRole(UserRole.CUSTOMER, UserRole.SALON_OWNER), bookingController.cancelBooking);
 
+// One-Click Refund (provider only - refunds to customer's original payment method)
+router.post('/:id/refund', authenticateToken, requireRole(UserRole.SALON_OWNER), bookingController.oneClickRefund);
+
 // Refund preview (for customers before cancelling)
 router.get('/:id/refund-preview', authenticateToken, requireRole(UserRole.CUSTOMER), bookingController.refundPreviewHandler);
 

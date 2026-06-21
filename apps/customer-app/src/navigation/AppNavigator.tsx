@@ -1,28 +1,25 @@
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 
-// EAGER: Initial screens loaded immediately for fast startup
+// All screens imported eagerly for fast navigation
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import LoadingScreen from '../components/LoadingScreen';
-
-// LAZY: Secondary screens loaded on-demand when navigated to
-const BookingScreen = lazy(() => import('../screens/main/BookingScreen'));
-const BookingConfirmationScreen = lazy(() => import('../screens/main/BookingConfirmationScreen'));
-const PaymentProcessingScreen = lazy(() => import('../screens/main/PaymentProcessingScreen'));
-const BookingDetailScreen = lazy(() => import('../screens/main/BookingDetailScreen'));
-const BookingQRCodeScreen = lazy(() => import('../screens/main/BookingQRCodeScreen'));
-const RateBookingScreen = lazy(() => import('../screens/main/RateBookingScreen'));
-const PlatformFeedbackScreen = lazy(() => import('../screens/main/PlatformFeedbackScreen'));
+import BookingScreen from '../screens/main/BookingScreen';
+import BookingConfirmationScreen from '../screens/main/BookingConfirmationScreen';
+import PaymentProcessingScreen from '../screens/main/PaymentProcessingScreen';
+import BookingDetailScreen from '../screens/main/BookingDetailScreen';
+import BookingQRCodeScreen from '../screens/main/BookingQRCodeScreen';
+import RateBookingScreen from '../screens/main/RateBookingScreen';
+import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 
 import { RootStackParamList } from '../types/navigation';
 import { useAppTheme } from '../theme/ThemeContext';
 
-// Loading fallback shown while a screen module is being loaded
 function ScreenLoader() {
   const { theme } = useAppTheme();
   return (
@@ -52,7 +49,6 @@ export default function AppNavigator() {
   // After auth modal dismisses, redirect to pending booking if one exists
   useEffect(() => {
     if (isAuthenticated && pendingBooking) {
-      // Use setTimeout to ensure navigation happens after the modal has fully dismissed
       setTimeout(() => {
         navigation.navigate('Booking', { salonId: pendingBooking.salonId });
         setPendingBooking(null);
@@ -65,7 +61,6 @@ export default function AppNavigator() {
   }
 
   return (
-    <Suspense fallback={<ScreenLoader />}>
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Welcome screen shown to non-authenticated users as entry point */}
       {!isAuthenticated && (
@@ -143,6 +138,5 @@ export default function AppNavigator() {
         }}
       />
     </Stack.Navigator>
-    </Suspense>
   );
 }

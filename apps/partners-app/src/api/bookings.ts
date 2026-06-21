@@ -102,7 +102,7 @@ export const bookingsApi = {
 
   // Cancel a booking
   cancelBooking: async (id: string, reason?: string): Promise<Booking> => {
-    const response = await apiClient.put(`/bookings/${id}/cancel`, { reason });
+    const response = await apiClient.post(`/bookings/${id}/cancel`, { reason });
     return response.data.data;
   },
 
@@ -121,6 +121,17 @@ export const bookingsApi = {
   // Mark a guest as no-show
   markGuestNoShow: async (guestId: string): Promise<any> => {
     const response = await apiClient.put(`/bookings/guest/${guestId}/no-show`);
+    return response.data.data;
+  },
+
+  // One-Click Refund (provider initiates refund to customer's original payment method)
+  oneClickRefund: async (bookingId: string): Promise<{
+    success: boolean;
+    refundAmount: number;
+    refundMethod: string;
+    message: string;
+  }> => {
+    const response = await apiClient.post(`/bookings/${bookingId}/refund`);
     return response.data.data;
   },
 };

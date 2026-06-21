@@ -659,6 +659,213 @@ export async function rescheduleBooking(
 }
 
 /**
+ * One-Click Refund: Provider initiates a full refund to the customer's original payment method.
+ * This is used when a customer cancels and the barber taps "Refund".
+ * - Card payments → Paystack refund API (reverse charge to card)
+ * - MoMo payments → Hubtel send money (reverse to phone number)
+ */
+export async function oneClickRefund(bookingId: string, providerId: string) {
+  // Fetch booking with all required relations
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      escrow: true,
+      payment: true,
+      salon: {
+        select: {
+          id: true,
+          businessName: true,
+          ownerId: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!booking) {
+    throw new Error('Booking not found');
+  }
+
+  // Verify provider owns this salon
+  if (booking.salon.ownerId !== providerId) {
+    throw new Error('You are not authorized to refund this booking');
+  }
+
+  if (booking.status !== BookingStatus.CANCELLED) {
+    throw new Error('Only cancelled bookings can be refunded');
+  }
+
+  if (!booking.escrow) {
+    throw new Error('No escrow record found for this booking');
+  }
+
+  if (booking.escrow.status === 'refunded') {
+    throw new Error('This booking has already been refunded');
+  }
+
+  const refundAmount = parseFloat(booking.escrow.amountHeld.toString());
+  let refundMethod = 'unknown';
+  let refundReference: string | undefined;
+
+  // Determine payment gateway and route refund accordingly
+  const payment = booking.payment;
+  const paymentGateway = payment?.paymentGateway || payment?.provider?.toLowerCase() || 'hubtel';
+
+  if (paymentGateway === 'paystack' && payment?.providerRef) {
+    // Card payment → Paystack refund
+    try {
+      const { PaystackProvider } = await import('./paystack.provider');
+      const provider = new PaystackProvider();
+      const credentials = await getPaystackCredentials();
+
+      const result = await provider.processRefund(
+        {
+          transactionReference: payment.providerRef,
+          amount: refundAmount,
+          reason: `One-click refund for cancelled booking ${booking.reference || bookingId}`,
+        },
+        credentials
+      );
+
+      if (result.success) {
+        refundMethod = 'paystack_card';
+        refundReference = result.refundReference;
+        logger.info('Paystack one-click refund processed', {
+          bookingId,
+          refundAmount,
+          refundReference,
+        });
+      } else {
+        throw new Error(result.message || 'Paystack refund failed');
+      }
+    } catch (error: any) {
+      logger.error('Paystack one-click refund failed, falling back to Hubtel', { bookingId, error: error.message });
+      // Fallback to Hubtel MoMo refund
+      const hubtelRef = await hubtelRefundFallback(booking, refundAmount);
+      refundMethod = 'hubtel_momo_fallback';
+      refundReference = hubtelRef;
+    }
+  } else {
+    // MoMo payment → Hubtel refund (or fallback)
+    const hubtelRef = await hubtelRefundFallback(booking, refundAmount);
+    refundMethod = 'hubtel_momo';
+    refundReference = hubtelRef;
+  }
+
+  // Update escrow status to refunded
+  await prisma.escrowAccount.update({
+    where: { id: booking.escrow.id },
+    data: {
+      status: 'refunded',
+      refundTransactionId: refundReference,
+      hubtelPayoutReference: refundMethod.startsWith('hubtel') ? refundReference : booking.escrow.hubtelPayoutReference,
+    },
+  });
+
+  // Create refund transaction record
+  await prisma.escrowTransaction.create({
+    data: {
+      escrowId: booking.escrow.id,
+      transactionType: 'refund',
+      amount: refundAmount,
+      previousBalance: refundAmount,
+      newBalance: 0,
+      reference: refundReference || `one-click-refund-${bookingId}`,
+    },
+  });
+
+  // Update booking refund fields
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: {
+      refundEligible: true,
+      refundPercentage: 100,
+    },
+  });
+
+  // Send SMS to customer
+  if (booking.customer.phoneNumber) {
+    const message = `Refund initiated for your cancelled booking at ${booking.salon.businessName}. GH₵${refundAmount.toFixed(2)} will be back in your account within 24 hours.\n\nGroomLink`;
+    smsService.sendSMS({ to: booking.customer.phoneNumber, message }).catch((err) => {
+      logger.error('Failed to send refund SMS to customer', { err });
+    });
+  }
+
+  logger.info('One-click refund completed', { bookingId, refundMethod, refundAmount, refundReference });
+
+  return {
+    success: true,
+    refundAmount,
+    refundMethod,
+    refundReference,
+    message: 'Refund initiated. Money back in customer\'s account within 24 hours.',
+  };
+}
+
+/**
+ * Helper: Hubtel MoMo refund fallback
+ */
+async function hubtelRefundFallback(booking: any, refundAmount: number): Promise<string | undefined> {
+  const customerPhone = booking.customer?.phoneNumber;
+  if (!customerPhone) {
+    logger.warn('No customer phone for Hubtel refund', { bookingId: booking.id });
+    return undefined;
+  }
+
+  const { initiateHubtelPayout, getHubtelChannel, formatGhanaPhone } = await import('./payout.service');
+  const reference = `GROOMLINK-REFUND-${booking.reference || booking.id}-${Date.now()}`;
+
+  try {
+    // Detect MoMo provider from phone number
+    const phonePrefix = customerPhone.replace(/[^0-9]/g, '').slice(0, 4);
+    let channel = 'mtn-gh';
+    if (phonePrefix === '0200' || phonePrefix === '0201' || customerPhone.startsWith('020')) {
+      channel = 'vodafone-gh';
+    } else if (customerPhone.startsWith('027') || customerPhone.startsWith('026')) {
+      channel = 'airteltigo-gh';
+    }
+
+    const result = await initiateHubtelPayout({
+      recipientPhone: customerPhone,
+      recipientName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+      amount: refundAmount,
+      channel: getHubtelChannel(channel.replace('-gh', '')),
+      reference,
+      description: 'Refund for cancelled booking',
+    });
+
+    return result?.Data?.ClientReference || reference;
+  } catch (error: any) {
+    logger.error('Hubtel refund payout failed', { bookingId: booking.id, error: error.message });
+    return reference;
+  }
+}
+
+/**
+ * Helper: Get Paystack credentials from config
+ */
+async function getPaystackCredentials() {
+  try {
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!secretKey) {
+      throw new Error('PAYSTACK_SECRET_KEY not configured');
+    }
+    return { secretKey };
+  } catch (error) {
+    logger.error('Failed to get Paystack credentials', { error });
+    throw error;
+  }
+}
+
+/**
  * Get a preview of refund calculation without executing cancellation
  * @param bookingId - The booking to preview refund for
  */

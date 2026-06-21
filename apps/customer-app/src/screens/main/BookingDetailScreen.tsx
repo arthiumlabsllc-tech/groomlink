@@ -90,15 +90,36 @@ export default function BookingDetailScreen() {
   });
 
   const rescheduleMutation = useMutation({
-    mutationFn: ({ date, startTime }: { date: string; startTime: string }) =>
-      bookingApi.rescheduleBooking(bookingId, date, startTime),
-    onSuccess: () => {
+    mutationFn: ({ date, startTime, confirmPriceChange }: { date: string; startTime: string; confirmPriceChange?: boolean }) =>
+      bookingApi.rescheduleBooking(bookingId, date, startTime, confirmPriceChange),
+    onSuccess: (data: any) => {
+      // Check if backend returned a price change notification
+      if (data?.priceChangeDetected) {
+        Alert.alert(
+          'Price Change Detected',
+          data.message || `The price has changed from GH\u20B5${data.originalPrice?.toFixed(2)} to GH\u20B5${data.currentPrice?.toFixed(2)}. Additional cost: GH\u20B5${data.priceDifference?.toFixed(2)}. Would you like to proceed?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Accept & Reschedule',
+              onPress: () => {
+                // Retry with confirmPriceChange: true
+                const lastParams = rescheduleMutation.variables;
+                if (lastParams) {
+                  rescheduleMutation.mutate({ ...lastParams, confirmPriceChange: true });
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
       Alert.alert('Booking Rescheduled', 'Your booking has been rescheduled successfully.');
     },
     onError: (error: any) => {
-      Alert.alert('Reschedule Failed', error.response?.data?.message || 'Please try again');
+      Alert.alert('Reschedule Failed', error.response?.data?.message || error.response?.data?.error?.message || 'Please try again');
     },
   });
 

@@ -8,6 +8,9 @@ dist/
 build/
 web-build/
 *.tsbuildinfo
+dist-debug/
+export-debug/
+export-dev/
 
 # Environment variables - NEVER commit these
 .env
@@ -158,6 +161,12 @@ hostinger-setup.md
 
 # Package backups
 *.backup
+
+# Screenshots at root level
+/*-screenshot*.png
+/*-screenshot.png
+/groomlink-*.png
+/chat-*.png
 
 # Documentation files that shouldn't be in repo
 BABEL_PLUGIN_FIX.md

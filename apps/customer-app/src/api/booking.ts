@@ -65,13 +65,13 @@ export const bookingApi = {
 
   // Cancel booking
   cancelBooking: async (id: string, reason?: string): Promise<Booking> => {
-    const response = await apiClient.put(`/bookings/${id}/cancel`, { reason });
+    const response = await apiClient.post(`/bookings/${id}/cancel`, { reason });
     return response.data.data;
   },
 
   // Reschedule booking
-  rescheduleBooking: async (id: string, date: string, startTime: string): Promise<Booking> => {
-    const response = await apiClient.put(`/bookings/${id}/reschedule`, { date, startTime });
+  rescheduleBooking: async (id: string, date: string, startTime: string, confirmPriceChange?: boolean): Promise<any> => {
+    const response = await apiClient.put(`/bookings/${id}/reschedule`, { date, startTime, confirmPriceChange });
     return response.data.data;
   },
 

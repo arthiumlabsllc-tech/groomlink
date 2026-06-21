@@ -254,6 +254,24 @@ export async function cancelBooking(req: AuthenticatedRequest, res: Response): P
   }
 }
 
+/**
+ * One-Click Refund: Provider initiates refund to customer's original payment method
+ */
+export async function oneClickRefund(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const { id } = req.params;
+    const result = await cancellationService.oneClickRefund(id, req.user.id);
+    successResponse(res, result);
+  } catch (error) {
+    errorResponse(res, 'REFUND_FAILED', (error as Error).message, 400);
+  }
+}
+
 export async function getAvailableSlots(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { salonId } = req.params;
@@ -278,6 +296,7 @@ const rescheduleSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // Accept YYYY-MM-DD format
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // Frontend sends 'time', not 'startTime'
   staffId: z.string().uuid().optional(),
+  confirmPriceChange: z.boolean().optional(), // Customer confirms they accept any price change
 });
 
 export async function rescheduleBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -290,13 +309,17 @@ export async function rescheduleBooking(req: AuthenticatedRequest, res: Response
     const { id } = req.params;
     const validatedData = rescheduleSchema.parse(req.body);
 
-    // Verify the user owns this booking (for customers) or owns the salon (for salon owners)
+    // Verify the user owns this booking and get service price info
     const existingBooking = await prisma.booking.findUnique({
       where: { id },
       select: { 
         customerId: true, 
         salonId: true,
-        salon: { select: { ownerId: true } }
+        finalAmount: true,
+        totalAmount: true,
+        serviceId: true,
+        salon: { select: { ownerId: true } },
+        service: { select: { price: true, name: true } },
       },
     });
 
@@ -314,14 +337,30 @@ export async function rescheduleBooking(req: AuthenticatedRequest, res: Response
       return;
     }
 
+    // Check for price changes - fetch current service price
+    const currentPrice = existingBooking.service ? parseFloat(existingBooking.service.price.toString()) : 0;
+    const originalPrice = parseFloat(existingBooking.totalAmount.toString());
+    const priceDifference = currentPrice - originalPrice;
+
+    // If price increased and customer hasn't confirmed, return price change info
+    if (priceDifference > 0.01 && !validatedData.confirmPriceChange && isCustomer) {
+      return successResponse(res, {
+        priceChangeDetected: true,
+        originalPrice,
+        currentPrice,
+        priceDifference,
+        serviceName: existingBooking.service?.name || 'Service',
+        message: `The price of ${existingBooking.service?.name || 'this service'} has increased from GH\u20B5${originalPrice.toFixed(2)} to GH\u20B5${currentPrice.toFixed(2)}. You will need to pay an additional GH\u20B5${priceDifference.toFixed(2)}.`,
+      });
+    }
+
     // Convert date to ISO string format for the cancellation service
-    // The date is in YYYY-MM-DD format, convert to ISO datetime
     const newDate = new Date(validatedData.date).toISOString();
     
     const booking = await cancellationService.rescheduleBooking(
       id,
       newDate,
-      validatedData.time, // Use 'time' from frontend
+      validatedData.time,
       validatedData.staffId
     );
     successResponse(res, booking);
