@@ -126,6 +126,7 @@ export async function scanAndCheckIn(
           id: true,
           ownerId: true,
           businessName: true,
+          providerCategory: true,
         },
       },
       customer: {
@@ -192,13 +193,18 @@ export async function scanAndCheckIn(
     },
   });
 
-  // Auto-join queue
+  // Detect if this is a freelancer/home-service booking → auto-start service timer
+  const isFreelancer = booking.salon.providerCategory === 'FREELANCER';
+
+  // Auto-join queue (freelancers auto-start IN_SERVICE with timer)
   const queueEntry = await joinQueue({
     salonId: booking.salonId,
     customerId: booking.customerId,
     serviceId: booking.serviceId,
     workerId: booking.workerId || undefined,
-    notes: `Checked in via ${data.qrData ? 'QR scan' : checkinCode ? 'manual code' : 'booking ID'}`,
+    isHomeService: isFreelancer,
+    autoStart: isFreelancer,
+    notes: `Checked in via ${data.qrData ? 'QR scan' : checkinCode ? 'manual code' : 'booking ID'}${isFreelancer ? ' (freelancer — timer auto-started)' : ''}`,
   });
 
   // Update booking with queue info

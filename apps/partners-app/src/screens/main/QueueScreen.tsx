@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -22,6 +22,135 @@ import { salonApi } from '../../api/salon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+
+// ──────────────────────────────────────────────────────
+// Service Timer — live countdown for IN_SERVICE entries
+// ──────────────────────────────────────────────────────
+function ServiceTimer({ entry }: { entry: QueueEntry }) {
+  const [now, setNow] = useState(Date.now());
+  const { theme } = useAppTheme();
+
+  // Tick every second
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!entry.startedAt || !entry.service?.duration) return null;
+
+  const startedMs = new Date(entry.startedAt).getTime();
+  const durationMs = entry.service.duration * 60 * 1000;
+  const elapsed = now - startedMs;
+  const remaining = durationMs - elapsed;
+
+  const totalSec = Math.max(0, Math.floor(remaining / 1000));
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+
+  const elapsedMin = Math.floor(elapsed / 60000);
+  const progress = Math.min(1, elapsed / durationMs);
+  const isOvertime = remaining <= 0;
+  const isWarning = !isOvertime && totalSec <= 300; // last 5 minutes
+
+  const timerColor = isOvertime
+    ? '#EF4444'
+    : isWarning
+    ? '#F59E0B'
+    : '#10B981';
+
+  return (
+    <View style={timerStyles.container}>
+      {/* Progress bar */}
+      <View style={timerStyles.progressBar}>
+        <View
+          style={[
+            timerStyles.progressFill,
+            { width: `${progress * 100}%`, backgroundColor: timerColor },
+          ]}
+        />
+      </View>
+
+      <View style={timerStyles.row}>
+        <View style={timerStyles.timerBadge}>
+          <Ionicons
+            name={isOvertime ? 'alert-circle' : 'timer-outline'}
+            size={14}
+            color={timerColor}
+          />
+          <Text style={[timerStyles.timerText, { color: timerColor }]}>
+            {isOvertime
+              ? `Overtime +${Math.abs(Math.floor(remaining / 60000))}m`
+              : `${mins}:${secs.toString().padStart(2, '0')}`}
+          </Text>
+        </View>
+        <Text style={timerStyles.elapsedText}>
+          {elapsedMin}m elapsed · {entry.service.duration}m booked
+        </Text>
+        {entry.isHomeService && (
+          <View style={timerStyles.freelancerBadge}>
+            <Ionicons name="home" size={12} color="#006B3F" />
+            <Text style={timerStyles.freelancerText}>Home</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const timerStyles = StyleSheet.create({
+  container: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  timerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  timerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  elapsedText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+  freelancerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#E8F5EE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  freelancerText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#006B3F',
+  },
+});
 
 export default function QueueScreen() {
   const queryClient = useQueryClient();
@@ -214,8 +343,27 @@ export default function QueueScreen() {
 
         <Divider style={styles.divider} />
 
+        {/* Service Timer — shown for IN_SERVICE entries with startedAt */}
+        {entry.status === 'IN_SERVICE' && entry.startedAt && (
+          <ServiceTimer entry={entry} />
+        )}
+
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
+          {entry.status === 'IN_SERVICE' && (
+            <Button
+              mode="contained"
+              onPress={() => completeServiceMutation.mutate(entry.id)}
+              loading={isActionLoading('complete', entry.id)}
+              disabled={completeServiceMutation.isPending}
+              style={[styles.actionButton, { backgroundColor: '#006B3F' }]}
+              icon="checkmark"
+              textColor="#FFFFFF"
+            >
+              Complete
+            </Button>
+          )}
+
           {entry.status === 'WAITING' && (
             <Button
               mode="contained"
@@ -256,19 +404,6 @@ export default function QueueScreen() {
             </>
           )}
 
-          {entry.status === 'IN_SERVICE' && (
-            <Button
-              mode="contained"
-              onPress={() => completeServiceMutation.mutate(entry.id)}
-              loading={isActionLoading('complete', entry.id)}
-              disabled={completeServiceMutation.isPending}
-              style={[styles.actionButton, { backgroundColor: '#006B3F' }]}
-              icon="checkmark"
-              textColor="#FFFFFF"
-            >
-              Complete
-            </Button>
-          )}
         </View>
       </Surface>
     );

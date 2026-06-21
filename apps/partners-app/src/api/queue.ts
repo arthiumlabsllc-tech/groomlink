@@ -32,6 +32,7 @@ export interface QueueEntry {
   position: number;
   status: QueueStatus;
   estimatedWait: number;
+  isHomeService?: boolean;
   joinedAt: string;
   calledAt?: string;
   startedAt?: string;

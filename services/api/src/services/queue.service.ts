@@ -11,6 +11,8 @@ export interface JoinQueueData {
   serviceId?: string;
   workerId?: string;
   notes?: string;
+  isHomeService?: boolean;
+  autoStart?: boolean;
 }
 
 export interface QueueEntry {
@@ -23,8 +25,10 @@ export interface QueueEntry {
   status: QueueStatus;
   joinedAt: Date;
   calledAt: Date | null;
+  startedAt: Date | null;
   completedAt: Date | null;
   estimatedWait: number | null;
+  isHomeService: boolean;
   notes: string | null;
   customer?: {
     id: string;
@@ -84,6 +88,8 @@ export async function joinQueue(data: JoinQueueData): Promise<QueueEntry> {
   const estimatedWait = await calculateEstimatedWait(salonId, position);
 
   // Create queue entry
+  const now = new Date();
+  const initialStatus = data.autoStart ? QueueStatus.IN_SERVICE : QueueStatus.WAITING;
   const queueEntry = await prisma.salonQueue.create({
     data: {
       salonId,
@@ -91,9 +97,12 @@ export async function joinQueue(data: JoinQueueData): Promise<QueueEntry> {
       serviceId,
       workerId,
       position,
-      status: QueueStatus.WAITING,
+      status: initialStatus,
       estimatedWait,
+      isHomeService: data.isHomeService || false,
       notes,
+      calledAt: data.autoStart ? now : null,
+      startedAt: data.autoStart ? now : null,
     },
     include: {
       customer: {
@@ -368,6 +377,7 @@ export async function startService(queueId: string, salonOwnerId: string): Promi
     where: { id: queueId },
     data: {
       status: QueueStatus.IN_SERVICE,
+      startedAt: new Date(),
     },
     include: {
       customer: {

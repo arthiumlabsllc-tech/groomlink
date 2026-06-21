@@ -856,8 +856,10 @@ model SalonQueue {
   status        QueueStatus @default(WAITING)
   joinedAt      DateTime    @default(now()) @map("joined_at")
   calledAt      DateTime?   @map("called_at")
+  startedAt     DateTime?   @map("started_at")
   completedAt   DateTime?   @map("completed_at")
   estimatedWait Int?        @map("estimated_wait")
+  isHomeService Boolean     @default(false) @map("is_home_service")
   notes         String?
 
   @@index([salonId, status])
