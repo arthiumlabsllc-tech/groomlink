@@ -27,6 +27,10 @@ config.resolver.blockList = [
   new RegExp(path.resolve(projectRoot, 'eas-test-standalone').replace(/[/\\]/g, '[/\\\\]') + '.*$'),
 ];
 
+// CRITICAL: In a pnpm workspace with shamefully-hoist, the root may have react@18 (web apps)
+// while mobile apps need react@19. Always prioritize app's own node_modules first.
+const appNodeModules = path.resolve(projectRoot, 'node_modules');
+
 // Also block Node.js built-in module resolution as safety net
 const nodeBuiltins = new Set(['crypto', 'dns', 'net', 'tls', 'child_process', 'cluster', 'dgram', 'readline', 'repl', 'vm']);
 
@@ -37,14 +41,15 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
+// Always prioritize app's own node_modules for resolution
+config.resolver.nodeModulesPaths = [
+  appNodeModules,
+  rootNodeModules,
+];
+
 if (isPnpmMonorepo) {
   // Monorepo (local development with pnpm)
   config.watchFolders = [...(config.watchFolders || []), projectRoot, monorepoRoot];
-
-  config.resolver.nodeModulesPaths = [
-    path.resolve(projectRoot, 'node_modules'),
-    rootNodeModules,
-  ];
 
   // Add pnpm virtual store paths for proper module resolution
   const pnpmItems = fs.readdirSync(pnpmVirtualStore);
@@ -102,6 +107,5 @@ if (isPnpmMonorepo) {
 
   config.resolver.extraNodeModules = extraNodeModules;
 }
-// else: EAS/standalone build - use default Expo config (no monorepo paths needed)
 
 module.exports = config;
