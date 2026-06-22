@@ -14,7 +14,6 @@ export default {
     orientation: "default",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
-    newArchEnabled: false,
     splash: {
       image: "./assets/loading-salon-02-splash.png",
       resizeMode: "cover",
