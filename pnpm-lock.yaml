@@ -218,7 +218,7 @@ importers:
         specifier: ~2.24.0
         version: 2.24.0(react-native@0.79.7(@babel/core@7.29.0)(@react-native-community/cli@11.3.7(@babel/core@7.29.0))(@types/react@19.0.10)(react@19.0.0))(react@19.0.0)
       react-native-maps:
-        specifier: ^1.20.1
+        specifier: ^1.27.2
         version: 1.27.2(react-native@0.79.7(@babel/core@7.29.0)(@react-native-community/cli@11.3.7(@babel/core@7.29.0))(@types/react@19.0.10)(react@19.0.0))(react@19.0.0)
       react-native-paper:
         specifier: ^5.11.4
