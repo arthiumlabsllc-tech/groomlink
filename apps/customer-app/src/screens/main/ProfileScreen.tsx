@@ -463,6 +463,8 @@ export default function ProfileScreen() {
             <Divider style={styles.settingDivider} />
             {renderSettingItem('heart-outline', 'Rate GroomLink', () => navigation.navigate('PlatformFeedback'))}
             <Divider style={styles.settingDivider} />
+            {renderSettingItem('star-outline', 'Review us on Trustpilot', () => Linking.openURL('https://uk.trustpilot.com/review/groomlinkgh.com'))}
+            <Divider style={styles.settingDivider} />
             {renderSettingItem('help-circle-outline', 'Help & Support', openSupport)}
             <Divider style={styles.settingDivider} />
             {renderSettingItem('document-text-outline', 'Terms & Privacy', handleTermsPress)}

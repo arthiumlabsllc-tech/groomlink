@@ -19,6 +19,7 @@ import { SubscriptionOverview } from './pages/SubscriptionOverview';
 import { SubscriptionPlans } from './pages/SubscriptionPlans';
 import { SubscriptionInvoices } from './pages/SubscriptionInvoices';
 import Feedback from './pages/Feedback';
+import { SalonReviews } from './pages/SalonReviews';
 import { Security } from './pages/Security';
 import { AccessDenied } from './pages/AccessDenied';
 import { Login } from './pages/Login';
@@ -228,6 +229,14 @@ function AppRoutes() {
           element={
             <PermissionGuard pageId="feedback">
               <Feedback />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="salon-reviews" 
+          element={
+            <PermissionGuard pageId="salons">
+              <SalonReviews />
             </PermissionGuard>
           } 
         />

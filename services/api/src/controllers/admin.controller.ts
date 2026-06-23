@@ -2562,6 +2562,105 @@ export async function resolveCompletionDisputeHandler(req: AuthenticatedRequest,
 // ===========================================
 
 /**
+ * Get all salon reviews (admin)
+ * GET /admin/reviews
+ */
+export async function getAllReviewsHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const rating = req.query.rating ? parseInt(req.query.rating as string) : undefined;
+    const salonId = req.query.salonId as string | undefined;
+
+    const where: any = {};
+    if (rating) where.rating = rating;
+    if (salonId) where.salonId = salonId;
+
+    const [reviews, total, stats] = await Promise.all([
+      prisma.review.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              avatar: true,
+            },
+          },
+          salon: {
+            select: {
+              id: true,
+              businessName: true,
+              city: true,
+            },
+          },
+        },
+      }),
+      prisma.review.count({ where }),
+      prisma.review.aggregate({
+        _avg: { rating: true },
+        _count: true,
+      }),
+    ]);
+
+    // Rating distribution
+    const ratingDistribution = await prisma.review.groupBy({
+      by: ['rating'],
+      _count: true,
+    });
+
+    successResponse(res, {
+      reviews,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+      stats: {
+        total: stats._count,
+        averageRating: stats._avg.rating || 0,
+        distribution: ratingDistribution.map(r => ({
+          rating: r.rating,
+          count: r._count,
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error('Get all reviews error:', { error });
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * Delete a salon review (admin moderation)
+ * DELETE /admin/reviews/:id
+ */
+export async function deleteReviewHandler(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    
+    const review = await prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      errorResponse(res, 'NOT_FOUND', 'Review not found', 404);
+      return;
+    }
+
+    await prisma.review.delete({ where: { id } });
+    logger.info(`Review deleted by admin: ${id}`);
+    successResponse(res, { message: 'Review deleted successfully' });
+  } catch (error) {
+    logger.error('Delete review error:', { error });
+    errorResponse(res, 'DELETE_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
  * Sync a single payment status with Hubtel
  * POST /admin/payments/:paymentId/sync
  */

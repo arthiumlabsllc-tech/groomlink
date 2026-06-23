@@ -112,6 +112,10 @@ router.get('/cancellations', authenticateToken, requireAdminOrHigher, requirePer
 router.get('/no-shows', authenticateToken, requireAdminOrHigher, requirePermission('no-shows'), adminController.getNoShowsHandler);
 router.put('/no-shows/:id/resolve', authenticateToken, requireAdminOrHigher, requirePermission('no-shows'), adminController.resolveDisputeHandler);
 
+// Salon Reviews (requires 'salons' permission)
+router.get('/reviews', authenticateToken, requireAdminOrHigher, requirePermission('salons'), adminController.getAllReviewsHandler);
+router.delete('/reviews/:id', authenticateToken, requireAdminOrHigher, requirePermission('salons'), adminController.deleteReviewHandler);
+
 // Completion Dispute Resolution (requires 'escrow' permission)
 router.put('/disputes/:id/resolve', authenticateToken, requireAdminOrHigher, requirePermission('escrow'), adminController.resolveCompletionDisputeHandler);
 

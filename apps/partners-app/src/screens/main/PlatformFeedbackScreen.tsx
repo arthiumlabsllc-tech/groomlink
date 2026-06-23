@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import {
   Text,
@@ -31,6 +32,7 @@ const createColors = (t: AppTheme) => ({
 });
 
 const STAR_SIZE = 44;
+const TRUSTPILOT_URL = 'https://uk.trustpilot.com/review/groomlinkgh.com';
 
 export default function PlatformFeedbackScreen() {
   const navigation = useNavigation<any>();
@@ -83,6 +85,7 @@ export default function PlatformFeedbackScreen() {
   }, [rating]);
 
   if (submitted) {
+    const isPositiveRating = rating >= 4;
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.successContainer}>
@@ -95,15 +98,45 @@ export default function PlatformFeedbackScreen() {
           <Text variant="bodyMedium" style={styles.successSubtitle}>
             Your input helps us improve GroomLink for everyone.
           </Text>
-          <Button
-            mode="contained"
-            onPress={() => navigation.goBack()}
-            style={styles.doneButton}
-            buttonColor={COLORS.primaryGreen}
-            contentStyle={styles.doneButtonContent}
-          >
-            Done
-          </Button>
+          {isPositiveRating && (
+            <>
+              <View style={styles.trustpilotCard}>
+                <Ionicons name="star" size={24} color="#00B67A" />
+                <Text variant="titleSmall" style={styles.trustpilotTitle}>
+                  Love GroomLink?
+                </Text>
+                <Text variant="bodySmall" style={styles.trustpilotSubtitle}>
+                  Share your experience on Trustpilot — it takes 30 seconds and helps others find us!
+                </Text>
+                <TouchableOpacity
+                  style={styles.trustpilotButton}
+                  onPress={() => Linking.openURL(TRUSTPILOT_URL)}
+                >
+                  <Ionicons name="open-outline" size={18} color="#fff" />
+                  <Text style={styles.trustpilotButtonText}>Review us on Trustpilot</Text>
+                </TouchableOpacity>
+              </View>
+              <Button
+                mode="text"
+                onPress={() => navigation.goBack()}
+                textColor={COLORS.textSecondary}
+                style={styles.noThanksButton}
+              >
+                Maybe later
+              </Button>
+            </>
+          )}
+          {!isPositiveRating && (
+            <Button
+              mode="contained"
+              onPress={() => navigation.goBack()}
+              style={styles.doneButton}
+              buttonColor={COLORS.primaryGreen}
+              contentStyle={styles.doneButtonContent}
+            >
+              Done
+            </Button>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -319,5 +352,48 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   doneButtonContent: {
     paddingVertical: 8,
+  },
+  // Trustpilot
+  trustpilotCard: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  trustpilotTitle: {
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  trustpilotSubtitle: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  trustpilotButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#00B67A',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  trustpilotButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  noThanksButton: {
+    marginBottom: 8,
   },
 });

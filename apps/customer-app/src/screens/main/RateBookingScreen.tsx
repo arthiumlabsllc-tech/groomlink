@@ -7,6 +7,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import {
   Text,
@@ -40,6 +41,7 @@ const createColors = (t: AppTheme) => ({
 type RateBookingRouteProp = RouteProp<MainStackParamList, 'RateBooking'>;
 
 const STAR_SIZE = 40;
+const TRUSTPILOT_URL = 'https://uk.trustpilot.com/review/groomlinkgh.com';
 
 export default function RateBookingScreen() {
   const navigation = useNavigation<any>();
@@ -51,6 +53,7 @@ export default function RateBookingScreen() {
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   // Fetch booking details
   const { data: booking, isLoading } = useQuery({
@@ -63,16 +66,7 @@ export default function RateBookingScreen() {
   const submitRatingMutation = useMutation({
     mutationFn: () => bookingApi.rateBooking(bookingId, rating, comment.trim() || undefined),
     onSuccess: () => {
-      Alert.alert(
-        'Thank You!',
-        'Your review has been submitted successfully.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      setSubmitted(true);
     },
     onError: (error: any) => {
       Alert.alert(
@@ -132,6 +126,64 @@ export default function RateBookingScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primaryGreen} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (submitted) {
+    const isPositiveRating = rating >= 4;
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.successContainer}>
+          <View style={styles.successIconContainer}>
+            <Ionicons name="checkmark-circle" size={64} color={COLORS.primaryGreen} />
+          </View>
+          <Text variant="headlineSmall" style={styles.successTitle}>
+            Thank you for your review! 🙏
+          </Text>
+          <Text variant="bodyMedium" style={styles.successSubtitle}>
+            Your feedback helps other customers find great salons.
+          </Text>
+          {isPositiveRating && (
+            <>
+              <View style={styles.trustpilotCard}>
+                <Ionicons name="star" size={24} color="#00B67A" />
+                <Text variant="titleSmall" style={styles.trustpilotTitle}>
+                  Love GroomLink?
+                </Text>
+                <Text variant="bodySmall" style={styles.trustpilotSubtitle}>
+                  Share your experience on Trustpilot — it takes 30 seconds!
+                </Text>
+                <TouchableOpacity
+                  style={styles.trustpilotButton}
+                  onPress={() => Linking.openURL(TRUSTPILOT_URL)}
+                >
+                  <Ionicons name="open-outline" size={18} color="#fff" />
+                  <Text style={styles.trustpilotButtonText}>Review us on Trustpilot</Text>
+                </TouchableOpacity>
+              </View>
+              <Button
+                mode="text"
+                onPress={() => navigation.goBack()}
+                textColor={COLORS.textSecondary}
+                style={styles.noThanksButton}
+              >
+                Maybe later
+              </Button>
+            </>
+          )}
+          {!isPositiveRating && (
+            <Button
+              mode="contained"
+              onPress={() => navigation.goBack()}
+              style={styles.doneButton}
+              buttonColor={COLORS.primaryGreen}
+              contentStyle={styles.doneButtonContent}
+            >
+              Done
+            </Button>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -416,5 +468,83 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   skipButton: {
     marginBottom: 16,
+  },
+  // Success state
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  successIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  successTitle: {
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 16,
+  },
+  doneButton: {
+    borderRadius: 12,
+    minWidth: 160,
+  },
+  doneButtonContent: {
+    paddingVertical: 8,
+  },
+  // Trustpilot
+  trustpilotCard: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  trustpilotTitle: {
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  trustpilotSubtitle: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  trustpilotButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#00B67A',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  trustpilotButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  noThanksButton: {
+    marginBottom: 8,
   },
 });

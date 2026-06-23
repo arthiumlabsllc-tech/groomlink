@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -620,6 +621,22 @@ export default function ProfileScreen() {
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Rate GroomLink</Text>
               <Text style={styles.menuSubtitle}>Share your feedback about the app</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => Linking.openURL('https://uk.trustpilot.com/review/groomlinkgh.com')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#E0F7FA' }]}>
+              <Ionicons name="star-outline" size={20} color="#00B67A" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Review us on Trustpilot</Text>
+              <Text style={styles.menuSubtitle}>Help others discover GroomLink</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
