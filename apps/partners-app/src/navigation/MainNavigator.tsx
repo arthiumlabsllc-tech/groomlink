@@ -21,6 +21,7 @@ import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import NotificationsListScreen from '../screens/main/NotificationsListScreen';
 import CompletionSettingsScreen from '../screens/main/CompletionSettingsScreen';
 import RequestPayoutScreen from '../screens/main/RequestPayoutScreen';
+import PayoutHistoryScreen from '../screens/main/PayoutHistoryScreen';
 import ChatScreen from '../screens/support/ChatScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 import { AppTheme } from '../theme/colors';
@@ -202,6 +203,11 @@ function ProfileStack() {
         name="RequestPayout"
         component={RequestPayoutScreen}
         options={{ title: 'Request Payout' }}
+      />
+      <Stack.Screen
+        name="PayoutHistory"
+        component={PayoutHistoryScreen}
+        options={{ title: 'Payout History' }}
       />
       <Stack.Screen
         name="EditSalon"

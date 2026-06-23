@@ -93,17 +93,19 @@ export default function RequestPayoutScreen() {
           onPress: async () => {
             setRequesting(true);
             try {
-              // TODO: Call actual payout API endpoint
-              // await salonApi.requestPayout(salonId, numericAmount);
+              await salonApi.requestPayout(salonId, numericAmount);
               
               Alert.alert(
-                'Payout Requested',
-                `Your request for GH₵${numericAmount.toFixed(2)} has been submitted. You will receive your payout within 1-2 business days.`,
+                'Payout Sent!',
+                `GH₵${numericAmount.toFixed(2)} has been sent to your ${
+                  (salon as any)?.momoProvider?.toUpperCase() || 'Mobile Money'
+                }.\n\nYou should receive it shortly.`,
                 [
                   {
                     text: 'OK',
                     onPress: () => {
                       queryClient.invalidateQueries({ queryKey: ['payoutBalance'] });
+                      queryClient.invalidateQueries({ queryKey: ['payoutHistory'] });
                       navigation.goBack();
                     },
                   },
@@ -261,7 +263,7 @@ export default function RequestPayoutScreen() {
           <View style={styles.infoBox}>
             <Ionicons name="information-circle" size={18} color="#006B3F" />
             <Text style={styles.infoText}>
-              Payouts are processed within 1-2 business days. A small processing fee may apply.
+              Payouts are sent instantly to your Mobile Money wallet via our secure payment partner.
             </Text>
           </View>
 

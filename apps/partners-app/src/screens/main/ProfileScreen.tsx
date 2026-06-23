@@ -422,6 +422,16 @@ export default function ProfileScreen() {
               <Text style={styles.payoutAccountText}>Manage Account</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Payout History Link */}
+          <TouchableOpacity
+            style={styles.payoutHistoryButton}
+            onPress={() => navigation.navigate('PayoutHistory')}
+          >
+            <Ionicons name="time-outline" size={18} color="#006B3F" />
+            <Text style={styles.payoutHistoryText}>View Payout History</Text>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
         </Surface>
 
         {/* Edit Profile Section */}
@@ -1029,6 +1039,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: 8,
   },
   payoutAccountText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#006B3F',
+  },
+  payoutHistoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    gap: 10,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  payoutHistoryText: {
+    flex: 1,
     fontSize: 14,
     fontWeight: '600',
     color: '#006B3F',

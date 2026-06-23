@@ -5,6 +5,7 @@ import { EscrowAccount } from '@prisma/client';
 import { initiateHubtelPayout, getHubtelChannel, formatGhanaPhone } from './payout.service';
 import { PaystackProvider } from './paystack.provider';
 import { paymentProviderRegistry } from './payment-provider.registry';
+import * as pushService from './pushNotification.service';
 
 // Ghana phone prefix to mobile money provider mapping (for refund detection)
 const GHANA_PHONE_PREFIX_MAP: Record<string, 'mtn' | 'vodafone' | 'airteltigo'> = {
@@ -26,7 +27,7 @@ const GHANA_PHONE_PREFIX_MAP: Record<string, 'mtn' | 'vodafone' | 'airteltigo'> 
  * Detect MoMo provider from a Ghana phone number prefix.
  * Returns 'mtn' as a fallback if the prefix is not recognised.
  */
-function detectMomoProviderFromPhone(phone: string): 'mtn' | 'vodafone' | 'airteltigo' {
+export function detectMomoProviderFromPhone(phone: string): 'mtn' | 'vodafone' | 'airteltigo' {
   const cleaned = phone.replace(/[\s-]/g, '');
   // Extract the local prefix: 0XX
   let localPrefix: string | undefined;
@@ -49,7 +50,7 @@ function detectMomoProviderFromPhone(phone: string): 'mtn' | 'vodafone' | 'airte
  * Get the active payment gateway from SiteSettings (admin dashboard configuration).
  * Falls back to 'paystack' if not configured, since that's our primary gateway.
  */
-async function getActivePaymentGateway(): Promise<'paystack' | 'hubtel' | 'theteller'> {
+export async function getActivePaymentGateway(): Promise<'paystack' | 'hubtel' | 'theteller'> {
   try {
     const settings = await prisma.siteSettings.findUnique({
       where: { id: 'default' },
@@ -98,7 +99,7 @@ async function refundViaPaystack(
  * Send a payout via Paystack transfers (bank or mobile money).
  * Returns the payout reference on success, or undefined on failure.
  */
-async function payoutViaPaystack(params: {
+export async function payoutViaPaystack(params: {
   recipientPhone: string;
   recipientName: string;
   amount: number;
@@ -420,6 +421,13 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
       commission,
       totalPlatformEarnings,
     });
+
+    // Send push notification to partner about auto-payout
+    pushService.pushPayoutSent(
+      escrow.providerId,
+      providerPayout,
+      escrow.salon.momoProvider
+    ).catch((err) => logger.error('Failed to send auto-payout notification', { err, escrowId }));
     
     return updatedEscrow;
   } catch (error) {

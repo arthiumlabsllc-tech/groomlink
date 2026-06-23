@@ -30,6 +30,49 @@ export interface PayoutBalance {
   refundedCount: number;
 }
 
+export interface PayoutHistoryItem {
+  id: string;
+  date: string;
+  amountPaid: number;
+  commission: number;
+  netReceived: number;
+  bookingReference: string;
+  serviceName: string;
+  customerName: string;
+  gateway: string;
+  status: string;
+  momoNumber: string | null;
+}
+
+export interface PayoutHistoryResponse {
+  payouts: PayoutHistoryItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  summary: {
+    totalPaidOut: number;
+    totalCommission: number;
+    totalPlatformFees: number;
+    totalPayouts: number;
+  };
+  thisMonth: {
+    earned: number;
+    commission: number;
+    payoutCount: number;
+  };
+}
+
+export interface RequestPayoutResult {
+  message: string;
+  payoutReference: string;
+  gateway: string;
+  amount: number;
+  escrowsReleased: number;
+}
+
 export const salonApi = {
   // Create a new salon
   create: async (data: CreateSalonData): Promise<Salon> => {
@@ -132,6 +175,20 @@ export const salonApi = {
   deleteGalleryImage: async (salonId: string, imageUrl: string): Promise<Salon> => {
     const response = await apiClient.delete(`/uploads/salon/${salonId}/gallery`, {
       data: { imageUrl },
+    });
+    return response.data.data;
+  },
+
+  // Request manual payout to MoMo
+  requestPayout: async (salonId: string, amount: number): Promise<RequestPayoutResult> => {
+    const response = await apiClient.post(`/salons/${salonId}/request-payout`, { amount });
+    return response.data.data;
+  },
+
+  // Get payout history
+  getPayoutHistory: async (salonId: string, page = 1, limit = 20): Promise<PayoutHistoryResponse> => {
+    const response = await apiClient.get(`/salons/${salonId}/payout-history`, {
+      params: { page, limit },
     });
     return response.data.data;
   },

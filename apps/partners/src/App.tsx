@@ -14,6 +14,7 @@ import KYC from './pages/KYC'
 import BrandedPage from './pages/BrandedPage'
 import Notifications from './pages/Notifications'
 import Insights from './pages/Insights'
+import Earnings from './pages/Earnings'
 import PricingPage from './pages/PricingPage'
 import Subscription from './pages/Subscription'
 import NotFound from './pages/NotFound'
@@ -151,6 +152,13 @@ function App() {
                 <ProtectedRoute>
                   <SalonSetupWrapper>
                     <Insights />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/earnings" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Earnings />
                   </SalonSetupWrapper>
                 </ProtectedRoute>
               } />

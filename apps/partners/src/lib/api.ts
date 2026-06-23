@@ -156,6 +156,37 @@ export interface EarningsSummary {
   pendingPenalties: number;
 }
 
+export interface PayoutBalance {
+  availableBalance: number;
+  paidOutBalance: number;
+  refundedBalance: number;
+  totalRevenue: number;
+  heldCount: number;
+  releasedCount: number;
+  refundedCount: number;
+}
+
+export interface PayoutHistoryItem {
+  id: string;
+  date: string;
+  amountPaid: number;
+  commission: number;
+  netReceived: number;
+  bookingReference: string;
+  serviceName: string;
+  customerName: string;
+  gateway: string;
+  status: string;
+  momoNumber: string | null;
+}
+
+export interface PayoutHistoryResponse {
+  payouts: PayoutHistoryItem[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  summary: { totalPaidOut: number; totalCommission: number; totalPlatformFees: number; totalPayouts: number };
+  thisMonth: { earned: number; commission: number; payoutCount: number };
+}
+
 export interface DashboardStats {
   todayBookings: number;
   todayRevenue: number;
@@ -600,6 +631,24 @@ class ApiClient {
   // Earnings summary for provider
   async getEarningsSummary(salonId: string) {
     return this.request<{ success: boolean; data: EarningsSummary }>(`/salon-owner/${salonId}/earnings`);
+  }
+
+  // Payout balance summary
+  async getPayoutBalance(salonId: string) {
+    return this.request<{ success: boolean; data: PayoutBalance }>(`/salons/${salonId}/payout-balance`);
+  }
+
+  // Payout history
+  async getPayoutHistory(salonId: string, page = 1, limit = 20) {
+    return this.request<{ success: boolean; data: PayoutHistoryResponse }>(`/salons/${salonId}/payout-history?page=${page}&limit=${limit}`);
+  }
+
+  // Request manual payout
+  async requestPayout(salonId: string, amount: number) {
+    return this.request<{ success: boolean; data: { message: string; payoutReference: string; gateway: string; amount: number } }>(`/salons/${salonId}/request-payout`, {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    });
   }
 
   // Dashboard

@@ -214,3 +214,35 @@ export async function pushPaymentReceived(
     sound: PARTNERS_NOTIFICATION_SOUND,
   });
 }
+
+/**
+ * Notify partner that a payout has been sent to their MoMo
+ */
+export async function pushPayoutSent(
+  userId: string,
+  amount: number,
+  momoProvider: string
+): Promise<void> {
+  await sendPushToUser(userId, {
+    title: '💸 Payout Sent',
+    body: `GH₵${amount.toFixed(2)} has been sent to your ${momoProvider.toUpperCase()} MoMo`,
+    data: { type: 'payout_sent', amount },
+    sound: PARTNERS_NOTIFICATION_SOUND,
+  });
+}
+
+/**
+ * Notify partner that a payout has failed
+ */
+export async function pushPayoutFailed(
+  userId: string,
+  amount: number,
+  reason: string
+): Promise<void> {
+  await sendPushToUser(userId, {
+    title: '⚠️ Payout Failed',
+    body: `We couldn't process your GH₵${amount.toFixed(2)} payout. ${reason}`,
+    data: { type: 'payout_failed', amount },
+    sound: PARTNERS_NOTIFICATION_SOUND,
+  });
+}

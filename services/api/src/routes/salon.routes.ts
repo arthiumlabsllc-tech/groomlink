@@ -36,6 +36,8 @@ router.put('/:id/completion-settings', authenticateToken, requireRole(UserRole.S
 router.get('/:id/payout-account', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.getPayoutAccount);
 router.post('/:id/payout-account', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.setupPayoutAccount);
 router.get('/:id/payout-balance', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.getPayoutBalance);
+router.post('/:id/request-payout', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.requestPayout);
+router.get('/:id/payout-history', authenticateToken, requireRole(UserRole.SALON_OWNER, UserRole.ADMIN), payoutController.getPayoutHistory);
 
 // Payout reference data (public)
 router.get('/payouts/banks', payoutController.getSupportedBanks);

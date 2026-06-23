@@ -13,6 +13,7 @@ const navIcons: Record<string, string> = {
   'Staff': 'group',
   'Services': 'content_cut',
   'Reviews': 'star',
+  'Earnings': 'account_balance_wallet',
   'Insights': 'bar_chart',
   'Booking Page': 'language',
   'Verification': 'verified_user',
@@ -204,6 +205,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         { name: 'Staff', path: '/staff' },
         { name: 'Services', path: '/services' },
         { name: 'Reviews', path: '/reviews' },
+        { name: 'Earnings', path: '/earnings' },
         { name: 'Insights', path: '/insights' },
       ]
     },
