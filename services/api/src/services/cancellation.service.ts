@@ -4,7 +4,9 @@ import redis from '../config/redis';
 import { BookingStatus } from '@prisma/client';
 import * as smsService from './sms.service';
 import { getPolicyValue, refundEscrow } from './escrow.service';
-import { emitSlotUpdated, emitBookingCancelled } from '../config/socket';
+import { emitSlotUpdated, emitBookingCancelled, emitToSalon } from '../config/socket';
+import * as pushService from './pushNotification.service';
+import { createNotification } from './notification.service';
 import { notifyWaitlistOnCancellation } from './waitlist.service';
 import { paymentProviderRegistry } from './payment-provider.registry';
 
@@ -274,13 +276,39 @@ export async function cancelBookingWithRefund(
     action: 'cancelled',
   });
 
-  // Emit booking:cancelled event
+  // Emit booking:cancelled event to customer
   emitBookingCancelled(booking.customerId, {
     bookingId,
     reason,
     cancelledBy,
     refundAmount: refundCalc.refundAmount,
   });
+
+  // Emit cancellation to salon room so partners-app dashboard updates in real-time
+  emitToSalon(booking.salonId, 'booking:cancelled', {
+    bookingId,
+    reason,
+    cancelledBy,
+    customerName: `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim(),
+    serviceName: booking.service?.name || 'service',
+  });
+
+  // Send push notification to salon owner (works when app is backgrounded/killed)
+  pushService.pushBookingCancelled(
+    booking.salonId,
+    `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
+    booking.service?.name || 'service',
+    bookingId
+  ).catch((err) => logger.error('Failed to send push for cancellation', { err }));
+
+  // Create persistent notification for salon owner
+  createNotification({
+    userId: booking.salon.ownerId,
+    type: 'BOOKING_CANCELLED' as any,
+    title: 'Booking Cancelled',
+    message: `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() + ` cancelled their ${booking.service?.name || 'service'} booking`,
+    data: { bookingId, reason, refundAmount: refundCalc.refundAmount },
+  }).catch((err) => logger.error('Failed to create cancellation notification for salon', { err }));
 
   // Notify waitlisted customers about the available slot
   notifyWaitlistOnCancellation(
@@ -364,6 +392,11 @@ export async function handleProviderCancellation(
           firstName: true,
           lastName: true,
           phoneNumber: true,
+        },
+      },
+      service: {
+        select: {
+          name: true,
         },
       },
       escrow: true,
@@ -452,12 +485,39 @@ export async function handleProviderCancellation(
     action: 'cancelled',
   });
 
+  // Emit cancellation to customer
   emitBookingCancelled(booking.customerId, {
     bookingId,
     reason,
     cancelledBy: 'provider',
     refundAmount: booking.finalAmount.toNumber(),
   });
+
+  // Emit cancellation to salon room so partners-app dashboard updates in real-time
+  emitToSalon(booking.salonId, 'booking:cancelled', {
+    bookingId,
+    reason,
+    cancelledBy: 'provider',
+    customerName: `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim(),
+    serviceName: booking.service?.name || 'service',
+  });
+
+  // Send push notification to salon owner (works when app is backgrounded/killed)
+  pushService.pushBookingCancelled(
+    booking.salonId,
+    `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
+    booking.service?.name || 'service',
+    bookingId
+  ).catch((err) => logger.error('Failed to send push for provider cancellation', { err }));
+
+  // Create persistent notification for customer
+  createNotification({
+    userId: booking.customerId,
+    type: 'BOOKING_CANCELLED' as any,
+    title: 'Booking Cancelled by Provider',
+    message: `${booking.salon.businessName} cancelled your ${booking.service?.name || 'service'} booking. A full refund has been initiated.`,
+    data: { bookingId, reason, salonName: booking.salon.businessName },
+  }).catch((err) => logger.error('Failed to create cancellation notification for customer', { err }));
 
   // Notify waitlisted customers about the available slot
   notifyWaitlistOnCancellation(

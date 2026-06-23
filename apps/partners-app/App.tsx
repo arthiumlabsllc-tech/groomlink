@@ -393,6 +393,41 @@ function AppContent() {
         { cancelable: true }
       );
     },
+    onBookingCancelled: async (data) => {
+      // Refresh dashboard data immediately
+      queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['salonStats'] });
+
+      if (!data?.customerName || !data?.serviceName) return;
+      const { customerName, serviceName, bookingId, reason } = data;
+
+      // Persist to notification store
+      useNotificationStore.getState().addNotification({
+        type: 'booking_cancelled',
+        title: 'Booking Cancelled',
+        message: `${customerName} cancelled their ${serviceName} booking`,
+        data: { bookingId, customerName, serviceName },
+      });
+
+      // Fire system notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Booking Cancelled',
+          body: `${customerName} cancelled their ${serviceName} booking`,
+          sound: 'notification_alert.wav',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: { bookingId },
+        },
+        trigger: null,
+      });
+
+      Alert.alert(
+        'Booking Cancelled',
+        `${customerName} cancelled their ${serviceName} booking${reason ? `. Reason: ${reason}` : ''}`,
+        [{ text: 'OK' }],
+        { cancelable: true }
+      );
+    },
     onQueueUpdated: () => {
       // Invalidate query cache for queue data
       queryClient.invalidateQueries({ queryKey: ['queue'] });

@@ -39,10 +39,19 @@ export interface BookingCompletedEvent {
   totalAmount: string;
 }
 
+export interface BookingCancelledEvent {
+  bookingId: string;
+  reason?: string;
+  cancelledBy: string;
+  customerName: string;
+  serviceName: string;
+}
+
 export interface SocketEvents {
   onBookingNew?: (data: BookingNewEvent) => void;
   onBookingCheckin?: (data: BookingCheckinEvent) => void;
   onBookingCompleted?: (data: BookingCompletedEvent) => void;
+  onBookingCancelled?: (data: BookingCancelledEvent) => void;
   onQueueJoined?: (data: any) => void;
   onQueueCompleted?: (data: any) => void;
   onQueueUpdated?: (data: any) => void;
@@ -125,6 +134,11 @@ export function useSocket(options: UseSocketOptions) {
       socket.on('booking:completed', (data: BookingCompletedEvent) => {
         console.log('Booking completed:', data);
         callbacksRef.current.onBookingCompleted?.(data);
+      });
+
+      socket.on('booking:cancelled', (data: BookingCancelledEvent) => {
+        console.log('Booking cancelled:', data);
+        callbacksRef.current.onBookingCancelled?.(data);
       });
 
       // Queue events
