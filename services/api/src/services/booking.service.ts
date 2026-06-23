@@ -607,6 +607,11 @@ export async function completeBooking(id: string, salonOwnerId: string) {
   return normalizeBookingResponse(updated);
 }
 
+/**
+ * @deprecated Use cancellationService.cancelBookingWithRefund() instead.
+ * This function uses a basic 3-hour grace period and does NOT apply the tiered refund policy.
+ * Kept only for test compatibility; all production code paths use cancellation.service.ts.
+ */
 export async function cancelBooking(id: string, userId: string, userRole: string, reason?: string) {
   const where: any = { id };
 
@@ -1028,6 +1033,11 @@ export async function getAvailableSlots(
   return slots;
 }
 
+/**
+ * @deprecated Use cancellationService.rescheduleBooking() instead.
+ * This function uses a 24-hour window with a fee instead of the 12-hour blocking rule.
+ * Kept only for test compatibility; all production code paths use cancellation.service.ts.
+ */
 export async function rescheduleBooking(
   id: string,
   userId: string,

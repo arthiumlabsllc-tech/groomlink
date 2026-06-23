@@ -521,7 +521,18 @@ export async function refundPreviewHandler(req: AuthenticatedRequest, res: Respo
 
     const { id } = req.params;
     const refundCalculation = await cancellationService.getRefundPreview(id);
-    successResponse(res, refundCalculation);
+    
+    // Map internal field names to frontend RefundPreview shape
+    const preview = {
+      refundPercentage: refundCalculation.refundPercentage,
+      refundAmount: refundCalculation.refundAmount,
+      providerAmount: refundCalculation.providerCompensation,
+      platformFee: refundCalculation.platformKeeps,
+      hoursUntilBooking: refundCalculation.hoursNotice,
+      tier: refundCalculation.tier,
+    };
+    
+    successResponse(res, preview);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }

@@ -18,6 +18,7 @@ export interface RefundCalculation {
   providerCompensation: number;
   hoursNotice: number;
   eligibleForReschedule: boolean;
+  tier: 'FREE' | 'PARTIAL' | 'NONE';
 }
 
 /**
@@ -55,6 +56,7 @@ export async function calculateRefund(
   let platformKeeps: number;
   let providerCompensation: number;
   let eligibleForReschedule: boolean;
+  let tier: 'FREE' | 'PARTIAL' | 'NONE';
 
   if (hoursNotice >= fullRefundHours) {
     // 48+ hours: 100% refund minus processing fee
@@ -63,6 +65,7 @@ export async function calculateRefund(
     platformKeeps = processingFee;
     providerCompensation = 0;
     eligibleForReschedule = true;
+    tier = 'FREE';
   } else if (hoursNotice >= partialRefund75Hours) {
     // 24-48 hours: 75% refund, 25% to provider
     refundPercentage = 75;
@@ -70,6 +73,7 @@ export async function calculateRefund(
     platformKeeps = 0;
     providerCompensation = bookingAmount * 0.25;
     eligibleForReschedule = true;
+    tier = 'PARTIAL';
   } else if (hoursNotice >= partialRefund50Hours) {
     // 12-24 hours: 50% refund, 50% to provider
     refundPercentage = 50;
@@ -77,6 +81,7 @@ export async function calculateRefund(
     platformKeeps = 0;
     providerCompensation = bookingAmount * 0.50;
     eligibleForReschedule = false;
+    tier = 'PARTIAL';
   } else {
     // Under 12 hours: 0% refund, 100% to provider
     refundPercentage = 0;
@@ -84,6 +89,7 @@ export async function calculateRefund(
     platformKeeps = 0;
     providerCompensation = bookingAmount;
     eligibleForReschedule = false;
+    tier = 'NONE';
   }
 
   return {
@@ -93,6 +99,7 @@ export async function calculateRefund(
     providerCompensation,
     hoursNotice,
     eligibleForReschedule,
+    tier,
   };
 }
 
@@ -316,7 +323,16 @@ export async function cancelBookingWithRefund(
     providerCompensation: refundCalc.providerCompensation,
   });
 
-  return cancellationRecord;
+  return {
+    ...cancellationRecord,
+    refundBreakdown: {
+      refundAmount: refundCalc.refundAmount,
+      refundPercentage: refundCalc.refundPercentage,
+      platformFee: refundCalc.platformKeeps,
+      providerAmount: refundCalc.providerCompensation,
+      tier: refundCalc.tier,
+    },
+  };
 }
 
 /**

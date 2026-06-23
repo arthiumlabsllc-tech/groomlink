@@ -441,8 +441,14 @@ export default function Bookings() {
     
     setCancelling(true)
     try {
-      await bookingApi.cancelBooking(selectedBooking.id, cancellationReason || 'Cancelled by customer')
-      toast.success('Booking cancelled successfully')
+      const result: any = await bookingApi.cancelBooking(selectedBooking.id, cancellationReason || 'Cancelled by customer')
+      
+      const refund = result?.refundBreakdown
+      if (refund && refund.refundAmount > 0) {
+        toast.success(`Booking cancelled. Refund of GH₵${refund.refundAmount.toFixed(2)} (${refund.refundPercentage}%) will be processed within 3-5 business days.`)
+      } else {
+        toast.success('Booking cancelled successfully')
+      }
       
       // Update local state
       setBookings(prev => ({

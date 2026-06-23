@@ -76,11 +76,19 @@ export default function BookingDetailScreen() {
 
   const cancelMutation = useMutation({
     mutationFn: () => bookingApi.cancelBooking(bookingId, cancelReason || undefined),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
       setCancelModalVisible(false);
-      Alert.alert('Booking Cancelled', 'Your booking has been cancelled successfully.');
+      
+      const refund = data?.refundBreakdown;
+      let message = 'Your booking has been cancelled successfully.';
+      if (refund && refund.refundAmount > 0) {
+        message = `Your booking has been cancelled. A refund of GH₵${refund.refundAmount.toFixed(2)} (${refund.refundPercentage}%) will be processed within 3-5 business days.`;
+      } else if (refund && refund.refundPercentage === 0) {
+        message = 'Your booking has been cancelled. No refund is available for cancellations within 12 hours of the appointment.';
+      }
+      Alert.alert('Booking Cancelled', message);
     },
     onError: (error: any) => {
       Alert.alert('Cancellation Failed', error.response?.data?.message || 'Please try again');
@@ -305,7 +313,7 @@ export default function BookingDetailScreen() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case 'FULL': return COLORS.primaryGreen;
+      case 'FREE': return COLORS.primaryGreen;
       case 'PARTIAL': return COLORS.accentGold;
       case 'NONE': return COLORS.accentRed;
       default: return COLORS.textSecondary;
@@ -314,7 +322,7 @@ export default function BookingDetailScreen() {
 
   const getTierLabel = (tier: string) => {
     switch (tier) {
-      case 'FULL': return 'Full Refund';
+      case 'FREE': return 'Full Refund';
       case 'PARTIAL': return 'Partial Refund';
       case 'NONE': return 'No Refund';
       default: return tier;
@@ -1040,6 +1048,22 @@ export default function BookingDetailScreen() {
                       {Math.round(refundPreview.hoursUntilBooking)}h
                     </Text>
                   </View>
+                  {refundPreview.providerAmount > 0 && (
+                    <View style={styles.refundRow}>
+                      <Text variant="bodySmall" style={styles.refundSubLabel}>Provider keeps</Text>
+                      <Text variant="bodySmall" style={styles.refundSubValue}>
+                        GH₵ {refundPreview.providerAmount.toFixed(2)}
+                      </Text>
+                    </View>
+                  )}
+                  {refundPreview.platformFee > 0 && (
+                    <View style={styles.refundRow}>
+                      <Text variant="bodySmall" style={styles.refundSubLabel}>Platform fee</Text>
+                      <Text variant="bodySmall" style={styles.refundSubValue}>
+                        GH₵ {refundPreview.platformFee.toFixed(2)}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <Divider style={styles.modalDivider} />

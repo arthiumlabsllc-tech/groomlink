@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import logger from './logger';
 import * as bookingService from '../services/booking.service';
+import * as cancellationService from '../services/cancellation.service';
 import * as queueService from '../services/queue.service';
 
 let io: SocketIOServer;
@@ -146,7 +147,7 @@ export function initializeSocket(server: HttpServer): SocketIOServer {
       }
     });
 
-    // Cancel booking
+    // Cancel booking — uses tiered cancellation service
     socket.on('cancel:booking', async (data: {
       bookingId: string;
       userId: string;
@@ -154,21 +155,32 @@ export function initializeSocket(server: HttpServer): SocketIOServer {
       reason?: string;
     }) => {
       try {
-        const booking = await bookingService.cancelBooking(
-          data.bookingId,
-          data.userId,
-          data.userRole,
-          data.reason
-        );
+        let result;
+        if (data.userRole === 'SALON_OWNER') {
+          result = await cancellationService.handleProviderCancellation(
+            data.bookingId,
+            data.userId,
+            data.reason
+          );
+        } else {
+          const cancelledBy: 'customer' | 'system' = 'customer';
+          result = await cancellationService.cancelBookingWithRefund(
+            data.bookingId,
+            cancelledBy,
+            data.reason
+          );
+        }
 
         socket.emit('cancel:confirmed', {
           success: true,
-          booking,
+          cancellation: result,
         });
 
         // Notify relevant rooms
-        io.to(`user:${booking.customerId}`).emit('booking:cancelled', { booking });
-        io.to(`salon:${booking.salonId}`).emit('booking:cancelled', { booking });
+        io.to(`user:${data.userId}`).emit('booking:cancelled', {
+          bookingId: data.bookingId,
+          reason: data.reason,
+        });
       } catch (error) {
         socket.emit('cancel:confirmed', {
           success: false,

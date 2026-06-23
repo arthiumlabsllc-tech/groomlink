@@ -314,6 +314,7 @@ export default function Bookings() {
       setSelectedBooking(prev => prev ? { ...prev, status: 'CANCELLED', cancelledBy: 'PROVIDER', cancellationReason: cancelReason.trim() } : null)
       setShowCancelModal(false)
       setCancelReason('')
+      alert('Booking has been cancelled. A full refund will be issued to the customer within 3-5 business days.')
     } catch (error) {
       console.error('Failed to cancel booking:', error)
       alert('Failed to cancel booking. Please try again.')

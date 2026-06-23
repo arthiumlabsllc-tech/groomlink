@@ -99,7 +99,7 @@ export default function BookingDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
       setCancelDialogVisible(false);
       setCancelReason('');
-      Alert.alert('Success', 'Booking has been cancelled.');
+      Alert.alert('Success', 'Booking has been cancelled. A full refund will be issued to the customer within 3-5 business days.');
     },
     onError: (error: any) => {
       const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to cancel booking.';

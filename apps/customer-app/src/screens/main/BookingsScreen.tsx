@@ -176,8 +176,14 @@ export default function BookingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await bookingApi.cancelBooking(bookingId);
+              const result: any = await bookingApi.cancelBooking(bookingId);
               refetch();
+              const refund = result?.refundBreakdown;
+              if (refund && refund.refundAmount > 0) {
+                Alert.alert('Booking Cancelled', `Cancelled successfully. A refund of GH₵${refund.refundAmount.toFixed(2)} (${refund.refundPercentage}%) will be processed within 3-5 business days.`);
+              } else {
+                Alert.alert('Booking Cancelled', 'Your booking has been cancelled successfully.');
+              }
             } catch (err: any) {
               Alert.alert('Error', err.response?.data?.message || 'Could not cancel booking');
             }

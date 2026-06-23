@@ -354,7 +354,7 @@ export const bookingApi = {
   },
 
   cancelBooking: async (id: string, reason?: string): Promise<Booking> => {
-    const response = await apiClient.put(`/bookings/${id}/cancel`, { reason });
+    const response = await apiClient.post(`/bookings/${id}/cancel`, { reason });
     return response.data.data;
   },
 
