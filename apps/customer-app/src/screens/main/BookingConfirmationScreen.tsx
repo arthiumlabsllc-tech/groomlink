@@ -402,16 +402,13 @@ export default function BookingConfirmationScreen() {
         <Button
           mode="contained"
           onPress={() => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainTabs' }],
-            });
+            navigation.replace('BookingDetail', { bookingId });
           }}
           style={styles.primaryButton}
           contentStyle={styles.buttonContent}
           buttonColor={COLORS.primaryGreen}
         >
-          View My Bookings
+          View My Booking
         </Button>
         <Button
           mode="outlined"

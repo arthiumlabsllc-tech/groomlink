@@ -287,6 +287,10 @@ function AppContent() {
     salonId,
     enabled: isAuthenticated && !!salonId,
     onBookingNew: async (data) => {
+      // Refresh dashboard data immediately
+      queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['salonStats'] });
+
       if (!data?.booking?.customer || !data?.booking?.service) return;
       const customerName = `${data.booking.customer.firstName || ''} ${data.booking.customer.lastName || ''}`.trim();
       const serviceName = data.booking.service.name || 'a service';
@@ -320,6 +324,10 @@ function AppContent() {
       );
     },
     onBookingCheckin: async (data) => {
+      // Refresh dashboard data immediately
+      queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['salonStats'] });
+
       if (!data?.customerName || !data?.serviceName) return;
       const { customerName, serviceName, queuePosition, bookingId } = data;
 
@@ -351,6 +359,10 @@ function AppContent() {
       );
     },
     onBookingCompleted: async (data) => {
+      // Refresh dashboard data immediately
+      queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['salonStats'] });
+
       if (!data?.customerName || !data?.serviceName) return;
       const { customerName, serviceName, totalAmount, bookingId } = data;
 

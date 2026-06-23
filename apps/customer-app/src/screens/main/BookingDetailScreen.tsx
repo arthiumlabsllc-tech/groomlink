@@ -264,7 +264,16 @@ export default function BookingDetailScreen() {
     !booking.disputeRaised;
 
   // Check if booking is confirmed and upcoming (for QR code)
-  const isPastBooking = booking && new Date(booking.scheduledDate || booking.date || '') < new Date();
+  // Use date + startTime together so same-day bookings aren't wrongly marked as past
+  const appointmentDateTime = new Date(booking?.scheduledDate || booking?.date || '');
+  if (booking?.scheduledTime || booking?.startTime) {
+    const [h, m] = (booking.scheduledTime || booking.startTime || '00:00').split(':').map(Number);
+    appointmentDateTime.setHours(h, m, 0, 0);
+  } else {
+    // If no time available, set to end of day (23:59) to avoid hiding QR code on same-day bookings
+    appointmentDateTime.setHours(23, 59, 0, 0);
+  }
+  const isPastBooking = booking && appointmentDateTime < new Date();
   const isUpcomingConfirmed = booking && 
     booking.status === 'CONFIRMED' && 
     !isPastBooking;
