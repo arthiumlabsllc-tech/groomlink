@@ -187,20 +187,33 @@ export async function handleHubtelWebhook(req: Request, res: Response): Promise<
 // Get payment configuration (public endpoint for booking flow)
 export async function getPaymentConfig(req: Request, res: Response): Promise<void> {
   try {
-    let platformFeePercentage = 5; // Default fallback
-    
+    // Fetch flat booking fee from policy (default GHS 2)
+    let platformBookingFee = 2;
     try {
-      const feePercentStr = await escrowService.getPolicyValue('platform_fee_percentage');
-      const parsedFee = parseFloat(feePercentStr);
+      const feeStr = await escrowService.getPolicyValue('platform_booking_fee');
+      const parsedFee = parseFloat(feeStr);
       if (!isNaN(parsedFee)) {
-        platformFeePercentage = parsedFee;
+        platformBookingFee = parsedFee;
       }
     } catch (policyError) {
-      logger.warn('Failed to fetch platform_fee_percentage, using default 5%', { policyError });
+      logger.warn('Failed to fetch platform_booking_fee, using default GHS 2', { policyError });
+    }
+
+    // Fetch partner commission percentage (default 5%)
+    let commissionPercentage = 5;
+    try {
+      const commStr = await escrowService.getPolicyValue('partner_commission_percentage');
+      const parsedComm = parseFloat(commStr);
+      if (!isNaN(parsedComm)) {
+        commissionPercentage = parsedComm;
+      }
+    } catch (policyError) {
+      logger.warn('Failed to fetch partner_commission_percentage, using default 5%', { policyError });
     }
 
     successResponse(res, {
-      platformFeePercentage,
+      platformBookingFee,
+      commissionPercentage,
     });
   } catch (error) {
     errorResponse(res, 'CONFIG_ERROR', (error as Error).message, 500);

@@ -686,16 +686,22 @@ export default function BookingDetailScreen() {
               </Chip>
             </View>
             <View style={styles.escrowRow}>
-              <Text style={styles.escrowLabel}>Amount Held</Text>
-              <Text style={styles.escrowValue}>GH₵{parseFloat(String(booking.escrow.amountHeld || 0)).toLocaleString()}</Text>
+              <Text style={styles.escrowLabel}>Service Price</Text>
+              <Text style={styles.escrowValue}>GH₵{(parseFloat(String(booking.escrow.amountHeld || 0)) - parseFloat(String(booking.escrow.bookingFee || 0))).toFixed(2)}</Text>
             </View>
             <View style={styles.escrowRow}>
-              <Text style={styles.escrowLabel}>Platform Fee</Text>
-              <Text style={styles.escrowDeduction}>- GH₵{parseFloat(String(booking.escrow.platformFee || 0)).toLocaleString()}</Text>
+              <Text style={styles.escrowLabel}>Booking Fee (customer)</Text>
+              <Text style={styles.escrowDeduction}>GH₵{parseFloat(String(booking.escrow.bookingFee || 0)).toFixed(2)}</Text>
             </View>
+            {booking.escrow.status === 'released' && booking.escrow.commission != null && (
+              <View style={styles.escrowRow}>
+                <Text style={styles.escrowLabel}>GroomLink Commission (5%)</Text>
+                <Text style={styles.escrowDeduction}>- GH₵{parseFloat(String(booking.escrow.commission)).toFixed(2)}</Text>
+              </View>
+            )}
             <View style={[styles.escrowRow, styles.escrowTotalRow]}>
-              <Text style={styles.escrowTotalLabel}>Your Share</Text>
-              <Text style={styles.escrowTotalValue}>GH₵{parseFloat(String(booking.escrow.providerAmount || 0)).toLocaleString()}</Text>
+              <Text style={styles.escrowTotalLabel}>Your Earnings</Text>
+              <Text style={styles.escrowTotalValue}>GH₵{parseFloat(String(booking.escrow.providerAmount || 0)).toFixed(2)}</Text>
             </View>
             {booking.refundEligible !== undefined && (
               <View style={styles.refundInfo}>

@@ -339,10 +339,10 @@ export default function BookingScreen() {
     return total;
   }, [salon?.services, selectedServices, isGroupBooking, guests]);
 
+  // Flat GHS 2 booking fee (non-refundable)
   const platformFee = useMemo(() => {
-    const feePercent = paymentConfig?.platformFeePercentage ?? 5;
-    return serviceSubtotal * (feePercent / 100);
-  }, [serviceSubtotal, paymentConfig?.platformFeePercentage]);
+    return 2;
+  }, []);
 
   const totalPrice = useMemo(() => {
     return serviceSubtotal + platformFee;
@@ -994,7 +994,7 @@ export default function BookingScreen() {
                   <Text variant="bodySmall" style={styles.feeValue}>GH₵ {serviceSubtotal.toFixed(2)}</Text>
                 </View>
                 <View style={styles.feeRow}>
-                  <Text variant="bodySmall" style={styles.feeLabel}>Platform Fee ({paymentConfig?.platformFeePercentage ?? 5}%)</Text>
+                  <Text variant="bodySmall" style={styles.feeLabel}>Booking Fee (non-refundable)</Text>
                   <Text variant="bodySmall" style={styles.feeValue}>GH₵ {platformFee.toFixed(2)}</Text>
                 </View>
                 <View style={styles.feeDivider} />

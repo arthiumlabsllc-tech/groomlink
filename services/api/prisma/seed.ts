@@ -758,7 +758,9 @@ async function main() {
   // Step 6: Seed platform policies
   console.log('\n📋 Seeding platform policies...');
   const policies = [
-    { policyName: 'platform_fee_percentage', policyValue: '10', description: 'Platform fee percentage charged on each booking' },
+    { policyName: 'platform_fee_percentage', policyValue: '10', description: 'DEPRECATED: Use platform_booking_fee + partner_commission_percentage instead' },
+    { policyName: 'platform_booking_fee', policyValue: '2', description: 'Flat booking fee charged to customers (GHS)' },
+    { policyName: 'partner_commission_percentage', policyValue: '5', description: 'Commission percentage charged to partners on completed services' },
     { policyName: 'free_cancellation_hours', policyValue: '48', description: 'Hours before booking when free cancellation is allowed' },
     { policyName: 'full_refund_hours', policyValue: '48', description: 'Hours before booking for 100% refund eligibility' },
     { policyName: 'partial_refund_75_hours', policyValue: '24', description: 'Hours before booking for 75% refund eligibility' },

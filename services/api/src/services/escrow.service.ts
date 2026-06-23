@@ -184,22 +184,31 @@ export interface CreateEscrowParams {
 
 /**
  * Create a new escrow account for a booking
+ * New fee model: Customer pays flat GHS 2 booking fee (non-refundable).
+ * Partner pays 5% commission (calculated at escrow release, not here).
  */
 export async function createEscrow(params: CreateEscrowParams): Promise<EscrowAccount> {
   const { bookingId, customerId, providerId, salonId, amount, paymentTransactionId } = params;
   
   try {
-    // Fetch platform fee percentage from policy
-    const feePercentStr = await getPolicyValue('platform_fee_percentage');
-    const feePercent = parseFloat(feePercentStr);
-    
-    if (isNaN(feePercent)) {
-      throw new Error('Invalid platform_fee_percentage policy value');
+    // Fetch flat booking fee from policy (default GHS 2)
+    let bookingFee = 2;
+    try {
+      const feeStr = await getPolicyValue('platform_booking_fee');
+      const parsedFee = parseFloat(feeStr);
+      if (!isNaN(parsedFee)) {
+        bookingFee = parsedFee;
+      }
+    } catch (policyError) {
+      logger.warn('Failed to fetch platform_booking_fee, using default GHS 2', { policyError });
     }
-    
-    // Calculate amounts
-    const platformFee = amount * (feePercent / 100);
-    const providerAmount = amount - platformFee;
+
+    // amount = total paid by customer (servicePrice + bookingFee)
+    // At creation: platformFee = bookingFee only, providerAmount = servicePrice
+    // Commission (5% of servicePrice) is calculated at release time
+    const servicePrice = amount - bookingFee;
+    const platformFee = bookingFee; // only booking fee at creation
+    const providerAmount = servicePrice; // provider gets full service price (commission deducted at release)
     
     // Create escrow account and initial transaction in a transaction
     const escrow = await prisma.$transaction(async (tx) => {
@@ -213,6 +222,8 @@ export async function createEscrow(params: CreateEscrowParams): Promise<EscrowAc
           amountHeld: amount,
           platformFee,
           providerAmount,
+          bookingFee,
+          commission: null, // calculated at release
           status: 'held',
           paymentTransactionId,
         }
@@ -236,6 +247,8 @@ export async function createEscrow(params: CreateEscrowParams): Promise<EscrowAc
     logger.info(`Escrow created for booking ${bookingId}`, {
       escrowId: escrow.id,
       amount,
+      bookingFee,
+      servicePrice,
       platformFee,
       providerAmount
     });
@@ -249,6 +262,9 @@ export async function createEscrow(params: CreateEscrowParams): Promise<EscrowAc
 
 /**
  * Release escrow funds to the provider
+ * At release time: calculate 5% commission on service price.
+ * Platform earns: bookingFee + commission
+ * Provider gets: servicePrice - commission
  */
 export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
   try {
@@ -268,9 +284,37 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
     if (escrow.status !== 'held') {
       throw new Error(`Cannot release escrow with status: ${escrow.status}`);
     }
-    
-    const providerAmount = parseFloat(escrow.providerAmount.toString());
+
+    // Calculate commission at release time
     const amountHeld = parseFloat(escrow.amountHeld.toString());
+    const bookingFee = parseFloat(escrow.bookingFee?.toString() || '2');
+    const servicePrice = amountHeld - bookingFee;
+
+    // Fetch partner commission percentage from policy (default 5%)
+    let commissionRate = 5;
+    try {
+      const commStr = await getPolicyValue('partner_commission_percentage');
+      const parsedComm = parseFloat(commStr);
+      if (!isNaN(parsedComm)) {
+        commissionRate = parsedComm;
+      }
+    } catch (policyError) {
+      logger.warn('Failed to fetch partner_commission_percentage, using default 5%', { policyError });
+    }
+
+    const commission = servicePrice * (commissionRate / 100);
+    const providerPayout = servicePrice - commission;
+    const totalPlatformEarnings = bookingFee + commission;
+
+    logger.info(`Escrow release calculation for escrow ${escrowId}`, {
+      amountHeld,
+      bookingFee,
+      servicePrice,
+      commissionRate,
+      commission,
+      providerPayout,
+      totalPlatformEarnings,
+    });
     
     // Check if salon has MoMo payout details configured
     if (!escrow.salon.momoNumber || !escrow.salon.momoProvider) {
@@ -296,7 +340,7 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
         const payoutResult = await initiateHubtelPayout({
           recipientPhone: escrow.salon.momoNumber,
           recipientName: escrow.salon.businessName,
-          amount: providerAmount,
+          amount: providerPayout,
           channel: getHubtelChannel(escrow.salon.momoProvider),
           reference: payoutReference,
           description: 'Payment for service completion',
@@ -305,7 +349,7 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
         payoutGateway = 'hubtel';
         logger.info(`Hubtel payout initiated for escrow ${escrowId}`, {
           recipient: escrow.salon.momoNumber,
-          amount: providerAmount,
+          amount: providerPayout,
           payoutRef,
         });
       } catch (hubtelError: any) {
@@ -323,7 +367,7 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
       const psRef = await payoutViaPaystack({
         recipientPhone: escrow.salon.momoNumber,
         recipientName: escrow.salon.businessName,
-        amount: providerAmount,
+        amount: providerPayout,
         momoProvider: detectedProvider,
         reference: payoutReference,
         description: 'Payment for service completion',
@@ -340,14 +384,17 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
       );
     }
     
-    // Update escrow status and create transaction
+    // Update escrow status, store final commission/platformFee, and create transaction
     const updatedEscrow = await prisma.$transaction(async (tx) => {
-      // Update escrow account
+      // Update escrow account with final commission values
       const updated = await tx.escrowAccount.update({
         where: { id: escrowId },
         data: {
           status: 'released',
           releasedAt: new Date(),
+          platformFee: totalPlatformEarnings, // total platform earnings (bookingFee + commission)
+          providerAmount: providerPayout,     // what provider actually receives
+          commission: commission,             // 5% of service price
           hubtelPayoutReference: payoutGateway === 'hubtel' ? payoutRef : undefined,
           payoutGateway: payoutGateway,
         }
@@ -358,7 +405,7 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
         data: {
           escrowId,
           transactionType: 'release',
-          amount: providerAmount,
+          amount: providerPayout,
           previousBalance: amountHeld,
           newBalance: 0,
         }
@@ -369,7 +416,9 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
     
     logger.info(`Escrow released for booking ${escrow.bookingId}`, {
       escrowId,
-      providerAmount
+      providerPayout,
+      commission,
+      totalPlatformEarnings,
     });
     
     return updatedEscrow;
@@ -408,8 +457,10 @@ export async function refundEscrow(
       throw new Error(`Cannot refund escrow with status: ${escrow.status}`);
     }
     
-    const amountHeld = parseFloat(escrow.amountHeld.toString());
-    let refundAmount = amountHeld * (refundPercentage / 100);
+    const amountHeld = parseFloat(escrow.amountHeld.toString()); // total = servicePrice + bookingFee
+    const bookingFee = parseFloat(escrow.bookingFee?.toString() || '2');
+    const servicePrice = amountHeld - bookingFee; // only service price is refundable
+    let refundAmount = servicePrice * (refundPercentage / 100); // refund % applies to service price only
     
     // If 100% refund, deduct processing fee
     if (refundPercentage === 100) {

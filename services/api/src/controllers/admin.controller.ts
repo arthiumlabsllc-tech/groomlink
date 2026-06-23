@@ -2162,9 +2162,21 @@ export async function getComprehensiveRevenueStats(req: AuthenticatedRequest, re
       _count: true,
     });
 
-    // Get platform fees earned (sum of platformFee from EscrowAccount)
+    // Get platform fees earned (sum of platformFee from EscrowAccount - total platform earnings)
     const platformFeesResult = await prisma.escrowAccount.aggregate({
       _sum: { platformFee: true },
+    });
+
+    // Get booking fees earned (sum of bookingFee from released escrows)
+    const bookingFeesResult = await prisma.escrowAccount.aggregate({
+      where: { status: 'released' },
+      _sum: { bookingFee: true },
+    });
+
+    // Get commission earned (sum of commission from released escrows)
+    const commissionResult = await prisma.escrowAccount.aggregate({
+      where: { status: 'released' },
+      _sum: { commission: true },
     });
 
     // Get pending payouts (sum of providerAmount where status = 'held')
@@ -2215,6 +2227,8 @@ export async function getComprehensiveRevenueStats(req: AuthenticatedRequest, re
       totalRevenue: Number(totalRevenueResult._sum.amount || 0),
       totalTransactions: totalRevenueResult._count,
       platformFeesEarned: Number(platformFeesResult._sum.platformFee || 0),
+      bookingFeesEarned: Number(bookingFeesResult._sum.bookingFee || 0),
+      commissionEarned: Number(commissionResult._sum.commission || 0),
       pendingPayouts: Number(pendingPayoutsResult._sum.providerAmount || 0),
       completedPayouts: Number(completedPayoutsResult._sum.providerAmount || 0),
       refundedAmount: Number(refundedResult._sum.amount || 0),

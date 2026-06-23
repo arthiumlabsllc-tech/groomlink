@@ -1039,6 +1039,8 @@ model EscrowAccount {
   amountHeld           Decimal             @db.Decimal(10, 2)
   platformFee          Decimal             @default(0) @db.Decimal(10, 2)
   providerAmount       Decimal             @default(0) @db.Decimal(10, 2)
+  bookingFee           Decimal             @default(0) @db.Decimal(10, 2) // flat GHS 2 from customer
+  commission           Decimal?            @db.Decimal(10, 2) // 5% of service price (calculated at completion)
   status               String              @default("held") // held, released, refunded, disputed
   paymentTransactionId   String?
   refundTransactionId    String?

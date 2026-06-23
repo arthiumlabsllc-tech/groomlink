@@ -587,25 +587,16 @@ export async function initializePayment(
   const reference = `GL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   // Calculate platform fee and total charge amount
-  let feePercent = 5; // Default fallback
-  try {
-    const feePercentStr = await escrowService.getPolicyValue('platform_fee_percentage');
-    const parsedFee = parseFloat(feePercentStr);
-    if (!isNaN(parsedFee)) {
-      feePercent = parsedFee;
-    }
-  } catch (policyError) {
-    logger.warn('Failed to fetch platform_fee_percentage, using default 5%', { policyError });
-  }
-  
+  // Customer pays: service price + flat GHS 2 booking fee (non-refundable)
+  // Partner pays: 5% commission (deducted at completion, not here)
   const serviceAmount = Number(booking.finalAmount);
-  const platformFee = serviceAmount * (feePercent / 100);
+  const platformFee = 2; // Flat GHS 2 booking fee
   const totalChargeAmount = serviceAmount + platformFee;
 
   logger.info(`Payment amount calculation for booking ${bookingId}`, {
     serviceAmount,
     platformFee,
-    feePercent,
+    feeType: 'flat',
     totalChargeAmount
   });
 
@@ -623,7 +614,7 @@ export async function initializePayment(
       providerData: {
         serviceAmount,
         platformFee,
-        feePercent,
+        feeType: 'flat',
       },
     },
     update: {
@@ -633,7 +624,7 @@ export async function initializePayment(
       providerData: {
         serviceAmount,
         platformFee,
-        feePercent,
+        feeType: 'flat',
       },
     },
   });
@@ -724,7 +715,7 @@ export async function initializePayment(
         providerData: {
           serviceAmount,
           platformFee,
-          feePercent,
+          feeType: 'flat',
           gateway: providerName,
         },
       },

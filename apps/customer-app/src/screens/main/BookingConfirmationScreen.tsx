@@ -333,10 +333,15 @@ export default function BookingConfirmationScreen() {
                   
                   {/* Subtotal */}
                   <View style={[styles.priceRow, styles.subtotalRow]}>
-                    <Text variant="bodyMedium" style={styles.subtotalLabel}>Subtotal</Text>
+                    <Text variant="bodyMedium" style={styles.subtotalLabel}>Services Subtotal</Text>
                     <Text variant="bodyMedium" style={styles.subtotalValue}>
                       GH₵ {parseFloat(String(booking.totalAmount)).toFixed(2)}
                     </Text>
+                  </View>
+                  {/* Booking Fee */}
+                  <View style={styles.priceRow}>
+                    <Text variant="bodySmall" style={styles.priceLabel}>Booking Fee (non-refundable)</Text>
+                    <Text variant="bodySmall" style={styles.priceValue}>GH₵ 2.00</Text>
                   </View>
                 </View>
               </View>
@@ -352,7 +357,7 @@ export default function BookingConfirmationScreen() {
               <View style={styles.detailContent}>
                 <Text variant="bodySmall" style={styles.detailLabel}>Total Amount Paid</Text>
                 <Text variant="titleLarge" style={styles.totalAmount}>
-                  GH₵ {parseFloat(String(booking.totalAmount)).toFixed(2)}
+                  GH₵ {(parseFloat(String(booking.totalAmount)) + 2).toFixed(2)}
                 </Text>
                 {booking.isGroupBooking && (
                   <Text variant="bodySmall" style={styles.totalNote}>

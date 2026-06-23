@@ -123,6 +123,8 @@ export interface Booking {
     amountHeld: number | string;
     platformFee: number | string;
     providerAmount: number | string;
+    bookingFee: number | string;
+    commission: number | string | null;
   };
   refundEligible?: boolean;
   cancellationDeadline?: string;

@@ -121,6 +121,8 @@ export interface Escrow {
   amountHeld: number;
   platformFee: number;
   providerAmount: number;
+  bookingFee: number;
+  commission: number | null;
 }
 
 export interface Booking {

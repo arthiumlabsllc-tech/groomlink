@@ -242,7 +242,7 @@ export default function PartnerWithUs() {
                 <p className="text-5xl font-bold text-white">₵0<span className="text-lg font-normal text-white/70"> / month</span></p>
               </div>
               <div className="px-8 py-8">
-                <p className="text-gray-600 text-center mb-6">No setup fees. 10% commission only on completed bookings.</p>
+                <p className="text-gray-600 text-center mb-6">No setup fees. 5% commission only on completed bookings.</p>
                 <ul className="space-y-3 mb-8">
                   {pricingFeatures.map((f, i) => (
                     <li key={i} className="flex items-start gap-3">

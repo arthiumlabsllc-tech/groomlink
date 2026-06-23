@@ -943,16 +943,22 @@ export default function Bookings() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Amount Held</span>
-                      <span className="font-semibold text-gray-900">GH₵ {selectedBooking.escrow.amountHeld}</span>
+                      <span className="text-sm text-gray-600">Service Price</span>
+                      <span className="font-semibold text-gray-900">GH₵ {(parseFloat(String(selectedBooking.escrow.amountHeld)) - parseFloat(String(selectedBooking.escrow.bookingFee || 0))).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Platform Fee</span>
-                      <span className="text-sm text-gray-700">- GH₵ {selectedBooking.escrow.platformFee}</span>
+                      <span className="text-sm text-gray-600">Booking Fee (customer)</span>
+                      <span className="text-sm text-gray-700">GH₵ {parseFloat(String(selectedBooking.escrow.bookingFee || 0)).toFixed(2)}</span>
                     </div>
+                    {selectedBooking.escrow.status === 'RELEASED' && selectedBooking.escrow.commission != null && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">GroomLink Commission (5%)</span>
+                        <span className="text-sm text-red-600">- GH₵ {parseFloat(String(selectedBooking.escrow.commission)).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="pt-2 border-t border-blue-200 flex justify-between items-center">
-                      <span className="text-sm font-medium text-blue-700">Your Share</span>
-                      <span className="font-bold text-blue-700">GH₵ {selectedBooking.escrow.providerAmount}</span>
+                      <span className="text-sm font-medium text-blue-700">Your Earnings</span>
+                      <span className="font-bold text-blue-700">GH₵ {parseFloat(String(selectedBooking.escrow.providerAmount)).toFixed(2)}</span>
                     </div>
                   </div>
                   {selectedBooking.refundEligible !== undefined && (
