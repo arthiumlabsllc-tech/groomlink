@@ -17,6 +17,7 @@ import { authApi } from './src/api/auth';
 import { notificationApi } from './src/api/notification';
 import { useNotificationStore } from './src/store/notificationStore';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
+import UpdatePrompt from './src/components/UpdatePrompt';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -262,12 +263,14 @@ function AppShell() {
   return (
     <PaperProvider theme={paperTheme}>
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-          <View style={{ flex: 1, backgroundColor: theme.background }}>
-            <AppContent />
-            <StatusBar style={isDark ? 'light' : 'dark'} />
-          </View>
-        </NavigationContainer>
+        <UpdatePrompt>
+          <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+            <View style={{ flex: 1, backgroundColor: theme.background }}>
+              <AppContent />
+              <StatusBar style={isDark ? 'light' : 'dark'} />
+            </View>
+          </NavigationContainer>
+        </UpdatePrompt>
       </QueryClientProvider>
     </PaperProvider>
   );

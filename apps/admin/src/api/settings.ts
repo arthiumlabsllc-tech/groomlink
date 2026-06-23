@@ -32,6 +32,14 @@ export interface PaymentSettings {
   transactionFeePercent: number | null;
 }
 
+export interface AppVersionSettings {
+  customerAppLatestVersion: string | null;
+  customerAppMinVersion: string | null;
+  partnersAppLatestVersion: string | null;
+  partnersAppMinVersion: string | null;
+  appUpdateMessage: string | null;
+}
+
 export interface AdminSystemHealth {
   api: {
     status: 'healthy' | 'degraded' | 'down';
@@ -138,6 +146,18 @@ export const settingsApi = {
     const response = await apiClient.post('/admin/settings/upload-footer-logo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data.data;
+  },
+
+  // Get app version settings
+  getAppVersionSettings: async (): Promise<AppVersionSettings> => {
+    const response = await apiClient.get('/admin/app-version-settings');
+    return response.data.data;
+  },
+
+  // Update app version settings
+  updateAppVersionSettings: async (data: Partial<AppVersionSettings>): Promise<AppVersionSettings> => {
+    const response = await apiClient.put('/admin/app-version-settings', data);
     return response.data.data;
   },
 };

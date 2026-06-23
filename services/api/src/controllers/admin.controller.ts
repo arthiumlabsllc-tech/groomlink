@@ -748,6 +748,15 @@ const siteSettingsSchema = z.object({
   backupPhoneNumber: data.backupPhoneNumber ?? null,
 }));
 
+// App Version Settings Schema (separate so it can be added to siteSettings)
+const appVersionSettingsSchema = z.object({
+  customerAppLatestVersion: z.string().regex(/^\d+\.\d+\.\d+$/).optional().nullable(),
+  customerAppMinVersion: z.string().regex(/^\d+\.\d+\.\d+$/).optional().nullable(),
+  partnersAppLatestVersion: z.string().regex(/^\d+\.\d+\.\d+$/).optional().nullable(),
+  partnersAppMinVersion: z.string().regex(/^\d+\.\d+\.\d+$/).optional().nullable(),
+  appUpdateMessage: z.string().max(500).optional().nullable(),
+});
+
 // Payment Settings Schema
 const paymentSettingsSchema = z.object({
   paymentGateway: z.string().default('paystack'),
@@ -810,6 +819,49 @@ export async function updateSiteSettings(req: AuthenticatedRequest, res: Respons
         ...data,
         updatedBy: req.user!.id,
       }
+    });
+
+    successResponse(res, settings);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * GET /api/admin/app-version-settings
+ * Returns current app version settings
+ */
+export async function getAppVersionSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } }) as any;
+    successResponse(res, {
+      customerAppLatestVersion: settings?.customerAppLatestVersion ?? null,
+      customerAppMinVersion: settings?.customerAppMinVersion ?? null,
+      partnersAppLatestVersion: settings?.partnersAppLatestVersion ?? null,
+      partnersAppMinVersion: settings?.partnersAppMinVersion ?? null,
+      appUpdateMessage: settings?.appUpdateMessage ?? null,
+    });
+  } catch (error) {
+    errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
+  }
+}
+
+/**
+ * PUT /api/admin/app-version-settings
+ * Updates app version settings (for prompting users to update)
+ */
+export async function updateAppVersionSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = appVersionSettingsSchema.parse(req.body);
+
+    const settings = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      create: { id: 'default', ...data, updatedBy: req.user!.id },
+      update: { ...data, updatedBy: req.user!.id },
     });
 
     successResponse(res, settings);

@@ -19,6 +19,7 @@ import apiClient from './src/api/client';
 import { useSocket } from './src/hooks/useSocket';
 import { useNotificationStore } from './src/store/notificationStore';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
+import UpdatePrompt from './src/components/UpdatePrompt';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -152,12 +153,14 @@ function AppInner() {
   return (
     <PaperProvider theme={paperTheme}>
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer theme={navigationTheme}>
-          <View style={{ flex: 1, backgroundColor: theme.background }}>
-            <AppContent />
-            <StatusBar style={isDark ? 'light' : 'dark'} />
-          </View>
-        </NavigationContainer>
+        <UpdatePrompt>
+          <NavigationContainer theme={navigationTheme}>
+            <View style={{ flex: 1, backgroundColor: theme.background }}>
+              <AppContent />
+              <StatusBar style={isDark ? 'light' : 'dark'} />
+            </View>
+          </NavigationContainer>
+        </UpdatePrompt>
       </QueryClientProvider>
     </PaperProvider>
   );

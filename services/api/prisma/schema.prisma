@@ -826,6 +826,12 @@ model SiteSettings {
   thetellerMerchantId   String?  @map("theteller_merchant_id")
   isPaymentTestMode     Boolean  @default(true)
   transactionFeePercent Decimal? @db.Decimal(5, 2)
+  // App Version Management
+  customerAppLatestVersion String? @map("customer_app_latest_version") // e.g. "1.0.35"
+  customerAppMinVersion    String? @map("customer_app_min_version")    // minimum required version
+  partnersAppLatestVersion String? @map("partners_app_latest_version")
+  partnersAppMinVersion    String? @map("partners_app_min_version")
+  appUpdateMessage         String? @map("app_update_message")
   updatedAt             DateTime @updatedAt
   updatedBy             String?
 }

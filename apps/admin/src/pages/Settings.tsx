@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Icon from '../components/Icon';
-import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings, useTestPaymentConnection, usePaymentProviderStatus } from '../hooks';
+import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings, useTestPaymentConnection, usePaymentProviderStatus, useAppVersionSettings, useUpdateAppVersionSettings } from '../hooks';
 import { settingsApi } from '../api/settings';
 import LoadingScreen from '../components/LoadingScreen';
 
@@ -27,6 +27,8 @@ export function Settings() {
   const updatePaymentSettings = useUpdatePaymentSettings();
   const testPaymentConnection = useTestPaymentConnection();
   const { data: providerStatus, isLoading: providerStatusLoading } = usePaymentProviderStatus();
+  const { data: versionSettings } = useAppVersionSettings();
+  const updateVersionSettings = useUpdateAppVersionSettings();
 
   const [formData, setFormData] = useState({
     siteName: '',
@@ -72,7 +74,18 @@ export function Settings() {
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
   const [showLiveConfirmDialog, setShowLiveConfirmDialog] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [settingsTab, setSettingsTab] = useState<'general' | 'maintenance' | 'payment' | 'health'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'maintenance' | 'payment' | 'health' | 'app-updates'>('general');
+
+  // App version settings state
+  const [versionFormData, setVersionFormData] = useState({
+    customerAppLatestVersion: '',
+    customerAppMinVersion: '',
+    partnersAppLatestVersion: '',
+    partnersAppMinVersion: '',
+    appUpdateMessage: '',
+  });
+  const [versionError, setVersionError] = useState<string | null>(null);
+  const [versionSuccess, setVersionSuccess] = useState(false);
 
   // Initialize form data when settings load
   useEffect(() => {
@@ -117,6 +130,39 @@ export function Settings() {
       });
     }
   }, [paymentSettings]);
+
+  // Initialize app version settings when they load
+  useEffect(() => {
+    if (versionSettings) {
+      setVersionFormData({
+        customerAppLatestVersion: versionSettings.customerAppLatestVersion || '',
+        customerAppMinVersion: versionSettings.customerAppMinVersion || '',
+        partnersAppLatestVersion: versionSettings.partnersAppLatestVersion || '',
+        partnersAppMinVersion: versionSettings.partnersAppMinVersion || '',
+        appUpdateMessage: versionSettings.appUpdateMessage || '',
+      });
+    }
+  }, [versionSettings]);
+
+  const handleVersionSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVersionError(null);
+    setVersionSuccess(false);
+
+    try {
+      const payload: any = {};
+      if (versionFormData.customerAppLatestVersion) payload.customerAppLatestVersion = versionFormData.customerAppLatestVersion;
+      if (versionFormData.customerAppMinVersion) payload.customerAppMinVersion = versionFormData.customerAppMinVersion;
+      if (versionFormData.partnersAppLatestVersion) payload.partnersAppLatestVersion = versionFormData.partnersAppLatestVersion;
+      if (versionFormData.partnersAppMinVersion) payload.partnersAppMinVersion = versionFormData.partnersAppMinVersion;
+      if (versionFormData.appUpdateMessage) payload.appUpdateMessage = versionFormData.appUpdateMessage;
+      await updateVersionSettings.mutateAsync(payload);
+      setVersionSuccess(true);
+      setTimeout(() => setVersionSuccess(false), 3000);
+    } catch (err: any) {
+      setVersionError(err.response?.data?.message || 'Failed to save version settings');
+    }
+  };
 
   const handleGeneralSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,6 +350,7 @@ export function Settings() {
           { key: 'general', label: 'General', icon: 'public' },
           { key: 'maintenance', label: 'Maintenance', icon: 'power_settings_new' },
           { key: 'payment', label: 'Payment', icon: 'credit_card' },
+          { key: 'app-updates', label: 'App Updates', icon: 'system_update' },
           { key: 'health', label: 'System Health', icon: 'monitoring' },
         ].map((tab) => (
           <button
@@ -1252,6 +1299,144 @@ export function Settings() {
                     <>
                       <Icon name="refresh" size={18} />
                       Test Connection
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* App Updates Section */}
+          <div className={`card-v2 overflow-hidden ${settingsTab !== 'app-updates' ? 'hidden' : ''}`}>
+            <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <Icon name="system_update" size={16} className="text-[#006B3F] sm:w-5 sm:h-5" />
+                App Version Management
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">Prompt users to update when a new version is available</p>
+            </div>
+
+            <form onSubmit={handleVersionSave} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+              {versionError && (
+                <div className="p-3 bg-[#CE1126]/10 text-[#CE1126] rounded-xl text-sm flex items-center gap-2">
+                  <Icon name="error" size={16} />
+                  {versionError}
+                </div>
+              )}
+
+              {versionSuccess && (
+                <div className="p-3 bg-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2">
+                  <Icon name="check_circle" size={16} />
+                  App version settings saved successfully!
+                </div>
+              )}
+
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-xs text-blue-700 font-medium mb-2 flex items-center gap-1">
+                  <Icon name="info" size={14} /> How it works
+                </p>
+                <ul className="text-xs text-blue-600 space-y-1 ml-5 list-disc">
+                  <li><strong>Latest Version</strong> — shows a dismissible "Update Available" popup</li>
+                  <li><strong>Minimum Version</strong> — shows a <em>blocking</em> modal (user must update to continue)</li>
+                  <li>Leave fields empty to disable update prompts for that app</li>
+                  <li>Use format <code className="bg-blue-100 px-1 rounded">X.Y.Z</code> (e.g. 1.0.35)</li>
+                </ul>
+              </div>
+
+              {/* Customer App Versions */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Icon name="person" size={14} className="text-[#CE1126]" />
+                  Customer App
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Latest Version</label>
+                    <input
+                      type="text"
+                      value={versionFormData.customerAppLatestVersion}
+                      onChange={(e) => setVersionFormData({ ...versionFormData, customerAppLatestVersion: e.target.value })}
+                      className="w-full px-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm font-mono"
+                      placeholder="1.0.35"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Minimum Required (blocking)</label>
+                    <input
+                      type="text"
+                      value={versionFormData.customerAppMinVersion}
+                      onChange={(e) => setVersionFormData({ ...versionFormData, customerAppMinVersion: e.target.value })}
+                      className="w-full px-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm font-mono"
+                      placeholder="1.0.30"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Partners App Versions */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Icon name="store" size={14} className="text-[#006B3F]" />
+                  Partners App
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Latest Version</label>
+                    <input
+                      type="text"
+                      value={versionFormData.partnersAppLatestVersion}
+                      onChange={(e) => setVersionFormData({ ...versionFormData, partnersAppLatestVersion: e.target.value })}
+                      className="w-full px-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm font-mono"
+                      placeholder="1.0.18"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Minimum Required (blocking)</label>
+                    <input
+                      type="text"
+                      value={versionFormData.partnersAppMinVersion}
+                      onChange={(e) => setVersionFormData({ ...versionFormData, partnersAppMinVersion: e.target.value })}
+                      className="w-full px-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 text-sm font-mono"
+                      placeholder="1.0.15"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Update Message */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Icon name="message" size={14} className="text-gray-500" />
+                  Update Message
+                </label>
+                <textarea
+                  rows={3}
+                  value={versionFormData.appUpdateMessage}
+                  onChange={(e) => setVersionFormData({ ...versionFormData, appUpdateMessage: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-[#006B3F] focus:ring-2 focus:ring-[#006B3F]/30 transition-all duration-200 resize-none text-sm"
+                  placeholder="A new version of GroomLink is available! Update now for the best experience."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This message is shown to users when an update is available
+                </p>
+              </div>
+
+              {/* Save button */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={updateVersionSettings.isPending}
+                  className="btn-ripple flex-1 px-4 py-3 bg-[#006B3F] text-white rounded-xl hover:bg-[#005530] disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {updateVersionSettings.isPending ? (
+                    <>
+                      <Icon name="progress_activity" className="animate-spin" size={18} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="save" size={18} />
+                      Save Version Settings
                     </>
                   )}
                 </button>

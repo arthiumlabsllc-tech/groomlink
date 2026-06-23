@@ -75,6 +75,10 @@ router.put('/payment-settings', authenticateToken, requireAdminOrHigher, require
 router.post('/payment-settings/test-connection', authenticateToken, requireAdminOrHigher, requirePermission('settings'), adminController.testPaymentConnection);
 router.get('/payment-settings/status', authenticateToken, requireAdminOrHigher, requirePermission('settings'), adminController.getPaymentProviderStatus);
 
+// App version settings (requires 'settings' permission)
+router.get('/app-version-settings', authenticateToken, requireAdminOrHigher, requirePermission('settings'), adminController.getAppVersionSettings);
+router.put('/app-version-settings', authenticateToken, requireAdminOrHigher, requirePermission('settings'), adminController.updateAppVersionSettings);
+
 // User activity & security (requires 'users' permission)
 router.get('/users/:id/activities', authenticateToken, requireAdminOrHigher, requirePermission('users'), adminController.getUserActivities);
 router.get('/suspicious-activities', authenticateToken, requireAdminOrHigher, requirePermission('security'), adminController.getSuspiciousUsers);

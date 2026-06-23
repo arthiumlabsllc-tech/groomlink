@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { settingsApi, SiteSettings, MaintenanceSettings, AdminSystemHealth, PaymentSettings } from '../api';
+import { settingsApi, SiteSettings, MaintenanceSettings, AdminSystemHealth, PaymentSettings, AppVersionSettings } from '../api';
 
 export function useSettings() {
   return useQuery({
@@ -66,5 +66,23 @@ export function usePaymentProviderStatus() {
   return useQuery({
     queryKey: ['paymentProviderStatus'],
     queryFn: () => settingsApi.getPaymentProviderStatus(),
+  });
+}
+
+export function useAppVersionSettings() {
+  return useQuery({
+    queryKey: ['appVersionSettings'],
+    queryFn: () => settingsApi.getAppVersionSettings(),
+  });
+}
+
+export function useUpdateAppVersionSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<AppVersionSettings>) => settingsApi.updateAppVersionSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appVersionSettings'] });
+    },
   });
 }
