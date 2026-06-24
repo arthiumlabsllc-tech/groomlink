@@ -29,6 +29,7 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
 import { a11yBookingLabel } from '../../hooks/useAccessibility';
+import { parseLocalDate, isToday } from '../../utils/dateUtils';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -136,14 +137,20 @@ export default function BookingsScreen() {
 
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Timezone-safe: parse components explicitly to avoid UTC-shift bug
+    const date = parseLocalDate(dateString);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    if (date.toDateString() === today.toDateString()) {
+    if (date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate()) {
       return 'Today';
-    } else if (date.toDateString() === tomorrow.toDateString()) {
+    } else if (date.getFullYear() === tomorrow.getFullYear() &&
+               date.getMonth() === tomorrow.getMonth() &&
+               date.getDate() === tomorrow.getDate()) {
       return 'Tomorrow';
     }
     return date.toLocaleDateString('en-US', {

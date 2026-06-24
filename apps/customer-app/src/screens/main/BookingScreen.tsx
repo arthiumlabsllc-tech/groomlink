@@ -36,9 +36,11 @@ import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 import TimeSlotSelector, { TimeSlotData } from '../../components/TimeSlotSelector';
 import { useSocket } from '../../hooks/useSocket';
 import { useWorkerPreference } from '../../hooks/useWorkerPreference';
+import { useBookingDraft } from '../../hooks/useBookingDraft';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { a11yCurrency, a11yDuration } from '../../hooks/useAccessibility';
+import { parseLocalDate } from '../../utils/dateUtils';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -117,6 +119,47 @@ export default function BookingScreen() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentProvider>('MTN_MOMO');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [initializingPayment, setInitializingPayment] = useState(false);
+
+  // Booking draft persistence (resume after app close / back button)
+  const { draft, isLoaded: draftLoaded, saveDraft, clearDraft } = useBookingDraft(salonId);
+
+  // Restore draft state on mount (only once when draft is loaded)
+  const draftRestored = useRef(false);
+  useEffect(() => {
+    if (draftLoaded && draft && !draftRestored.current) {
+      draftRestored.current = true;
+      if (draft.selectedServices.length > 0) setSelectedServices(draft.selectedServices);
+      if (draft.selectedDate) setSelectedDate(draft.selectedDate);
+      if (draft.selectedTime) setSelectedTime(draft.selectedTime);
+      if (draft.selectedWorker) setSelectedWorker(draft.selectedWorker);
+      if (draft.notes) setNotes(draft.notes);
+      if (draft.isGroupBooking) setIsGroupBooking(draft.isGroupBooking);
+      if (draft.guests.length > 0) setGuests(draft.guests);
+      if (draft.phoneNumber) setPhoneNumber(draft.phoneNumber);
+      if (draft.selectedPaymentMethod) setSelectedPaymentMethod(draft.selectedPaymentMethod);
+    }
+  }, [draftLoaded, draft]);
+
+  // Auto-save draft whenever booking state changes
+  useEffect(() => {
+    if (!draftLoaded) return; // Don't save before draft is loaded
+    saveDraft({
+      salonId,
+      selectedServices,
+      selectedDate,
+      selectedTime,
+      selectedWorker,
+      notes,
+      isGroupBooking,
+      guests,
+      phoneNumber,
+      selectedPaymentMethod,
+    });
+  }, [
+    selectedServices, selectedDate, selectedTime, selectedWorker,
+    notes, isGroupBooking, guests, phoneNumber, selectedPaymentMethod,
+    salonId, draftLoaded, saveDraft,
+  ]);
 
   // Fetch platform fee config
   const { data: paymentConfig } = useQuery({
@@ -264,7 +307,10 @@ export default function BookingScreen() {
       if (selectedWorker) {
         saveWorkerPreference(selectedWorker);
       }
-      
+
+      // Clear booking draft since booking was successfully created
+      clearDraft();
+
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
       // Initialize payment via active gateway (Paystack/Hubtel)
@@ -424,7 +470,8 @@ export default function BookingScreen() {
   const salonHours = useMemo(() => {
     if (!selectedDate) return null;
     
-    const date = new Date(selectedDate);
+    // Timezone-safe: parse components explicitly to get correct day-of-week
+    const date = parseLocalDate(selectedDate);
     const dayOfWeek = getDayOfWeek(date);
     
     // Try operatingHours first

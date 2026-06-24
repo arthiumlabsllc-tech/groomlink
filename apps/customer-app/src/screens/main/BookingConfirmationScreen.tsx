@@ -21,6 +21,7 @@ import { bookingApi } from '../../api/booking';
 import { MainStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { formatBookingDate } from '../../utils/dateUtils';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -51,13 +52,8 @@ export default function BookingConfirmationScreen() {
   });
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    // Timezone-safe: parse components explicitly to avoid UTC-shift bug
+    return formatBookingDate(dateString);
   };
 
   const formatTime = (time: string | undefined | null) => {

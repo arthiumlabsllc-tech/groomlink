@@ -18,6 +18,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { bookingApi } from '../../api/booking';
 import { MainStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
@@ -61,14 +62,21 @@ export default function BookingQRCodeScreen() {
     return `GLK-${bookingId.substring(0, 8).toUpperCase()}`;
   };
 
-  const copyToClipboard = (text: string) => {
-    // For React Native, we'll show an alert with the code that user can manually copy
-    // expo-clipboard would need to be installed for actual clipboard functionality
-    Alert.alert(
-      'Check-in Code',
-      `Your code is: ${text}\n\nShow this code to salon staff.`,
-      [{ text: 'OK' }]
-    );
+  // Checkin code from either source (bookingData from getBookingById, or qrData from QR endpoint)
+  const checkinCode = bookingData?.checkinCode || qrData?.checkinCode;
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Copied!', `Check-in code ${text} copied to clipboard.`);
+    } catch {
+      // Fallback if clipboard fails
+      Alert.alert(
+        'Check-in Code',
+        `Your code is: ${text}\n\nShow this code to salon staff.`,
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   if (isLoading) {
@@ -165,23 +173,23 @@ export default function BookingQRCodeScreen() {
             </View>
 
             {/* Manual Check-in Code */}
-            {bookingData?.checkinCode && (
+            {checkinCode && (
               <View style={styles.manualCodeContainer}>
                 <Text variant="bodySmall" style={styles.manualCodeLabel}>
                   Can't scan? Share this code:
                 </Text>
                 <TouchableOpacity 
                   style={styles.codeRow}
-                  onPress={() => copyToClipboard(bookingData.checkinCode || '')}
+                  onPress={() => copyToClipboard(checkinCode)}
                   activeOpacity={0.7}
                 >
                   <Text variant="headlineMedium" style={styles.manualCode}>
-                    {bookingData.checkinCode}
+                    {checkinCode}
                   </Text>
                   <Ionicons name="copy-outline" size={24} color={COLORS.primaryGreen} />
                 </TouchableOpacity>
                 <Text variant="bodySmall" style={styles.tapToCopy}>
-                  Tap to show code
+                  Tap to copy
                 </Text>
               </View>
             )}

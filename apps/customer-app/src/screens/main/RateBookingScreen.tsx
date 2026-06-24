@@ -86,7 +86,9 @@ export default function RateBookingScreen() {
   }, [rating, comment, submitRatingMutation]);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Timezone-safe: parse components explicitly to avoid UTC-shift bug
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',

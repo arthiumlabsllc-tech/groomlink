@@ -25,6 +25,7 @@ import { MainStackParamList } from '../../types/navigation';
 import { RefundPreview, QueuePositionResponse } from '../../types';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
+import { formatBookingDate, buildAppointmentDateTime } from '../../utils/dateUtils';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -178,13 +179,8 @@ export default function BookingDetailScreen() {
   });
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    // Timezone-safe: parse components explicitly to avoid UTC-shift bug
+    return formatBookingDate(dateString);
   };
 
   const formatTime = (time: string | undefined | null) => {
@@ -264,15 +260,11 @@ export default function BookingDetailScreen() {
     !booking.disputeRaised;
 
   // Check if booking is confirmed and upcoming (for QR code)
-  // Use date + startTime together so same-day bookings aren't wrongly marked as past
-  const appointmentDateTime = new Date(booking?.scheduledDate || booking?.date || '');
-  if (booking?.scheduledTime || booking?.startTime) {
-    const [h, m] = (booking.scheduledTime || booking.startTime || '00:00').split(':').map(Number);
-    appointmentDateTime.setHours(h, m, 0, 0);
-  } else {
-    // If no time available, set to end of day (23:59) to avoid hiding QR code on same-day bookings
-    appointmentDateTime.setHours(23, 59, 0, 0);
-  }
+  // Use timezone-safe date+time construction to avoid UTC-shift bugs
+  const appointmentDateTime = buildAppointmentDateTime(
+    booking?.scheduledDate || booking?.date || '',
+    booking?.scheduledTime || booking?.startTime,
+  );
   const isPastBooking = booking && appointmentDateTime < new Date();
   const isUpcomingConfirmed = booking && 
     booking.status === 'CONFIRMED' && 

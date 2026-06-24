@@ -491,18 +491,21 @@ export async function generateQRCode(bookingId: string): Promise<string> {
       throw new Error('Booking not found');
     }
 
-    // Create QR data object
+    // Create QR data object — keep minimal for scannability
+    // Only bookingId is required by the scanner; reference is human-readable backup
     const qrData = {
       bookingId: booking.id,
       bookingReference: booking.reference,
-      salonId: booking.salonId,
-      timestamp: Date.now(),
     };
 
     const qrDataString = JSON.stringify(qrData);
 
-    // Generate QR code data URL
-    const qrDataUrl = await QRCode.toDataURL(qrDataString);
+    // Generate QR code data URL with error correction level M (15% recovery)
+    // This makes the QR code scannable even if partially obscured or displayed small
+    const qrDataUrl = await QRCode.toDataURL(qrDataString, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+    });
 
     // Store in Redis with 24h TTL (86400 seconds)
     await redis.setex(`qr:${bookingId}`, 86400, qrDataString);

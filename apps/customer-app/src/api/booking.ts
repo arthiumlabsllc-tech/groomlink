@@ -110,9 +110,16 @@ export const bookingApi = {
   },
 
   // Get QR code for booking check-in
-  getQRCode: async (id: string): Promise<{ qrCode: string; bookingRef: string }> => {
+  getQRCode: async (id: string): Promise<{ qrCode: string; bookingRef: string; checkinCode?: string }> => {
     const response = await apiClient.get(`/bookings/${id}/qr-code`);
-    return response.data.data;
+    const data = response.data.data;
+    // Map backend field names to frontend interface
+    // Backend returns: qrCodeDataUrl, bookingRef, checkinCode
+    return {
+      qrCode: data.qrCodeDataUrl || data.qrCode || '',
+      bookingRef: data.bookingRef || '',
+      checkinCode: data.checkinCode || undefined,
+    };
   },
 
   // Get queue position for booking
