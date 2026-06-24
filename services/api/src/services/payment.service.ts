@@ -932,17 +932,23 @@ export async function verifyAndCompletePayment(paymentId: string, reference: str
     // Send payment receipt emails (fire-and-forget)
     const booking = payment.booking;
 
-    // Calculate cancellation deadline based on policy
+    // Calculate cancellation deadline based on policy (UTC-safe)
     let cancellationDeadline: Date | undefined;
     try {
       const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
       const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
-      const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
-      cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
+      const dateStr = booking.date.toISOString().split('T')[0];
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hours, minutes] = booking.startTime.split(':').map(Number);
+      const bookingDateTimeMs = Date.UTC(year, month - 1, day, hours, minutes);
+      cancellationDeadline = new Date(bookingDateTimeMs - (freeCancellationHours * 60 * 60 * 1000));
     } catch (policyError) {
       logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
-      const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
-      cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
+      const dateStr = booking.date.toISOString().split('T')[0];
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hours, minutes] = booking.startTime.split(':').map(Number);
+      const bookingDateTimeMs = Date.UTC(year, month - 1, day, hours, minutes);
+      cancellationDeadline = new Date(bookingDateTimeMs - (48 * 60 * 60 * 1000));
     }
 
     // Confirm the booking with escrow fields
@@ -1356,17 +1362,23 @@ export async function handleHubtelWebhook(
         // Send payment receipt emails (fire-and-forget)
         const booking = payment.booking;
 
-        // Calculate cancellation deadline based on policy
+        // Calculate cancellation deadline based on policy (UTC-safe)
         let cancellationDeadline: Date | undefined;
         try {
           const freeCancellationHoursStr = await escrowService.getPolicyValue('free_cancellation_hours');
           const freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
-          const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
-          cancellationDeadline = new Date(bookingDateTime.getTime() - (freeCancellationHours * 60 * 60 * 1000));
+          const dateStr = booking.date.toISOString().split('T')[0];
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const [hours, minutes] = booking.startTime.split(':').map(Number);
+          const bookingDateTimeMs = Date.UTC(year, month - 1, day, hours, minutes);
+          cancellationDeadline = new Date(bookingDateTimeMs - (freeCancellationHours * 60 * 60 * 1000));
         } catch (policyError) {
           logger.warn('Failed to get free_cancellation_hours policy, using default 48h', { policyError });
-          const bookingDateTime = new Date(`${booking.date.toISOString().split('T')[0]}T${booking.startTime}`);
-          cancellationDeadline = new Date(bookingDateTime.getTime() - (48 * 60 * 60 * 1000));
+          const dateStr = booking.date.toISOString().split('T')[0];
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const [hours, minutes] = booking.startTime.split(':').map(Number);
+          const bookingDateTimeMs = Date.UTC(year, month - 1, day, hours, minutes);
+          cancellationDeadline = new Date(bookingDateTimeMs - (48 * 60 * 60 * 1000));
         }
 
         // Update booking status with escrow fields

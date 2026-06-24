@@ -724,19 +724,33 @@ export default function BookingDetailScreen() {
             {booking.cancellationDeadline && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
               <View style={styles.deadlineCard}>
                 <View style={styles.deadlineHeader}>
-                  <Ionicons name="alert-circle-outline" size={16} color={COLORS.accentGold} />
-                  <Text variant="bodySmall" style={styles.deadlineTitle}>Cancellation Deadline</Text>
+                  <Ionicons 
+                    name={new Date(booking.cancellationDeadline) > new Date() ? "alert-circle-outline" : "close-circle-outline"} 
+                    size={16} 
+                    color={new Date(booking.cancellationDeadline) > new Date() ? COLORS.accentGold : COLORS.accentRed} 
+                  />
+                  <Text variant="bodySmall" style={styles.deadlineTitle}>
+                    {new Date(booking.cancellationDeadline) > new Date() ? 'Cancellation Deadline' : 'Cancellation Window Closed'}
+                  </Text>
                 </View>
-                <Text variant="bodyMedium" style={styles.deadlineText}>
-                  {formatDate(booking.cancellationDeadline)} at {formatTime(booking.cancellationDeadline?.split('T')[1]?.substring(0, 5) || '00:00')}
-                </Text>
-                {booking.refundPercentage !== undefined && (
-                  <Text variant="bodySmall" style={styles.refundHint}>
-                    {booking.refundPercentage === 100 
-                      ? 'Full refund available' 
-                      : booking.refundPercentage > 0 
-                        ? `${booking.refundPercentage}% refund available`
-                        : 'No refund available'}
+                {new Date(booking.cancellationDeadline) > new Date() ? (
+                  <>
+                    <Text variant="bodyMedium" style={styles.deadlineText}>
+                      {formatDate(booking.cancellationDeadline)} at {formatTime(booking.cancellationDeadline?.split('T')[1]?.substring(0, 5) || '00:00')}
+                    </Text>
+                    {booking.refundPercentage !== undefined && (
+                      <Text variant="bodySmall" style={styles.refundHint}>
+                        {booking.refundPercentage === 100 
+                          ? 'Full refund available' 
+                          : booking.refundPercentage > 0 
+                            ? `${booking.refundPercentage}% refund available`
+                            : 'No refund available'}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <Text variant="bodySmall" style={[styles.refundHint, { color: COLORS.accentRed }]}>
+                    Free cancellation period has ended
                   </Text>
                 )}
               </View>

@@ -269,7 +269,7 @@ export default function TimeSlotSelector({
       <View style={[styles.policySection, { backgroundColor: COLORS.background }]}>
         <Ionicons name="information-circle-outline" size={16} color={COLORS.textSecondary} />
         <RNText style={[styles.policyText, { color: COLORS.textSecondary }]}>
-          Cancellation Policy: Free cancellation up to 3 hours before your appointment
+          Cancellation Policy: Free cancellation up to 48 hours before your appointment
         </RNText>
       </View>
     </View>

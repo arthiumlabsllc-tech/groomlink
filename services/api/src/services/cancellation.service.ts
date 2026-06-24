@@ -651,10 +651,19 @@ export async function rescheduleBooking(
     throw new Error('The selected staff member is not available for this time slot. Please choose another staff or time.');
   }
 
-  // Calculate new cancellation deadline (same as original booking window)
-  const cancellationDeadline = new Date(parsedNewDate);
-  const [cancelHours] = newTime.split(':').map(Number);
-  cancellationDeadline.setHours(cancelHours - 12, 0, 0, 0); // 12 hours before appointment
+  // Calculate new cancellation deadline using policy (UTC-safe)
+  let freeCancellationHours = 48;
+  try {
+    const freeCancellationHoursStr = await getPolicyValue('free_cancellation_hours');
+    freeCancellationHours = parseInt(freeCancellationHoursStr, 10) || 48;
+  } catch (e) {
+    // use default 48h
+  }
+  const dateStr = parsedNewDate.toISOString().split('T')[0];
+  const [dlYear, dlMonth, dlDay] = dateStr.split('-').map(Number);
+  const [dlHours, dlMinutes] = newTime.split(':').map(Number);
+  const bookingDateTimeMs = Date.UTC(dlYear, dlMonth - 1, dlDay, dlHours, dlMinutes);
+  const cancellationDeadline = new Date(bookingDateTimeMs - (freeCancellationHours * 60 * 60 * 1000));
 
   // Update booking
   const updatedBooking = await prisma.booking.update({
