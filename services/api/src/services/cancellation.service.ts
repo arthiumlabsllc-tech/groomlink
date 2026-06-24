@@ -786,8 +786,17 @@ export async function oneClickRefund(bookingId: string, providerId: string) {
     throw new Error('No escrow record found for this booking');
   }
 
-  if (booking.escrow.status === 'refunded') {
+  if (booking.escrow.status === 'refunded' && booking.escrow.refundTransactionId) {
     throw new Error('This booking has already been refunded');
+  }
+
+  // Allow refund only for valid escrow states:
+  // - 'held': initial state after payment
+  // - 'refund_failed': previous automatic refund attempt failed (payout methods failed)
+  // - 'refunded' without refundTransactionId: legacy false-positive (payout failed but status was marked refunded)
+  const allowedEscrowStatuses = ['held', 'refund_failed', 'refunded'];
+  if (!allowedEscrowStatuses.includes(booking.escrow.status)) {
+    throw new Error(`Escrow is in '${booking.escrow.status}' state and cannot be refunded`);
   }
 
   const refundAmount = parseFloat(booking.escrow.amountHeld.toString());
@@ -853,7 +862,7 @@ export async function oneClickRefund(bookingId: string, providerId: string) {
     );
   }
 
-  // Update escrow status to refunded
+  // Update escrow status to refunded (success on this attempt)
   await prisma.escrowAccount.update({
     where: { id: booking.escrow.id },
     data: {
@@ -864,17 +873,26 @@ export async function oneClickRefund(bookingId: string, providerId: string) {
     },
   });
 
-  // Create refund transaction record
-  await prisma.escrowTransaction.create({
-    data: {
+  // Create refund transaction record (only if not already created by previous escrow refund call)
+  const existingRefundTx = await prisma.escrowTransaction.findFirst({
+    where: {
       escrowId: booking.escrow.id,
       transactionType: 'refund',
-      amount: refundAmount,
-      previousBalance: refundAmount,
-      newBalance: 0,
-      reference: refundReference || `one-click-refund-${bookingId}`,
     },
   });
+  if (!existingRefundTx) {
+    const currentBalance = parseFloat(booking.escrow.amountHeld.toString());
+    await prisma.escrowTransaction.create({
+      data: {
+        escrowId: booking.escrow.id,
+        transactionType: 'refund',
+        amount: refundAmount,
+        previousBalance: currentBalance,
+        newBalance: currentBalance - refundAmount,
+        reference: refundReference || `one-click-refund-${bookingId}`,
+      },
+    });
+  }
 
   // Update booking refund fields
   await prisma.booking.update({

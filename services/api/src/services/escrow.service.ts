@@ -556,44 +556,49 @@ export async function refundEscrow(
       }
 
       if (!refundRef) {
-        logger.warn(`All refund payout methods failed for escrow ${escrowId}. Ledger will still be updated.`);
+        logger.warn(`All refund payout methods failed for escrow ${escrowId}. Status will be set to refund_failed so one-click refund can retry.`);
       }
     } else {
       logger.warn('No customer phone number found for escrow, skipping refund payout:', { escrowId });
     }
-    
+
+    const payoutSucceeded = !!refundRef;
+
     // Update escrow status and create transaction
     const updatedEscrow = await prisma.$transaction(async (tx) => {
-      // Update escrow account
+      // Update escrow account — only mark 'refunded' if actual payout succeeded
       const updated = await tx.escrowAccount.update({
         where: { id: escrowId },
         data: {
-          status: 'refunded',
+          status: payoutSucceeded ? 'refunded' : 'refund_failed',
           hubtelPayoutReference: refundGateway === 'hubtel' ? refundRef : undefined,
-          payoutGateway: refundGateway,
+          payoutGateway: payoutSucceeded ? refundGateway : undefined,
           refundTransactionId: refundRef,
         }
       });
       
-      // Create refund transaction
-      await tx.escrowTransaction.create({
-        data: {
-          escrowId,
-          transactionType: 'refund',
-          amount: refundAmount,
-          previousBalance: amountHeld,
-          newBalance: amountHeld - refundAmount,
-          reference: refundRef,
-        }
-      });
+      // Create refund transaction only when payout actually succeeded
+      if (payoutSucceeded) {
+        await tx.escrowTransaction.create({
+          data: {
+            escrowId,
+            transactionType: 'refund',
+            amount: refundAmount,
+            previousBalance: amountHeld,
+            newBalance: amountHeld - refundAmount,
+            reference: refundRef,
+          }
+        });
+      }
       
       return updated;
     });
     
-    logger.info(`Escrow refunded for booking ${escrow.bookingId}`, {
+    logger.info(`Escrow ${payoutSucceeded ? 'refunded' : 'refund_failed'} for booking ${escrow.bookingId}`, {
       escrowId,
       refundAmount,
-      refundPercentage
+      refundPercentage,
+      payoutSucceeded,
     });
     
     return { escrow: updatedEscrow, refundAmount };
