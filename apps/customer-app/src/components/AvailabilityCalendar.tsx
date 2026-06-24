@@ -347,7 +347,7 @@ export default function AvailabilityCalendar({
       </View>
       
       {/* Weekday Headers */}
-      <View style={styles.weekdayRow}>
+      <View style={[styles.weekdayRow, { paddingHorizontal: 2 }]}>
         {WEEKDAYS.map((day) => (
           <View key={day} style={styles.weekdayCell}>
             <RNText style={[styles.weekdayText, { color: COLORS.textSecondary }]}>{day}</RNText>
@@ -356,7 +356,7 @@ export default function AvailabilityCalendar({
       </View>
       
       {/* Calendar Grid */}
-      <View style={styles.calendarGrid}>
+      <View style={[styles.calendarGrid, { paddingHorizontal: 2 }]}>
         {calendarDays.map((date, index) => renderDayCell(date, index))}
       </View>
       
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   emptyCell: {
     width: '14.28%',
     aspectRatio: 1,
-    padding: 2,
+    paddingHorizontal: 2,
   },
   dayCell: {
     width: '14.28%',
@@ -439,7 +439,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     borderWidth: 2,
-    margin: 2,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
   },
   dayCellSelected: {
     borderWidth: 3,
