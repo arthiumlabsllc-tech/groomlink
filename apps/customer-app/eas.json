@@ -22,7 +22,8 @@
       "ios": {
         "simulator": true
       },
-      "node": "20.18.0"
+      "node": "20.18.0",
+      "pnpm": "9.15.5"
     },
     "preview-device": {
       "distribution": "internal",
@@ -33,6 +34,7 @@
     "production": {
       "autoIncrement": true,
       "node": "20.18.0",
+      "pnpm": "9.15.5",
       "env": {
         "GOOGLE_MAPS_API_KEY": "AIzaSyBMVYRP-l1YqjsRV-S6V1WG6fPH3caSphI",
         "EXPO_PUBLIC_API_URL": "https://groomlinkgh.com/api",
@@ -48,7 +50,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v17-pnpm-hoist"
+        "key": "v18-pnpm-explicit"
       }
     }
   },

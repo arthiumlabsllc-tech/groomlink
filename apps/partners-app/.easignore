@@ -1,47 +1,46 @@
-# EAS Build needs monorepo context to install dependencies correctly.
-# DO NOT ignore these root files (EAS needs them for pnpm monorepo detection):
-#   - pnpm-workspace.yaml
-#   - pnpm-lock.yaml
-#   - package.json (root)
+# .easignore for partners-app
+# EAS uploads the entire monorepo; this file excludes unnecessary content.
+# IMPORTANT: pnpm-lock.yaml, pnpm-workspace.yaml, root package.json, and
+# root .npmrc must NOT be ignored — EAS needs them for pnpm install.
 
-# Ignore other monorepo app directories (not needed for this app's build)
-../apps/admin
-../apps/customer
-../apps/customer-app
-../apps/landing
-../apps/mobile
-../apps/partners
-../apps/support
-../services
-../packages
+# Other monorepo apps (not needed for this build)
+apps/admin/
+apps/customer/
+apps/customer-app/
+apps/landing/
+apps/mobile/
+apps/partners/
+apps/support/
 
-# Ignore non-essential root files
-../.gitignore
-../.github
-../.idea
-../.vscode
-../.venv
-../nginx
-../.env*
-../app.json
-../codemagic.yaml
-../docker-compose*.yml
+# Backend services and shared packages (not needed for mobile build)
+services/
+packages/
 
-# Ignore root-level noise (Python scripts, images, docs, etc.)
-*.md
+# Non-essential root files
+.github/
+.idea/
+.vscode/
+.venv/
+nginx/
 *.py
-*.png
+*.ps1
 *.psd
 *.bin
 *.txt
-backup.sh
-deploy.sh
-hostinger-*
-*.example
+*.log
 
-# Native build directories and large SDK files - never upload to EAS
+# Environment and config files
+.env*
+docker-compose*.yml
+codemagic.yaml
+app.json
+
+# Docs at root
+*.md
+
+# Native build artifacts (already in .gitignore but be explicit)
 android-sdk/
-../android-sdk/
-android/
-ios/
 .gradle/
+
+# EAS internal
+.eas/

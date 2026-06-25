@@ -16,7 +16,8 @@
       "ios": {
         "simulator": true
       },
-      "node": "20.18.0"
+      "node": "20.18.0",
+      "pnpm": "9.15.5"
     },
     "preview-device": {
       "distribution": "internal",
@@ -27,6 +28,7 @@
     "production": {
       "autoIncrement": true,
       "node": "20.18.0",
+      "pnpm": "9.15.5",
       "android": {
         "image": "latest",
         "gradleCommand": ":app:bundleRelease",
@@ -37,7 +39,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v14-pnpm-hoist"
+        "key": "v15-pnpm-explicit"
       }
     }
   },
