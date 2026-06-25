@@ -123,6 +123,13 @@ function AppContent() {
     };
   }, []);
 
+  // Re-register push token when user becomes authenticated (matches partners-app pattern)
+  useEffect(() => {
+    if (isAuthenticated) {
+      registerForPushNotificationsAsync();
+    }
+  }, [isAuthenticated]);
+
   const setupNotifications = async (): Promise<() => void> => {
     // Register for push notifications
     await registerForPushNotificationsAsync();

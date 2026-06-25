@@ -47,7 +47,7 @@ const createColors = (t: AppTheme) => ({
 type TabType = 'upcoming' | 'past';
 
 const UPCOMING_STATUSES = ['PENDING', 'CONFIRMED', 'IN_PROGRESS'];
-const PAST_STATUSES = ['COMPLETED', 'CANCELLED'];
+const PAST_STATUSES = ['COMPLETED', 'CANCELLED', 'NO_SHOW'];
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: '#FCD116',
@@ -55,6 +55,7 @@ const STATUS_COLORS: Record<string, string> = {
   IN_PROGRESS: '#2196F3',
   COMPLETED: '#6B7280',
   CANCELLED: '#CE1126',
+  NO_SHOW: '#CE1126',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -63,6 +64,7 @@ const STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   CANCELLED: 'Cancelled',
+  NO_SHOW: 'No-Show',
 };
 
 export default function BookingsScreen() {

@@ -22,8 +22,8 @@ enum UserStatus {
 }
 
 enum ProviderCategory {
-  BUSINESS    // Salon/Barbershop company
-  FREELANCER  // Individual barber/hairdresser
+  BUSINESS // Salon/Barbershop company
+  FREELANCER // Individual barber/hairdresser
 }
 
 enum SalonType {
@@ -182,7 +182,7 @@ model User {
 model PushToken {
   id        String   @id @default(cuid())
   token     String
-  platform  String   // "ios" or "android"
+  platform  String // "ios" or "android"
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @map("created_at")
@@ -194,12 +194,12 @@ model PushToken {
 }
 
 model Salon {
-  id           String      @id @default(uuid())
-  businessName String      @map("business_name")
-  description  String?
+  id               String           @id @default(uuid())
+  businessName     String           @map("business_name")
+  description      String?
   type             SalonType
   providerCategory ProviderCategory @default(BUSINESS) @map("provider_category")
-  status           SalonStatus @default(PENDING)
+  status           SalonStatus      @default(PENDING)
 
   // Registration
   registrationNumber String? @map("registration_number")
@@ -276,16 +276,16 @@ model Salon {
   escrowAccounts EscrowAccount[]
 
   // Sponsorship
-  isSponsored          Boolean   @default(false)
-  sponsorshipPriority  Int       @default(0)
+  isSponsored          Boolean          @default(false)
+  sponsorshipPriority  Int              @default(0)
   sponsorshipExpiresAt DateTime?
   sponsorships         SponsoredSalon[]
 
   // Service Completion Settings
-  autoCompletionHours            Int     @default(2) @map("auto_completion_hours")
-  requiresCustomerConfirmation   Boolean @default(false) @map("requires_customer_confirmation")
-  completionReminderEnabled      Boolean @default(true) @map("completion_reminder_enabled")
-  qrCheckinEnabled               Boolean @default(true) @map("qr_checkin_enabled")
+  autoCompletionHours          Int     @default(2) @map("auto_completion_hours")
+  requiresCustomerConfirmation Boolean @default(false) @map("requires_customer_confirmation")
+  completionReminderEnabled    Boolean @default(true) @map("completion_reminder_enabled")
+  qrCheckinEnabled             Boolean @default(true) @map("qr_checkin_enabled")
 
   // Branding & Waitlist
   slug            String?      @unique
@@ -299,10 +299,10 @@ model Salon {
   featureFlags          Json      @default("{}")
 
   // Subscription Relations
-  activeSubscription    SalonSubscription?  @relation("ActiveSubscription", fields: [subscriptionId], references: [id])
-  subscriptions         SalonSubscription[] @relation("SalonSubscriptions")
-  subscriptionInvoices  SubscriptionInvoice[]
-  featureUsages         FeatureUsage[]
+  activeSubscription   SalonSubscription?    @relation("ActiveSubscription", fields: [subscriptionId], references: [id])
+  subscriptions        SalonSubscription[]   @relation("SalonSubscriptions")
+  subscriptionInvoices SubscriptionInvoice[]
+  featureUsages        FeatureUsage[]
 
   @@index([ownerId])
   @@index([type])
@@ -370,18 +370,18 @@ model WorkerService {
 }
 
 model Service {
-  id            String   @id @default(uuid())
-  name          String
-  description   String?
-  category      String
-  duration      Int // in minutes
-  price         Decimal  @db.Decimal(10, 2)
-  discountPrice Decimal? @map("discount_price") @db.Decimal(10, 2)
-  promoLabel    String?  @map("promo_label") // e.g., "20% OFF", "Summer Special"
-  image         String?
+  id                String   @id @default(uuid())
+  name              String
+  description       String?
+  category          String
+  duration          Int // in minutes
+  price             Decimal  @db.Decimal(10, 2)
+  discountPrice     Decimal? @map("discount_price") @db.Decimal(10, 2)
+  promoLabel        String?  @map("promo_label") // e.g., "20% OFF", "Summer Special"
+  image             String?
   isActive          Boolean  @default(true) @map("is_active")
-  offersHomeService  Boolean  @default(false) @map("offers_home_service")
-  homeServiceFee     Decimal? @map("home_service_fee") @db.Decimal(10, 2)
+  offersHomeService Boolean  @default(false) @map("offers_home_service")
+  homeServiceFee    Decimal? @map("home_service_fee") @db.Decimal(10, 2)
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -420,8 +420,10 @@ model Booking {
   salonNotes    String? @map("salon_notes")
 
   // Booking hold and reminder tracking
-  holdExpiresAt DateTime? @map("hold_expires_at")
-  reminderSent  Boolean   @default(false) @map("reminder_sent")
+  holdExpiresAt      DateTime? @map("hold_expires_at")
+  reminderSent       Boolean   @default(false) @map("reminder_sent") // 2h reminder flag
+  reminderSent24h    Boolean   @default(false) @map("reminder_sent_24h") // 24h reminder flag
+  noshowReminderSent Boolean   @default(false) @map("noshow_reminder_sent") // partner no-show grace reminder
 
   // Group Booking Support
   isGroupBooking    Boolean @default(false) @map("is_group_booking")
@@ -463,32 +465,32 @@ model Booking {
   noShowRecords       NoShowRecord[]
 
   // Service Completion
-  serviceCompleted        Boolean   @default(false) @map("service_completed")
-  serviceCompletedAt      DateTime? @map("service_completed_at")
-  serviceCompletedBy      String?   @map("service_completed_by")
-  completionMethod        String?   @map("completion_method") // 'manual', 'auto', 'qr_scan', 'customer_confirmation', 'admin_resolution'
-  autoCompletionAttempts  Int       @default(0) @map("auto_completion_attempts")
-  autoCompletionDeadline  DateTime? @map("auto_completion_deadline")
-  customerConfirmed       Boolean   @default(false) @map("customer_confirmed")
-  customerConfirmedAt     DateTime? @map("customer_confirmed_at")
-  disputeRaised           Boolean   @default(false) @map("dispute_raised")
-  disputeReason           String?   @map("dispute_reason")
-  completionReminders     CompletionReminder[]
+  serviceCompleted       Boolean              @default(false) @map("service_completed")
+  serviceCompletedAt     DateTime?            @map("service_completed_at")
+  serviceCompletedBy     String?              @map("service_completed_by")
+  completionMethod       String?              @map("completion_method") // 'manual', 'auto', 'qr_scan', 'customer_confirmation', 'admin_resolution'
+  autoCompletionAttempts Int                  @default(0) @map("auto_completion_attempts")
+  autoCompletionDeadline DateTime?            @map("auto_completion_deadline")
+  customerConfirmed      Boolean              @default(false) @map("customer_confirmed")
+  customerConfirmedAt    DateTime?            @map("customer_confirmed_at")
+  disputeRaised          Boolean              @default(false) @map("dispute_raised")
+  disputeReason          String?              @map("dispute_reason")
+  completionReminders    CompletionReminder[]
 
   // Check-in fields
-  checkedIn           Boolean   @default(false)
-  checkedInAt         DateTime?
-  checkedInBy         String?
-  checkinCode         String?   @unique
-  queuePosition       Int?
-  queueEntryId        String?
+  checkedIn     Boolean   @default(false)
+  checkedInAt   DateTime?
+  checkedInBy   String?
+  checkinCode   String?   @unique
+  queuePosition Int?
+  queueEntryId  String?
 
   // Hubtel
   hubtelInvoiceReference String? @map("hubtel_invoice_reference")
 
   // Payment failure tracking
-  paymentFailedReason String?   @map("payment_failed_reason")
-  paymentRetryCount   Int       @default(0) @map("payment_retry_count")
+  paymentFailedReason String? @map("payment_failed_reason")
+  paymentRetryCount   Int     @default(0) @map("payment_retry_count")
 
   @@index([customerId])
   @@index([salonId])
@@ -556,14 +558,14 @@ model Payment {
   status   PaymentStatus   @default(PENDING)
 
   // Provider specific
-  providerRef         String? @map("provider_ref")
-  providerData        Json?   @map("provider_data")
-  hubtelTransactionId String? @map("hubtel_transaction_id")
+  providerRef           String? @map("provider_ref")
+  providerData          Json?   @map("provider_data")
+  hubtelTransactionId   String? @map("hubtel_transaction_id")
   paystackTransactionId String? @map("paystack_transaction_id")
-  paystackAccessCode  String? @map("paystack_access_code")
-  
+  paystackAccessCode    String? @map("paystack_access_code")
+
   // Multi-provider tracking
-  paymentGateway      String? @map("payment_gateway") // 'hubtel', 'paystack'
+  paymentGateway       String? @map("payment_gateway") // 'hubtel', 'paystack'
   gatewayTransactionId String? @map("gateway_transaction_id")
 
   // Timestamps
@@ -803,37 +805,37 @@ model AdminPermission {
 }
 
 model SiteSettings {
-  id                    String   @id @default("default")
-  siteName              String   @default("GroomLink")
-  logoUrl               String?  // Header logo
-  footerLogoUrl         String?  @map("footer_logo_url") // Footer logo
-  email                 String?
-  phoneNumber           String?
-  whatsappNumber        String?  @map("whatsapp_number")
-  backupPhoneNumber     String?  @map("backup_phone_number")
-  address               String?
-  maintenanceMode       Boolean  @default(false)
-  maintenanceMsg        String?
+  id                       String   @id @default("default")
+  siteName                 String   @default("GroomLink")
+  logoUrl                  String? // Header logo
+  footerLogoUrl            String?  @map("footer_logo_url") // Footer logo
+  email                    String?
+  phoneNumber              String?
+  whatsappNumber           String?  @map("whatsapp_number")
+  backupPhoneNumber        String?  @map("backup_phone_number")
+  address                  String?
+  maintenanceMode          Boolean  @default(false)
+  maintenanceMsg           String?
   // Payment Gateway Settings
-  paymentGateway        String   @default("paystack")
-  paystackPublicKey     String?
-  paystackSecretKey     String?
-  hubtelApiId           String?  @map("hubtel_api_id")
-  hubtelApiSecret       String?  @map("hubtel_api_secret")
-  hubtelMerchantAccountId String? @map("hubtel_merchant_account_id")
-  thetellerApiKey       String?  @map("theteller_api_key")
-  thetellerApiUser      String?  @map("theteller_api_user")
-  thetellerMerchantId   String?  @map("theteller_merchant_id")
-  isPaymentTestMode     Boolean  @default(true)
-  transactionFeePercent Decimal? @db.Decimal(5, 2)
+  paymentGateway           String   @default("paystack")
+  paystackPublicKey        String?
+  paystackSecretKey        String?
+  hubtelApiId              String?  @map("hubtel_api_id")
+  hubtelApiSecret          String?  @map("hubtel_api_secret")
+  hubtelMerchantAccountId  String?  @map("hubtel_merchant_account_id")
+  thetellerApiKey          String?  @map("theteller_api_key")
+  thetellerApiUser         String?  @map("theteller_api_user")
+  thetellerMerchantId      String?  @map("theteller_merchant_id")
+  isPaymentTestMode        Boolean  @default(true)
+  transactionFeePercent    Decimal? @db.Decimal(5, 2)
   // App Version Management
-  customerAppLatestVersion String? @map("customer_app_latest_version") // e.g. "1.0.35"
-  customerAppMinVersion    String? @map("customer_app_min_version")    // minimum required version
-  partnersAppLatestVersion String? @map("partners_app_latest_version")
-  partnersAppMinVersion    String? @map("partners_app_min_version")
-  appUpdateMessage         String? @map("app_update_message")
-  updatedAt             DateTime @updatedAt
-  updatedBy             String?
+  customerAppLatestVersion String?  @map("customer_app_latest_version") // e.g. "1.0.35"
+  customerAppMinVersion    String?  @map("customer_app_min_version") // minimum required version
+  partnersAppLatestVersion String?  @map("partners_app_latest_version")
+  partnersAppMinVersion    String?  @map("partners_app_min_version")
+  appUpdateMessage         String?  @map("app_update_message")
+  updatedAt                DateTime @updatedAt
+  updatedBy                String?
 }
 
 enum UserActivityAction {
@@ -923,17 +925,17 @@ model UserActivity {
 }
 
 model PlatformFeedback {
-  id          String   @id @default(uuid())
-  rating      Int
-  comment     String?  @db.Text
-  userType    String   @map("user_type")
-  userId      String?  @map("user_id")
-  email       String?
-  deviceId    String?  @map("device_id")
-  appVersion  String?  @map("app_version")
-  status      String   @default("NEW")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  rating     Int
+  comment    String?  @db.Text
+  userType   String   @map("user_type")
+  userId     String?  @map("user_id")
+  email      String?
+  deviceId   String?  @map("device_id")
+  appVersion String?  @map("app_version")
+  status     String   @default("NEW")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@index([userType])
   @@index([rating])
@@ -960,10 +962,10 @@ model SupportTicket {
   unreadByUser  Int @default(0) @map("unread_by_user")
 
   // Relations
-  userId       String?         @map("user_id")
-  user         User?           @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
-  assignedToId String?         @map("assigned_to_id")
-  assignedTo   User?           @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
+  userId       String?          @map("user_id")
+  user         User?            @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
+  assignedToId String?          @map("assigned_to_id")
+  assignedTo   User?            @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
   messages     TicketMessage[]
   transfers    TicketTransfer[]
 
@@ -1005,16 +1007,16 @@ model TicketMessage {
 }
 
 model TicketTransfer {
-  id          String   @id @default(uuid())
-  ticketId    String   @map("ticket_id")
+  id          String        @id @default(uuid())
+  ticketId    String        @map("ticket_id")
   ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  fromAgentId String   @map("from_agent_id")
-  fromAgent   User     @relation("TransferFrom", fields: [fromAgentId], references: [id], onDelete: Cascade)
-  toAgentId   String?  @map("to_agent_id")
-  toAgent     User?    @relation("TransferTo", fields: [toAgentId], references: [id], onDelete: SetNull)
-  department  String?  // Category: "Billing", "Technical", "General", "Escalations"
+  fromAgentId String        @map("from_agent_id")
+  fromAgent   User          @relation("TransferFrom", fields: [fromAgentId], references: [id], onDelete: Cascade)
+  toAgentId   String?       @map("to_agent_id")
+  toAgent     User?         @relation("TransferTo", fields: [toAgentId], references: [id], onDelete: SetNull)
+  department  String? // Category: "Billing", "Technical", "General", "Escalations"
   reason      String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
 
   @@index([ticketId])
   @@index([fromAgentId])
@@ -1033,32 +1035,32 @@ model BannedEmail {
 }
 
 model EscrowAccount {
-  id                   String              @id @default(uuid())
-  bookingId            String              @unique
-  booking              Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  customerId           String
-  customer             User                @relation("CustomerEscrows", fields: [customerId], references: [id])
-  providerId           String
-  provider             User                @relation("ProviderEscrows", fields: [providerId], references: [id])
-  salonId              String
-  salon                Salon               @relation(fields: [salonId], references: [id])
-  amountHeld           Decimal             @db.Decimal(10, 2)
-  platformFee          Decimal             @default(0) @db.Decimal(10, 2)
-  providerAmount       Decimal             @default(0) @db.Decimal(10, 2)
-  bookingFee           Decimal             @default(0) @db.Decimal(10, 2) // flat GHS 2 from customer
-  commission           Decimal?            @db.Decimal(10, 2) // 5% of service price (calculated at completion)
-  status               String              @default("held") // held, released, refunded, disputed
-  paymentTransactionId   String?
-  refundTransactionId    String?
-  hubtelPayoutReference  String? @map("hubtel_payout_reference")
-  hubtelInvoiceReference String? @map("hubtel_invoice_reference")
-  paystackPayoutReference String? @map("paystack_payout_reference")
-  paystackRecipientCode  String? @map("paystack_recipient_code")
-  payoutGateway          String? @map("payout_gateway") // 'hubtel', 'paystack'
-  releasedAt             DateTime?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  transactions         EscrowTransaction[]
+  id                      String              @id @default(uuid())
+  bookingId               String              @unique
+  booking                 Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId              String
+  customer                User                @relation("CustomerEscrows", fields: [customerId], references: [id])
+  providerId              String
+  provider                User                @relation("ProviderEscrows", fields: [providerId], references: [id])
+  salonId                 String
+  salon                   Salon               @relation(fields: [salonId], references: [id])
+  amountHeld              Decimal             @db.Decimal(10, 2)
+  platformFee             Decimal             @default(0) @db.Decimal(10, 2)
+  providerAmount          Decimal             @default(0) @db.Decimal(10, 2)
+  bookingFee              Decimal             @default(0) @db.Decimal(10, 2) // flat GHS 2 from customer
+  commission              Decimal?            @db.Decimal(10, 2) // 5% of service price (calculated at completion)
+  status                  String              @default("held") // held, released, refunded, disputed
+  paymentTransactionId    String?
+  refundTransactionId     String?
+  hubtelPayoutReference   String?             @map("hubtel_payout_reference")
+  hubtelInvoiceReference  String?             @map("hubtel_invoice_reference")
+  paystackPayoutReference String?             @map("paystack_payout_reference")
+  paystackRecipientCode   String?             @map("paystack_recipient_code")
+  payoutGateway           String?             @map("payout_gateway") // 'hubtel', 'paystack'
+  releasedAt              DateTime?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  transactions            EscrowTransaction[]
 
   @@index([customerId])
   @@index([salonId])
@@ -1194,7 +1196,7 @@ model SponsoredSalon {
 model SponsorshipPackage {
   id            String   @id @default(uuid())
   packageName   String
-  durationType  String   // 'hours', 'days', 'months', 'years'
+  durationType  String // 'hours', 'days', 'months', 'years'
   durationValue Int
   priceGhs      Decimal  @db.Decimal(10, 2)
   priorityLevel Int      @default(1)
@@ -1206,15 +1208,15 @@ model SponsorshipPackage {
 }
 
 model LoyaltyAccount {
-  id             String              @id @default(cuid())
-  customerId     String              @unique
-  customer       User                @relation("CustomerLoyalty", fields: [customerId], references: [id], onDelete: Cascade)
-  points         Int                 @default(0)
-  lifetimePoints Int                 @default(0)
-  tier           String              @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
+  id             String               @id @default(cuid())
+  customerId     String               @unique
+  customer       User                 @relation("CustomerLoyalty", fields: [customerId], references: [id], onDelete: Cascade)
+  points         Int                  @default(0)
+  lifetimePoints Int                  @default(0)
+  tier           String               @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
   transactions   LoyaltyTransaction[]
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
   @@index([customerId])
   @@map("loyalty_accounts")
@@ -1224,7 +1226,7 @@ model LoyaltyTransaction {
   id        String         @id @default(cuid())
   accountId String
   account   LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  type      String         // EARN, REDEEM, BONUS, REFERRAL
+  type      String // EARN, REDEEM, BONUS, REFERRAL
   points    Int
   reason    String
   bookingId String?
@@ -1305,10 +1307,10 @@ model SalonSubscription {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
-  salon    Salon             @relation("SalonSubscriptions", fields: [salonId], references: [id])
-  plan     SubscriptionPlan  @relation(fields: [planId], references: [id])
+  salon    Salon                 @relation("SalonSubscriptions", fields: [salonId], references: [id])
+  plan     SubscriptionPlan      @relation(fields: [planId], references: [id])
   invoices SubscriptionInvoice[]
-  salons   Salon[]           @relation("ActiveSubscription")
+  salons   Salon[]               @relation("ActiveSubscription")
 
   @@index([salonId])
   @@index([planId])
@@ -1339,16 +1341,16 @@ model SubscriptionInvoice {
 }
 
 model FeatureUsage {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   salonId     String
-  featureName String   @db.VarChar(50)
-  usageCount  Int      @default(0)
+  featureName String    @db.VarChar(50)
+  usageCount  Int       @default(0)
   usageLimit  Int?
   periodStart DateTime
   periodEnd   DateTime
   resetAt     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   salon Salon @relation(fields: [salonId], references: [id])
 
@@ -1364,22 +1366,22 @@ model FeatureUsage {
 // emails HIGH/CRITICAL events.
 // ------------------------------------------------------------
 model SecurityEvent {
-  id          String   @id @default(cuid())
-  eventType   String   @map("event_type") // e.g. BRUTE_FORCE_LOGIN, OTP_BOMB, ROLE_ESCALATION, ...
-  severity    String   // LOW | MEDIUM | HIGH | CRITICAL
-  source      String   @default("app") // app | rate-limit | webhook | middleware | scheduler
-  ipAddress   String?  @map("ip_address")
-  userId      String?  @map("user_id")
-  userEmail   String?  @map("user_email")
-  userAgent   String?  @map("user_agent")
-  endpoint    String?
-  method      String?
-  message     String   @db.Text
-  details     Json?
-  resolved    Boolean  @default(false)
-  resolvedAt  DateTime? @map("resolved_at")
-  resolvedBy  String?  @map("resolved_by")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String    @id @default(cuid())
+  eventType  String    @map("event_type") // e.g. BRUTE_FORCE_LOGIN, OTP_BOMB, ROLE_ESCALATION, ...
+  severity   String // LOW | MEDIUM | HIGH | CRITICAL
+  source     String    @default("app") // app | rate-limit | webhook | middleware | scheduler
+  ipAddress  String?   @map("ip_address")
+  userId     String?   @map("user_id")
+  userEmail  String?   @map("user_email")
+  userAgent  String?   @map("user_agent")
+  endpoint   String?
+  method     String?
+  message    String    @db.Text
+  details    Json?
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime? @map("resolved_at")
+  resolvedBy String?   @map("resolved_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   @@index([createdAt])
   @@index([severity, resolved])
@@ -1390,18 +1392,18 @@ model SecurityEvent {
 
 // Agent settings for support dashboard
 model AgentSettings {
-  id                   String        @id @default(uuid())
-  userId               String        @unique @map("user_id")
-  emailNotifications   Boolean       @default(true) @map("email_notifications")
-  soundNotifications   Boolean       @default(true) @map("sound_notifications")
-  desktopNotifications Boolean       @default(true) @map("desktop_notifications")
-  status               AgentStatus   @default(ONLINE)
-  awayMessage          String?       @map("away_message") @db.VarChar(500)
-  autoAssign           Boolean       @default(true) @map("auto_assign")
-  createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt @map("updated_at")
+  id                   String      @id @default(uuid())
+  userId               String      @unique @map("user_id")
+  emailNotifications   Boolean     @default(true) @map("email_notifications")
+  soundNotifications   Boolean     @default(true) @map("sound_notifications")
+  desktopNotifications Boolean     @default(true) @map("desktop_notifications")
+  status               AgentStatus @default(ONLINE)
+  awayMessage          String?     @map("away_message") @db.VarChar(500)
+  autoAssign           Boolean     @default(true) @map("auto_assign")
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
 
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -1416,16 +1418,16 @@ enum AgentStatus {
 
 // FAQ Bot for automated responses
 model FAQBot {
-  id          String   @id @default(uuid())
-  keyword     String   @unique
-  patterns    String[]
-  response    String   @db.Text
-  isActive    Boolean  @default(true) @map("is_active")
-  priority    Int      @default(0)
-  category    String   @default("general")
-  usageCount  Int      @default(0) @map("usage_count")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  keyword    String   @unique
+  patterns   String[]
+  response   String   @db.Text
+  isActive   Boolean  @default(true) @map("is_active")
+  priority   Int      @default(0)
+  category   String   @default("general")
+  usageCount Int      @default(0) @map("usage_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@index([isActive, priority])
   @@index([category])

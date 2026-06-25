@@ -36,10 +36,11 @@ export async function calculateRefund(
   },
   cancellationTime: Date
 ): Promise<RefundCalculation> {
-  // Calculate the booking datetime
-  const bookingDateTime = new Date(booking.date);
+  // Calculate the booking datetime (UTC-safe to avoid timezone shifts)
+  const dateStr = booking.date.toISOString().split('T')[0];
+  const [year, month, day] = dateStr.split('-').map(Number);
   const [hours, minutes] = booking.startTime.split(':').map(Number);
-  bookingDateTime.setHours(hours, minutes, 0, 0);
+  const bookingDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
 
   // Calculate hours notice (time between cancellation and appointment)
   const msDiff = bookingDateTime.getTime() - cancellationTime.getTime();
@@ -607,10 +608,11 @@ export async function rescheduleBooking(
     throw new Error('Only pending or confirmed bookings can be rescheduled');
   }
 
-  // Calculate hours before appointment
-  const bookingDateTime = new Date(booking.date);
+  // Calculate hours before appointment (UTC-safe to avoid timezone shifts)
+  const bookingDateStr = booking.date.toISOString().split('T')[0];
+  const [year, month, day] = bookingDateStr.split('-').map(Number);
   const [hours, minutes] = booking.startTime.split(':').map(Number);
-  bookingDateTime.setHours(hours, minutes, 0, 0);
+  const bookingDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
 
   const now = new Date();
   const hoursBeforeAppointment = (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);

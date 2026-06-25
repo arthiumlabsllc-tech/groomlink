@@ -56,7 +56,7 @@ export async function recordNoShow(params: RecordNoShowParams): Promise<NoShowRe
     // Verify booking exists and is confirmed
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { customer: true },
+      include: { customer: true, salon: true },
     });
 
     if (!booking) {
@@ -65,6 +65,13 @@ export async function recordNoShow(params: RecordNoShowParams): Promise<NoShowRe
 
     if (booking.status !== BookingStatus.CONFIRMED) {
       throw new Error(`Cannot mark booking as no-show: status is ${booking.status}`);
+    }
+
+    // Verify salon ownership: only the salon owner or ADMIN can mark no-show
+    if (markedByRole !== 'ADMIN') {
+      if (booking.salon?.ownerId !== markedById) {
+        throw new Error('You can only mark no-show for bookings at your salon');
+      }
     }
 
     // Check for existing no-show record

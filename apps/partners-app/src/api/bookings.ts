@@ -124,6 +124,12 @@ export const bookingsApi = {
     return response.data.data;
   },
 
+  // Mark entire booking as no-show (customer-level)
+  markNoShow: async (bookingId: string): Promise<any> => {
+    const response = await apiClient.post(`/bookings/${bookingId}/no-show`);
+    return response.data.data;
+  },
+
   // One-Click Refund (provider initiates refund to customer's original payment method)
   oneClickRefund: async (bookingId: string): Promise<{
     success: boolean;

@@ -37,6 +37,7 @@ const STATUS_FILTERS: { value: BookingStatus | 'ALL'; label: string; color: stri
   { value: 'CONFIRMED', label: 'Confirmed', color: '#006B3F' },
   { value: 'COMPLETED', label: 'Completed', color: '#10B981' },
   { value: 'CANCELLED', label: 'Cancelled', color: '#EF4444' },
+  { value: 'NO_SHOW', label: 'No-Show', color: '#F59E0B' },
 ];
 
 export default function BookingsScreen() {
@@ -123,6 +124,8 @@ export default function BookingsScreen() {
         return '#10B981';
       case 'CANCELLED':
         return '#EF4444';
+      case 'NO_SHOW':
+        return '#F59E0B';
       default:
         return '#9CA3AF';
     }

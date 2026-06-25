@@ -1,7 +1,9 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { AppState } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNotificationStore } from '../store/notificationStore';
 
 const SOCKET_URL = 'https://groomlinkgh.com';
@@ -19,6 +21,7 @@ export function useSocket(options: UseSocketOptions = {}) {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const queryClient = useQueryClient();
 
   // Store callbacks in refs to avoid recreating the socket on every render
   const callbacksRef = useRef(options);
@@ -96,6 +99,80 @@ export function useSocket(options: UseSocketOptions = {}) {
 
       socketRef.current.on('booking:rejected', (data) => {
         callbacksRef.current.onBookingRejected?.(data);
+      });
+
+      // ── Booking lifecycle listeners ──────────────────────────────
+
+      // Booking cancelled (emitted to user room by backend)
+      socketRef.current.on('booking:cancelled', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Booking Cancelled',
+              body: data.message || 'Your booking has been cancelled.',
+              data: { type: 'booking_cancelled', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show cancellation notification:', e));
+        }
+      });
+
+      // Booking completed (emitted to salon room by backend)
+      socketRef.current.on('booking:completed', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Service Completed',
+              body: data.message || 'Your service has been completed. Please confirm and rate your experience.',
+              data: { type: 'booking_completed', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show completion notification:', e));
+        }
+      });
+
+      // Booking check-in (emitted to salon room by backend)
+      socketRef.current.on('booking:checkin', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Checked In',
+              body: data.message || 'You have been checked in. Your service will begin shortly.',
+              data: { type: 'booking_checkin', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show check-in notification:', e));
+        }
+      });
+
+      // Booking no-show (emitted to salon room by backend scheduler)
+      socketRef.current.on('booking:noShow', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'No-Show Recorded',
+              body: data.message || 'You were marked as a no-show. This affects your account standing.',
+              data: { type: 'booking_no_show', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show no-show notification:', e));
+        }
       });
     } catch (error) {
       console.error('Failed to connect socket:', error);

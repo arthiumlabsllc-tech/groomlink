@@ -40,6 +40,7 @@ const NOTIFICATION_CONFIG: Record<
   booking_new: { icon: 'calendar-plus', color: '#006B3F' },
   booking_checkin: { icon: 'account-check', color: '#2196F3' },
   booking_completed: { icon: 'check-circle', color: '#FFB300' },
+  booking_cancelled: { icon: 'calendar-remove', color: '#F44336' },
 };
 
 export default function NotificationsListScreen() {

@@ -11,6 +11,8 @@ import { startAutoCompletionJob } from './autoComplete';
 import { checkExpiredSponsorships } from '../services/sponsorship.service';
 import { cleanupOrphanedPayments } from '../services/payment.service';
 import { initSubscriptionJobs } from './subscription.jobs';
+import { getPolicyValue } from '../services/escrow.service';
+import { checkAndApplyRestriction } from '../services/noshow.service';
 
 /**
  * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
@@ -29,7 +31,7 @@ import { initSubscriptionJobs } from './subscription.jobs';
 export function initScheduler(): void {
   logger.info('Initializing background job scheduler...');
 
-  // Job 1: Appointment reminders - every 5 minutes
+  // Job 1: Appointment reminders (24h + 2h graduated) - every 5 minutes
   cron.schedule('*/5 * * * *', async () => {
     await sendAppointmentReminders();
   });
@@ -70,15 +72,105 @@ export function initScheduler(): void {
   // Job 8: Initialize subscription jobs (reminders and expiration handling)
   initSubscriptionJobs();
 
-  logger.info('Background job scheduler initialized with 8 jobs');
+  // Job 9: Auto no-show detection + grace-period reminders - every 15 minutes
+  cron.schedule('*/15 * * * *', async () => {
+    await detectAndHandleNoShows();
+  });
+
+  logger.info('Background job scheduler initialized with 9 jobs');
 }
 
 /**
- * Send SMS reminders for appointments starting within 2 hours
+ * Send graduated SMS + push reminders for upcoming appointments:
+ *  - 24-hour reminder (one day ahead)
+ *  - 2-hour  reminder (urgent, last call)
+ *
+ * TIMEZONE NOTE: The `date` field is midnight UTC with no time component.
+ * We query a broad date range and filter in-memory using the actual
+ * appointment datetime (date + startTime) to avoid false positives.
  */
 async function sendAppointmentReminders(): Promise<void> {
   try {
     const now = new Date();
+
+    // ─── 24-hour reminder ────────────────────────────────────────────────────
+    // Window: appointments starting between [now + 24h, now + 25h]
+    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const in25h = new Date(now.getTime() + 25 * 60 * 60 * 1000);
+
+    // Broad date range: today through day-after-tomorrow (catches all candidates)
+    const startOfToday = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const endOfRange  = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + 3));
+
+    const candidates24h = await prisma.booking.findMany({
+      where: {
+        status: BookingStatus.CONFIRMED,
+        date: {
+          gte: startOfToday,
+          lt: endOfRange,
+        },
+        reminderSent24h: false,
+      },
+      include: {
+        customer: true,
+        salon: true,
+        service: true,
+      },
+    });
+
+    // Filter in-memory using actual appointment datetime (date + startTime)
+    const eligible24h = candidates24h.filter((b) => {
+      const dateStr = b.date.toISOString().split('T')[0];
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hours, minutes] = b.startTime.split(':').map(Number);
+      const apptTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+      return apptTime >= in24h && apptTime <= in25h;
+    });
+
+    for (const booking of eligible24h) {
+      try {
+        const salonName = booking.salon.businessName;
+        const serviceName = booking.service?.name || 'your appointment';
+
+        // SMS to customer
+        if (booking.customer.phoneNumber) {
+          await sendReminderSMS(
+            booking.customer.phoneNumber,
+            salonName,
+            booking.startTime
+          ).catch((err) =>
+            logger.error('Failed to send 24h SMS reminder', { err, bookingId: booking.id })
+          );
+        }
+
+        // Push to customer
+        pushService
+          .sendPushToUser(booking.customer.id, {
+            title: '📅 Appointment Tomorrow',
+            body: `Reminder: Your appointment at ${salonName} for ${serviceName} is tomorrow at ${booking.startTime}.`,
+            data: { type: 'appointment_reminder_24h', bookingId: booking.id },
+          })
+          .catch((err) =>
+            logger.error('Failed to send 24h push reminder', { err, bookingId: booking.id })
+          );
+
+        // Mark flag
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: { reminderSent24h: true },
+        });
+
+        logger.info(`24h reminder sent for booking ${booking.id}`);
+      } catch (error) {
+        logger.error(`Failed to send 24h reminder for booking ${booking.id}:`, error);
+      }
+    }
+
+    if (eligible24h.length > 0) {
+      logger.info(`Processed ${eligible24h.length} 24-hour appointment reminders`);
+    }
+
+    // ─── 2-hour reminder (urgent) ─────────────────────────────────────────────
     const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
     // Find confirmed bookings starting within 2 hours that haven't had reminders sent
@@ -152,15 +244,16 @@ async function sendAppointmentReminders(): Promise<void> {
         if (reminderPromises.length > 0) {
           await Promise.all(reminderPromises);
 
-          // Send push notification to customer
-          pushService.sendPushToUser(
-            booking.customer.id,
-            {
-              title: '⏰ Appointment Reminder',
-              body: `Your appointment at ${booking.salon.businessName}${booking.service ? ` for ${booking.service.name}` : ''} is in about 2 hours (${booking.startTime}). See you soon!`,
+          // Send push notification to customer (urgent wording)
+          pushService
+            .sendPushToUser(booking.customer.id, {
+              title: '⏰ Appointment in 2 Hours',
+              body: `Heads up! Your appointment at ${booking.salon.businessName} is in about 2 hours (${booking.startTime}). Please arrive on time to avoid a no-show.`,
               data: { type: 'appointment_reminder', bookingId: booking.id },
-            }
-          ).catch((err) => logger.error('Failed to send appointment reminder push', { err, bookingId: booking.id }));
+            })
+            .catch((err) =>
+              logger.error('Failed to send appointment reminder push', { err, bookingId: booking.id })
+            );
 
           // Mark reminder as sent
           await prisma.booking.update({
@@ -169,19 +262,215 @@ async function sendAppointmentReminders(): Promise<void> {
           });
 
           logger.info(
-            `Reminder sent for booking ${booking.id} (${reminderPromises.length} recipient(s))`
+            `2h reminder sent for booking ${booking.id} (${reminderPromises.length} recipient(s))`
           );
         }
       } catch (error) {
-        logger.error(`Failed to send reminder for booking ${booking.id}:`, error);
+        logger.error(`Failed to send 2h reminder for booking ${booking.id}:`, error);
       }
     }
 
     if (bookings.length > 0) {
-      logger.info(`Processed ${bookings.length} appointment reminders`);
+      logger.info(`Processed ${bookings.length} 2-hour appointment reminders`);
     }
   } catch (error) {
     logger.error('Error in sendAppointmentReminders job:', error);
+  }
+}
+
+/**
+ * Detect overdue CONFIRMED bookings and auto-transition them to NO_SHOW.
+ *
+ * Flow per candidate booking:
+ *  1. Compute minutes past the appointment end time.
+ *  2. If < 30 min past → skip (not yet eligible).
+ *  3. If >= graceMinutes (from PlatformPolicy `auto_noshow_grace_minutes`):
+ *       → Atomically (inside $transaction):
+ *           - Re-read booking (optimistic re-check prevents race conditions)
+ *           - Set status = NO_SHOW, noShowFlag = true
+ *           - Create NoShowRecord
+ *           - Increment User.noShowCount
+ *       → Outside transaction:
+ *           - Call checkAndApplyRestriction() (may restrict account)
+ *           - Send push notifications to salon owner + customer
+ *           - Emit socket event
+ *  4. If within grace period and reminder not yet sent:
+ *       → Send a one-time push reminder to the salon owner
+ *       → Set noshowReminderSent = true
+ */
+async function detectAndHandleNoShows(): Promise<void> {
+  try {
+    const now = new Date();
+
+    // Candidates: CONFIRMED, not already flagged, appointment date is today or earlier
+    const candidates = await prisma.booking.findMany({
+      where: {
+        status: BookingStatus.CONFIRMED,
+        noShowFlag: false,
+        date: {
+          lte: now,
+        },
+      },
+      include: {
+        salon: { include: { owner: true } },
+        customer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    if (candidates.length === 0) return;
+
+    // Read policy values (with safe defaults)
+    let graceMinutes: number;
+    try {
+      const val = await getPolicyValue('auto_noshow_grace_minutes');
+      graceMinutes = parseInt(val, 10) || 60;
+    } catch {
+      graceMinutes = 60;
+    }
+
+    for (const booking of candidates) {
+      // Build the appointment end datetime from date + endTime
+      const dateStr = booking.date.toISOString().split('T')[0];
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [endHours, endMinutes] = booking.endTime.split(':').map(Number);
+      const appointmentEnd = new Date(Date.UTC(year, month - 1, day, endHours, endMinutes));
+      const minutesPast = Math.floor((now.getTime() - appointmentEnd.getTime()) / (60 * 1000));
+
+      // Not yet eligible — appointment ended less than 30 minutes ago
+      if (minutesPast < 30) continue;
+
+      if (minutesPast >= graceMinutes) {
+        // ── AUTO-TRANSITION TO NO_SHOW ──────────────────────────────────────────
+        try {
+          await prisma.$transaction(async (tx) => {
+            // Optimistic re-check inside transaction (prevents race condition)
+            const freshBooking = await tx.booking.findUnique({
+              where: { id: booking.id },
+              include: { customer: true },
+            });
+
+            if (
+              !freshBooking ||
+              freshBooking.status !== BookingStatus.CONFIRMED ||
+              freshBooking.noShowFlag
+            ) {
+              return; // Already handled by another process or manually
+            }
+
+            // Mark booking as no-show
+            await tx.booking.update({
+              where: { id: booking.id },
+              data: { status: BookingStatus.NO_SHOW, noShowFlag: true },
+            });
+
+            // Create NoShowRecord (system-initiated)
+            await tx.noShowRecord.create({
+              data: {
+                bookingId: booking.id,
+                userId: booking.customerId,
+                markedById: 'system',
+                markedByRole: 'SYSTEM',
+                markedAt: new Date(),
+                disputed: false,
+              },
+            });
+
+            // Increment customer's no-show count
+            await tx.user.update({
+              where: { id: booking.customerId },
+              data: { noShowCount: { increment: 1 } },
+            });
+          });
+
+          // Apply account restriction if threshold is reached (outside transaction)
+          try {
+            await checkAndApplyRestriction(booking.customerId);
+          } catch (restrictionErr) {
+            logger.error(
+              `Failed to check/apply restriction for user ${booking.customerId}:`,
+              restrictionErr
+            );
+          }
+
+          // ── Notifications (outside transaction) ─────────────────────────────
+          const customerName =
+            booking.customer
+              ? `${booking.customer.firstName} ${booking.customer.lastName}`.trim()
+              : 'Customer';
+          const salonName = booking.salon?.businessName || 'the salon';
+
+          // Push to salon owner
+          if (booking.salon?.owner) {
+            pushService
+              .sendPushToUser(booking.salon.owner.id, {
+                title: 'Auto No-Show',
+                body: `${customerName} did not check in for their ${booking.endTime} appointment. The booking has been auto-marked as no-show.`,
+                data: { type: 'booking_no_show', bookingId: booking.id },
+              })
+              .catch(() => {});
+          }
+
+          // Push to customer
+          pushService
+            .sendPushToUser(booking.customerId, {
+              title: 'No-Show Recorded',
+              body: `You were marked as a no-show for your appointment at ${salonName}. This affects your account standing. You can dispute this in the app.`,
+              data: { type: 'booking_no_show', bookingId: booking.id },
+            })
+            .catch(() => {});
+
+          // Emit socket event to salon room
+          try {
+            const io = getIO();
+            io.to(`salon:${booking.salonId}`).emit('booking:noShow', {
+              bookingId: booking.id,
+              message: 'Auto no-show: customer did not check in',
+            });
+          } catch (socketErr) {
+            logger.error('Failed to emit booking:noShow socket event:', socketErr);
+          }
+
+          logger.info(`Auto no-show: Booking ${booking.id} marked as no-show`);
+        } catch (err) {
+          logger.error(`Auto no-show failed for booking ${booking.id}:`, err);
+        }
+      } else if (!booking.noshowReminderSent) {
+        // ── WITHIN GRACE PERIOD — send one-time reminder to partner ─────────────
+        try {
+          const remainingMinutes = graceMinutes - minutesPast;
+
+          if (booking.salon?.owner) {
+            const customerName =
+              booking.customer
+                ? `${booking.customer.firstName} ${booking.customer.lastName}`.trim()
+                : 'Customer';
+
+            pushService
+              .sendPushToUser(booking.salon.owner.id, {
+                title: 'Customer Not Checked In',
+                body: `${customerName}'s appointment time has passed. Has the customer arrived? Booking will auto-mark as no-show in ${remainingMinutes} minutes.`,
+                data: { type: 'noshow_grace_reminder', bookingId: booking.id },
+              })
+              .catch(() => {});
+          }
+
+          await prisma.booking.update({
+            where: { id: booking.id },
+            data: { noshowReminderSent: true },
+          });
+        } catch (err) {
+          logger.error(`No-show grace reminder failed for booking ${booking.id}:`, err);
+        }
+      }
+    }
+  } catch (error) {
+    logger.error('Error in detectAndHandleNoShows job:', error);
   }
 }
 

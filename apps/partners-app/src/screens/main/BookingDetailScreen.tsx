@@ -152,6 +152,8 @@ export default function BookingDetailScreen() {
         return '#10B981';
       case 'CANCELLED':
         return '#EF4444';
+      case 'NO_SHOW':
+        return '#F59E0B';
       default:
         return '#9CA3AF';
     }
@@ -190,6 +192,30 @@ export default function BookingDetailScreen() {
           text: 'Mark Complete',
           style: 'default',
           onPress: () => completeMutation.mutate(),
+        },
+      ]
+    );
+  };
+
+  const handleMarkNoShow = () => {
+    Alert.alert(
+      'Mark as No-Show',
+      'Mark this customer as a no-show? This will affect their account standing and result in zero refund.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark No-Show',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await bookingsApi.markNoShow(booking!.id);
+              queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+              queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+              Alert.alert('Success', 'Customer marked as no-show');
+            } catch (error: any) {
+              Alert.alert('Error', error?.response?.data?.message || 'Failed to mark no-show');
+            }
+          },
         },
       ]
     );
@@ -379,6 +405,18 @@ export default function BookingDetailScreen() {
                 </Text>
               </View>
             )}
+            {/* Mark as No-Show Button */}
+            <Button
+              mode="outlined"
+              onPress={handleMarkNoShow}
+              style={styles.noShowButton}
+              textColor="#F59E0B"
+              contentStyle={styles.buttonContent}
+              theme={{ roundness: 12 }}
+              icon="account-cancel"
+            >
+              Mark as No-Show
+            </Button>
             <Button
               mode="outlined"
               onPress={() => setCancelDialogVisible(true)}
@@ -389,6 +427,24 @@ export default function BookingDetailScreen() {
             >
               Cancel Booking
             </Button>
+          </View>
+        );
+      case 'NO_SHOW':
+        return (
+          <View style={styles.noShowSection}>
+            <View style={[styles.readOnlyNotice, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="warning" size={24} color="#F59E0B" />
+              <Text variant="bodyMedium" style={[styles.readOnlyText, { color: '#F59E0B' }]}>
+                Customer was marked as no-show
+              </Text>
+            </View>
+            {booking.noShowFlag && (
+              <View style={styles.noShowDetails}>
+                <Text style={styles.noShowDetailText}>
+                  This booking has been flagged as a no-show. No refund will be issued.
+                </Text>
+              </View>
+            )}
           </View>
         );
       case 'COMPLETED':
@@ -1447,6 +1503,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 12,
     color: '#7C3AED',
     marginTop: 12,
+  },
+  noShowButton: {
+    borderRadius: 12,
+    borderColor: '#F59E0B',
+  },
+  noShowSection: {
+    marginTop: 16,
+  },
+  noShowDetails: {
+    marginTop: 12,
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+  },
+  noShowDetailText: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    lineHeight: 20,
   },
   // Completion styles
   completionSection: {

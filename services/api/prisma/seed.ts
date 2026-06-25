@@ -769,7 +769,9 @@ async function main() {
     { policyName: 'no_show_restriction_threshold', policyValue: '3', description: 'Number of no-shows before account restriction' },
     { policyName: 'no_show_restriction_days', policyValue: '30', description: 'Days of account restriction after exceeding no-show threshold' },
     { policyName: 'free_reschedule_hours', policyValue: '12', description: 'Hours before booking when free rescheduling is allowed' },
-    { policyName: 'provider_cancellation_penalty_amount', policyValue: '50', description: 'Penalty amount for provider cancellations (GHS)' },
+    { policyName: 'provider_cancel_penalty_days', policyValue: '7', description: 'Number of days visibility penalty for provider cancellations' },
+    { policyName: 'provider_cancel_search_penalty', policyValue: '0.5', description: 'Search rank penalty amount for provider cancellations' },
+    { policyName: 'auto_noshow_grace_minutes', policyValue: '60', description: 'Minutes after appointment end time before auto-marking as no-show' },
   ];
 
   for (const policy of policies) {

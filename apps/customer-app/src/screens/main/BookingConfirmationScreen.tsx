@@ -21,7 +21,7 @@ import { bookingApi } from '../../api/booking';
 import { MainStackParamList } from '../../types/navigation';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
-import { formatBookingDate } from '../../utils/dateUtils';
+import { formatBookingDate, buildAppointmentDateTime } from '../../utils/dateUtils';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -50,6 +50,18 @@ export default function BookingConfirmationScreen() {
     queryKey: ['booking', bookingId],
     queryFn: () => bookingApi.getBookingById(bookingId),
   });
+
+  // Check if appointment is within 48 hours from now
+  const isWithin48Hours = useMemo(() => {
+    if (!booking) return false;
+    const apptDateTime = buildAppointmentDateTime(
+      booking.scheduledDate || (booking as any).date || '',
+      booking.scheduledTime || (booking as any).startTime,
+    );
+    const now = new Date();
+    const hoursUntil = (apptDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursUntil > 0 && hoursUntil < 48;
+  }, [booking]);
 
   const formatDate = (dateString: string) => {
     // Timezone-safe: parse components explicitly to avoid UTC-shift bug
@@ -396,6 +408,25 @@ export default function BookingConfirmationScreen() {
             </View>
           </Card.Content>
         </Card>
+
+        {/* 48-Hour Cancellation Policy Warning */}
+        {isWithin48Hours && (
+          <Card style={styles.warningCard}>
+            <Card.Content>
+              <View style={styles.warningHeader}>
+                <View style={styles.warningIconContainer}>
+                  <Ionicons name="warning" size={22} color="#B45309" />
+                </View>
+                <Text variant="titleSmall" style={styles.warningTitle}>
+                  Cancellation Policy Notice
+                </Text>
+              </View>
+              <Text variant="bodySmall" style={styles.warningMessage}>
+                This appointment is within the 48-hour free cancellation window. If you need to cancel, standard cancellation fees will apply based on how far in advance you cancel.
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
       </ScrollView>
 
       {/* Action Buttons */}
@@ -752,5 +783,37 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   buttonContent: {
     paddingVertical: 10,
+  },
+  // 48-Hour Warning Banner
+  warningCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#F59E0B40',
+  },
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  warningIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F59E0B20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  warningTitle: {
+    fontWeight: '700',
+    color: '#B45309',
+    flex: 1,
+  },
+  warningMessage: {
+    color: '#92400E',
+    lineHeight: 18,
+    paddingLeft: 46,
   },
 });

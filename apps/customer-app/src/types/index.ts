@@ -91,7 +91,7 @@ export interface Worker {
 
 export interface Booking {
   id: string;
-  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
   scheduledDate: string;
   scheduledTime: string;
   // Fallback fields - API may return original Prisma field names

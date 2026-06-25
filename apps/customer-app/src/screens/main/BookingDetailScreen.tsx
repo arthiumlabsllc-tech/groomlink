@@ -56,6 +56,8 @@ export default function BookingDetailScreen() {
   const [groupMembersExpanded, setGroupMembersExpanded] = useState(true);
   const [disputeModalVisible, setDisputeModalVisible] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
+  const [noShowDisputeModalVisible, setNoShowDisputeModalVisible] = useState(false);
+  const [noShowDisputeReason, setNoShowDisputeReason] = useState('');
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -171,6 +173,23 @@ export default function BookingDetailScreen() {
             onPress: () => navigation.goBack(),
           },
         ]
+      );
+    },
+    onError: (error: any) => {
+      Alert.alert('Dispute Failed', error.response?.data?.message || 'Please try again');
+    },
+  });
+
+  const disputeNoShowMutation = useMutation({
+    mutationFn: (reason: string) => bookingApi.disputeNoShow(bookingId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+      setNoShowDisputeModalVisible(false);
+      setNoShowDisputeReason('');
+      Alert.alert(
+        'Dispute Submitted',
+        'Your no-show dispute has been submitted. Our team will review your case and contact you within 24 hours.',
       );
     },
     onError: (error: any) => {
@@ -297,6 +316,18 @@ export default function BookingDetailScreen() {
     raiseDisputeMutation.mutate(disputeReason);
   };
 
+  const handleDisputeNoShow = () => {
+    setNoShowDisputeModalVisible(true);
+  };
+
+  const handleSubmitNoShowDispute = () => {
+    if (!noShowDisputeReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for the dispute');
+      return;
+    }
+    disputeNoShowMutation.mutate(noShowDisputeReason);
+  };
+
   const handleShowQRCode = () => {
     navigation.navigate('BookingQRCode', { bookingId });
   };
@@ -367,6 +398,37 @@ export default function BookingDetailScreen() {
             {STATUS_LABELS[booking.status] || booking.status}
           </Text>
         </View>
+
+        {/* No-Show Status Card */}
+        {booking.status === 'NO_SHOW' && (
+          <Card style={styles.noShowCard}>
+            <Card.Content>
+              <View style={styles.noShowHeader}>
+                <View style={styles.noShowIconContainer}>
+                  <Ionicons name="alert-circle" size={28} color="#fff" />
+                </View>
+                <View style={styles.noShowTitleContainer}>
+                  <Text variant="titleSmall" style={styles.noShowTitle}>No-Show Recorded</Text>
+                  <Text variant="bodySmall" style={styles.noShowSubtitle}>
+                    You were marked as a no-show for this appointment.
+                  </Text>
+                </View>
+              </View>
+              <Text variant="bodySmall" style={styles.noShowMessage}>
+                This affects your account standing. Repeated no-shows may result in account restrictions.
+              </Text>
+              {!booking.disputeRaised && (
+                <TouchableOpacity
+                  style={styles.disputeNoShowButton}
+                  onPress={handleDisputeNoShow}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.accentRed} />
+                  <Text style={styles.disputeNoShowButtonText}>Dispute This</Text>
+                </TouchableOpacity>
+              )}
+            </Card.Content>
+          </Card>
+        )}
 
         {/* Queue Position Card - for confirmed bookings */}
         {booking.status === 'CONFIRMED' && queuePositionData && (
@@ -721,16 +783,16 @@ export default function BookingDetailScreen() {
             )}
 
             {/* Cancellation Deadline */}
-            {booking.cancellationDeadline && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
-              <View style={styles.deadlineCard}>
+            {booking.cancellationDeadline && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && booking.status !== 'NO_SHOW' && (
+              <View style={[styles.deadlineCard, new Date(booking.cancellationDeadline) <= new Date() && styles.deadlineCardExpired]}>
                 <View style={styles.deadlineHeader}>
                   <Ionicons 
-                    name={new Date(booking.cancellationDeadline) > new Date() ? "alert-circle-outline" : "close-circle-outline"} 
+                    name={new Date(booking.cancellationDeadline) > new Date() ? "alert-circle-outline" : "information-circle-outline"} 
                     size={16} 
                     color={new Date(booking.cancellationDeadline) > new Date() ? COLORS.accentGold : COLORS.accentRed} 
                   />
-                  <Text variant="bodySmall" style={styles.deadlineTitle}>
-                    {new Date(booking.cancellationDeadline) > new Date() ? 'Cancellation Deadline' : 'Cancellation Window Closed'}
+                  <Text variant="bodySmall" style={[styles.deadlineTitle, new Date(booking.cancellationDeadline) <= new Date() && { color: COLORS.accentRed }]}>
+                    {new Date(booking.cancellationDeadline) > new Date() ? 'Cancellation Deadline' : 'Free Cancellation Expired'}
                   </Text>
                 </View>
                 {new Date(booking.cancellationDeadline) > new Date() ? (
@@ -749,9 +811,16 @@ export default function BookingDetailScreen() {
                     )}
                   </>
                 ) : (
-                  <Text variant="bodySmall" style={[styles.refundHint, { color: COLORS.accentRed }]}>
-                    Free cancellation period has ended
-                  </Text>
+                  <>
+                    <Text variant="bodySmall" style={styles.deadlineExpiredMessage}>
+                      Free cancellation has expired. You can still cancel but refund will be based on the cancellation policy.
+                    </Text>
+                    {canCancel && (
+                      <Text variant="bodySmall" style={styles.deadlineTapHint}>
+                        Tap Cancel to see your refund options
+                      </Text>
+                    )}
+                  </>
                 )}
               </View>
             )}
@@ -1182,6 +1251,69 @@ export default function BookingDetailScreen() {
         </View>
       </Modal>
 
+      {/* No-Show Dispute Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={noShowDisputeModalVisible}
+        onRequestClose={() => setNoShowDisputeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text variant="titleLarge" style={styles.modalTitle}>Dispute No-Show</Text>
+              <TouchableOpacity 
+                onPress={() => setNoShowDisputeModalVisible(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.disputeModalContent}>
+              <View style={[styles.disputeIconContainer, { backgroundColor: `${COLORS.accentRed}15` }]}>
+                <Ionicons name="account-alert" size={48} color={COLORS.accentRed} />
+              </View>
+              
+              <Text variant="titleMedium" style={styles.disputeModalTitle}>
+                Dispute No-Show Marking
+              </Text>
+              
+              <Text variant="bodySmall" style={styles.disputeModalDescription}>
+                If you believe you were incorrectly marked as a no-show, please explain your situation. Our support team will review your case and contact you within 24 hours.
+              </Text>
+
+              <Text variant="bodySmall" style={styles.reasonLabel}>
+                Reason for dispute *
+              </Text>
+              <TextInput
+                style={styles.reasonInput}
+                multiline
+                numberOfLines={4}
+                placeholder="e.g., I arrived on time, I was not notified of the appointment, there was a misunderstanding..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={noShowDisputeReason}
+                onChangeText={setNoShowDisputeReason}
+              />
+
+              <Button
+                mode="contained"
+                onPress={handleSubmitNoShowDispute}
+                loading={disputeNoShowMutation.isPending}
+                disabled={disputeNoShowMutation.isPending}
+                style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
+                contentStyle={styles.confirmCancelButtonContent}
+              >
+                {disputeNoShowMutation.isPending 
+                  ? 'Submitting...' 
+                  : 'Submit Dispute'
+                }
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -1192,6 +1324,7 @@ const STATUS_COLORS: Record<string, string> = {
   IN_PROGRESS: '#2196F3',
   COMPLETED: '#6B7280',
   CANCELLED: '#CE1126',
+  NO_SHOW: '#CE1126',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -1200,6 +1333,7 @@ const STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   CANCELLED: 'Cancelled',
+  NO_SHOW: 'No-Show',
 };
 
 const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.create({
@@ -1578,6 +1712,10 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     borderWidth: 1,
     borderColor: `${COLORS.accentGold}30`,
   },
+  deadlineCardExpired: {
+    backgroundColor: `${COLORS.accentRed}08`,
+    borderColor: `${COLORS.accentRed}25`,
+  },
   deadlineHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1591,6 +1729,17 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   deadlineText: {
     color: COLORS.textPrimary,
     fontWeight: '500',
+  },
+  deadlineExpiredMessage: {
+    color: COLORS.textPrimary,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  deadlineTapHint: {
+    color: COLORS.primaryGreen,
+    fontWeight: '500',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   refundHint: {
     color: COLORS.textSecondary,
@@ -2110,5 +2259,60 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 20,
+  },
+  // No-Show Card
+  noShowCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: `${COLORS.accentRed}08`,
+    borderWidth: 1,
+    borderColor: `${COLORS.accentRed}30`,
+  },
+  noShowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  noShowIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.accentRed,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noShowTitleContainer: {
+    flex: 1,
+  },
+  noShowTitle: {
+    fontWeight: '700',
+    color: COLORS.accentRed,
+    marginBottom: 2,
+  },
+  noShowSubtitle: {
+    color: COLORS.textSecondary,
+    lineHeight: 16,
+  },
+  noShowMessage: {
+    color: COLORS.textPrimary,
+    lineHeight: 18,
+    marginBottom: 14,
+    paddingHorizontal: 4,
+  },
+  disputeNoShowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: `${COLORS.accentRed}12`,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  disputeNoShowButtonText: {
+    color: COLORS.accentRed,
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
