@@ -39,7 +39,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v15-pnpm-explicit"
+        "key": "v15-root-easignore"
       }
     }
   },

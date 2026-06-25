@@ -50,7 +50,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v18-pnpm-explicit"
+        "key": "v19-root-easignore"
       }
     }
   },

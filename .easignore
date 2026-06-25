@@ -1,0 +1,38 @@
+# .easignore — EAS CLI reads this from the git repository root only.
+# Exclude everything NOT needed for mobile app builds.
+
+# Non-mobile apps
+apps/admin/
+apps/customer/
+apps/landing/
+apps/mobile/
+apps/partners/
+apps/support/
+
+# Backend (not needed for mobile builds)
+services/
+
+# Scripts and deployment
+scripts/
+*.py
+deploy_*.py
+fix_*.py
+check_*.py
+verify_*.py
+create_*.py
+debug_*.py
+
+# Documentation (root level)
+*.md
+
+# Docker
+docker-compose*.yml
+Dockerfile
+nginx/
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+.venv/
