@@ -12,8 +12,7 @@ apps/support/
 # Backend (not needed for mobile builds)
 services/
 
-# Scripts and deployment
-scripts/
+# Scripts (keep scripts/ — postinstall hooks depend on fix-expo-gradle.js)
 *.py
 deploy_*.py
 fix_*.py
