@@ -48,7 +48,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v16-react-pinned"
+        "key": "v17-pnpm-hoist"
       }
     }
   },
