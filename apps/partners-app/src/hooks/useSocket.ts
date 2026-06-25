@@ -47,11 +47,17 @@ export interface BookingCancelledEvent {
   serviceName: string;
 }
 
+export interface BookingNoShowEvent {
+  bookingId: string;
+  message: string;
+}
+
 export interface SocketEvents {
   onBookingNew?: (data: BookingNewEvent) => void;
   onBookingCheckin?: (data: BookingCheckinEvent) => void;
   onBookingCompleted?: (data: BookingCompletedEvent) => void;
   onBookingCancelled?: (data: BookingCancelledEvent) => void;
+  onBookingNoShow?: (data: BookingNoShowEvent) => void;
   onQueueJoined?: (data: any) => void;
   onQueueCompleted?: (data: any) => void;
   onQueueUpdated?: (data: any) => void;
@@ -139,6 +145,11 @@ export function useSocket(options: UseSocketOptions) {
       socket.on('booking:cancelled', (data: BookingCancelledEvent) => {
         console.log('Booking cancelled:', data);
         callbacksRef.current.onBookingCancelled?.(data);
+      });
+
+      socket.on('booking:noShow', (data: BookingNoShowEvent) => {
+        console.log('Booking no-show:', data);
+        callbacksRef.current.onBookingNoShow?.(data);
       });
 
       // Queue events

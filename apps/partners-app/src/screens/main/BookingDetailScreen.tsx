@@ -94,12 +94,25 @@ export default function BookingDetailScreen() {
   // Cancel booking mutation
   const cancelMutation = useMutation({
     mutationFn: (reason: string) => bookingsApi.cancelBooking(bookingId, reason),
-    onSuccess: () => {
+    onSuccess: (responseData: any) => {
       queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
       queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
       setCancelDialogVisible(false);
       setCancelReason('');
-      Alert.alert('Success', 'Booking has been cancelled. A full refund will be issued to the customer within 3-5 business days.');
+      // Extract refund details from cancelBookingWithRefund response (customer-cancel path)
+      const breakdown = responseData?.data?.refundBreakdown;
+      if (breakdown) {
+        const tierLabel = breakdown.tier === 'FREE' ? 'full' : breakdown.tier === 'PARTIAL' ? 'partial' : 'no';
+        const pct = breakdown.refundPercentage ?? 0;
+        const amt = breakdown.refundAmount ?? 0;
+        Alert.alert(
+          'Booking Cancelled',
+          `Booking cancelled. Customer will receive ${tierLabel} refund of GH\u20B5${amt.toFixed(2)} (${pct}%).`,
+        );
+      } else {
+        // Provider-cancel path returns { cancellationRecord, penalty }
+        Alert.alert('Success', 'Booking has been cancelled. A full refund will be issued to the customer within 3-5 business days.');
+      }
     },
     onError: (error: any) => {
       const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to cancel booking.';
@@ -749,7 +762,7 @@ export default function BookingDetailScreen() {
               <Text style={styles.escrowLabel}>Booking Fee (customer)</Text>
               <Text style={styles.escrowDeduction}>GH₵{parseFloat(String(booking.escrow.bookingFee || 0)).toFixed(2)}</Text>
             </View>
-            {booking.escrow.status === 'released' && booking.escrow.commission != null && (
+            {booking.escrow.commission != null && (
               <View style={styles.escrowRow}>
                 <Text style={styles.escrowLabel}>GroomLink Commission (5%)</Text>
                 <Text style={styles.escrowDeduction}>- GH₵{parseFloat(String(booking.escrow.commission)).toFixed(2)}</Text>

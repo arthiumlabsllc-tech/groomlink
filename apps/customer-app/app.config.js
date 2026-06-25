@@ -9,7 +9,7 @@ export default {
   expo: {
     name: "GroomLink",
     slug: "groomlink-customer",
-    version: "1.0.0",
+    version: "2.0.0",
     scheme: "groomlink",
     orientation: "default",
     icon: "./assets/icon.png",
@@ -25,7 +25,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.arthiumlabsllc.groomlink",
-      buildNumber: "1.0.0",
+      buildNumber: "20000",
       // Deep linking handled via top-level scheme property (SDK 53+)
       // urlSchemes removed — use scheme: "groomlink" at top level
       infoPlist: {
@@ -41,7 +41,7 @@ export default {
     },
     android: {
       package: "com.arthiumlabsllc.groomlink",
-      versionCode: 18,
+      versionCode: 20000,
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",

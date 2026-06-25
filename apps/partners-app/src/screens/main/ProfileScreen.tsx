@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -32,6 +32,7 @@ import Constants from 'expo-constants';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -63,6 +64,39 @@ export default function ProfileScreen() {
   // Settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
+  // Check OS notification permission on mount
+  useEffect(() => {
+    (async () => {
+      const { status } = await Notifications.getPermissionsAsync();
+      setNotificationsEnabled(status === 'granted');
+    })();
+  }, []);
+
+  // Handle toggling notifications
+  const handleToggleNotifications = async () => {
+    if (notificationsEnabled) {
+      // Can't revoke permissions programmatically — show info message
+      Alert.alert(
+        'Disable Notifications',
+        'To disable notifications, please go to your device Settings > Notifications > GroomLink Partners.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Request permission
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status === 'granted') {
+      setNotificationsEnabled(true);
+      Alert.alert('Notifications Enabled', 'You will now receive booking and payment notifications.');
+    } else {
+      Alert.alert(
+        'Notifications Blocked',
+        'Please enable notifications in your device Settings > Notifications > GroomLink Partners.',
+      );
+    }
+  };
+
   // Fetch fresh profile data
   const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ['profile'],
@@ -93,6 +127,11 @@ export default function ProfileScreen() {
   if (payoutError) {
     console.log('Payout balance error:', payoutError);
   }
+
+  // Derive held (pending) balance: totalRevenue minus all settled buckets
+  const heldBalance = payoutBalance
+    ? Math.max(0, (payoutBalance.totalRevenue || 0) - (payoutBalance.availableBalance || 0) - (payoutBalance.paidOutBalance || 0) - (payoutBalance.refundedBalance || 0))
+    : 0;
 
   // Update profile mutation
   const updateMutation = useMutation({
@@ -368,7 +407,7 @@ export default function ProfileScreen() {
               </View>
               {payoutBalance ? (
                 <Text style={[styles.detailValue, { color: '#F59E0B' }]}>
-                  GH₵{(payoutBalance.availableBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  GH₵{(heldBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Text>
               ) : (
                 <ActivityIndicator size="small" color="#F59E0B" />
@@ -582,7 +621,7 @@ export default function ProfileScreen() {
             </View>
             <Switch
               value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              onValueChange={handleToggleNotifications}
               color="#006B3F"
             />
           </View>

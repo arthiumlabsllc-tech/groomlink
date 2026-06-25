@@ -50,6 +50,13 @@ export interface Salon {
   operatingModel?: string;
   providerCategory?: string;
   serviceAreas?: string[];
+  // Payout / MoMo fields
+  payoutType?: 'momo' | 'bank';
+  momoNumber?: string;
+  momoProvider?: string;
+  bankAccountNumber?: string;
+  bankName?: string;
+  bankAccountName?: string;
   owner?: {
     id: string;
     firstName: string;

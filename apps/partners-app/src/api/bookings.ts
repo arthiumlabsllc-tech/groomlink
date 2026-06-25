@@ -101,9 +101,9 @@ export const bookingsApi = {
   },
 
   // Cancel a booking
-  cancelBooking: async (id: string, reason?: string): Promise<Booking> => {
+  cancelBooking: async (id: string, reason?: string): Promise<any> => {
     const response = await apiClient.post(`/bookings/${id}/cancel`, { reason });
-    return response.data.data;
+    return response.data;
   },
 
   // Check-in by QR code or check-in code

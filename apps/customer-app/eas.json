@@ -59,7 +59,7 @@
         "track": "production"
       },
       "ios": {
-        "ascAppId": "6778125298",
+        "ascAppId": "6741658620",
         "ascApiKeyId": "FT259GR8VZ",
         "ascApiKeyIssuerId": "cddb25bf-75b9-4d81-9ad4-b2a0af0ba2aa",
         "ascApiKeyPath": "./AuthKey_FT259GR8VZ.p8"

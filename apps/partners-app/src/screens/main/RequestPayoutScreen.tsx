@@ -47,8 +47,8 @@ export default function RequestPayoutScreen() {
 
   const numericAmount = parseFloat(amount) || 0;
   const hasPayoutAccount = salon && (
-    (salon as any).momoNumber || 
-    (salon as any).bankAccountNumber
+    salon.momoNumber || 
+    salon.bankAccountNumber
   );
   const insufficientBalance = numericAmount > (availableBalance || 0);
   const invalidAmount = numericAmount <= 0;
@@ -84,7 +84,7 @@ export default function RequestPayoutScreen() {
     Alert.alert(
       'Confirm Payout Request',
       `You are requesting GH₵${numericAmount.toFixed(2)} to be sent to your ${
-        (salon as any)?.payoutType === 'bank' ? 'bank account' : 'Mobile Money'
+        salon?.payoutType === 'bank' ? 'bank account' : 'Mobile Money'
       }.\n\nThis action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -98,7 +98,7 @@ export default function RequestPayoutScreen() {
               Alert.alert(
                 'Payout Sent!',
                 `GH₵${numericAmount.toFixed(2)} has been sent to your ${
-                  (salon as any)?.momoProvider?.toUpperCase() || 'Mobile Money'
+                  salon?.momoProvider?.toUpperCase() || 'Mobile Money'
                 }.\n\nYou should receive it shortly.`,
                 [
                   {
@@ -161,7 +161,7 @@ export default function RequestPayoutScreen() {
             <View style={styles.sectionHeader}>
               <Ionicons
                 name={
-                  (salon as any)?.payoutType === 'bank'
+                  salon?.payoutType === 'bank'
                     ? 'business-outline'
                     : 'phone-portrait-outline'
                 }
@@ -177,12 +177,12 @@ export default function RequestPayoutScreen() {
                 <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                 <View style={styles.accountDetails}>
                   <Text style={styles.accountType}>
-                    {(salon as any)?.payoutType === 'bank' ? 'Bank Account' : 'Mobile Money'}
+                    {salon?.payoutType === 'bank' ? 'Bank Account' : 'Mobile Money'}
                   </Text>
                   <Text style={styles.accountNumber}>
-                    {(salon as any)?.payoutType === 'bank'
-                      ? (salon as any).bankAccountName
-                      : `${(salon as any)?.momoProvider?.toUpperCase()} - ${(salon as any).momoNumber}`}
+                    {salon?.payoutType === 'bank'
+                      ? salon.bankAccountName
+                      : `${salon?.momoProvider?.toUpperCase()} - ${salon?.momoNumber}`}
                   </Text>
                 </View>
               </View>

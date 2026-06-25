@@ -431,6 +431,41 @@ function AppContent() {
         { cancelable: true }
       );
     },
+    onBookingNoShow: async (data) => {
+      // Refresh dashboard data immediately
+      queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['salonStats'] });
+
+      if (!data?.bookingId) return;
+      const { bookingId, message } = data;
+
+      // Persist to notification store
+      useNotificationStore.getState().addNotification({
+        type: 'booking_no_show',
+        title: 'No-Show',
+        message: message || 'A customer was marked as no-show',
+        data: { bookingId },
+      });
+
+      // Fire system notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'No-Show',
+          body: message || 'A customer was marked as no-show',
+          sound: 'notification_alert.wav',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: { bookingId },
+        },
+        trigger: null,
+      });
+
+      Alert.alert(
+        'No-Show',
+        message || 'A customer was marked as no-show for not checking in on time.',
+        [{ text: 'OK' }],
+        { cancelable: true }
+      );
+    },
     onQueueUpdated: () => {
       // Invalidate query cache for queue data
       queryClient.invalidateQueries({ queryKey: ['queue'] });

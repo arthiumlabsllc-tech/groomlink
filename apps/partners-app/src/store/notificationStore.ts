@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface AppNotification {
   id: string;
-  type: 'booking_new' | 'booking_checkin' | 'booking_completed' | 'booking_cancelled';
+  type: 'booking_new' | 'booking_checkin' | 'booking_completed' | 'booking_cancelled' | 'booking_no_show';
   title: string;
   message: string;
   timestamp: string;

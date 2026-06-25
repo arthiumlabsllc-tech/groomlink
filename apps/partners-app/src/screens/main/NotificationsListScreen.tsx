@@ -41,6 +41,7 @@ const NOTIFICATION_CONFIG: Record<
   booking_checkin: { icon: 'account-check', color: '#2196F3' },
   booking_completed: { icon: 'check-circle', color: '#FFB300' },
   booking_cancelled: { icon: 'calendar-remove', color: '#F44336' },
+  booking_no_show: { icon: 'account-cancel', color: '#F59E0B' },
 };
 
 export default function NotificationsListScreen() {
