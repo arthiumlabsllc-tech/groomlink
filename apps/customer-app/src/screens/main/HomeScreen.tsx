@@ -5,10 +5,11 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { Salon } from '../../types';
 import { salonApi } from '../../api/salon';
+import { favoritesApi } from '../../api/favorites';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useAppTheme } from '../../theme/ThemeContext';
@@ -67,6 +68,7 @@ export default function HomeScreen() {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const { numColumns, isTablet } = useResponsiveColumns();
+  const queryClient = useQueryClient();
   const [location, setLocation] = useState<LocationState>({
     lat: null,
     lng: null,
@@ -199,6 +201,57 @@ export default function HomeScreen() {
 
   const isLoading = featuredLoading || nearbyLoading;
 
+  // ── Favorites ─────────────────────────────────────────────────
+  const { data: favoritesData } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: () => favoritesApi.getFavorites(),
+    enabled: !!user,
+  });
+  const favoriteSalonIds = useMemo(() => {
+    const ids = new Set<string>();
+    favoritesData?.salons?.forEach((s: any) => {
+      // API may return the salon object directly or a wrapper with salonId
+      const id = s.id ?? s.salonId;
+      if (id) ids.add(id);
+    });
+    return ids;
+  }, [favoritesData]);
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async ({ salonId, isFavorite }: { salonId: string; isFavorite: boolean }) => {
+      if (isFavorite) {
+        await favoritesApi.removeFavorite(salonId);
+      } else {
+        await favoritesApi.addFavorite(salonId);
+      }
+    },
+    onMutate: async ({ salonId, isFavorite }) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ['favorites'] });
+      const previous = queryClient.getQueryData(['favorites']);
+      queryClient.setQueryData(['favorites'], (old: any) => {
+        if (!old) return old;
+        if (isFavorite) {
+          return { ...old, salons: old.salons.filter((s: any) => (s.id ?? s.salonId) !== salonId) };
+        }
+        return { ...old, salons: [...old.salons, { id: salonId }] };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context: any) => {
+      if (context?.previous) queryClient.setQueryData(['favorites'], context.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    },
+  });
+
+  const handleToggleFavorite = useCallback((salonId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const isFavorite = favoriteSalonIds.has(salonId);
+    toggleFavoriteMutation.mutate({ salonId, isFavorite });
+  }, [favoriteSalonIds, toggleFavoriteMutation]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
@@ -251,12 +304,16 @@ export default function HomeScreen() {
         {/* Favorite button with high-contrast background */}
         <TouchableOpacity
           style={styles.favoriteButton}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          onPress={() => handleToggleFavorite(salon.id)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Add to favorites"
+          accessibilityLabel={favoriteSalonIds.has(salon.id) ? 'Remove from favorites' : 'Add to favorites'}
           accessibilityRole="button"
         >
-          <Ionicons name="heart-outline" size={18} color="#FFFFFF" />
+          <Ionicons
+            name={favoriteSalonIds.has(salon.id) ? 'heart' : 'heart-outline'}
+            size={18}
+            color={favoriteSalonIds.has(salon.id) ? COLORS.accentRed : '#FFFFFF'}
+          />
         </TouchableOpacity>
         {isHorizontal && salon.isFeatured && (
           <View style={styles.featuredBadge}>

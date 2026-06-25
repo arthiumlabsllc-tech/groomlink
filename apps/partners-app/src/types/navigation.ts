@@ -22,6 +22,7 @@ export type MainStackParamList = {
   ProfileMain: undefined;
   PlatformFeedback: undefined;
   Notifications: undefined;
+  Reviews: undefined;
   CompletionSettings: undefined;
   RequestPayout: { availableBalance: number; salonId?: string };
   PayoutHistory: undefined;

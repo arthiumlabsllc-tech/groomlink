@@ -129,6 +129,34 @@ export async function sendPushToSalonOwner(
 }
 
 /**
+ * Send push notification to salon owner with custom sound (by salon ID)
+ * Used for real-time action confirmations (e.g. service marked complete)
+ */
+export async function sendPushToSalon(
+  salonId: string,
+  payload: PushNotificationPayload
+): Promise<void> {
+  try {
+    const salon = await prisma.salon.findUnique({
+      where: { id: salonId },
+      select: { ownerId: true },
+    });
+
+    if (!salon?.ownerId) {
+      logger.debug(`No owner found for salon ${salonId}`);
+      return;
+    }
+
+    await sendPushToUser(salon.ownerId, {
+      ...payload,
+      sound: PARTNERS_NOTIFICATION_SOUND,
+    });
+  } catch (error) {
+    logger.error('Failed to send push to salon:', { error, salonId });
+  }
+}
+
+/**
  * Notify partner of a new booking (push notification with custom sound)
  */
 export async function pushNewBooking(

@@ -294,15 +294,7 @@ export async function cancelBookingWithRefund(
     serviceName: booking.service?.name || 'service',
   });
 
-  // Send push notification to salon owner (works when app is backgrounded/killed)
-  pushService.pushBookingCancelled(
-    booking.salonId,
-    `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim() || 'Customer',
-    booking.service?.name || 'service',
-    bookingId
-  ).catch((err) => logger.error('Failed to send push for cancellation', { err }));
-
-  // Create persistent notification for salon owner
+  // Create persistent notification for salon owner (creates DB record + sends push)
   createNotification({
     userId: booking.salon.ownerId,
     type: 'BOOKING_CANCELLED' as any,

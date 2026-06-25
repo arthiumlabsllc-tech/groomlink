@@ -58,6 +58,7 @@ export default function BookingDetailScreen() {
   const [disputeReason, setDisputeReason] = useState('');
   const [noShowDisputeModalVisible, setNoShowDisputeModalVisible] = useState(false);
   const [noShowDisputeReason, setNoShowDisputeReason] = useState('');
+  const [autoReleaseCountdown, setAutoReleaseCountdown] = useState('');
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -307,6 +308,38 @@ export default function BookingDetailScreen() {
   const handleRaiseDispute = () => {
     setDisputeModalVisible(true);
   };
+
+  // Countdown timer for auto-release of escrow funds
+  useEffect(() => {
+    const releaseTarget = booking?.escrow?.autoReleaseAt || booking?.autoCompletionDeadline;
+    if (!releaseTarget || !needsCompletionConfirmation) {
+      setAutoReleaseCountdown('');
+      return;
+    }
+
+    const calcRemaining = () => {
+      const target = new Date(releaseTarget).getTime();
+      const now = Date.now();
+      const diff = target - now;
+      if (diff <= 0) {
+        setAutoReleaseCountdown('Auto-releasing now');
+        return;
+      }
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      if (hours > 24) {
+        const days = Math.floor(hours / 24);
+        const remHours = hours % 24;
+        setAutoReleaseCountdown(`${days}d ${remHours}h remaining`);
+      } else {
+        setAutoReleaseCountdown(`${hours}h ${minutes}m remaining`);
+      }
+    };
+
+    calcRemaining();
+    const interval = setInterval(calcRemaining, 60_000); // update every minute
+    return () => clearInterval(interval);
+  }, [booking?.escrow?.autoReleaseAt, booking?.autoCompletionDeadline, needsCompletionConfirmation]);
 
   const handleSubmitDispute = () => {
     if (!disputeReason.trim()) {
@@ -1021,7 +1054,9 @@ export default function BookingDetailScreen() {
               </View>
               {booking.autoCompletionDeadline && (
                 <Text variant="bodySmall" style={styles.autoCompleteNote}>
-                  Auto-completes on {formatDate(booking.autoCompletionDeadline)}
+                  {autoReleaseCountdown
+                    ? `Funds will auto-release in ${autoReleaseCountdown}`
+                    : `Auto-completes on ${formatDate(booking.autoCompletionDeadline)}`}
                 </Text>
               )}
             </Card.Content>

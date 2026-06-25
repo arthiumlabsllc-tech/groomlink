@@ -5,6 +5,7 @@ import logger from '../config/logger';
 import { sendSMS } from '../services/sms.service';
 import { releaseEscrow } from '../services/escrow.service';
 import * as pushService from '../services/pushNotification.service';
+import { emitToUser } from '../config/socket';
 
 /**
  * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
@@ -225,6 +226,23 @@ async function sendCustomerConfirmReminder(booking: {
       data: { type: 'completion_confirmation', bookingId: booking.id },
     }
   ).catch((err) => logger.error('Failed to send push reminder', { err }));
+
+  // Notify customer in real-time via socket
+  emitToUser(booking.customer.id, 'booking:completion_reminder', {
+    bookingId: booking.id,
+    salonId: booking.salon.id,
+    message: `Please confirm your service at ${booking.salon.businessName} to release payment.`,
+  });
+
+  // Notify salon owner that reminder was sent
+  pushService.sendPushToSalon(
+    booking.salon.id,
+    {
+      title: 'Customer Reminder Sent',
+      body: `We reminded ${booking.customer.firstName} to confirm their service. Waiting for response.`,
+      data: { type: 'completion_reminder_sent', bookingId: booking.id },
+    }
+  ).catch((err) => logger.error('Failed to send push to salon for reminder', { err }));
 }
 
 /**
@@ -277,6 +295,23 @@ async function sendCustomerUrgentReminder(booking: {
     }
   ).catch((err) => logger.error('Failed to send urgent push reminder', { err }));
 
+  // Notify customer in real-time via socket (urgent)
+  emitToUser(booking.customer.id, 'booking:completion_urgent', {
+    bookingId: booking.id,
+    salonId: booking.salon.id,
+    message: `URGENT: Confirm your service at ${booking.salon.businessName} or payment will auto-release in 24h.`,
+  });
+
+  // Notify salon owner that urgent reminder was sent
+  pushService.sendPushToSalon(
+    booking.salon.id,
+    {
+      title: 'Urgent Reminder Sent to Customer',
+      body: `${booking.customer.firstName} was sent an urgent reminder. Payment will auto-release in 24h if not confirmed.`,
+      data: { type: 'completion_urgent_sent', bookingId: booking.id },
+    }
+  ).catch((err) => logger.error('Failed to send urgent push to salon', { err }));
+
   // Also notify salon owner of the status
   if (booking.salon.phoneNumber) {
     const salonMsg = `GroomLink: Customer hasn't confirmed booking ${booking.reference} yet. Payment will auto-release in 24 hours as a safety measure.`;
@@ -318,6 +353,7 @@ async function safetyNetRelease(
       customerConfirmed: true,
       customerConfirmedAt: new Date(),
       completedAt: new Date(),
+      autoReleaseAt: new Date(), // actual release time
     },
   });
 
@@ -357,6 +393,23 @@ async function safetyNetRelease(
       logger.error(`Failed to send safety-net SMS to customer for booking ${booking.id}:`, smsError);
     }
   }
+
+  // Notify customer via socket
+  emitToUser(booking.customer.id, 'booking:auto_released', {
+    bookingId: booking.id,
+    salonId: booking.salon.id,
+    message: `Payment for your service at ${booking.salon.businessName} has been auto-released (48h safety net).`,
+  });
+
+  // Notify salon owner via push
+  pushService.sendPushToSalon(
+    booking.salon.id,
+    {
+      title: 'Payment Auto-Released',
+      body: `Payment for ${booking.customer.firstName}'s service has been auto-released (48h safety net). Funds arriving in 1-2 days.`,
+      data: { type: 'payment_auto_released', bookingId: booking.id },
+    }
+  ).catch((err) => logger.error('Failed to send safety-net push to salon', { err }));
 
   logger.info(`Booking ${booking.id} safety-net release completed successfully`);
 }

@@ -473,6 +473,7 @@ model Booking {
   autoCompletionDeadline DateTime?            @map("auto_completion_deadline")
   customerConfirmed      Boolean              @default(false) @map("customer_confirmed")
   customerConfirmedAt    DateTime?            @map("customer_confirmed_at")
+  autoReleaseAt          DateTime?            @map("auto_release_at") // 48h after salon marks complete; used for countdown timer
   disputeRaised          Boolean              @default(false) @map("dispute_raised")
   disputeReason          String?              @map("dispute_reason")
   completionReminders    CompletionReminder[]

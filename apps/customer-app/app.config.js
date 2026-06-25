@@ -36,7 +36,9 @@ export default {
         // Required: declare URL schemes the app queries (Apple Maps directions)
         LSApplicationQueriesSchemes: ["maps", "googlechromes", "comgooglemaps"],
         // Privacy: declare that the app does not track users across apps/websites
-        NSUserTrackingUsageDescription: "GroomLink does not track you across other apps or websites."
+        NSUserTrackingUsageDescription: "GroomLink does not track you across other apps or websites.",
+        // Required for reliable push delivery when app is backgrounded or killed
+        UIBackgroundModes: ['remote-notification']
       }
     },
     android: {

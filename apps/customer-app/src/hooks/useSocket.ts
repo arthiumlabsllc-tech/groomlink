@@ -69,21 +69,9 @@ export function useSocket(options: UseSocketOptions = {}) {
         setIsConnected(false);
       });
 
-      // Listen for notification events
+      // Listen for notification events (backend notification service emits these)
       socketRef.current.on('notification:created', (notification) => {
         useNotificationStore.getState().addNotification(notification);
-
-        // Fire a local system notification if the app is in foreground
-        Notifications.scheduleNotificationAsync({
-          content: {
-            title: notification.title || 'New Notification',
-            body: notification.message || '',
-            data: notification.data || {},
-            sound: true,
-          },
-          trigger: null,
-        }).catch((e: any) => console.log('Failed to show local notification:', e));
-
         callbacksRef.current.onNotification?.(notification);
       });
 
@@ -172,6 +160,82 @@ export function useSocket(options: UseSocketOptions = {}) {
             },
             trigger: null,
           }).catch((e: any) => console.log('Failed to show no-show notification:', e));
+        }
+      });
+
+      // ── Completion reminder listeners ───────────────────────────
+
+      // Completion reminder: gentle nudge to confirm service
+      socketRef.current.on('booking:completion_reminder', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Service Completion Reminder',
+              body: data.message || 'Please confirm your service completion.',
+              data: { type: 'booking_completion_reminder', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show completion reminder:', e));
+        }
+      });
+
+      // Completion urgent: funds will auto-release soon
+      socketRef.current.on('booking:completion_urgent', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'URGENT: Confirm Service',
+              body: data.message || 'Confirm service completion or funds will be auto-released.',
+              data: { type: 'booking_completion_urgent', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show urgent completion notification:', e));
+        }
+      });
+
+      // ── Appointment reminder listeners ─────────────────────────
+
+      // Booking reminder: appointment reminder from backend
+      socketRef.current.on('booking:reminder', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Appointment Reminder',
+              body: data.message || 'You have an upcoming appointment.',
+              data: { type: 'booking_reminder', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show booking reminder:', e));
+        }
+      });
+
+      // Upcoming reminder: 2-hour heads-up
+      socketRef.current.on('reminder:upcoming', (data) => {
+        queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+        if (AppState.currentState === 'active') {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Upcoming Appointment',
+              body: data.message || 'Your appointment is coming up in 2 hours.',
+              data: { type: 'reminder_upcoming', bookingId: data.bookingId },
+              sound: true,
+            },
+            trigger: null,
+          }).catch((e: any) => console.log('Failed to show upcoming reminder:', e));
         }
       });
     } catch (error) {

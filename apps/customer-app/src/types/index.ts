@@ -133,6 +133,7 @@ export interface Booking {
     amountHeld: number | string;
     platformFee: number | string;
     providerAmount: number | string;
+    autoReleaseAt?: string;
   };
   refundEligible?: boolean;
   refundPercentage?: number;

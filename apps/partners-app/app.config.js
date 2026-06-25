@@ -9,6 +9,7 @@ export default {
   expo: {
     name: "GroomLink Partners",
     slug: "groomlink-partners",
+    scheme: "groomlink-partners",
     version: "1.0.0",
     orientation: "default",
     icon: "./assets/icon.png",
@@ -30,7 +31,8 @@ export default {
         NSLocationWhenInUseUsageDescription: "GroomLink Partners uses your location for your salon address.",
         NSCameraUsageDescription: "GroomLink Partners needs camera access to scan QR codes and upload salon photos.",
         NSPhotoLibraryUsageDescription: "GroomLink Partners needs photo library access to upload salon photos.",
-        ITSAppUsesNonExemptEncryption: false
+        ITSAppUsesNonExemptEncryption: false,
+        UIBackgroundModes: ['remote-notification']
       }
     },
     android: {

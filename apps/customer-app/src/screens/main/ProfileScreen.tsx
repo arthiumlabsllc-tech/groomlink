@@ -443,6 +443,8 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>Settings</Text>
           <View style={styles.card}>
+            {renderSettingItem('heart-outline', 'Saved Salons', () => navigation.getParent()?.navigate('Home', { screen: 'Favorites' }))}
+            <Divider style={styles.settingDivider} />
             {renderSettingItem(
               'notifications-outline',
               'Notifications',

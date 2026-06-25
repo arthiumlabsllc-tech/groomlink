@@ -3,7 +3,7 @@ import redis from '../config/redis';
 import logger from '../config/logger';
 import { releaseEscrow, refundEscrow, getEscrowByBookingId } from './escrow.service';
 import * as smsService from './sms.service';
-import { emitBookingCompleted } from '../config/socket';
+import { emitBookingCompleted, emitToUser } from '../config/socket';
 import * as pushService from './pushNotification.service';
 import QRCode from 'qrcode';
 
@@ -63,15 +63,20 @@ export async function manualComplete(bookingId: string, completedById: string) {
     // DO NOT release escrow here - wait for customer confirmation
     // Escrow stays in 'held' status until customer confirms
 
+    // Compute auto-release timestamp: 48 hours after salon marks complete
+    const serviceCompletedAt = new Date();
+    const autoReleaseAt = new Date(serviceCompletedAt.getTime() + 48 * 60 * 60 * 1000);
+
     // Update booking - mark service as completed, awaiting customer confirmation
     const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
       data: {
         serviceCompleted: true,
-        serviceCompletedAt: new Date(),
+        serviceCompletedAt,
         serviceCompletedBy: completedById,
         completionMethod: 'manual',
         status: 'COMPLETED',
+        autoReleaseAt,
       },
       include: {
         salon: true,
@@ -89,15 +94,25 @@ export async function manualComplete(bookingId: string, completedById: string) {
       }).catch((err) => logger.error('Failed to send completion confirmation SMS to customer', { err }));
     }
 
-    // Send push notification to customer to confirm
+    // Send push notification to customer (works when app is backgrounded)
     pushService.sendPushToUser(
       booking.customerId,
       {
-        title: 'Service Completed - Please Confirm',
-        body: `Your service at ${booking.salon.businessName} is done. Tap to confirm and release payment.`,
-        data: { type: 'completion_confirmation', bookingId: booking.id },
+        title: 'Service Completed',
+        body: `Your service at ${booking.salon.businessName} has been marked as complete. Please confirm to release payment.`,
+        data: { type: 'service_completed', bookingId: booking.id },
       }
-    ).catch((err) => logger.error('Failed to send push for completion confirmation', { err }));
+    ).catch((err) => logger.error('Failed to send push to customer for completion', { err }));
+
+    // Send push notification to salon owner confirming action
+    pushService.sendPushToSalon(
+      booking.salonId,
+      {
+        title: 'Service Marked Complete',
+        body: `You marked ${booking.customer.firstName} ${booking.customer.lastName}'s service as complete. Waiting for customer confirmation.`,
+        data: { type: 'service_completed', bookingId: booking.id },
+      }
+    ).catch((err) => logger.error('Failed to send push to salon for completion', { err }));
 
     // Send SMS to salon owner confirming they marked it done
     if (booking.salon.owner?.phoneNumber) {
@@ -119,6 +134,13 @@ export async function manualComplete(bookingId: string, completedById: string) {
       customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
       serviceName: booking.service?.name || 'Service',
       totalAmount: booking.escrow.amountHeld.toString(),
+    });
+
+    // Notify customer in real-time via socket
+    emitToUser(booking.customerId, 'booking:completed', {
+      bookingId: booking.id,
+      salonId: booking.salonId,
+      message: 'Your service has been marked complete. Please confirm to release payment.',
     });
 
     return updatedBooking;

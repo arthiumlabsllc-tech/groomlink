@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { View, StyleSheet, Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -23,11 +23,14 @@ import CompletionSettingsScreen from '../screens/main/CompletionSettingsScreen';
 import RequestPayoutScreen from '../screens/main/RequestPayoutScreen';
 import PayoutHistoryScreen from '../screens/main/PayoutHistoryScreen';
 import ChatScreen from '../screens/support/ChatScreen';
+import ReviewsScreen from '../screens/main/ReviewsScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 import { AppTheme } from '../theme/colors';
 import { useAppTheme } from '../theme/ThemeContext';
 import { bookingsApi } from '../api/bookings';
 import { salonApi } from '../api/salon';
+import { notificationApi } from '../api/notifications';
+import { useNotificationStore } from '../store/notificationStore';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -219,6 +222,11 @@ function ProfileStack() {
         component={ChatScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="Reviews"
+        component={ReviewsScreen}
+        options={{ title: 'Reviews' }}
+      />
     </Stack.Navigator>
   );
 }
@@ -244,6 +252,20 @@ export default function MainNavigator() {
     return bookingsData.data.filter((b: any) => b.status === 'PENDING').length;
   }, [bookingsData]);
 
+  // Fetch unread notification count for badge
+  const setServerUnreadCount = useNotificationStore((s) => s.setServerUnreadCount);
+  const { data: serverUnread } = useQuery({
+    queryKey: ['notificationUnreadCount'],
+    queryFn: notificationApi.getUnreadCount,
+    refetchInterval: 60000,
+  });
+  useEffect(() => {
+    if (typeof serverUnread === 'number') {
+      setServerUnreadCount(serverUnread);
+    }
+  }, [serverUnread, setServerUnreadCount]);
+  const notifUnreadCount = useNotificationStore((s) => s.serverUnreadCount);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -263,6 +285,9 @@ export default function MainNavigator() {
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           }
+
+          // Notification badge for Dashboard tab
+          const showBadge = route.name === 'Dashboard' && notifUnreadCount > 0;
           
           return (
             <View style={styles.iconContainer}>
@@ -272,6 +297,13 @@ export default function MainNavigator() {
                 color={focused ? theme.tabActive : theme.tabInactive} 
               />
               {focused && <View style={styles.activeIndicator} />}
+              {showBadge && (
+                <View style={[styles.badge, { backgroundColor: theme.danger }]}>
+                  <Text style={styles.badgeText}>
+                    {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
+                  </Text>
+                </View>
+              )}
             </View>
           );
         },
@@ -378,5 +410,21 @@ const createStyles = (theme: AppTheme, _insets: { bottom: number }) => StyleShee
     height: 4,
     borderRadius: 2,
     backgroundColor: theme.tabActive,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: '700',
   },
 });

@@ -20,13 +20,15 @@ import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
 import UpdatePrompt from './src/components/UpdatePrompt';
 
 // Configure notification handler
+// Foreground: suppress server push alert — socket events handle local display
+// Background/Killed: server push arrives and shows system notification normally
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
+    shouldShowAlert: false,
+    shouldPlaySound: false,
     shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
+    shouldShowBanner: false,
+    shouldShowList: false,
   }),
 });
 
@@ -139,9 +141,13 @@ function AppContent() {
       (response) => {
         const data = response.notification.request.content.data;
         if (data?.bookingId) {
+          const bookingId = data.bookingId as string;
+          // Invalidate React Query cache so BookingDetail fetches fresh data
+          queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
           // Navigate to booking detail when notification is tapped
           setTimeout(() => {
-            navigationRef.current?.navigate('BookingDetail', { bookingId: data.bookingId });
+            navigationRef.current?.navigate('BookingDetail', { bookingId });
           }, 300);
         }
       }

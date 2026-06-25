@@ -52,12 +52,46 @@ export interface BookingNoShowEvent {
   message: string;
 }
 
+export interface BookingConfirmedEvent {
+  bookingId: string;
+  customerName: string;
+  serviceName: string;
+  date: string;
+  startTime: string;
+}
+
+export interface BookingRejectedEvent {
+  bookingId: string;
+  customerName: string;
+  serviceName: string;
+  reason?: string;
+}
+
+export interface SlotUpdatedEvent {
+  salonId: string;
+  date: string;
+  slots?: Array<{ time: string; available: boolean }>;
+}
+
+export interface NotificationCreatedEvent {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  createdAt: string;
+}
+
 export interface SocketEvents {
   onBookingNew?: (data: BookingNewEvent) => void;
   onBookingCheckin?: (data: BookingCheckinEvent) => void;
   onBookingCompleted?: (data: BookingCompletedEvent) => void;
   onBookingCancelled?: (data: BookingCancelledEvent) => void;
   onBookingNoShow?: (data: BookingNoShowEvent) => void;
+  onBookingConfirmed?: (data: BookingConfirmedEvent) => void;
+  onBookingRejected?: (data: BookingRejectedEvent) => void;
+  onSlotUpdated?: (data: SlotUpdatedEvent) => void;
+  onNotificationCreated?: (data: NotificationCreatedEvent) => void;
   onQueueJoined?: (data: any) => void;
   onQueueCompleted?: (data: any) => void;
   onQueueUpdated?: (data: any) => void;
@@ -150,6 +184,26 @@ export function useSocket(options: UseSocketOptions) {
       socket.on('booking:noShow', (data: BookingNoShowEvent) => {
         console.log('Booking no-show:', data);
         callbacksRef.current.onBookingNoShow?.(data);
+      });
+
+      socket.on('booking:confirmed', (data: BookingConfirmedEvent) => {
+        console.log('Booking confirmed:', data);
+        callbacksRef.current.onBookingConfirmed?.(data);
+      });
+
+      socket.on('booking:rejected', (data: BookingRejectedEvent) => {
+        console.log('Booking rejected:', data);
+        callbacksRef.current.onBookingRejected?.(data);
+      });
+
+      socket.on('slot:updated', (data: SlotUpdatedEvent) => {
+        console.log('Slot updated:', data);
+        callbacksRef.current.onSlotUpdated?.(data);
+      });
+
+      socket.on('notification:created', (data: NotificationCreatedEvent) => {
+        console.log('Notification created:', data);
+        callbacksRef.current.onNotificationCreated?.(data);
       });
 
       // Queue events

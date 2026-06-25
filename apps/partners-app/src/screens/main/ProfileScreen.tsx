@@ -622,6 +622,22 @@ export default function ProfileScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Reviews')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#FEF9E7' }]}>
+              <Ionicons name="star-outline" size={20} color="#FFB300" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Reviews</Text>
+              <Text style={styles.menuSubtitle}>View and reply to customer reviews</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
         </Surface>
 
         {/* Settings Section */}

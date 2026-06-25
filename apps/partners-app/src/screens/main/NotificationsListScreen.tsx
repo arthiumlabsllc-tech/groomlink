@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -12,8 +12,10 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNotificationStore, AppNotification } from '../../store/notificationStore';
+import { useNotificationStore, AppNotification, NotificationType } from '../../store/notificationStore';
+import { notificationApi } from '../../api/notifications';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { AppTheme } from '../../theme/colors';
 import { MainStackParamList } from '../../types/navigation';
@@ -33,15 +35,17 @@ function getRelativeTime(timestamp: string): string {
   return `${days}d ago`;
 }
 
-const NOTIFICATION_CONFIG: Record<
-  AppNotification['type'],
-  { icon: string; color: string }
-> = {
+const NOTIFICATION_CONFIG: Record<NotificationType, { icon: string; color: string }> = {
   booking_new: { icon: 'calendar-plus', color: '#006B3F' },
+  booking_confirmed: { icon: 'calendar-check', color: '#10B981' },
   booking_checkin: { icon: 'account-check', color: '#2196F3' },
   booking_completed: { icon: 'check-circle', color: '#FFB300' },
   booking_cancelled: { icon: 'calendar-remove', color: '#F44336' },
+  booking_rejected: { icon: 'calendar-remove', color: '#EF4444' },
   booking_no_show: { icon: 'account-cancel', color: '#F59E0B' },
+  slot_updated: { icon: 'clock-outline', color: '#8B5CF6' },
+  review_new: { icon: 'star', color: '#FFB300' },
+  system: { icon: 'bell', color: '#6B7280' },
 };
 
 export default function NotificationsListScreen() {
@@ -53,13 +57,25 @@ export default function NotificationsListScreen() {
   const markAsRead = useNotificationStore((state) => state.markAsRead);
   const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
   const clearAll = useNotificationStore((state) => state.clearAll);
+  const queryClient = useQueryClient();
 
-  const handleNotificationPress = (notification: AppNotification) => {
+  const handleNotificationPress = useCallback(async (notification: AppNotification) => {
     markAsRead(notification.id);
+    // Sync read state to server if we have a server ID
+    if (notification.serverId) {
+      try { await notificationApi.markAsRead(notification.serverId); } catch { /* ignore */ }
+      queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
+    }
     if (notification.data?.bookingId) {
       navigation.navigate('BookingDetail', { bookingId: notification.data.bookingId });
     }
-  };
+  }, [markAsRead, navigation, queryClient]);
+
+  const handleMarkAllAsRead = useCallback(async () => {
+    markAllAsRead();
+    try { await notificationApi.markAllAsRead(); } catch { /* ignore */ }
+    queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
+  }, [markAllAsRead, queryClient]);
 
   const renderNotificationItem = ({ item }: { item: AppNotification }) => {
     const config = NOTIFICATION_CONFIG[item.type];
@@ -167,7 +183,7 @@ export default function NotificationsListScreen() {
           Notifications
         </Text>
         {hasNotifications && (
-          <TouchableOpacity onPress={markAllAsRead} activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleMarkAllAsRead} activeOpacity={0.7}>
             <Text style={[styles.markAllText, { color: theme.primary }]}>
               Mark All Read
             </Text>

@@ -9,7 +9,6 @@ import * as notificationService from './notification.service';
 import * as smsService from './sms.service';
 import { generateCheckinCode } from './checkin.service';
 import { emitNewBooking } from '../config/socket';
-import * as pushService from './pushNotification.service';
 import { paymentProviderRegistry } from './payment-provider.registry';
 import { PaymentInitializationRequest } from './payment-provider.interface';
 
@@ -303,7 +302,7 @@ async function sendBookingNotificationsOnPaymentSuccess(params: {
     emitNewBooking(salonId, bookingForSocket);
   }
 
-  // 6. Notify salon owner of new booking via in-app notification
+  // 6. Notify salon owner of new booking (creates DB notification record + sends push)
   if (salonOwnerId) {
     const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     notificationService.notifySalonOwnerOfNewBooking(
@@ -316,14 +315,6 @@ async function sendBookingNotificationsOnPaymentSuccess(params: {
       startTime
     ).catch((err) => logger.error('Failed to send new booking notification', { err }));
   }
-
-  // 7. Send push notification to salon owner (works when app is backgrounded/killed)
-  pushService.pushNewBooking(
-    salonId,
-    customerFullName,
-    serviceName,
-    bookingId
-  ).catch((err) => logger.error('Failed to send push notification for new booking', { err }));
 
   logger.info(`Booking notifications sent for booking: ${bookingId}`);
 }

@@ -14,6 +14,7 @@ export type HomeStackParamList = {
   HomeMain: undefined;
   SalonDetail: { salonId: string };
   Notifications: undefined;
+  Favorites: undefined;
 };
 
 export type SearchStackParamList = {

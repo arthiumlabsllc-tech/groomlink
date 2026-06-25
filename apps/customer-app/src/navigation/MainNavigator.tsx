@@ -14,6 +14,7 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 import SafeMapScreen from '../screens/main/SafeMapScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import FavoritesScreen from '../screens/main/FavoritesScreen';
 import ChatScreen from '../screens/support/ChatScreen';
 
 import {
@@ -38,6 +39,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
       <HomeStackNav.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
       <HomeStackNav.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+      <HomeStackNav.Screen name="Favorites" component={FavoritesScreen} options={{ headerShown: false }} />
     </HomeStackNav.Navigator>
   );
 }
