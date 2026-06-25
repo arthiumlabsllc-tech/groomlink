@@ -759,12 +759,15 @@ const appVersionSettingsSchema = z.object({
 
 // Payment Settings Schema
 const paymentSettingsSchema = z.object({
-  paymentGateway: z.string().default('paystack'),
+  paymentGateway: z.enum(['paystack', 'hubtel', 'theteller']).default('paystack'),
   hubtelApiId: z.string().max(500).optional().nullable(),
   hubtelApiSecret: z.string().max(500).optional().nullable(),
   hubtelMerchantAccountId: z.string().max(500).optional().nullable(),
   paystackPublicKey: z.string().max(500).optional().nullable(),
   paystackSecretKey: z.string().max(500).optional().nullable(),
+  thetellerApiKey: z.string().max(500).optional().nullable(),
+  thetellerApiUser: z.string().max(500).optional().nullable(),
+  thetellerMerchantId: z.string().max(500).optional().nullable(),
   isPaymentTestMode: z.boolean().optional(),
   transactionFeePercent: z.preprocess(
     (val) => {
@@ -783,6 +786,9 @@ const paymentSettingsSchema = z.object({
   hubtelApiId: data.hubtelApiId === '' ? null : data.hubtelApiId,
   hubtelApiSecret: data.hubtelApiSecret === '' ? null : data.hubtelApiSecret,
   hubtelMerchantAccountId: data.hubtelMerchantAccountId === '' ? null : data.hubtelMerchantAccountId,
+  thetellerApiKey: data.thetellerApiKey === '' ? null : data.thetellerApiKey,
+  thetellerApiUser: data.thetellerApiUser === '' ? null : data.thetellerApiUser,
+  thetellerMerchantId: data.thetellerMerchantId === '' ? null : data.thetellerMerchantId,
 }));
 
 export async function getSiteSettings(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -975,6 +981,10 @@ export async function getPaymentSettings(req: AuthenticatedRequest, res: Respons
       ? `****${(settings as any).paystackSecretKey.slice(-4)}`
       : null;
 
+    const maskedThetellerApiKey = (settings as any)?.thetellerApiKey
+      ? `****${(settings as any).thetellerApiKey.slice(-4)}`
+      : null;
+
     successResponse(res, {
       paymentGateway: settings.paymentGateway,
       hubtelApiId: (settings as any)?.hubtelApiId || null,
@@ -982,6 +992,9 @@ export async function getPaymentSettings(req: AuthenticatedRequest, res: Respons
       hubtelMerchantAccountId: (settings as any)?.hubtelMerchantAccountId || null,
       paystackPublicKey: (settings as any)?.paystackPublicKey || null,
       paystackSecretKey: maskedPaystackSecret,
+      thetellerApiKey: maskedThetellerApiKey,
+      thetellerApiUser: (settings as any)?.thetellerApiUser || null,
+      thetellerMerchantId: (settings as any)?.thetellerMerchantId || null,
       isPaymentTestMode: settings.isPaymentTestMode,
       transactionFeePercent: settings.transactionFeePercent,
     });
@@ -1035,6 +1048,19 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
     }
     // If secret key contains '****', don't update it
 
+    // TheTeller API Key (with masking support)
+    if (data.thetellerApiKey !== undefined && data.thetellerApiKey !== null && !data.thetellerApiKey.includes('****')) {
+      updateData.thetellerApiKey = data.thetellerApiKey || null;
+    }
+
+    if (data.thetellerApiUser !== undefined) {
+      updateData.thetellerApiUser = data.thetellerApiUser || null;
+    }
+
+    if (data.thetellerMerchantId !== undefined) {
+      updateData.thetellerMerchantId = data.thetellerMerchantId || null;
+    }
+
     if (data.isPaymentTestMode !== undefined) {
       updateData.isPaymentTestMode = data.isPaymentTestMode;
     }
@@ -1060,6 +1086,10 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
       ? `****${(settings as any).paystackSecretKey.slice(-4)}`
       : null;
 
+    const maskedThetellerApiKey = (settings as any)?.thetellerApiKey
+      ? `****${(settings as any).thetellerApiKey.slice(-4)}`
+      : null;
+
     successResponse(res, {
       paymentGateway: settings.paymentGateway,
       hubtelApiId: (settings as any)?.hubtelApiId || null,
@@ -1067,6 +1097,9 @@ export async function updatePaymentSettings(req: AuthenticatedRequest, res: Resp
       hubtelMerchantAccountId: (settings as any)?.hubtelMerchantAccountId || null,
       paystackPublicKey: (settings as any)?.paystackPublicKey || null,
       paystackSecretKey: maskedPaystackSecret,
+      thetellerApiKey: maskedThetellerApiKey,
+      thetellerApiUser: (settings as any)?.thetellerApiUser || null,
+      thetellerMerchantId: (settings as any)?.thetellerMerchantId || null,
       isPaymentTestMode: settings.isPaymentTestMode,
       transactionFeePercent: settings.transactionFeePercent,
     });

@@ -190,6 +190,7 @@ export async function getPayoutBalance(req: AuthenticatedRequest, res: Response)
       heldResult,
       releasedResult,
       refundedResult,
+      failedRefundResult,
     ] = await Promise.all([
       // Money held in escrow (not yet paid out)
       prisma.escrowAccount.aggregate({
@@ -209,11 +210,20 @@ export async function getPayoutBalance(req: AuthenticatedRequest, res: Response)
         _sum: { providerAmount: true },
         _count: true,
       }),
-      // Refunded amount
+      // Refunded amounts
       prisma.escrowAccount.aggregate({
         where: {
           salonId,
           status: 'refunded',
+        },
+        _sum: { amountHeld: true },
+        _count: true,
+      }),
+      // Failed refunds (retry-able)
+      prisma.escrowAccount.aggregate({
+        where: {
+          salonId,
+          status: 'refund_failed',
         },
         _sum: { amountHeld: true },
         _count: true,
@@ -232,16 +242,19 @@ export async function getPayoutBalance(req: AuthenticatedRequest, res: Response)
     const availableBalance = Number(heldResult._sum.providerAmount || 0);
     const paidOutBalance = Number(releasedResult._sum.providerAmount || 0);
     const refundedBalance = Number(refundedResult._sum.amountHeld || 0);
+    const failedRefundBalance = Number(failedRefundResult._sum.amountHeld || 0);
     const totalRevenue = Number(totalRevenueResult._sum.amount || 0);
 
     successResponse(res, {
       availableBalance,     // Money in escrow waiting to be paid out
       paidOutBalance,       // Money already paid out to salon
       refundedBalance,      // Money refunded to customers
+      failedRefundBalance,  // Money in failed refund state (retry-able)
       totalRevenue,         // Total revenue from all successful payments
       heldCount: heldResult._count,
       releasedCount: releasedResult._count,
       refundedCount: refundedResult._count,
+      failedRefundCount: failedRefundResult._count,
     });
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
@@ -413,6 +426,8 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
       const bookingFee = Number(escrow.bookingFee || 0);
       const servicePrice = amountHeld - bookingFee;
       const commission = Number(escrow.commission || servicePrice * 0.05);
+      const providerPayout = servicePrice - commission;
+      const totalPlatformEarnings = bookingFee + commission;
 
       await prisma.$transaction(async (tx) => {
         await tx.escrowAccount.update({
@@ -420,6 +435,8 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
           data: {
             status: 'released',
             releasedAt: new Date(),
+            providerAmount: providerPayout,
+            platformFee: totalPlatformEarnings,
             commission: commission,
             payoutGateway: payoutGateway,
           },
@@ -429,8 +446,8 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
           data: {
             escrowId: escrow.id,
             transactionType: 'release',
-            amount: amountToRelease,
-            previousBalance: escrowProviderAmount,
+            amount: providerPayout,
+            previousBalance: amountHeld,
             newBalance: 0,
           },
         });

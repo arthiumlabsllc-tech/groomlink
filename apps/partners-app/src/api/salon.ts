@@ -24,10 +24,12 @@ export interface PayoutBalance {
   availableBalance: number;
   paidOutBalance: number;
   refundedBalance: number;
+  failedRefundBalance: number;
   totalRevenue: number;
   heldCount: number;
   releasedCount: number;
   refundedCount: number;
+  failedRefundCount: number;
 }
 
 export interface PayoutHistoryItem {

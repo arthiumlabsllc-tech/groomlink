@@ -307,14 +307,15 @@ class PaymentProviderRegistry {
 
     if (payoutType === 'mobile_money') {
       // Prefer the admin-selected active provider for mobile money payouts.
-      // TheTeller doesn't support payouts, so only check hubtel/paystack
+      // TheTeller doesn't support payouts, so only hubtel/paystack are valid.
       const active = await this.getActiveProvider();
       if (active && (active.name === 'hubtel' || active.name === 'paystack')) {
         logger.info(`Smart routing: Using ${active.name} for mobile money payout (active gateway)`);
         return active;
       }
-      // Fallback to whichever is configured — prefer Hubtel for instant 24/7
+      // Fallback: try the other payout-capable gateway (not the active one)
       for (const name of ['hubtel', 'paystack'] as ProviderName[]) {
+        if (active && name === active.name) continue; // skip active provider (already tried)
         if (this.providers.has(name)) {
           const config = this.providers.get(name)!;
           logger.info(`Smart routing: Using ${name} for mobile money payout (fallback)`);

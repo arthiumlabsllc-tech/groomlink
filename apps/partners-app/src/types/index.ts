@@ -51,7 +51,7 @@ export interface Salon {
   providerCategory?: string;
   serviceAreas?: string[];
   // Payout / MoMo fields
-  payoutType?: 'momo' | 'bank';
+  payoutType?: 'mobile_money' | 'bank';
   momoNumber?: string;
   momoProvider?: string;
   bankAccountNumber?: string;

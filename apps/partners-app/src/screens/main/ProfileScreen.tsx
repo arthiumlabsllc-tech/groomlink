@@ -128,7 +128,12 @@ export default function ProfileScreen() {
     console.log('Payout balance error:', payoutError);
   }
 
-  // Derive held (pending) balance: totalRevenue minus all settled buckets
+  // Derive held (pending) balance: totalRevenue minus all settled buckets.
+  // NOTE: This is an approximation. totalRevenue comes from the Payment table (gross
+  // amounts including GHS 2 booking fees), while escrow-based balances use providerAmount
+  // (service price only, excluding booking fees). This makes "Pending" slightly inflated
+  // by the total booking fees collected. A dedicated backend endpoint for held-in-escrow
+  // amounts would be more accurate.
   const heldBalance = payoutBalance
     ? Math.max(0, (payoutBalance.totalRevenue || 0) - (payoutBalance.availableBalance || 0) - (payoutBalance.paidOutBalance || 0) - (payoutBalance.refundedBalance || 0))
     : 0;
@@ -427,6 +432,18 @@ export default function ProfileScreen() {
                 <ActivityIndicator size="small" color="#EF4444" />
               )}
             </View>
+
+            {payoutBalance && (payoutBalance.failedRefundBalance || 0) > 0 && (
+              <View style={styles.balanceDetailRow}>
+                <View style={styles.detailLeft}>
+                  <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
+                  <Text style={styles.detailLabel}>Failed Refunds ({payoutBalance.failedRefundCount || 0})</Text>
+                </View>
+                <Text style={[styles.detailValue, { color: '#DC2626' }]}>
+                  GH₵{(payoutBalance.failedRefundBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+            )}
           </View>
 
           <Divider style={styles.sectionDivider} />
