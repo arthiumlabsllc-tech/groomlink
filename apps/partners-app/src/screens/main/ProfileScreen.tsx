@@ -26,6 +26,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../api/auth';
 import { salonApi } from '../../api/salon';
+import { kycApi } from '../../api/kyc';
 import { useAuthStore } from '../../store/authStore';
 import { MainStackParamList } from '../../types/navigation';
 import Constants from 'expo-constants';
@@ -121,6 +122,12 @@ export default function ProfileScreen() {
     queryKey: ['payoutBalance', salon?.id],
     queryFn: () => (salon ? salonApi.getPayoutBalance(salon.id) : null),
     enabled: !!salon?.id,
+  });
+
+  // Fetch KYC status
+  const { data: kycStatus } = useQuery({
+    queryKey: ['kycStatus'],
+    queryFn: kycApi.getStatus,
   });
 
   // Debug payout balance errors
@@ -640,6 +647,95 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </Surface>
 
+        {/* Business Tools */}
+        <Surface style={styles.section} elevation={0}>
+          <Text style={styles.sectionLabel}>Business Tools</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Analytics')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#E8F5E9' }]}>
+              <Ionicons name="trending-up-outline" size={20} color="#006B3F" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Analytics</Text>
+              <Text style={styles.menuSubtitle}>Earnings, booking stats & performance</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('StaffAvailability')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="people-outline" size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Staff Availability</Text>
+              <Text style={styles.menuSubtitle}>Manage team schedules & status</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('KYC')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: kycStatus?.status === 'APPROVED' ? '#E8F5E9' : '#FEF9E7' }]}>
+              <Ionicons
+                name={kycStatus?.status === 'APPROVED' ? 'shield-checkmark-outline' : 'shield-outline'}
+                size={20}
+                color={kycStatus?.status === 'APPROVED' ? '#10B981' : '#F59E0B'}
+              />
+            </View>
+            <View style={styles.menuContent}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.menuTitle}>KYC Verification</Text>
+                {kycStatus?.status === 'APPROVED' && (
+                  <View style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#10B981' }}>VERIFIED</Text>
+                  </View>
+                )}
+                {kycStatus?.status === 'PENDING' && (
+                  <View style={{ backgroundColor: '#FEF9E7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#F59E0B' }}>PENDING</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.menuSubtitle}>
+                {kycStatus?.status === 'APPROVED'
+                  ? 'Your business is verified'
+                  : kycStatus?.status === 'PENDING'
+                  ? 'Under review — check back soon'
+                  : 'Complete verification to build trust'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Referral')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#F0FDF4' }]}>
+              <Ionicons name="gift-outline" size={20} color="#10B981" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Refer a Friend</Text>
+              <Text style={styles.menuSubtitle}>Invite others and earn rewards</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+        </Surface>
+
         {/* Settings Section */}
         <Surface style={styles.section} elevation={0}>
           <Text style={styles.sectionLabel}>Settings</Text>
@@ -679,7 +775,7 @@ export default function ProfileScreen() {
 
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => Alert.alert('Help', 'Contact support at support@groomlinkgh.com')}
+            onPress={() => navigation.navigate('Support')}
           >
             <View style={[styles.menuIcon, { backgroundColor: '#F0FDF4' }]}>
               <Ionicons name="help-circle-outline" size={20} color="#10B981" />
@@ -719,6 +815,38 @@ export default function ProfileScreen() {
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Review us on Trustpilot</Text>
               <Text style={styles.menuSubtitle}>Help others discover GroomLink</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('About')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#F3F4F6' }]}>
+              <Ionicons name="information-circle-outline" size={20} color="#6B7280" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>About</Text>
+              <Text style={styles.menuSubtitle}>App version & company info</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Legal')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="document-text-outline" size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Legal</Text>
+              <Text style={styles.menuSubtitle}>Terms, privacy policy & data rights</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>

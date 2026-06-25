@@ -27,6 +27,13 @@ export type MainStackParamList = {
   RequestPayout: { availableBalance: number; salonId?: string };
   PayoutHistory: undefined;
   Chat: undefined;
+  Analytics: undefined;
+  KYC: undefined;
+  StaffAvailability: undefined;
+  About: undefined;
+  Legal: undefined;
+  Support: undefined;
+  Referral: undefined;
 };
 
 export interface Service {

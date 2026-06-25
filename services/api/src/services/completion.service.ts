@@ -112,7 +112,7 @@ export async function manualComplete(bookingId: string, completedById: string) {
         body: `You marked ${booking.customer.firstName} ${booking.customer.lastName}'s service as complete. Waiting for customer confirmation.`,
         data: { type: 'service_completed', bookingId: booking.id },
       }
-    ).catch((err) => logger.error('Failed to send push to salon for completion', { err }));
+    ).catch((err: Error) => logger.error('Failed to send push to salon for completion', { err }));
 
     // Send SMS to salon owner confirming they marked it done
     if (booking.salon.owner?.phoneNumber) {

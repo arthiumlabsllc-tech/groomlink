@@ -26,6 +26,19 @@ export interface PaymentConfig {
   platformFeePercentage: number;
 }
 
+export interface PaymentHistoryItem {
+  id: string;
+  amount: number | string;
+  status: 'SUCCESS' | 'PENDING' | 'FAILED' | 'REFUNDED';
+  provider: string;
+  serviceName?: string;
+  salonName?: string;
+  bookingDate?: string;
+  createdAt: string;
+  reference?: string;
+  bookingId?: string;
+}
+
 export const paymentApi = {
   initialize: async (data: {
     bookingId: string;
@@ -47,5 +60,14 @@ export const paymentApi = {
   getConfig: async (): Promise<PaymentConfig> => {
     const response = await apiClient.get('/payments/config');
     return response.data.data;
+  },
+
+  // Get payment history
+  getHistory: async (page: number = 1, limit: number = 20): Promise<{ payments: PaymentHistoryItem[]; total: number }> => {
+    const response = await apiClient.get(`/payments/history?page=${page}&limit=${limit}`);
+    return {
+      payments: response.data.data || [],
+      total: response.data.pagination?.total || (response.data.data || []).length,
+    };
   },
 };

@@ -15,6 +15,10 @@ import SafeMapScreen from '../screens/main/SafeMapScreen';
 import SalonDetailScreen from '../screens/main/SalonDetailScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import FavoritesScreen from '../screens/main/FavoritesScreen';
+import DiscoverScreen from '../screens/main/DiscoverScreen';
+import PaymentHistoryScreen from '../screens/main/PaymentHistoryScreen';
+import LoyaltyScreen from '../screens/main/LoyaltyScreen';
+import WaitlistScreen from '../screens/main/WaitlistScreen';
 import ChatScreen from '../screens/support/ChatScreen';
 
 import {
@@ -40,6 +44,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="SalonDetail" component={SalonDetailScreen} options={{ title: 'Salon Details' }} />
       <HomeStackNav.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
       <HomeStackNav.Screen name="Favorites" component={FavoritesScreen} options={{ headerShown: false }} />
+      <HomeStackNav.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
     </HomeStackNav.Navigator>
   );
 }
@@ -75,6 +80,9 @@ function ProfileStack() {
     <ProfileStackNav.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStackNav.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStackNav.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+      <ProfileStackNav.Screen name="PaymentHistory" component={PaymentHistoryScreen} options={{ headerShown: false }} />
+      <ProfileStackNav.Screen name="Loyalty" component={LoyaltyScreen} options={{ headerShown: false }} />
+      <ProfileStackNav.Screen name="Waitlist" component={WaitlistScreen} options={{ headerShown: false }} />
     </ProfileStackNav.Navigator>
   );
 }

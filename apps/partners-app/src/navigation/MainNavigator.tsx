@@ -24,6 +24,13 @@ import RequestPayoutScreen from '../screens/main/RequestPayoutScreen';
 import PayoutHistoryScreen from '../screens/main/PayoutHistoryScreen';
 import ChatScreen from '../screens/support/ChatScreen';
 import ReviewsScreen from '../screens/main/ReviewsScreen';
+import AnalyticsScreen from '../screens/main/AnalyticsScreen';
+import KYCScreen from '../screens/main/KYCScreen';
+import StaffAvailabilityScreen from '../screens/main/StaffAvailabilityScreen';
+import AboutScreen from '../screens/main/AboutScreen';
+import LegalScreen from '../screens/main/LegalScreen';
+import SupportScreen from '../screens/main/SupportScreen';
+import ReferralScreen from '../screens/main/ReferralScreen';
 import { MainStackParamList, TabParamList } from '../types/navigation';
 import { AppTheme } from '../theme/colors';
 import { useAppTheme } from '../theme/ThemeContext';
@@ -226,6 +233,41 @@ function ProfileStack() {
         name="Reviews"
         component={ReviewsScreen}
         options={{ title: 'Reviews' }}
+      />
+      <Stack.Screen
+        name="Analytics"
+        component={AnalyticsScreen}
+        options={{ title: 'Analytics' }}
+      />
+      <Stack.Screen
+        name="KYC"
+        component={KYCScreen}
+        options={{ title: 'KYC Verification' }}
+      />
+      <Stack.Screen
+        name="StaffAvailability"
+        component={StaffAvailabilityScreen}
+        options={{ title: 'Staff Availability' }}
+      />
+      <Stack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{ title: 'About' }}
+      />
+      <Stack.Screen
+        name="Legal"
+        component={LegalScreen}
+        options={{ title: 'Legal' }}
+      />
+      <Stack.Screen
+        name="Support"
+        component={SupportScreen}
+        options={{ title: 'Help & Support' }}
+      />
+      <Stack.Screen
+        name="Referral"
+        component={ReferralScreen}
+        options={{ title: 'Refer a Friend' }}
       />
     </Stack.Navigator>
   );

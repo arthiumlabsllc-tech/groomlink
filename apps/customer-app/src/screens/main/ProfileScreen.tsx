@@ -445,6 +445,12 @@ export default function ProfileScreen() {
           <View style={styles.card}>
             {renderSettingItem('heart-outline', 'Saved Salons', () => navigation.getParent()?.navigate('Home', { screen: 'Favorites' }))}
             <Divider style={styles.settingDivider} />
+            {renderSettingItem('wallet-outline', 'Payment History', () => navigation.navigate('PaymentHistory'))}
+            <Divider style={styles.settingDivider} />
+            {renderSettingItem('gift-outline', 'Rewards', () => navigation.navigate('Loyalty'))}
+            <Divider style={styles.settingDivider} />
+            {renderSettingItem('hourglass-outline', 'Waitlist', () => navigation.navigate('Waitlist'))}
+            <Divider style={styles.settingDivider} />
             {renderSettingItem(
               'notifications-outline',
               'Notifications',

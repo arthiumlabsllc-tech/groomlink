@@ -15,6 +15,7 @@ export type HomeStackParamList = {
   SalonDetail: { salonId: string };
   Notifications: undefined;
   Favorites: undefined;
+  Discover: undefined;
 };
 
 export type SearchStackParamList = {
@@ -40,6 +41,9 @@ export type ProfileStackParamList = {
   ProfileMain: undefined;
   PlatformFeedback: undefined;
   Chat: undefined;
+  PaymentHistory: undefined;
+  Loyalty: undefined;
+  Waitlist: undefined;
 };
 
 // Keep MainStackParamList for backward compatibility with existing screen imports
@@ -47,6 +51,7 @@ export type MainStackParamList = {
   HomeMain: undefined;
   SearchMain: undefined;
   MapMain: undefined;
+  Discover: undefined;
   SalonDetail: { salonId: string };
   Booking: { salonId: string; workerId?: string; services?: string[] };
   BookingConfirmation: { bookingId: string };
@@ -55,6 +60,9 @@ export type MainStackParamList = {
   BookingQRCode: { bookingId: string };
   RateBooking: { bookingId: string };
   PlatformFeedback: undefined;
+  PaymentHistory: undefined;
+  Loyalty: undefined;
+  Waitlist: undefined;
 };
 
 export type TabParamList = {
@@ -81,6 +89,9 @@ export type RootStackParamList = {
   BookingQRCode: { bookingId: string };
   RateBooking: { bookingId: string };
   PlatformFeedback: undefined;
+  PaymentHistory: undefined;
+  Loyalty: undefined;
+  Waitlist: undefined;
 };
 
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;

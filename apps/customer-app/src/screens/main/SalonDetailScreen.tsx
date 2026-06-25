@@ -10,6 +10,7 @@ import {
   TextInput,
   Dimensions,
   FlatList,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -27,6 +28,7 @@ import { openDirections } from '../../utils/directions';
 import { salonApi } from '../../api/salon';
 import { reviewApi } from '../../api/review';
 import { queueApi, QueueStatus, MyQueuePosition } from '../../api/queue';
+import { waitlistApi } from '../../api/waitlist';
 import { Salon, Review, Service } from '../../types';
 import { MainStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
@@ -76,6 +78,7 @@ export default function SalonDetailScreen() {
   const [queueNotes, setQueueNotes] = useState('');
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [leavingQueue, setLeavingQueue] = useState(false);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   // Gallery carousel state
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -887,15 +890,48 @@ export default function SalonDetailScreen() {
 
       {/* Book Now Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.bookButton}
-          onPress={handleBookNow}
-          accessibilityRole="button"
-          accessibilityLabel={`Book an appointment at ${salon?.businessName || 'this salon'}`}
-        >
-          <Ionicons name="calendar" size={20} color="#fff" />
-          <Text style={styles.bookButtonText}>Book Now</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity
+            style={[styles.bookButton, { flex: 1 }]}
+            onPress={handleBookNow}
+            accessibilityRole="button"
+            accessibilityLabel={`Book an appointment at ${salon?.businessName || 'this salon'}`}
+          >
+            <Ionicons name="calendar" size={20} color="#fff" />
+            <Text style={styles.bookButtonText}>Book Now</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.waitlistButton]}
+            onPress={async () => {
+              if (!isAuthenticated) {
+                setPendingBooking({ salonId, salonName: salon?.businessName ?? '' });
+                navigation.navigate('Auth');
+                return;
+              }
+              setJoiningWaitlist(true);
+              try {
+                await waitlistApi.join({ salonId });
+                Alert.alert('Joined Waitlist', 'You have been added to the waitlist. We\'ll notify you when a slot opens.');
+              } catch (err: any) {
+                Alert.alert('Error', err.response?.data?.message || 'Could not join waitlist');
+              } finally {
+                setJoiningWaitlist(false);
+              }
+            }}
+            disabled={joiningWaitlist}
+            accessibilityRole="button"
+            accessibilityLabel={`Join waitlist at ${salon?.businessName || 'this salon'}`}
+          >
+            {joiningWaitlist ? (
+              <ActivityIndicator size="small" color={COLORS.primaryGreen} />
+            ) : (
+              <>
+                <Ionicons name="hourglass-outline" size={20} color={COLORS.primaryGreen} />
+                <Text style={styles.waitlistButtonText}>Waitlist</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -1344,6 +1380,23 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   bookButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  waitlistButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderWidth: 1.5,
+    borderColor: COLORS.primaryGreen,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    gap: 6,
+  },
+  waitlistButtonText: {
+    color: COLORS.primaryGreen,
+    fontSize: 14,
     fontWeight: '600',
   },
   // Queue Section Styles

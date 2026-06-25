@@ -659,12 +659,25 @@ export default function BookingScreen() {
                   </View>
                   <View style={styles.serviceInfo}>
                     <Text variant="titleSmall" style={styles.serviceName}>{service.name}</Text>
-                    <View style={styles.serviceDuration}>
-                      <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-                      <Text variant="bodySmall" style={styles.serviceDurationText}>
-                        {formatDuration(service.duration)}
-                      </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <View style={styles.serviceDuration}>
+                        <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+                        <Text variant="bodySmall" style={styles.serviceDurationText}>
+                          {formatDuration(service.duration)}
+                        </Text>
+                      </View>
+                      {service.offersHomeService && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                          <Ionicons name="home-outline" size={12} color="#4F46E5" />
+                          <Text variant="bodySmall" style={{ color: '#4F46E5', fontSize: 11, fontWeight: '500' }}>Home</Text>
+                        </View>
+                      )}
                     </View>
+                    {service.offersHomeService && service.homeServiceFee && parseFloat(String(service.homeServiceFee)) > 0 && (
+                      <Text variant="bodySmall" style={{ color: COLORS.textSecondary, fontSize: 11, marginTop: 2 }}>
+                        +GH₵ {parseFloat(String(service.homeServiceFee)).toFixed(2)} home fee
+                      </Text>
+                    )}
                   </View>
                   <Text variant="titleMedium" style={styles.servicePrice}>
                     GH₵ {parseFloat(String(service.price)).toFixed(2)}
@@ -1036,6 +1049,24 @@ export default function BookingScreen() {
                 </View>
               )}
               <View style={styles.feeBreakdownCard}>
+                {/* Service Info Row */}
+                <View style={[styles.feeRow, { marginBottom: 8 }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+                    <Text variant="bodySmall" style={styles.feeLabel}>Est. Duration</Text>
+                  </View>
+                  <Text variant="bodySmall" style={styles.feeValue}>{formatDuration(totalDuration)}</Text>
+                </View>
+                {salon?.distance != null && salon.distance > 0 && (
+                  <View style={[styles.feeRow, { marginBottom: 8 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="navigate-outline" size={14} color={COLORS.textSecondary} />
+                      <Text variant="bodySmall" style={styles.feeLabel}>Distance</Text>
+                    </View>
+                    <Text variant="bodySmall" style={styles.feeValue}>{salon.distance.toFixed(1)} km</Text>
+                  </View>
+                )}
+                <View style={styles.feeDivider} />
                 <View style={styles.feeRow}>
                   <Text variant="bodySmall" style={styles.feeLabel}>Services Subtotal</Text>
                   <Text variant="bodySmall" style={styles.feeValue}>GH₵ {serviceSubtotal.toFixed(2)}</Text>

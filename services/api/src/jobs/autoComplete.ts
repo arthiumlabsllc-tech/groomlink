@@ -242,7 +242,7 @@ async function sendCustomerConfirmReminder(booking: {
       body: `We reminded ${booking.customer.firstName} to confirm their service. Waiting for response.`,
       data: { type: 'completion_reminder_sent', bookingId: booking.id },
     }
-  ).catch((err) => logger.error('Failed to send push to salon for reminder', { err }));
+  ).catch((err: Error) => logger.error('Failed to send push to salon for reminder', { err }));
 }
 
 /**
@@ -310,7 +310,7 @@ async function sendCustomerUrgentReminder(booking: {
       body: `${booking.customer.firstName} was sent an urgent reminder. Payment will auto-release in 24h if not confirmed.`,
       data: { type: 'completion_urgent_sent', bookingId: booking.id },
     }
-  ).catch((err) => logger.error('Failed to send urgent push to salon', { err }));
+  ).catch((err: Error) => logger.error('Failed to send urgent push to salon', { err }));
 
   // Also notify salon owner of the status
   if (booking.salon.phoneNumber) {
@@ -409,7 +409,7 @@ async function safetyNetRelease(
       body: `Payment for ${booking.customer.firstName}'s service has been auto-released (48h safety net). Funds arriving in 1-2 days.`,
       data: { type: 'payment_auto_released', bookingId: booking.id },
     }
-  ).catch((err) => logger.error('Failed to send safety-net push to salon', { err }));
+  ).catch((err: Error) => logger.error('Failed to send safety-net push to salon', { err }));
 
   logger.info(`Booking ${booking.id} safety-net release completed successfully`);
 }

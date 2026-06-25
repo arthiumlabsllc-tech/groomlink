@@ -380,6 +380,9 @@ export default function HomeScreen() {
               resizeMode="contain"
             />
             <View style={styles.headerRight}>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')} style={styles.bellContainer} accessibilityLabel="Discover salons">
+                <Ionicons name="compass-outline" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.bellContainer}>
                 <MaterialCommunityIcons name="bell-outline" size={24} color={COLORS.textPrimary} />
                 {unreadCount > 0 && (
