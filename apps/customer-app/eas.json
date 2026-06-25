@@ -50,7 +50,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v21-no-npm-lockfile"
+        "key": "v22-lockfile-fix"
       }
     }
   },
