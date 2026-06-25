@@ -39,7 +39,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v15-root-easignore"
+        "key": "v16-no-npm-lockfile"
       }
     }
   },

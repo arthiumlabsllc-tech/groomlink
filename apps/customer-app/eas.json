@@ -50,7 +50,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v20-fix-postinstall-scripts"
+        "key": "v21-no-npm-lockfile"
       }
     }
   },
