@@ -1,23 +1,41 @@
-# Ignore monorepo root files that might cause issues
-../pnpm-workspace.yaml
-../pnpm-lock.yaml
-../package.json
-../package-lock.json
-../.npmrc
-../.pnpmfile.cjs
-../node_modules
-../eas.json
-../app.json
-../apps
-../packages
+# EAS Build needs monorepo context to install dependencies correctly.
+# DO NOT ignore these root files (EAS needs them for pnpm monorepo detection):
+#   - pnpm-workspace.yaml
+#   - pnpm-lock.yaml
+#   - package.json (root)
+
+# Ignore other monorepo app directories (not needed for this app's build)
+../apps/admin
+../apps/customer
+../apps/customer-app
+../apps/landing
+../apps/mobile
+../apps/partners
+../apps/support
 ../services
-.github
-nginx
-scripts
+../packages
+
+# Ignore non-essential root files
+../.gitignore
+../.github
+../.idea
+../.vscode
+../.venv
+../nginx
+../.env*
+../app.json
+../codemagic.yaml
+../docker-compose*.yml
+
+# Ignore root-level noise (Python scripts, images, docs, etc.)
 *.md
+*.py
+*.png
+*.psd
+*.bin
+*.txt
 backup.sh
 deploy.sh
-docker-compose*.yml
 hostinger-*
 *.example
 
