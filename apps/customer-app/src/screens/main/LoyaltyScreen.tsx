@@ -60,7 +60,8 @@ export default function LoyaltyScreen() {
   });
 
   const redeemMutation = useMutation({
-    mutationFn: (rewardId: string) => loyaltyApi.redeemReward(rewardId),
+    mutationFn: ({ rewardId, points }: { rewardId: string; points: number }) =>
+      loyaltyApi.redeemReward(rewardId, points),
     onSuccess: (result) => {
       Alert.alert('Reward Redeemed!', result.message || 'Your reward has been redeemed successfully.');
       queryClient.invalidateQueries({ queryKey: ['loyalty-status'] });
@@ -87,7 +88,7 @@ export default function LoyaltyScreen() {
       `Redeem "${reward.name}" for ${reward.pointsCost} points?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Redeem', onPress: () => redeemMutation.mutate(reward.id) },
+        { text: 'Redeem', onPress: () => redeemMutation.mutate({ rewardId: reward.id, points: reward.pointsCost }) },
       ]
     );
   }, [status, redeemMutation]);
