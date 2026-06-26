@@ -162,6 +162,11 @@ export function getSupportedMomoProviders(req: Request, res: Response): void {
  */
 export async function getPayoutBalance(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
+    // Disable caching to prevent stale balance data (ETag/304 issues)
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     if (!req.user) {
       errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
       return;
@@ -268,6 +273,9 @@ export async function getPayoutBalance(req: AuthenticatedRequest, res: Response)
  */
 export async function requestPayout(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
+    // Disable caching for payout requests
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
     if (!req.user) {
       errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
       return;
@@ -420,9 +428,10 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
     }
 
     // Try Paystack (when active gateway is paystack, or as Hubtel fallback)
+    let paystackError: string | undefined;
     if (!payoutRef) {
       const detectedProvider = detectMomoProviderFromPhone(salon.momoNumber);
-      const psRef = await payoutViaPaystack({
+      const psResult = await payoutViaPaystack({
         recipientPhone: salon.momoNumber,
         recipientName: salon.businessName,
         amount: transferAmount,
@@ -430,9 +439,11 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
         reference: payoutReference,
         description: `Manual payout request - ${salon.businessName}`,
       });
-      if (psRef) {
-        payoutRef = psRef;
+      if (psResult.reference) {
+        payoutRef = psResult.reference;
         payoutGateway = 'paystack';
+      } else {
+        paystackError = psResult.error;
       }
     }
 
@@ -441,13 +452,18 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
       pushService.pushPayoutFailed(
         req.user.id,
         amount,
-        'Please contact support if this persists.'
+        paystackError || 'Please contact support if this persists.'
       ).catch((err) => logger.error('Failed to send payout failed notification', { err }));
+
+      // Build a user-friendly error message
+      const userMessage = paystackError
+        ? `Payout failed: ${paystackError}. Please contact support for assistance.`
+        : `Failed to transfer funds via ${activeGateway}. Please try again or contact support.`;
 
       errorResponse(
         res,
         'PAYOUT_FAILED',
-        `Failed to transfer funds via ${activeGateway} or Paystack. Please try again or contact support.`,
+        userMessage,
         500
       );
       return;
@@ -545,6 +561,11 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
  */
 export async function getPayoutHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
+    // Disable caching to prevent stale history data (ETag/304 issues)
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     if (!req.user) {
       errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
       return;

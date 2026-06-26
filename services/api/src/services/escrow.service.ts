@@ -97,7 +97,7 @@ async function refundViaPaystack(
 
 /**
  * Send a payout via Paystack transfers (bank or mobile money).
- * Returns the payout reference on success, or undefined on failure.
+ * Returns { reference, error } — reference is set on success, error on failure.
  */
 export async function payoutViaPaystack(params: {
   recipientPhone: string;
@@ -106,12 +106,12 @@ export async function payoutViaPaystack(params: {
   momoProvider?: string;
   reference: string;
   description: string;
-}): Promise<string | undefined> {
+}): Promise<{ reference?: string; error?: string }> {
   try {
     const providerResult = await paymentProviderRegistry.getProvider('paystack');
     if (!providerResult) {
       logger.warn('Paystack provider not available for payout');
-      return undefined;
+      return { error: 'Paystack payment provider is not configured' };
     }
 
     const result = await providerResult.provider.sendPayout(
@@ -131,14 +131,14 @@ export async function payoutViaPaystack(params: {
 
     if (result.success) {
       logger.info('Paystack payout sent', { reference: params.reference, amount: params.amount });
-      return result.payoutReference;
+      return { reference: result.payoutReference };
     }
 
     logger.warn('Paystack payout failed', { reference: params.reference, message: result.message });
-    return undefined;
+    return { error: result.message || 'Paystack payout failed' };
   } catch (error: any) {
     logger.error('Paystack payout error', { reference: params.reference, error: error.message });
-    return undefined;
+    return { error: error.response?.data?.message || error.message || 'Paystack payout error' };
   }
 }
 
@@ -365,7 +365,7 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
     // Try Paystack (when active gateway is paystack, or as Hubtel fallback)
     if (!payoutRef) {
       const detectedProvider = detectMomoProviderFromPhone(escrow.salon.momoNumber);
-      const psRef = await payoutViaPaystack({
+      const psResult = await payoutViaPaystack({
         recipientPhone: escrow.salon.momoNumber,
         recipientName: escrow.salon.businessName,
         amount: providerPayout,
@@ -373,9 +373,11 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
         reference: payoutReference,
         description: 'Payment for service completion',
       });
-      if (psRef) {
-        payoutRef = psRef;
+      if (psResult.reference) {
+        payoutRef = psResult.reference;
         payoutGateway = 'paystack';
+      } else if (psResult.error) {
+        logger.warn('Paystack fallback failed', { escrowId, error: psResult.error });
       }
     }
 
@@ -540,7 +542,7 @@ export async function refundEscrow(
         // Last resort: try Paystack transfer to customer phone
         if (!refundRef) {
           const detectedProvider = detectMomoProviderFromPhone(customerPhone);
-          const psRef = await payoutViaPaystack({
+          const psResult = await payoutViaPaystack({
             recipientPhone: customerPhone,
             recipientName: `${escrow.booking.customer.firstName} ${escrow.booking.customer.lastName}`,
             amount: refundAmount,
@@ -548,9 +550,11 @@ export async function refundEscrow(
             reference: refundReference,
             description: 'Refund for cancelled booking',
           });
-          if (psRef) {
-            refundRef = psRef;
+          if (psResult.reference) {
+            refundRef = psResult.reference;
             refundGateway = 'paystack_transfer';
+          } else if (psResult.error) {
+            logger.warn('Paystack refund payout failed', { escrowId, error: psResult.error });
           }
         }
       }

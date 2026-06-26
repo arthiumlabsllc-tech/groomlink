@@ -112,9 +112,13 @@ export default function RequestPayoutScreen() {
                 ]
               );
             } catch (error: any) {
+              const serverMessage =
+                error.response?.data?.error?.message ||
+                error.response?.data?.message ||
+                error.message;
               Alert.alert(
                 'Request Failed',
-                error.response?.data?.message || 'Failed to request payout. Please try again.'
+                serverMessage || 'Failed to request payout. Please try again.'
               );
             } finally {
               setRequesting(false);
