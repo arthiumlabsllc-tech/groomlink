@@ -51,6 +51,7 @@ const adminNavItems = [
 
 // Settings nav item (shown at bottom)
 const settingsNavItem = { path: '/settings', label: 'Settings', icon: 'settings', pageId: 'settings' };
+const buildsNavItem = { path: '/builds', label: 'Build Status', icon: 'build', pageId: 'settings' };
 
 export function Layout() {
   const location = useLocation();
@@ -267,6 +268,23 @@ export function Layout() {
             )}
             <div className="p-4 border-t border-gray-700/50">
           {(() => {
+            const isActive = location.pathname === buildsNavItem.path;
+            return (
+              <Link
+                to={buildsNavItem.path}
+                title={!isSidebarOpen ? buildsNavItem.label : undefined}
+                className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 group mb-1 ${
+                  isActive
+                    ? 'bg-[#006B3F] text-white shadow-md shadow-green-500/20 border-l-2 border-ghana-yellow'
+                    : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116] hover:translate-x-0.5 border-l-2 border-transparent'
+                }`}
+              >
+                <Icon name={buildsNavItem.icon} size={20} className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#FCD116]'}`} />
+                {isSidebarOpen && <span className="ml-3">{buildsNavItem.label}</span>}
+              </Link>
+            );
+          })()}
+          {(() => {
             const isActive = location.pathname === settingsNavItem.path;
             return (
               <Link
@@ -431,6 +449,23 @@ export function Layout() {
               <div className="px-4 pt-4 pb-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Configuration</p>
               </div>
+              {(() => {
+                const isActive = location.pathname === buildsNavItem.path;
+                return (
+                  <Link
+                    to={buildsNavItem.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-[#006B3F] text-white shadow-md shadow-green-500/20 border-l-2 border-ghana-yellow'
+                        : 'text-gray-300 hover:bg-[#FCD116]/20 hover:text-[#FCD116] hover:translate-x-0.5 border-l-2 border-transparent'
+                    }`}
+                  >
+                    <Icon name={buildsNavItem.icon} size={20} />
+                    <span className="ml-3">{buildsNavItem.label}</span>
+                  </Link>
+                );
+              })()}
               {(() => {
                 const isActive = location.pathname === settingsNavItem.path;
                 return (

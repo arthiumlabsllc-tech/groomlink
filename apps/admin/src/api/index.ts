@@ -12,3 +12,4 @@ export * from './adminManagement';
 export * from './settings';
 export * from './admin';
 export * from './subscription';
+export * from './builds';
