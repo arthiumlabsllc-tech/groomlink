@@ -7,6 +7,7 @@ import {
   getActivePaymentGateway,
   payoutViaPaystack,
   detectMomoProviderFromPhone,
+  getPolicyValue,
 } from '../services/escrow.service';
 import { initiateHubtelPayout, getHubtelChannel } from '../services/payout.service';
 import prisma from '../config/database';
@@ -345,6 +346,47 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
       },
     });
 
+    // ── Pre-calculate commission for the escrows being released ──
+    // This mirrors the logic in releaseEscrow() so the partner receives
+    // servicePrice − commission, NOT the raw providerAmount.
+    let commissionRate = 5; // default 5 %
+    try {
+      const commStr = await getPolicyValue('partner_commission_percentage');
+      const parsedComm = parseFloat(commStr);
+      if (!isNaN(parsedComm)) commissionRate = parsedComm;
+    } catch (policyError) {
+      logger.warn('Failed to fetch partner_commission_percentage, using default 5%', { policyError });
+    }
+
+    let totalCommission = 0;
+    let accountedAmount = 0;
+    for (const escrow of heldEscrows) {
+      if (accountedAmount >= amount) break;
+      const escrowProviderAmount = Number(escrow.providerAmount);
+      const amountFromEscrow = Math.min(escrowProviderAmount, amount - accountedAmount);
+
+      const amountHeld = Number(escrow.amountHeld);
+      const bookingFee = Number(escrow.bookingFee || 0);
+      const servicePrice = amountHeld - bookingFee;
+      // Commission is on the proportional service price
+      const proportion = escrowProviderAmount > 0 ? amountFromEscrow / escrowProviderAmount : 0;
+      const escrowCommission = servicePrice * proportion * (commissionRate / 100);
+      totalCommission += escrowCommission;
+
+      accountedAmount += amountFromEscrow;
+    }
+
+    // Actual amount sent to the payment gateway (raw amount minus commission)
+    const transferAmount = Math.round((amount - totalCommission) * 100) / 100;
+
+    logger.info(`Manual payout commission pre-calc for salon ${salonId}`, {
+      requestedAmount: amount,
+      commissionRate,
+      totalCommission: Math.round(totalCommission * 100) / 100,
+      transferAmount,
+      escrowsConsidered: heldEscrows.length,
+    });
+
     // Route payout through the active payment gateway (admin-configured)
     const activeGateway = await getActivePaymentGateway();
     const payoutReference = `GROOMLINK-MANUAL-PAYOUT-${salonId.slice(0, 8)}-${Date.now()}`;
@@ -357,7 +399,7 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
         const payoutResult = await initiateHubtelPayout({
           recipientPhone: salon.momoNumber,
           recipientName: salon.businessName,
-          amount,
+          amount: transferAmount,
           channel: getHubtelChannel(salon.momoProvider),
           reference: payoutReference,
           description: `Manual payout request - ${salon.businessName}`,
@@ -365,7 +407,7 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
         payoutRef = payoutResult?.Data?.ClientReference || payoutReference;
         payoutGateway = 'hubtel';
         logger.info(`Hubtel manual payout initiated for salon ${salonId}`, {
-          amount,
+          transferAmount,
           payoutRef,
         });
       } catch (hubtelError: any) {
@@ -383,7 +425,7 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
       const psRef = await payoutViaPaystack({
         recipientPhone: salon.momoNumber,
         recipientName: salon.businessName,
-        amount,
+        amount: transferAmount,
         momoProvider: detectedProvider,
         reference: payoutReference,
         description: `Manual payout request - ${salon.businessName}`,
@@ -460,7 +502,7 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
     // Send push notification for successful payout
     pushService.pushPayoutSent(
       req.user.id,
-      amount,
+      transferAmount,
       salon.momoProvider
     ).catch((err) => logger.error('Failed to send payout sent notification', { err }));
 
@@ -469,22 +511,26 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
       userId: req.user.id,
       type: 'PAYMENT_RECEIVED',
       title: 'Payout Sent',
-      message: `GH₵${amount.toFixed(2)} has been sent to your ${salon.momoProvider.toUpperCase()} MoMo.`,
-      data: { type: 'payout_sent', amount, gateway: payoutGateway, reference: payoutRef },
+      message: `GH₵${transferAmount.toFixed(2)} has been sent to your ${salon.momoProvider.toUpperCase()} MoMo.`,
+      data: { type: 'payout_sent', amount: transferAmount, gateway: payoutGateway, reference: payoutRef },
     }).catch((err) => logger.error('Failed to create payout notification', { err }));
 
     logger.info(`Manual payout processed for salon ${salonId}`, {
-      amount,
+      requestedAmount: amount,
+      transferAmount,
+      totalCommission: Math.round(totalCommission * 100) / 100,
       gateway: payoutGateway,
       reference: payoutRef,
       escrowsReleased: releasedEscrowIds.length,
     });
 
     successResponse(res, {
-      message: `GH₵${amount.toFixed(2)} has been sent to your ${salon.momoProvider.toUpperCase()} MoMo`,
+      message: `GH₵${transferAmount.toFixed(2)} has been sent to your ${salon.momoProvider.toUpperCase()} MoMo`,
       payoutReference: payoutRef,
       gateway: payoutGateway,
-      amount,
+      requestedAmount: amount,
+      commissionDeducted: Math.round(totalCommission * 100) / 100,
+      amountSent: transferAmount,
       escrowsReleased: releasedEscrowIds.length,
     });
   } catch (error) {
