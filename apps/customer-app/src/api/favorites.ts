@@ -11,9 +11,27 @@ export const favoritesApi = {
   getFavorites: async (page = 1, limit = 50): Promise<FavoritesListResponse> => {
     const response = await apiClient.get(`/users/favorites?page=${page}&limit=${limit}`);
     const data = response.data.data ?? response.data;
+    const rawItems: any[] = Array.isArray(data)
+      ? data
+      : data?.salons ?? data?.favorites ?? [];
+
+    // The API returns Favorite records with a nested `salon` object.
+    // Extract the salon so the screen receives proper Salon objects.
+    const salons: Salon[] = rawItems.map((item) => {
+      const salon = item.salon ?? item;
+      return {
+        ...salon,
+        id: salon.id ?? item.salonId,
+        // Ensure images is always an array
+        images: salon.images ?? [],
+        // Fallback: use logo or coverImage if images array is empty
+        coverImage: salon.coverImage ?? salon.logo ?? null,
+      } as Salon;
+    });
+
     return {
-      salons: Array.isArray(data) ? data : data?.salons ?? [],
-      total: response.data.pagination?.total ?? (Array.isArray(data) ? data.length : 0),
+      salons,
+      total: response.data.pagination?.total ?? salons.length,
     };
   },
 

@@ -61,6 +61,9 @@ export default function FavoritesScreen() {
 
   const renderSalonCard = useCallback(({ item }: { item: Salon }) => {
     const salonId = item.id ?? (item as any).salonId;
+    // Try coverImage first, then first image from array, then logo
+    const rawImage = item.coverImage ?? item.images?.[0] ?? item.logo ?? null;
+    const imageUrl = resolveImageUrl(rawImage);
     return (
       <TouchableOpacity
         style={styles.card}
@@ -68,8 +71,8 @@ export default function FavoritesScreen() {
         activeOpacity={0.8}
       >
         <View style={styles.cardImageContainer}>
-          {item.images?.[0] ? (
-            <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.cardImage} />
           ) : (
             <View style={styles.placeholderImage}>
               <Ionicons name="storefront" size={36} color={COLORS.textSecondary} />
@@ -87,17 +90,29 @@ export default function FavoritesScreen() {
           <Text variant="titleSmall" numberOfLines={1} style={styles.salonName}>
             {item.businessName}
           </Text>
-          <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
-            <Text variant="bodySmall" numberOfLines={1} style={styles.address}>
-              {item.address}
-            </Text>
-          </View>
-          {item.rating != null && (
-            <View style={styles.ratingRow}>
-              <Ionicons name="star" size={12} color={COLORS.accentGold} />
-              <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+          {(item.address || item.city) && (
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
+              <Text variant="bodySmall" numberOfLines={1} style={styles.address}>
+                {item.address || item.city}
+              </Text>
             </View>
+          )}
+          <View style={styles.ratingRow}>
+            {item.rating != null && item.rating > 0 ? (
+              <>
+                <Ionicons name="star" size={12} color={COLORS.accentGold} />
+                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+                {item.reviewCount != null && item.reviewCount > 0 && (
+                  <Text style={styles.reviewCount}>({item.reviewCount})</Text>
+                )}
+              </>
+            ) : (
+              <Text style={styles.noRating}>No reviews yet</Text>
+            )}
+          </View>
+          {item.type && (
+            <Text style={styles.typeLabel}>{item.type}</Text>
           )}
         </View>
       </TouchableOpacity>
@@ -198,6 +213,9 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) =>
     address: { color: COLORS.textSecondary, flex: 1 },
     ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
     ratingText: { fontSize: 12, fontWeight: '600', color: COLORS.textPrimary },
+    reviewCount: { fontSize: 12, color: COLORS.textSecondary },
+    noRating: { fontSize: 12, color: COLORS.textSecondary },
+    typeLabel: { fontSize: 11, color: COLORS.textSecondary, marginTop: 4, textTransform: 'capitalize' },
     emptyState: { alignItems: 'center', padding: 32 },
     emptyTitle: { fontWeight: '600', color: COLORS.textPrimary, marginTop: 16 },
     emptySubtitle: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 8 },
