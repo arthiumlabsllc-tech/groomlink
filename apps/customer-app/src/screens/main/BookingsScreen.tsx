@@ -209,6 +209,87 @@ export default function BookingsScreen() {
     });
   }, [navigation]);
 
+  const renderPastBookingCard = useCallback(({ item, index }: { item: Booking; index: number }) => {
+    const cardAnim = animatedValues[index] || new Animated.Value(1);
+    const statusColor = STATUS_COLORS[item.status] || COLORS.textSecondary;
+    const statusLabel = STATUS_LABELS[item.status] || item.status;
+    const isCompleted = item.status === 'COMPLETED';
+    const accentColor = isCompleted ? COLORS.primaryGreen : COLORS.accentRed;
+
+    return (
+      <Animated.View style={[{
+        opacity: cardAnim,
+        transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+      }]}>
+        <TouchableOpacity
+          style={[styles.pastCard, { borderLeftColor: accentColor }]}
+          onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={a11yBookingLabel(item)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.pastCardBody}>
+            {/* Left: Status column */}
+            <View style={[styles.pastStatusColumn, { backgroundColor: `${statusColor}12` }]}>
+              <View style={[styles.pastStatusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.pastStatusText, { color: statusColor }]}>
+                {statusLabel}
+              </Text>
+            </View>
+
+            {/* Center: Info */}
+            <View style={styles.pastInfoColumn}>
+              <Text style={styles.pastServiceName} numberOfLines={1}>
+                {item.services?.map(s => s.name).join(', ') || 'Service'}
+              </Text>
+              <Text style={styles.pastSalonName} numberOfLines={1}>
+                {item.salon?.businessName || 'Salon'}
+              </Text>
+              <View style={styles.pastDateTimeRow}>
+                <Ionicons name="calendar-outline" size={12} color={COLORS.textSecondary} />
+                <Text style={styles.pastDateTimeText}>
+                  {formatDate(item.scheduledDate || item.date || '')} · {formatTime(item.scheduledTime || item.startTime)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Right: Price + action */}
+            <View style={styles.pastRightColumn}>
+              <Text style={styles.pastPrice}>
+                GH₵ {parseFloat(String(item.totalAmount)).toFixed(2)}
+              </Text>
+              {isCompleted && !item.review && (
+                <TouchableOpacity
+                  style={styles.pastRebookBtn}
+                  onPress={(e) => { e.stopPropagation(); handleRebook(item); }}
+                >
+                  <Ionicons name="refresh" size={12} color={COLORS.primaryGreen} />
+                  <Text style={styles.pastRebookBtnText}>Rebook</Text>
+                </TouchableOpacity>
+              )}
+              {isCompleted && item.review && (
+                <View style={styles.pastReviewedBadge}>
+                  <Ionicons name="star" size={11} color={COLORS.accentGold} />
+                  <Text style={styles.pastReviewedText}>{item.review.rating}/5</Text>
+                </View>
+              )}
+              {!isCompleted && (
+                <TouchableOpacity
+                  style={styles.pastViewBtn}
+                  onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
+                >
+                  <Text style={styles.pastViewBtnText}>View</Text>
+                  <Ionicons name="chevron-forward" size={12} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }, [navigation, animatedValues, handleRebook, COLORS]);
+
   const renderBookingCard = useCallback(({ item, index }: { item: Booking; index: number }) => {
     const cardAnim = animatedValues[index] || new Animated.Value(1);
     const statusColor = STATUS_COLORS[item.status] || COLORS.textSecondary;
@@ -230,8 +311,8 @@ export default function BookingsScreen() {
                 {item.salon?.businessName || 'Salon'}
               </Text>
               <View style={styles.dateTimeRow}>
-                <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-                <Text variant="bodySmall" style={styles.dateTimeText}>
+                <Ionicons name="calendar-outline" size={isTablet ? 16 : 14} color={COLORS.textSecondary} />
+                <Text variant="bodySmall" style={[styles.dateTimeText, isTablet && styles.dateTimeTextTablet]}>
                   {formatDate(item.scheduledDate || item.date || '')} • {formatTime(item.scheduledTime || item.startTime)}
                 </Text>
               </View>
@@ -247,23 +328,23 @@ export default function BookingsScreen() {
           <Divider style={styles.divider} />
 
           <View style={styles.servicesRow}>
-            <Ionicons name="cut-outline" size={14} color={COLORS.textSecondary} />
-            <Text variant="bodySmall" style={styles.servicesText} numberOfLines={1}>
+            <Ionicons name="cut-outline" size={isTablet ? 16 : 14} color={COLORS.textSecondary} />
+            <Text variant="bodySmall" style={[styles.servicesText, isTablet && styles.servicesTextTablet]} numberOfLines={2}>
               {item.services?.map(s => s.name).join(', ')}
             </Text>
           </View>
 
           {item.worker && (
             <View style={styles.workerRow}>
-              <Ionicons name="person-outline" size={14} color={COLORS.textSecondary} />
-              <Text variant="bodySmall" style={styles.workerText}>
+              <Ionicons name="person-outline" size={isTablet ? 16 : 14} color={COLORS.textSecondary} />
+              <Text variant="bodySmall" style={[styles.workerText, isTablet && styles.workerTextTablet]}>
                 {item.worker.fullName}
               </Text>
             </View>
           )}
 
           <View style={styles.cardFooter}>
-            <Text variant="titleMedium" style={styles.totalAmount}>
+            <Text variant={isTablet ? "titleLarge" : "titleMedium"} style={[styles.totalAmount, isTablet && styles.totalAmountTablet]}>
               GH₵ {parseFloat(String(item.totalAmount)).toFixed(2)}
             </Text>
             {(item.status === 'CONFIRMED' || item.status === 'PENDING') && (
@@ -290,14 +371,14 @@ export default function BookingsScreen() {
                   style={styles.rebookButton}
                   onPress={() => handleRebook(item)}
                 >
-                  <Ionicons name="refresh" size={14} color={COLORS.primaryGreen} />
+                  <Ionicons name="refresh" size={isTablet ? 16 : 14} color={COLORS.primaryGreen} />
                   <Text style={styles.rebookButtonText}>Rebook</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.rateButton}
                   onPress={() => navigation.navigate('RateBooking', { bookingId: item.id })}
                 >
-                  <Ionicons name="star" size={14} color={COLORS.accentGold} />
+                  <Ionicons name="star" size={isTablet ? 16 : 14} color={COLORS.accentGold} />
                   <Text style={styles.rateButtonText}>Rate</Text>
                 </TouchableOpacity>
               </View>
@@ -308,11 +389,11 @@ export default function BookingsScreen() {
                   style={styles.rebookButton}
                   onPress={() => handleRebook(item)}
                 >
-                  <Ionicons name="refresh" size={14} color={COLORS.primaryGreen} />
+                  <Ionicons name="refresh" size={isTablet ? 16 : 14} color={COLORS.primaryGreen} />
                   <Text style={styles.rebookButtonText}>Rebook</Text>
                 </TouchableOpacity>
                 <View style={styles.reviewedBadge}>
-                  <Ionicons name="star" size={14} color={COLORS.accentGold} />
+                  <Ionicons name="star" size={isTablet ? 16 : 14} color={COLORS.accentGold} />
                   <Text style={styles.reviewedText}>⭐ {item.review.rating}/5</Text>
                 </View>
               </View>
@@ -322,7 +403,7 @@ export default function BookingsScreen() {
       </Card>
       </Animated.View>
     );
-  }, [navigation, animatedValues, handleCancelBooking, handleRebook]);
+  }, [navigation, animatedValues, handleCancelBooking, handleRebook, isTablet, COLORS]);
 
   const renderEmptyState = () => {
     if (isLoading) return null;
@@ -476,13 +557,13 @@ export default function BookingsScreen() {
         </View>
       ) : (
         <FlatList
-          key={numColumns}
+          key={`${activeTab}-${numColumns}`}
           data={filteredBookings}
           keyExtractor={(item) => item.id}
-          renderItem={renderBookingCard}
-          numColumns={numColumns}
-          columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
-          contentContainerStyle={styles.listContent}
+          renderItem={activeTab === 'past' ? renderPastBookingCard : renderBookingCard}
+          numColumns={activeTab === 'past' ? 1 : numColumns}
+          columnWrapperStyle={activeTab === 'past' ? undefined : (numColumns > 1 ? styles.columnWrapper : undefined)}
+          contentContainerStyle={activeTab === 'past' ? styles.pastListContent : styles.listContent}
           ListEmptyComponent={renderEmptyState}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primaryGreen]} />
@@ -585,7 +666,20 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     padding: 16,
   },
   cardContentTablet: {
-    padding: 12,
+    padding: 24,
+    gap: 2,
+  },
+  dateTimeTextTablet: {
+    fontSize: 14,
+  },
+  servicesTextTablet: {
+    fontSize: 14,
+  },
+  workerTextTablet: {
+    fontSize: 14,
+  },
+  totalAmountTablet: {
+    fontSize: 22,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -822,5 +916,118 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  // Past bookings - single column layout
+  pastListContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  pastCard: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 14,
+    marginBottom: 14,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  pastCardBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+  },
+  pastStatusColumn: {
+    width: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 5,
+  },
+  pastStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  pastStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  pastInfoColumn: {
+    flex: 1,
+    gap: 3,
+  },
+  pastServiceName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  pastSalonName: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  pastDateTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  pastDateTimeText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  pastRightColumn: {
+    alignItems: 'flex-end',
+    gap: 6,
+    minWidth: 72,
+  },
+  pastPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.primaryGreen,
+  },
+  pastRebookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primaryGreen}15`,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 4,
+  },
+  pastRebookBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primaryGreen,
+  },
+  pastReviewedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.accentGold}18`,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 3,
+  },
+  pastReviewedText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.accentGold,
+  },
+  pastViewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  pastViewBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
 });
