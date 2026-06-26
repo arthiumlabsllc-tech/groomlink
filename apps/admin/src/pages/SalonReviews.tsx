@@ -1,92 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Star, MessageSquare, TrendingUp, Trash2, MapPin, User, Search } from 'lucide-react';
-
-interface Review {
-  id: string;
-  rating: number;
-  comment: string | null;
-  createdAt: string;
-  customer: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string | null;
-    avatar: string | null;
-  };
-  salon: {
-    id: string;
-    businessName: string;
-    city: string;
-  };
-}
-
-interface ReviewStats {
-  total: number;
-  averageRating: number;
-  distribution: Array<{ rating: number; count: number }>;
-}
+import { useReviews, useDeleteReview } from '../hooks';
+import LoadingScreen from '../components/LoadingScreen';
 
 export function SalonReviews() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [stats, setStats] = useState<ReviewStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [filterRating, setFilterRating] = useState<string>('');
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, [page, filterRating]);
+  const { data: reviewsData, isLoading } = useReviews(page, 20, filterRating || undefined);
+  const deleteReview = useDeleteReview();
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: '20',
-      });
-      if (filterRating) params.append('rating', filterRating);
-
-      const response = await fetch(`/api/admin/reviews?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to load reviews');
-
-      const result = await response.json();
-      setReviews(result.data.reviews);
-      setTotalPages(result.data.pagination.pages);
-      setStats(result.data.stats);
-    } catch (error) {
-      console.error('Failed to load reviews:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const reviews = reviewsData?.data?.reviews || [];
+  const stats = reviewsData?.data?.stats || null;
+  const totalPages = reviewsData?.data?.pagination?.pages || 1;
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this review? This cannot be undone.')) return;
 
     try {
-      setDeleting(id);
-      const response = await fetch(`/api/admin/reviews/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to delete review');
-      loadData();
+      await deleteReview.mutateAsync(id);
     } catch (error) {
       console.error('Failed to delete review:', error);
       alert('Failed to delete review');
-    } finally {
-      setDeleting(null);
     }
   };
 
@@ -102,12 +38,8 @@ export function SalonReviews() {
     );
   });
 
-  if (loading && reviews.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingScreen />;
   }
 
   return (
@@ -299,7 +231,7 @@ export function SalonReviews() {
                   {/* Delete Action */}
                   <button
                     onClick={() => handleDelete(review.id)}
-                    disabled={deleting === review.id}
+                    disabled={deleteReview.isPending && deleteReview.variables === review.id}
                     className="ml-4 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     title="Delete review"
                   >

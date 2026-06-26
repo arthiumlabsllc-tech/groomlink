@@ -1,0 +1,103 @@
+﻿node.exe : npm warn Unknown project config "node-linker". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+(node:34772) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative 
+instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[
+  {
+    "id": "e22c7de9-ff8f-4486-b370-92e619e47135",
+    "status": "IN_PROGRESS",
+    "platform": "ANDROID",
+    "artifacts": {},
+    "fingerprint": {
+      "id": "019f010d-a5ae-76d6-97c9-2c148a7547aa",
+      "hash": "11f49b653da1f38a9c9484f0ba0432fd574a7f7a"
+    },
+    "initiatingActor": {
+      "id": "339edaae-667c-4725-9443-886849daae0c",
+      "displayName": "gr3enink"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/0c94a806-7dcb-42fe-935f-8c577b83e053/e22c7de9-ff8f-4486-b370-92e619e47135/2026-06-25T23%3A11%3A44Z-e15c89ff-59af-4623-9aa2-55679d8a3e70.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T231906Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=62d34a618a54f8492eac08802fb1ce8cd9e95f9ffe6886a413de1410d6420bf332774ae06b4d898a8fc8833de1640502ef4431f9d3582afa0531f68612fd7d0ef11bff2bf6453e0d6545287955003f3d1ec9ebdc2de7e60994658a08689427d98095412c5f41f791bf369b34698305dd6c4d3412b4f1ca4d6820e0cb76248ad2ce19fe8dfec0bcac9f8df0d6b419ecbad277d5641f36e0d532c8242688b4bcb3e1b52ba0884a6ff02841b0bb4588b21a43558065df708d4b1eb020bf809f1e99eb3637de022a722df78bd451ecdf50aea2f179bf8115692bb8f1a2bd4e0e38f7df516ae7cbb6eae410819901c7fd11b6280db1d5670d5ff1cbbf84aff933c62e"
+    ],
+    "project": {
+      "id": "0c94a806-7dcb-42fe-935f-8c577b83e053",
+      "name": "groomlink-partners",
+      "slug": "groomlink-partners",
+      "ownerAccount": {
+        "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+        "name": "gr3enink"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "sdkVersion": "53.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "57",
+    "gitCommitHash": "f236cc743c5b8ecc32ada51e34d235fea24928d3",
+    "gitCommitMessage": "fix: regenerate pnpm-lock.yaml to include expo-clipboard and other new deps",
+    "priority": "HIGH",
+    "createdAt": "2026-06-25T23:11:39.405Z",
+    "updatedAt": "2026-06-25T23:11:48.848Z",
+    "expirationDate": "2026-07-25T23:11:39.428Z",
+    "isForIosSimulator": false
+  },
+  {
+    "id": "6c387c45-fab7-454e-a535-28ff4da83a3a",
+    "status": "ERRORED",
+    "platform": "ANDROID",
+    "error": {
+      "errorCode": "UNKNOWN_ERROR",
+      "message": "Unknown error. See logs of the Read app config build phase for more information."
+    },
+    "artifacts": {},
+    "fingerprint": {
+      "id": "019f00fe-0eea-744b-824e-6f50413176a5",
+      "hash": "9ab4a9e8c95571370d7d07941f759536b17cfae3"
+    },
+    "initiatingActor": {
+      "id": "339edaae-667c-4725-9443-886849daae0c",
+      "displayName": "gr3enink"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/0c94a806-7dcb-42fe-935f-8c577b83e053/6c387c45-fab7-454e-a535-28ff4da83a3a/2026-06-25T22%3A54%3A44Z-a0489567-be23-43ac-bc0f-87b91bd765e7.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T231906Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=ca5a0cb053e83c92347e45d17a08c7620ba07002003c357ac0d3122e026c18964dd364d16890bb1f3fe2e546a74ade41cc6044c6776d9ab3a9b36c37eb7d726f318d230d120ce738047fa348371ad5ca7c4754579705f3000c6a67d998c423d5de664b11e64bc72784604439b25caede85d680ff89901dabca3d56d7203312d13ebeac6756dc1647742f1e2d715e0fae4d211feff105ccfac95d40ca2ac8c25973869e32eb761fbde2bba8fe56cb129fd43f789695bd8f61a82142f160961127b914ae5d9b76c6b1327909ba6a18eb2c6ba45c167189d7b2fad20a6dffbe10513c1edc67604bf9eec3768a8675fb01e53574fcaedaed711c93fa1b899eac5fc2"
+    ],
+    "project": {
+      "id": "0c94a806-7dcb-42fe-935f-8c577b83e053",
+      "name": "groomlink-partners",
+      "slug": "groomlink-partners",
+      "ownerAccount": {
+        "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+        "name": "gr3enink"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "sdkVersion": "53.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "56",
+    "gitCommitHash": "57f325bfdf35e555188b07d35cde89198b77d774",
+    "gitCommitMessage": "fix: restore scripts/ in EAS upload, deduplicate .npmrc, remove workspaces=false",
+    "priority": "HIGH",
+    "createdAt": "2026-06-25T22:54:37.771Z",
+    "updatedAt": "2026-06-25T22:55:04.888Z",
+    "completedAt": "2026-06-25T22:55:04.659Z",
+    "expirationDate": "2026-07-25T22:54:37.793Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 6466,
+      "buildQueueTime": 4924,
+      "buildDuration": 15498
+    }
+  }
+]

@@ -1,55 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { feedbackAPI, Feedback, FeedbackStats } from '../api/feedback';
-import { Star, MessageSquare, Users, TrendingUp, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Feedback as FeedbackType } from '../api/feedback';
+import { useFeedbackList, useFeedbackStats, useUpdateFeedbackStatus } from '../hooks';
+import { Star, MessageSquare, Users, TrendingUp, Clock } from 'lucide-react';
+import LoadingScreen from '../components/LoadingScreen';
 
 const FeedbackPage: React.FC = () => {
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [stats, setStats] = useState<FeedbackStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterUserType, setFilterUserType] = useState<string>('');
   const [filterRating, setFilterRating] = useState<string>('');
-  const [updating, setUpdating] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [page, filterStatus, filterUserType, filterRating]);
+  const { data: feedbackRes, isLoading } = useFeedbackList({
+    page,
+    limit: 20,
+    status: filterStatus || undefined,
+    userType: filterUserType || undefined,
+    rating: filterRating ? parseInt(filterRating) : undefined,
+  });
+  const { data: statsRes } = useFeedbackStats();
+  const updateStatus = useUpdateFeedbackStatus();
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [feedbackRes, statsRes] = await Promise.all([
-        feedbackAPI.getFeedback({
-          page,
-          limit: 20,
-          status: filterStatus || undefined,
-          userType: filterUserType || undefined,
-          rating: filterRating ? parseInt(filterRating) : undefined,
-        }),
-        feedbackAPI.getStats(),
-      ]);
-
-      setFeedbacks(feedbackRes.data);
-      setTotalPages(feedbackRes.pagination.pages);
-      setStats(statsRes.data);
-    } catch (error) {
-      console.error('Failed to load feedback:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const feedbacks: FeedbackType[] = feedbackRes?.data || [];
+  const stats = statsRes?.data || null;
+  const totalPages = feedbackRes?.pagination?.pages || 1;
 
   const handleStatusUpdate = async (id: string, status: string) => {
     try {
-      setUpdating(id);
-      await feedbackAPI.updateStatus(id, status);
-      loadData();
+      await updateStatus.mutateAsync({ id, status });
     } catch (error) {
       console.error('Failed to update status:', error);
-    } finally {
-      setUpdating(null);
     }
   };
 
@@ -86,12 +65,8 @@ const FeedbackPage: React.FC = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingScreen />;
   }
 
   return (
@@ -317,7 +292,7 @@ const FeedbackPage: React.FC = () => {
                     <select
                       value={feedback.status}
                       onChange={(e) => handleStatusUpdate(feedback.id, e.target.value)}
-                      disabled={updating === feedback.id}
+                      disabled={updateStatus.isPending && updateStatus.variables?.id === feedback.id}
                       className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
                     >
                       <option value="NEW">New</option>

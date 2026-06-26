@@ -1,0 +1,161 @@
+﻿node.exe : npm warn Unknown project config "node-linker". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+(node:6600) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative 
+instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[
+  {
+    "id": "1b98ed5e-e7ca-4f5e-820f-6ba665b37b7d",
+    "status": "ERRORED",
+    "platform": "IOS",
+    "error": {
+      "errorCode": "UNKNOWN_ERROR",
+      "message": "Unknown error. See logs of the Install dependencies build phase for more information."
+    },
+    "artifacts": {},
+    "fingerprint": {
+      "id": "019f0101-a708-7150-b279-bfd3d739b6f2",
+      "hash": "46ccf6237fbadbc4ed725861deafa94679c764a3"
+    },
+    "initiatingActor": {
+      "id": "339edaae-667c-4725-9443-886849daae0c",
+      "displayName": "gr3enink"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/0c94a806-7dcb-42fe-935f-8c577b83e053/1b98ed5e-e7ca-4f5e-820f-6ba665b37b7d/2026-06-25T22%3A58%3A34Z-95e1b472-6ba5-4098-8069-f06330d91c46.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T231644Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=2284e49f3bfa5bebb005b52f4ac82fc42ef2b0a668b2140c5e9fd4a085e4b0029bc5fd3fb6ad01fb6cd164b07030cd8f15726bb6cc98e3e142c4153455787458c8553f16812f48b2c5059fc225e4c5d4cf0854be08b79097c34306809ca096c3081a673c50986ea6624ebdfc3b1c918fd85dc4d63ea19deee0cbf6b038d756314d0206f28934e5164f9df76b32efcc59b037913e709b6ac1a43ba127e4ec954a35e8824d4a71984eec5ff1a53ad4d7eb47d80503dce0f633b48a1ae8a1e94e22b665a26826006f431cc00c8b5e3f414f607784d0c8ee29bbd015a319fed8e270817318b6f2693787801d532fe496ab721fc4f995131643052b87491c0b83c5fe"
+    ],
+    "project": {
+      "id": "0c94a806-7dcb-42fe-935f-8c577b83e053",
+      "name": "groomlink-partners",
+      "slug": "groomlink-partners",
+      "ownerAccount": {
+        "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+        "name": "gr3enink"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "sdkVersion": "53.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "1.0.30",
+    "gitCommitHash": "8ce2ea7871aed2759da2550430e80c3e7ac24114",
+    "gitCommitMessage": "fix: remove package-lock.json that caused EAS to use npm instead of pnpm",
+    "priority": "HIGH",
+    "createdAt": "2026-06-25T22:58:33.320Z",
+    "updatedAt": "2026-06-25T22:59:37.476Z",
+    "completedAt": "2026-06-25T22:59:33.155Z",
+    "expirationDate": "2026-07-25T22:58:33.347Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 1159,
+      "buildQueueTime": 35818,
+      "buildDuration": 22858
+    }
+  },
+  {
+    "id": "33963864-9097-490d-8015-9dec0dbac60d",
+    "status": "ERRORED",
+    "platform": "IOS",
+    "error": {
+      "errorCode": "UNKNOWN_ERROR",
+      "message": "Unknown error. See logs of the Read app config build phase for more information."
+    },
+    "artifacts": {},
+    "fingerprint": {
+      "id": "019f00e2-7056-7e2e-9bed-12ff1afd9f06",
+      "hash": "7f578e675cec73c1d86415efac1239359fe10576"
+    },
+    "initiatingActor": {
+      "id": "339edaae-667c-4725-9443-886849daae0c",
+      "displayName": "gr3enink"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/0c94a806-7dcb-42fe-935f-8c577b83e053/33963864-9097-490d-8015-9dec0dbac60d/2026-06-25T22%3A24%3A36Z-5a1a3761-8ba5-48dc-993c-d5c61ca8950e.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T231644Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=03cf6996c162c4871e76a1d597e27f52ff6328d30456648d54b56e7257f357af0bea7102227d9b1825a5a7b7859e73e39e2941942711bfc4345c255b40466e23c57e190c7fb2d020390926370afafe25c03318d602729d24341db46b2992d28b115e0feb4e1b01e309d1b347972435ddf30b11ffa009fc5a654a551d8a70282bf3e7d4a86ed77e5170e0fe2fbd6483b982ff95b4ae399550d543c5109db477b52e0561fe1a898154fbc0d02028f24558daaf81424da63ed48bba740add1e3735f330209d2f75753b7e8d99c8b4fbed09855cc3840bd9eab3fcea3605bf648e0099354f585292ac854587f5037d493c3dd70e9fdd80d2b4f4d69d03ef48c7ddcd"
+    ],
+    "project": {
+      "id": "0c94a806-7dcb-42fe-935f-8c577b83e053",
+      "name": "groomlink-partners",
+      "slug": "groomlink-partners",
+      "ownerAccount": {
+        "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+        "name": "gr3enink"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "sdkVersion": "53.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "1.0.29",
+    "gitCommitHash": "bb95e1d7d7da0c9d17ae8ebb5b5c5e6c9464dac9",
+    "gitCommitMessage": "fix: resolve persistent EAS build dependency issue in pnpm monorepo",
+    "priority": "HIGH",
+    "createdAt": "2026-06-25T22:24:27.698Z",
+    "updatedAt": "2026-06-25T22:25:40.294Z",
+    "completedAt": "2026-06-25T22:25:35.954Z",
+    "expirationDate": "2026-07-25T22:24:27.719Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 6507,
+      "buildQueueTime": 38569,
+      "buildDuration": 23180
+    }
+  },
+  {
+    "id": "e6fa0161-222b-46fa-9889-cc806f9b5167",
+    "status": "ERRORED",
+    "platform": "IOS",
+    "error": {
+      "errorCode": "UNKNOWN_ERROR",
+      "message": "Unknown error. See logs of the Read app config build phase for more information."
+    },
+    "artifacts": {},
+    "fingerprint": {
+      "id": "019f00ca-2790-7157-8610-0cde18090498",
+      "hash": "dbccb314fe4fc8eddab0209d49cfd97e5ec27ab1"
+    },
+    "initiatingActor": {
+      "id": "339edaae-667c-4725-9443-886849daae0c",
+      "displayName": "gr3enink"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/0c94a806-7dcb-42fe-935f-8c577b83e053/e6fa0161-222b-46fa-9889-cc806f9b5167/2026-06-25T21%3A58%3A04Z-fcb4d057-095e-4626-a388-5894b7f2aad8.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T231644Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=695d001163b1d33c381c5aae0b3a844214895726da7cac9fe55d8859030db415bf5ac21b4bd149eb9929bc7ac677b34eb1ab96deaa3c1bec3d993fd2c9e219954f80347faf0a5b8ecadcfd2079575343c65123cc115637c0031ff2a746e6f55482d72e3ee38f03a50229fe42dc547c298006d4d41621273a536e8175718dd12b437d1d39a714fad3ee9d2505b2d34182bf782c5bf4fb5af6fb4779580ce7ddcef18876cb85bb64478ab189429ef273c3536eb1d71062b3150bb0f2ef6df479028038e81a59547d52f92559eb19ace6e43b1a3c77f513763761521a0a534586166f778a540dfc9a4ec5be7b218d9bcaa43169e81a332bb91a0907e5cf726b87db"
+    ],
+    "project": {
+      "id": "0c94a806-7dcb-42fe-935f-8c577b83e053",
+      "name": "groomlink-partners",
+      "slug": "groomlink-partners",
+      "ownerAccount": {
+        "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+        "name": "gr3enink"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "sdkVersion": "53.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "1.0.28",
+    "gitCommitHash": "9dc753d4c5def399923487e3e05f468c67da8e29",
+    "gitCommitMessage": "fix: resolve expo-build-properties plugin for EAS in pnpm monorepo\n\n- Fix partners-app .npmrc: remove duplicates, add public-hoist-pattern for expo packages\n- Fix customer-app .npmrc: add public-hoist-pattern for expo packages\n- Clean root .npmrc: remove npm-only settings (workspaces=false, legacy-peer-deps)\n- Bump EAS cache keys to force fresh dependency install (v14/v17)",
+    "priority": "HIGH",
+    "createdAt": "2026-06-25T21:57:56.215Z",
+    "updatedAt": "2026-06-25T21:59:07.829Z",
+    "completedAt": "2026-06-25T21:59:03.517Z",
+    "expirationDate": "2026-07-25T21:57:56.236Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 7931,
+      "buildQueueTime": 36790,
+      "buildDuration": 22581
+    }
+  }
+]

@@ -368,11 +368,13 @@ export async function requestEmailOTP(email: string, requestedRole?: UserRole): 
   const otp = await createEmailOTP(normalizedEmail);
   logger.info(`Email OTP requested for ${normalizedEmail}`);
 
-  // Send OTP via email (don't await - let it happen in background)
-  // If email fails, the OTP is still in the database and can be retrieved
-  sendEmailOTP(normalizedEmail, otp).catch((error) => {
-    logger.error(`Failed to send OTP email to ${normalizedEmail}:`, error);
-  });
+  // Send OTP via email - await to ensure delivery and propagate errors to client.
+  // OTP is already saved in database, so a retry will work even if this request fails.
+  const emailSent = await sendEmailOTP(normalizedEmail, otp);
+  if (!emailSent) {
+    logger.error(`Failed to send OTP email to ${normalizedEmail}`);
+    throw new Error('Failed to send verification email. Please check your email address and try again.');
+  }
 }
 
 export interface EmailOTPVerifyResponse {

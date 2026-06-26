@@ -28,8 +28,8 @@ export function NoShows() {
       (disputedFilter === 'UNRESOLVED' && noShow.disputed && !noShow.resolution);
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
-      noShow.booking.salon.businessName.toLowerCase().includes(searchLower) ||
-      `${noShow.booking.customer.firstName || ''} ${noShow.booking.customer.lastName || ''}`.toLowerCase().includes(searchLower) ||
+      (noShow.booking?.salon?.businessName?.toLowerCase().includes(searchLower) ?? false) ||
+      `${noShow.booking?.customer?.firstName || ''} ${noShow.booking?.customer?.lastName || ''}`.toLowerCase().trim().includes(searchLower) ||
       noShow.id.toLowerCase().includes(searchLower);
     return matchesDisputed && matchesSearch;
   });
@@ -189,20 +189,20 @@ export function NoShows() {
               {filteredNoShows.map((noShow) => (
                 <tr key={noShow.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">
-                    <span className="font-mono text-sm font-medium text-gray-800">{noShow.booking.id.slice(0, 8)}...</span>
+                    <span className="font-mono text-sm font-medium text-gray-800">{noShow.booking?.id?.slice(0, 8) || '—'}...</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-800">{noShow.booking.salon.businessName}</span>
+                    <span className="text-sm text-gray-800">{noShow.booking?.salon?.businessName || 'Unknown Salon'}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-600">
-                      {noShow.booking.customer.firstName || 'Unknown'} {noShow.booking.customer.lastName || ''}
+                      {noShow.booking?.customer?.firstName || 'Unknown'} {noShow.booking?.customer?.lastName || ''}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-600">
-                      {noShow.markedBy.firstName || 'Unknown'} {noShow.markedBy.lastName || ''}
-                      <span className="text-xs text-gray-400 ml-1">({noShow.markedBy.role})</span>
+                      {noShow.markedBy?.firstName || 'Unknown'} {noShow.markedBy?.lastName || ''}
+                      {noShow.markedBy?.role && <span className="text-xs text-gray-400 ml-1">({noShow.markedBy.role})</span>}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -301,16 +301,16 @@ export function NoShows() {
               <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Booking ID:</span>
-                  <span className="font-mono font-medium">{selectedNoShow.booking.id.slice(0, 12)}...</span>
+                  <span className="font-mono font-medium">{selectedNoShow.booking?.id?.slice(0, 12) || '—'}...</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Salon:</span>
-                  <span className="font-medium">{selectedNoShow.booking.salon.businessName}</span>
+                  <span className="font-medium">{selectedNoShow.booking?.salon?.businessName || 'Unknown Salon'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Customer:</span>
                   <span className="font-medium">
-                    {selectedNoShow.booking.customer.firstName || 'Unknown'} {selectedNoShow.booking.customer.lastName || ''}
+                    {selectedNoShow.booking?.customer?.firstName || 'Unknown'} {selectedNoShow.booking?.customer?.lastName || ''}
                   </span>
                 </div>
               </div>
@@ -399,8 +399,8 @@ function NoShowCard({
             <Icon name="person_remove" size={20} className="text-[#CE1126]" />
           </div>
           <div>
-            <p className="font-semibold text-gray-800">{noShow.booking.salon.businessName}</p>
-            <p className="text-xs text-gray-500">Booking: {noShow.booking.id.slice(0, 8)}...</p>
+            <p className="font-semibold text-gray-800">{noShow.booking?.salon?.businessName || 'Unknown Salon'}</p>
+            <p className="text-xs text-gray-500">Booking: {noShow.booking?.id?.slice(0, 8) || '—'}...</p>
           </div>
         </div>
       </div>
@@ -408,13 +408,13 @@ function NoShowCard({
         <div className="flex justify-between">
           <span className="text-gray-500">Customer:</span>
           <span className="font-medium text-gray-800">
-            {noShow.booking.customer.firstName || 'Unknown'} {noShow.booking.customer.lastName || ''}
+            {noShow.booking?.customer?.firstName || 'Unknown'} {noShow.booking?.customer?.lastName || ''}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Marked By:</span>
           <span className="text-gray-700">
-            {noShow.markedBy.firstName || 'Unknown'} {noShow.markedBy.lastName || ''}
+            {noShow.markedBy?.firstName || 'Unknown'} {noShow.markedBy?.lastName || ''}
           </span>
         </div>
         <div className="flex justify-between">

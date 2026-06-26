@@ -13,3 +13,5 @@ export * from './settings';
 export * from './admin';
 export * from './subscription';
 export * from './builds';
+export * from './reviews';
+export * from './feedback';

@@ -18,8 +18,8 @@ export function Cancellations() {
     const matchesCancelledBy = !cancelledByFilter || cancellation.cancelledBy === cancelledByFilter;
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
-      cancellation.booking.salon.businessName.toLowerCase().includes(searchLower) ||
-      `${cancellation.booking.customer.firstName || ''} ${cancellation.booking.customer.lastName || ''}`.toLowerCase().includes(searchLower) ||
+      (cancellation.booking?.salon?.businessName?.toLowerCase().includes(searchLower) ?? false) ||
+      `${cancellation.booking?.customer?.firstName || ''} ${cancellation.booking?.customer?.lastName || ''}`.toLowerCase().trim().includes(searchLower) ||
       cancellation.id.toLowerCase().includes(searchLower);
     return matchesCancelledBy && matchesSearch;
   });
@@ -134,11 +134,11 @@ export function Cancellations() {
               {filteredCancellations.map((cancellation) => (
                 <tr key={cancellation.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">
-                    <span className="font-mono text-sm font-medium text-gray-800">{cancellation.booking.id.slice(0, 8)}...</span>
+                    <span className="font-mono text-sm font-medium text-gray-800">{cancellation.booking?.id?.slice(0, 8) || '—'}...</span>
                   </td>
                   <td className="px-6 py-4">{getCancelledByBadge(cancellation.cancelledBy)}</td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-800">{cancellation.booking.salon.businessName}</span>
+                    <span className="text-sm text-gray-800">{cancellation.booking?.salon?.businessName || 'Unknown Salon'}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-600 max-w-xs truncate block">
@@ -232,8 +232,8 @@ function CancellationCard({
             <Icon name="cancel" size={20} className="text-[#CE1126]" />
           </div>
           <div>
-            <p className="font-semibold text-gray-800">{cancellation.booking.salon.businessName}</p>
-            <p className="text-xs text-gray-500">Booking: {cancellation.booking.id.slice(0, 8)}...</p>
+            <p className="font-semibold text-gray-800">{cancellation.booking?.salon?.businessName || 'Unknown Salon'}</p>
+            <p className="text-xs text-gray-500">Booking: {cancellation.booking?.id?.slice(0, 8) || '—'}...</p>
           </div>
         </div>
         {getCancelledByBadge(cancellation.cancelledBy)}
@@ -242,7 +242,7 @@ function CancellationCard({
         <div className="flex justify-between">
           <span className="text-gray-500">Customer:</span>
           <span className="font-medium text-gray-800">
-            {cancellation.booking.customer.firstName || 'Unknown'} {cancellation.booking.customer.lastName || ''}
+            {cancellation.booking?.customer?.firstName || 'Unknown'} {cancellation.booking?.customer?.lastName || ''}
           </span>
         </div>
         <div className="flex justify-between">

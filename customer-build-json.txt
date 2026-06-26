@@ -1,0 +1,48 @@
+﻿{
+  "id": "264927d5-d91d-4149-b297-6aba3e8a02d9",
+  "status": "ERRORED",
+  "platform": "ANDROID",
+  "error": {
+    "errorCode": "UNKNOWN_ERROR",
+    "message": "Unknown error. See logs of the Install dependencies build phase for more information."
+  },
+  "artifacts": {},
+  "fingerprint": {
+    "id": "019f00eb-4184-7281-9243-2233a4a60662",
+    "hash": "e46a2551eca159bcc4b231d9a7be2bd0184842f2"
+  },
+  "initiatingActor": {
+    "id": "339edaae-667c-4725-9443-886849daae0c",
+    "displayName": "gr3enink"
+  },
+  "logFiles": [
+    "https://storage.googleapis.com/eas-workflows-production/logs/81417e23-6df9-4792-bf49-7829dd1d130e/264927d5-d91d-4149-b297-6aba3e8a02d9/2026-06-25T22%3A36%3A24Z-d829d13a-b522-440d-a115-d1512087a913.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T224902Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=3bd633f889e2a6b0cdca8a164aaf8912082b53d28b11dec388e5042e295c27d75ac104c3f009514910ba98720d3d8c9b369c99b758566a9dde763e28a649a95b48ab3d15ea873c85297efaa1fdc8e3b4c672c865d98771d6860672405d4146f69208547dd01622f59dbe36667e1c57de1cf3552e7cf82bcbfc79fe329de6031aee39d2b11f332f095fdaa8149a85f13f15fab1f04a4ad422344d909247f9cb867eab846b4679ca70c8dcb1fbb0cd4ea843963cb0bf1914c4868ea35d648490045f8e75aa503312f3501ceafad16b516d734a31114b5481bf303f34e5705b865692ca205ed14fa0c236e6147a5ec515b7f1fb20bbcaa14522fcd764c17bb98f2d"
+  ],
+  "project": {
+    "id": "81417e23-6df9-4792-bf49-7829dd1d130e",
+    "name": "groomlink-customer",
+    "slug": "groomlink-customer",
+    "ownerAccount": {
+      "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+      "name": "gr3enink"
+    }
+  },
+  "distribution": "STORE",
+  "buildProfile": "production",
+  "sdkVersion": "53.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "108",
+  "gitCommitHash": "45f1c1f40bf166b3580c1dc07b6fa10d48128262",
+  "gitCommitMessage": "fix: move .easignore to git root, fix root .npmrc workspaces, deduplicate configs",
+  "priority": "HIGH",
+  "createdAt": "2026-06-25T22:36:17.707Z",
+  "updatedAt": "2026-06-25T22:36:45.778Z",
+  "completedAt": "2026-06-25T22:36:45.589Z",
+  "expirationDate": "2026-07-25T22:36:17.734Z",
+  "isForIosSimulator": false,
+  "metrics": {
+    "buildWaitTime": 6790,
+    "buildQueueTime": 4706,
+    "buildDuration": 16386
+  }
+}

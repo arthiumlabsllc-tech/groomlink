@@ -1,0 +1,99 @@
+﻿node.exe : npm warn Unknown project config "node-linker". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+(node:34272) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative 
+instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[
+  {
+    "id": "203b31ab-5033-4e8a-ae22-de09f8f6d576",
+    "status": "IN_PROGRESS",
+    "platform": "ANDROID",
+    "artifacts": {},
+    "fingerprint": {
+      "id": "019f010a-ff44-73e0-aeb3-e0d32310a6c9",
+      "hash": "188237edc6bacdcb58ab3b84bca6b34d8b3571c0"
+    },
+    "initiatingActor": {
+      "id": "339edaae-667c-4725-9443-886849daae0c",
+      "displayName": "gr3enink"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/81417e23-6df9-4792-bf49-7829dd1d130e/203b31ab-5033-4e8a-ae22-de09f8f6d576/2026-06-25T23%3A11%3A54Z-eb1891b0-9119-4a85-a336-fb4d4fe25b12.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T231726Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=4f785d5bbddfcedcbb14cf8a7f1840c122d711eef1d987284cf0a5e9a6d05e46966408bcd1f0a5108c533cfa1636b8c4d368fb45fa1be45a2995db4917ae3be53ab75d8182da7e927c1014f847f36d835d1dc5d80dc34f83d652b6d25a35fd0533d40dd9861014be8b8a8efc4d4f2067b0498d6b90f722e3f536ca574a65b100cc85e0d206c397afab356949b8b02c9d9ae054fd839945cacc3648c75ed12ad479ad0602aaff2dc89a46b03a77686ef4495d0b658d4cdc846bb4ee981b3819074172d1b7df9f7fd1a96a34a74446b382cbbb14de74c638a635104eec47c99c0486953f0195a9b3687adf33d95fb3e72afb4b1332edddf5bc34588524dc66eba5"
+    ],
+    "project": {
+      "id": "81417e23-6df9-4792-bf49-7829dd1d130e",
+      "name": "groomlink-customer",
+      "slug": "groomlink-customer",
+      "ownerAccount": {
+        "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+        "name": "gr3enink"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "sdkVersion": "53.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "114",
+    "gitCommitHash": "f236cc743c5b8ecc32ada51e34d235fea24928d3",
+    "gitCommitMessage": "fix: regenerate pnpm-lock.yaml to include expo-clipboard and other new deps",
+    "priority": "HIGH",
+    "createdAt": "2026-06-25T23:11:51.215Z",
+    "updatedAt": "2026-06-25T23:11:59.292Z",
+    "expirationDate": "2026-07-25T23:11:51.236Z",
+    "isForIosSimulator": false
+  },
+  {
+    "id": "acc7d4d9-74d9-499d-9f02-c99adfb6142a",
+    "status": "CANCELED",
+    "platform": "ANDROID",
+    "artifacts": {},
+    "fingerprint": {
+      "id": "019f010a-ff44-73e0-aeb3-e0d32310a6c9",
+      "hash": "188237edc6bacdcb58ab3b84bca6b34d8b3571c0"
+    },
+    "initiatingActor": {
+      "id": "339edaae-667c-4725-9443-886849daae0c",
+      "displayName": "gr3enink"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/81417e23-6df9-4792-bf49-7829dd1d130e/acc7d4d9-74d9-499d-9f02-c99adfb6142a/2026-06-25T23%3A08%3A54Z-c2d1ec6d-1f83-42f2-9ec4-5362c5e40286.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T231726Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=4de328d2bd0d8feadd084566db9a419077fc456761f3fd20e31f93724daa69986888b04b2c850377596061bf959e0a907cc9278e045378ca5e100aa02b482fdfed204771e2d91c2e1a35f2163c2deb55fcaba0054a5b62921e0945cd150f16292f673c62a7b1c6b0efe47ed690ff1b67f3693c8c5a241965156a80e88cf49a85379424e225d858bc57fc0c6f64be69e0ace3b10b74fc86416bdc4a0c3bb93138e2370a28155c92cab5ca39b6bedb75db993894a79f5cc4170d1ef0c2dc03bd6fcce48b3198f0688482ced80893a633562ed0f2c259165735161237aaa57f11eb9579680d7b0e1683a05bcacf5e62af5fcaf2f3002e90cc8a1db5716b25d158e9"
+    ],
+    "project": {
+      "id": "81417e23-6df9-4792-bf49-7829dd1d130e",
+      "name": "groomlink-customer",
+      "slug": "groomlink-customer",
+      "ownerAccount": {
+        "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+        "name": "gr3enink"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "sdkVersion": "53.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "113",
+    "gitCommitHash": "f236cc743c5b8ecc32ada51e34d235fea24928d3",
+    "gitCommitMessage": "fix: regenerate pnpm-lock.yaml to include expo-clipboard and other new deps",
+    "priority": "HIGH",
+    "createdAt": "2026-06-25T23:08:45.688Z",
+    "updatedAt": "2026-06-25T23:12:29.423Z",
+    "completedAt": "2026-06-25T23:12:29.283Z",
+    "expirationDate": "2026-07-25T23:08:45.753Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 8597,
+      "buildQueueTime": 4957,
+      "buildDuration": 210041
+    }
+  }
+]

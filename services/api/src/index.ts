@@ -24,6 +24,14 @@ import { loginBruteForceLimiter, supportLoginLimiter } from './middleware/brute-
 dotenv.config();
 
 const app = express();
+
+// Trust reverse proxy (nginx) so req.ip and rate-limiters use X-Forwarded-For
+// instead of the Docker gateway IP. Without this, ALL users behind nginx
+// share the same rate-limit bucket, causing legitimate users to be blocked.
+// Using 1 (single hop) instead of `true` to satisfy express-rate-limit's
+// permissive-trust-proxy validation.
+app.set('trust proxy', 1);
+
 const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 
@@ -132,10 +140,18 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Stricter rate limiting for auth endpoints
+// Increased from 20 → 50 per 15 min and now trusts proxy (per real-IP bucket).
+// Also skips well-known crawler / bot IPs that probe auth paths.
+const GOOGLE_CRAWLER_PREFIXES = ['66.102.', '66.249.', '64.233.', '72.14.', '74.125.', '108.178.', '173.194.', '209.85.'];
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, // Increased from 5 to 20 for testing
+  max: 50, // per real IP per 15 min (was 20 – too tight for multi-user behind proxy)
   message: 'Too many authentication attempts, please try again later.',
+  // Skip Google crawlers so they don't pollute the counter
+  skip: (req) => {
+    const ip = req.ip || '';
+    return GOOGLE_CRAWLER_PREFIXES.some((p) => ip.startsWith(p));
+  },
   handler: (req, res) => {
     recordSecurityEvent({
       eventType: 'AUTH_RATE_LIMIT_HIT',

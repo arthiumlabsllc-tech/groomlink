@@ -127,28 +127,28 @@ export interface NoShowRecord {
   resolution: string | null;
   upheld: boolean | null;
   resolvedAt: string | null;
-  booking: {
+  booking?: {
     id: string;
-    customer: {
+    customer?: {
       id: string;
       firstName: string | null;
       lastName: string | null;
-    };
-    salon: {
+    } | null;
+    salon?: {
       id: string;
       businessName: string;
-    };
-    service: {
+    } | null;
+    service?: {
       id: string;
       name: string;
-    };
-  };
-  markedBy: {
+    } | null;
+  } | null;
+  markedBy?: {
     id: string;
     firstName: string | null;
     lastName: string | null;
     role: string;
-  };
+  } | null;
 }
 
 export interface PaginatedNoShows {

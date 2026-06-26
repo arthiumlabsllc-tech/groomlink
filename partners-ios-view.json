@@ -1,0 +1,65 @@
+﻿node.exe : npm warn Unknown project config "node-linker". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm. See 
+`npm help npmrc` for supported config options.
+(node:28736) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative 
+instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+- Fetching the buildΓÇª
+ΓêÜ Found a matching build for the project @gr3enink/groomlink-partners
+{
+  "id": "1b98ed5e-e7ca-4f5e-820f-6ba665b37b7d",
+  "status": "ERRORED",
+  "platform": "IOS",
+  "error": {
+    "errorCode": "UNKNOWN_ERROR",
+    "message": "Unknown error. See logs of the Install dependencies build phase for more information."
+  },
+  "artifacts": {},
+  "fingerprint": {
+    "id": "019f0101-a708-7150-b279-bfd3d739b6f2",
+    "hash": "46ccf6237fbadbc4ed725861deafa94679c764a3"
+  },
+  "initiatingActor": {
+    "id": "339edaae-667c-4725-9443-886849daae0c",
+    "displayName": "gr3enink"
+  },
+  "logFiles": [
+    "https://storage.googleapis.com/eas-workflows-production/logs/0c94a806-7dcb-42fe-935f-8c577b83e053/1b98ed5e-e7ca-4f5e-820f-6ba665b37b7d/2026-06-25T22%3A58%3A34Z-95e1b472-6ba5-4098-8069-f06330d91c46.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260625%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260625T232043Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=0e54b6aeaeec95192794e4a4dd1eb420c7c2b551b40cd88cbcd8dbdb7e7681d4d91098b0db9826d4e0354a79356dfe0df0735914165707588f8f588759e1cf0937c71432faa6dcb733ccca3c1cb41de73564b1d71b451248983403796f75bd702000061590cffc2f45c128a9c02a7407af06feb419ef1d376ca48f9f0b7af82350cef07f728171313def3b47e3bcbd07a5e502dd92fd93177c87b6ba351495f9dc912b7246338b03ffa1acbe11152d1a7f8b92b475c6d2f15ba678448aef201fe8bb68a8f9517c4f1b3c452d1b71c95675519f1faa61f1452e8bb558bb7186faa6b9708f3d29cf1bf7a0f5f835398d2f1759ade9da616c027581b7e23bd996cc"
+  ],
+  "project": {
+    "id": "0c94a806-7dcb-42fe-935f-8c577b83e053",
+    "name": "groomlink-partners",
+    "slug": "groomlink-partners",
+    "ownerAccount": {
+      "id": "4fe2f948-095a-4ad3-9f6f-8afa6aaca59f",
+      "name": "gr3enink"
+    }
+  },
+  "distribution": "STORE",
+  "buildProfile": "production",
+  "sdkVersion": "53.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1.0.30",
+  "gitCommitHash": "8ce2ea7871aed2759da2550430e80c3e7ac24114",
+  "gitCommitMessage": "fix: remove package-lock.json that caused EAS to use npm instead of pnpm",
+  "priority": "HIGH",
+  "createdAt": "2026-06-25T22:58:33.320Z",
+  "updatedAt": "2026-06-25T22:59:37.476Z",
+  "completedAt": "2026-06-25T22:59:33.155Z",
+  "expirationDate": "2026-07-25T22:58:33.347Z",
+  "isForIosSimulator": false,
+  "metrics": {
+    "buildWaitTime": 1159,
+    "buildQueueTime": 35818,
+    "buildDuration": 22858
+  }
+}
