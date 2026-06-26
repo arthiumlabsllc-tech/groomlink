@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,6 +8,8 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Text,
@@ -1230,60 +1232,71 @@ export default function BookingDetailScreen() {
         visible={disputeModalVisible}
         onRequestClose={() => setDisputeModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text variant="titleLarge" style={styles.modalTitle}>Report Issue</Text>
-              <TouchableOpacity 
-                onPress={() => setDisputeModalVisible(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.disputeModalContent}>
-              <View style={styles.disputeIconContainer}>
-                <Ionicons name="alert-circle" size={48} color={COLORS.accentRed} />
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+        >
+          <ScrollView
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text variant="titleLarge" style={styles.modalTitle}>Report Issue</Text>
+                <TouchableOpacity 
+                  onPress={() => setDisputeModalVisible(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                </TouchableOpacity>
               </View>
-              
-              <Text variant="titleMedium" style={styles.disputeModalTitle}>
-                Issue with Service
-              </Text>
-              
-              <Text variant="bodySmall" style={styles.disputeModalDescription}>
-                Please describe the issue you experienced. Our support team will review your case and contact you within 24 hours.
-              </Text>
 
-              <Text variant="bodySmall" style={styles.reasonLabel}>
-                Describe the issue *
-              </Text>
-              <TextInput
-                style={styles.reasonInput}
-                multiline
-                numberOfLines={4}
-                placeholder="e.g., Service was not performed, quality issues, no-show by provider..."
-                placeholderTextColor={COLORS.textSecondary}
-                value={disputeReason}
-                onChangeText={setDisputeReason}
-              />
+              <View style={styles.disputeModalContent}>
+                <View style={styles.disputeIconContainer}>
+                  <Ionicons name="alert-circle" size={48} color={COLORS.accentRed} />
+                </View>
+                
+                <Text variant="titleMedium" style={styles.disputeModalTitle}>
+                  Issue with Service
+                </Text>
+                
+                <Text variant="bodySmall" style={styles.disputeModalDescription}>
+                  Please describe the issue you experienced. Our support team will review your case and contact you within 24 hours.
+                </Text>
 
-              <Button
-                mode="contained"
-                onPress={handleSubmitDispute}
-                loading={raiseDisputeMutation.isPending}
-                disabled={raiseDisputeMutation.isPending}
-                style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
-                contentStyle={styles.confirmCancelButtonContent}
-              >
-                {raiseDisputeMutation.isPending 
-                  ? 'Submitting...' 
-                  : 'Submit Dispute'
-                }
-              </Button>
+                <Text variant="bodySmall" style={styles.reasonLabel}>
+                  Describe the issue *
+                </Text>
+                <TextInput
+                  style={styles.reasonInput}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="e.g., Service was not performed, quality issues, no-show by provider..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={disputeReason}
+                  onChangeText={setDisputeReason}
+                  textAlignVertical="top"
+                />
+
+                <Button
+                  mode="contained"
+                  onPress={handleSubmitDispute}
+                  loading={raiseDisputeMutation.isPending}
+                  disabled={raiseDisputeMutation.isPending}
+                  style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
+                  contentStyle={styles.confirmCancelButtonContent}
+                >
+                  {raiseDisputeMutation.isPending 
+                    ? 'Submitting...' 
+                    : 'Submit Dispute'
+                  }
+                </Button>
+              </View>
             </View>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* No-Show Dispute Modal */}
@@ -1293,60 +1306,71 @@ export default function BookingDetailScreen() {
         visible={noShowDisputeModalVisible}
         onRequestClose={() => setNoShowDisputeModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text variant="titleLarge" style={styles.modalTitle}>Dispute No-Show</Text>
-              <TouchableOpacity 
-                onPress={() => setNoShowDisputeModalVisible(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.disputeModalContent}>
-              <View style={[styles.disputeIconContainer, { backgroundColor: `${COLORS.accentRed}15` }]}>
-                <Ionicons name="account-alert" size={48} color={COLORS.accentRed} />
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+        >
+          <ScrollView
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text variant="titleLarge" style={styles.modalTitle}>Dispute No-Show</Text>
+                <TouchableOpacity 
+                  onPress={() => setNoShowDisputeModalVisible(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                </TouchableOpacity>
               </View>
-              
-              <Text variant="titleMedium" style={styles.disputeModalTitle}>
-                Dispute No-Show Marking
-              </Text>
-              
-              <Text variant="bodySmall" style={styles.disputeModalDescription}>
-                If you believe you were incorrectly marked as a no-show, please explain your situation. Our support team will review your case and contact you within 24 hours.
-              </Text>
 
-              <Text variant="bodySmall" style={styles.reasonLabel}>
-                Reason for dispute *
-              </Text>
-              <TextInput
-                style={styles.reasonInput}
-                multiline
-                numberOfLines={4}
-                placeholder="e.g., I arrived on time, I was not notified of the appointment, there was a misunderstanding..."
-                placeholderTextColor={COLORS.textSecondary}
-                value={noShowDisputeReason}
-                onChangeText={setNoShowDisputeReason}
-              />
+              <View style={styles.disputeModalContent}>
+                <View style={[styles.disputeIconContainer, { backgroundColor: `${COLORS.accentRed}15` }]}>
+                  <Ionicons name="account-alert" size={48} color={COLORS.accentRed} />
+                </View>
+                
+                <Text variant="titleMedium" style={styles.disputeModalTitle}>
+                  Dispute No-Show Marking
+                </Text>
+                
+                <Text variant="bodySmall" style={styles.disputeModalDescription}>
+                  If you believe you were incorrectly marked as a no-show, please explain your situation. Our support team will review your case and contact you within 24 hours.
+                </Text>
 
-              <Button
-                mode="contained"
-                onPress={handleSubmitNoShowDispute}
-                loading={disputeNoShowMutation.isPending}
-                disabled={disputeNoShowMutation.isPending}
-                style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
-                contentStyle={styles.confirmCancelButtonContent}
-              >
-                {disputeNoShowMutation.isPending 
-                  ? 'Submitting...' 
-                  : 'Submit Dispute'
-                }
-              </Button>
+                <Text variant="bodySmall" style={styles.reasonLabel}>
+                  Reason for dispute *
+                </Text>
+                <TextInput
+                  style={styles.reasonInput}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="e.g., I arrived on time, I was not notified of the appointment, there was a misunderstanding..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={noShowDisputeReason}
+                  onChangeText={setNoShowDisputeReason}
+                  textAlignVertical="top"
+                />
+
+                <Button
+                  mode="contained"
+                  onPress={handleSubmitNoShowDispute}
+                  loading={disputeNoShowMutation.isPending}
+                  disabled={disputeNoShowMutation.isPending}
+                  style={[styles.confirmCancelButton, { backgroundColor: COLORS.accentRed }]}
+                  contentStyle={styles.confirmCancelButtonContent}
+                >
+                  {disputeNoShowMutation.isPending 
+                    ? 'Submitting...' 
+                    : 'Submit Dispute'
+                  }
+                </Button>
+              </View>
             </View>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
     </SafeAreaView>
@@ -1875,6 +1899,10 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
     justifyContent: 'flex-end',
   },
   modalContent: {

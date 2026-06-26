@@ -5,14 +5,15 @@ import {
   Alert,
   Dimensions,
   TouchableOpacity,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Text,
   Button,
   Surface,
   TextInput,
-  Portal,
-  Dialog,
   ActivityIndicator,
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -189,48 +190,17 @@ export default function QRScannerScreen() {
           </Button>
         </View>
 
-        {/* Manual Entry Dialog */}
-        <Portal>
-          <Dialog
-            visible={manualCodeVisible}
-            onDismiss={() => setManualCodeVisible(false)}
-            style={styles.dialog}
-          >
-            <Dialog.Title style={styles.dialogTitle}>Enter Check-in Code</Dialog.Title>
-            <Dialog.Content>
-              <Text style={styles.dialogText}>
-                Enter the check-in code provided by the customer
-              </Text>
-              <TextInput
-                mode="outlined"
-                placeholder="e.g., ABC123"
-                value={manualCode}
-                onChangeText={setManualCode}
-                autoCapitalize="characters"
-                style={styles.codeInput}
-                outlineColor="#E5E7EB"
-                activeOutlineColor="#006B3F"
-                theme={{ roundness: 10 }}
-              />
-            </Dialog.Content>
-            <Dialog.Actions style={styles.dialogActions}>
-              <Button
-                onPress={() => setManualCodeVisible(false)}
-                textColor="#6B7280"
-              >
-                Cancel
-              </Button>
-              <Button
-                onPress={handleManualCheckin}
-                loading={checkinMutation.isPending}
-                disabled={checkinMutation.isPending || !manualCode.trim()}
-                textColor="#006B3F"
-              >
-                Check In
-              </Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
+        {/* Manual Entry Modal */}
+        <ManualCodeModal
+          visible={manualCodeVisible}
+          onDismiss={() => setManualCodeVisible(false)}
+          manualCode={manualCode}
+          setManualCode={setManualCode}
+          onSubmit={handleManualCheckin}
+          isPending={checkinMutation.isPending}
+          theme={theme}
+          styles={styles}
+        />
       </SafeAreaView>
     );
   }
@@ -326,49 +296,90 @@ export default function QRScannerScreen() {
         </Button>
       </View>
 
-      {/* Manual Entry Dialog */}
-      <Portal>
-        <Dialog
-          visible={manualCodeVisible}
-          onDismiss={() => setManualCodeVisible(false)}
-          style={styles.dialog}
-        >
-          <Dialog.Title style={styles.dialogTitle}>Enter Check-in Code</Dialog.Title>
-          <Dialog.Content>
-            <Text style={styles.dialogText}>
-              Enter the check-in code provided by the customer
-            </Text>
-            <TextInput
-              mode="outlined"
-              placeholder="e.g., ABC123"
-              value={manualCode}
-              onChangeText={setManualCode}
-              autoCapitalize="characters"
-              style={styles.codeInput}
-              outlineColor="#E5E7EB"
-              activeOutlineColor="#006B3F"
-              theme={{ roundness: 10 }}
-            />
-          </Dialog.Content>
-          <Dialog.Actions style={styles.dialogActions}>
-            <Button
-              onPress={() => setManualCodeVisible(false)}
-              textColor="#6B7280"
-            >
+      {/* Manual Entry Modal */}
+      <ManualCodeModal
+        visible={manualCodeVisible}
+        onDismiss={() => setManualCodeVisible(false)}
+        manualCode={manualCode}
+        setManualCode={setManualCode}
+        onSubmit={handleManualCheckin}
+        isPending={checkinMutation.isPending}
+        theme={theme}
+        styles={styles}
+      />
+    </SafeAreaView>
+  );
+}
+
+// Extracted Modal component using React Native's native Modal (works reliably on iOS above CameraView)
+interface ManualCodeModalProps {
+  visible: boolean;
+  onDismiss: () => void;
+  manualCode: string;
+  setManualCode: (code: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+  theme: AppTheme;
+  styles: ReturnType<typeof createStyles>;
+}
+
+function ManualCodeModal({
+  visible,
+  onDismiss,
+  manualCode,
+  setManualCode,
+  onSubmit,
+  isPending,
+  styles,
+}: ManualCodeModalProps) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onDismiss}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.modalOverlay}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={onDismiss}
+        />
+        <View style={styles.modalContent}>
+          <Text style={styles.dialogTitle}>Enter Check-in Code</Text>
+          <Text style={styles.dialogText}>
+            Enter the check-in code provided by the customer
+          </Text>
+          <TextInput
+            mode="outlined"
+            placeholder="e.g., ABC123"
+            value={manualCode}
+            onChangeText={setManualCode}
+            autoCapitalize="characters"
+            style={styles.codeInput}
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#006B3F"
+            theme={{ roundness: 10 }}
+          />
+          <View style={styles.dialogActions}>
+            <Button onPress={onDismiss} textColor="#6B7280">
               Cancel
             </Button>
             <Button
-              onPress={handleManualCheckin}
-              loading={checkinMutation.isPending}
-              disabled={checkinMutation.isPending || !manualCode.trim()}
+              onPress={onSubmit}
+              loading={isPending}
+              disabled={isPending || !manualCode.trim()}
               textColor="#006B3F"
             >
               Check In
             </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-    </SafeAreaView>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -565,6 +576,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   dialog: {
     borderRadius: 16,
     backgroundColor: theme.surface,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: Math.min(width - 48, 360),
+    borderRadius: 16,
+    backgroundColor: theme.surface,
+    padding: 24,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 },
+      android: { elevation: 8 },
+    }),
   },
   dialogTitle: {
     fontWeight: '600',
