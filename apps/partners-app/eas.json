@@ -39,7 +39,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v17-lockfile-fix"
+        "key": "v18-bugfixes"
       }
     }
   },

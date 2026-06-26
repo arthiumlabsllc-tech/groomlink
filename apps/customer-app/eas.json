@@ -50,7 +50,7 @@
         "image": "latest"
       },
       "cache": {
-        "key": "v22-lockfile-fix"
+        "key": "v23-bugfixes"
       }
     }
   },
