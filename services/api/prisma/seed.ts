@@ -467,7 +467,10 @@ function generatePhoneNumber(): string {
 }
 
 async function main() {
-  console.log('🌱 Starting production database seed...\n');
+  const adminOnly = process.argv.includes('--admin-only');
+  console.log(adminOnly
+    ? '🌱 Starting admin-only seed (no demo data)...\n'
+    : '🌱 Starting production database seed...\n');
 
   // Step 1: Clean existing data (respect foreign key constraints)
   console.log('🧹 Cleaning existing data...');
@@ -525,6 +528,7 @@ async function main() {
   console.log(`✅ Super Admin: ${admin.email}`);
   console.log(`✅ Admin: ${superAdmin.email}\n`);
 
+  if (!adminOnly) {
   // Step 3: Create customers
   console.log('👥 Creating customers...');
   const customerUsers = [];
@@ -725,6 +729,9 @@ async function main() {
       where: { id: salon.id },
       data: { reviewCount },
     });
+  }
+  } else {
+    console.log('⏭️  Skipping demo customers/salons/bookings/reviews (admin-only mode)');
   }
 
   // Step 5: Create/update site settings

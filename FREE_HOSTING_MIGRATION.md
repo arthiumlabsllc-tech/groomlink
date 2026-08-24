@@ -113,11 +113,52 @@ cron jobs (booking holds, reminders, sponsorship expiry). Add a free pinger:
 
 ---
 
-## Step 3b — Seed the fresh database (one time)
+## Step 3b — Bootstrap the fresh database (one time)
 
-The first Render deploy creates all tables via `prisma migrate deploy`.
-Then seed the admin accounts (and optionally demo data) from your machine,
-pointing at the **direct** Neon connection string:
+**Baseline note:** the migrations folder contains only incremental changes —
+the base tables (`users`, `salons`, ...) were never part of a migration
+(the old VPS database was created directly from the schema). On a brand-new
+database, `prisma migrate deploy` therefore fails at migration #3
+(`relation "salons" does not exist`). Fix: create the full schema with
+`db push`, then mark every migration as already applied. Run this from
+`services/api` on your machine, using the **direct** (non-pooler) Neon URL:
+
+```powershell
+cd services\api
+$env:DATABASE_URL = "postgresql://USER:PASSWORD@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+
+# 1. If a failed deploy already ran migrations, wipe the partial state first.
+#    (Neon Console -> SQL Editor)
+#    DROP SCHEMA public CASCADE; CREATE SCHEMA public;
+
+# 2. Create the complete schema from schema.prisma
+npx prisma db push
+
+# 3. Mark all existing migrations as applied so future
+#    `prisma migrate deploy` on Render skips them
+$migrations = @(
+  '20250419_add_platform_feedback', '20250421_add_otp_table',
+  '20250423_add_salon_is_featured', '20250424_fix_payment_and_schema',
+  '20250425_add_footer_logo', '20250425_add_freelancer_and_home_service',
+  '20260506_add_security_events', '20260512120000_add_audit_logs',
+  '20260512_add_agent_settings_and_faq_bot', '20260512_add_live_chat_support',
+  '20260515_add_push_tokens', '20260614_add_booking_fee_and_commission',
+  '20260614_add_queue_timer_fields', '20260623_add_app_version_fields',
+  '20260625170000_add_reminder_tracking_fields', '20260625_add_auto_release_at',
+  '20260809000000_add_salon_gallery_videos'
+)
+foreach ($m in $migrations) { npx prisma migrate resolve --applied $m }
+
+# 4. Re-deploy on Render — migrate deploy now finds nothing to do and boots.
+```
+
+> The loose files `add_guest_status_fields.sql` and `ai_accountant_alerts.sql`
+> in `prisma/migrations/` are historical VPS patches — Prisma ignores them,
+> and everything they create is already in `schema.prisma` (covered by `db push`).
+> Future schema changes: always use `npx prisma migrate dev` so they become
+> real migrations Render can apply.
+
+### Seed admin accounts + demo data
 
 ```powershell
 cd services\api
