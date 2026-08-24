@@ -883,7 +883,7 @@ async function main() {
   const subscriptionPlanCount = await prisma.subscriptionPlan.count();
 
   console.log('📊 Summary:');
-  console.log(`   Users: ${userCount} (5 customers + 20 salon owners + 2 admins)`);
+  console.log(`   Users: ${userCount}${adminOnly ? ' (2 admins)' : ' (5 customers + 20 salon owners + 2 admins)'}`);
   console.log(`   Salons: ${salonCount}`);
   console.log(`   Workers: ${workerCount}`);
   console.log(`   Services: ${serviceCount}`);
@@ -894,11 +894,13 @@ async function main() {
   console.log('\n🔐 Test Accounts (Password: Password123!):');
   console.log('   Super Admin: admin@groomlinkgh.com');
   console.log('   Admin: superadmin@groomlinkgh.com');
-  console.log('   Customer 1: kwame.asante@gmail.com');
-  console.log('   Customer 2: ama.mensah@gmail.com');
-  console.log('   Customer 3: kofi.boateng@gmail.com');
-  console.log('   Customer 4: abena.osei@gmail.com');
-  console.log('   Customer 5: yaw.darko@gmail.com');
+  if (!adminOnly) {
+    console.log('   Customer 1: kwame.asante@gmail.com');
+    console.log('   Customer 2: ama.mensah@gmail.com');
+    console.log('   Customer 3: kofi.boateng@gmail.com');
+    console.log('   Customer 4: abena.osei@gmail.com');
+    console.log('   Customer 5: yaw.darko@gmail.com');
+  }
   console.log('='.repeat(60));
 
   // Seed FAQ Bot data
