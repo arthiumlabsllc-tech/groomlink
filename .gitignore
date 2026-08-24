@@ -3,6 +3,12 @@ node_modules/
 .pnp
 .pnp.js
 package-lock.json
+# ...except the web apps' npm lockfiles — Vercel needs them to build standalone
+!apps/landing/package-lock.json
+!apps/customer/package-lock.json
+!apps/partners/package-lock.json
+!apps/admin/package-lock.json
+!apps/support/package-lock.json
 
 # Build outputs
 dist/
