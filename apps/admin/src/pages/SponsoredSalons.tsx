@@ -11,6 +11,8 @@ import {
   formatDuration,
   formatSponsorType,
   getSponsorTypeColor,
+  formatPaymentStatus,
+  getPaymentStatusColor,
   calculateCustomPrice,
   convertToHours,
   type SponsorType,
@@ -218,15 +220,24 @@ export function SponsoredSalons() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border-l-2 ${
-                            sponsorship.isActive
-                              ? 'bg-green-100 text-green-800 border-l-green-500'
-                              : 'bg-gray-100 text-gray-800 border-l-gray-400'
-                          }`}
-                        >
-                          {sponsorship.isActive ? 'Active' : 'Expired'}
-                        </span>
+                        <div className="flex flex-col gap-1.5">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border-l-2 w-fit ${
+                              sponsorship.isActive
+                                ? 'bg-green-100 text-green-800 border-l-green-500'
+                                : 'bg-gray-100 text-gray-800 border-l-gray-400'
+                            }`}
+                          >
+                            {sponsorship.isActive ? 'Active' : 'Expired'}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium w-fit ${getPaymentStatusColor(
+                              sponsorship.paymentStatus
+                            )}`}
+                          >
+                            {formatPaymentStatus(sponsorship.paymentStatus)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
@@ -290,6 +301,13 @@ export function SponsoredSalons() {
                       }`}
                     >
                       {sponsorship.isActive ? 'Active' : 'Expired'}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusColor(
+                        sponsorship.paymentStatus
+                      )}`}
+                    >
+                      {formatPaymentStatus(sponsorship.paymentStatus)}
                     </span>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm">

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
+import BrandLogo from './BrandLogo'
+import GhanaFlag from './GhanaFlag'
 import SearchBox from './SearchBox'
 import LocationPicker from './LocationPicker'
 import BottomNav from './BottomNav'
 import TrustBadges from './TrustBadges'
 import FAQ from './FAQ'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 import RoleSelectorModal from './RoleSelectorModal'
 import { useGeolocation, formatDistance } from '../hooks/useGeolocation'
 import { useSavedLocation, appendLocationParams } from '../hooks/useSavedLocation'
@@ -59,11 +62,7 @@ function HeroSection({ onLogin }: { onLogin: () => void }) {
     <div className="bg-gradient-to-b from-[#1a0a0b] via-[#2d1215] to-[#1a1a1a] pt-6 pb-6 px-4">
       {/* Top row: logo (left) + Log In button (right) */}
       <div className="flex items-center justify-between mb-5">
-        <img
-          src="/logo-full-white.png"
-          alt="GroomLink"
-          className="h-9 w-auto"
-        />
+        <BrandLogo scheme="dark" className="h-9" wordmarkClassName="text-[8px]" />
         <button
           onClick={onLogin}
           className="inline-flex items-center gap-1.5 text-white text-sm font-semibold bg-white/10 border border-white/20 hover:bg-white/20 px-4 py-2 rounded-full transition-colors"
@@ -349,7 +348,7 @@ function NearbySection() {
           radius: '10',
           limit: '10',
         })
-        const response = await fetch(`${API_BASE_URL}/salons/nearby?${params.toString()}`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons/nearby?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch')
         const result = await response.json()
         const raw = result.data || result.salons || []
@@ -960,16 +959,12 @@ function MiniFooter() {
       <div className="border-t border-gray-800 pt-6">
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          <img
-            src="/logo-full-white.png"
-            alt="GroomLink"
-            className="h-8 w-auto opacity-80"
-          />
+          <BrandLogo scheme="dark" className="h-8 opacity-80" wordmarkClassName="text-[7px]" />
         </div>
 
         {/* Copyright */}
-        <p className="text-center text-gray-500 text-xs mb-2">
-          © 2025 GroomLink. Made in Ghana 🇬🇭
+        <p className="text-center text-gray-500 text-xs mb-2 flex items-center justify-center gap-1.5">
+          © 2025 GroomLink. Made in Ghana <GhanaFlag className="w-4 h-3" />
         </p>
         <p className="text-center text-gray-600 text-xs">
           An{' '}
@@ -1000,7 +995,7 @@ function FloatingPartnerCTA() {
 
   return (
     <div
-      className={`fixed bottom-20 left-4 right-4 z-40 transition-all duration-500 ${
+      className={`fixed bottom-40 left-4 right-4 z-40 transition-all duration-500 ${
         visible ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0 pointer-events-none'
       }`}
     >
@@ -1061,7 +1056,7 @@ export default function MobileHome() {
         const params = new URLSearchParams()
         params.set('limit', '8')
         appendLocationParams(params, savedLocation)
-        const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         if (data.success && Array.isArray(data.data)) {
@@ -1084,7 +1079,7 @@ export default function MobileHome() {
         params.set('limit', '8')
         params.set('sort', 'rating')
         appendLocationParams(params, savedLocation)
-        const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         if (data.success && Array.isArray(data.data)) {

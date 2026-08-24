@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactElement } from 'react';
 import Icon from '../components/Icon';
 import { useEscrow } from '../hooks';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -261,7 +261,7 @@ export function Escrow() {
 }
 
 // Mobile Card Component
-function EscrowCard({ escrow, getStatusBadge }: { escrow: EscrowAccount; getStatusBadge: (status: string) => JSX.Element }) {
+function EscrowCard({ escrow, getStatusBadge }: { escrow: EscrowAccount; getStatusBadge: (status: string) => ReactElement }) {
   const borderColor = escrow.status?.toUpperCase() === 'HELD' ? 'border-l-yellow-500' : escrow.status?.toUpperCase() === 'RELEASED' ? 'border-l-green-500' : 'border-l-blue-500';
   return (
     <div className={`card-v2 p-4 border-l-4 ${borderColor}`}>

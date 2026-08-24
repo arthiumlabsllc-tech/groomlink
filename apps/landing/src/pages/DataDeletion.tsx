@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
+import BrandLogo from '../components/BrandLogo'
 
 export default function DataDeletion() {
   const [formData, setFormData] = useState({
@@ -83,11 +84,7 @@ export default function DataDeletion() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <Link to="/" className="flex items-center">
-                <img
-                  src="/logo-full-black.png"
-                  alt="GroomLink"
-                  className="h-8 w-auto"
-                />
+                <BrandLogo className="h-8" wordmarkClassName="text-[7px]" />
               </Link>
               <Link 
                 to="/" 
@@ -159,11 +156,7 @@ export default function DataDeletion() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center">
-              <img
-                src="/logo-full-black.png"
-                alt="GroomLink"
-                className="h-8 w-auto"
-              />
+              <BrandLogo className="h-8" wordmarkClassName="text-[7px]" />
             </Link>
             <Link 
               to="/" 

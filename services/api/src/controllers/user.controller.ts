@@ -117,8 +117,11 @@ export async function uploadAvatar(req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    // Generate the avatar URL path
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    // With Cloudinary storage, `file.path` is the hosted URL.
+    // Fall back to the legacy local-disk path format for local development.
+    const avatarUrl = req.file.path && /^https?:\/\//.test(req.file.path)
+      ? req.file.path
+      : `/uploads/avatars/${req.file.filename}`;
 
     // Update user's avatar in database
     const user = await prisma.user.update({

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import Icon from '../components/Icon';
 import { useCancellations } from '../hooks';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -222,7 +222,7 @@ function CancellationCard({
   getCancelledByBadge 
 }: { 
   cancellation: CancellationRecord; 
-  getCancelledByBadge: (cancelledBy: string) => JSX.Element;
+  getCancelledByBadge: (cancelledBy: string) => ReactElement;
 }) {
   return (
     <div className="card-v2 p-4 border-l-4 border-l-orange-500">

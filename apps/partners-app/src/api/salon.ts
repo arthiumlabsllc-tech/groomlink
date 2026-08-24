@@ -181,6 +181,30 @@ export const salonApi = {
     return response.data.data;
   },
 
+  // Upload gallery videos (max 5 per request, 50MB each)
+  uploadGalleryVideos: async (salonId: string, uris: { uri: string; mimeType?: string }[]): Promise<Salon> => {
+    const formData = new FormData();
+    uris.forEach((item, index) => {
+      formData.append('videos', {
+        uri: item.uri,
+        type: item.mimeType || 'video/mp4',
+        name: `gallery_video_${index}.mp4`,
+      } as any);
+    });
+    const response = await apiClient.post(`/uploads/salon/${salonId}/gallery/videos`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  // Delete a gallery video
+  deleteGalleryVideo: async (salonId: string, videoUrl: string): Promise<Salon> => {
+    const response = await apiClient.delete(`/uploads/salon/${salonId}/gallery/videos`, {
+      data: { videoUrl },
+    });
+    return response.data.data;
+  },
+
   // Request manual payout to MoMo
   requestPayout: async (salonId: string, amount: number): Promise<RequestPayoutResult> => {
     const response = await apiClient.post(`/salons/${salonId}/request-payout`, { amount });

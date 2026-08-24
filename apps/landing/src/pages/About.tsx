@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import Icon from '../components/Icon'
+import GhanaFlag from '../components/GhanaFlag'
 
 // ============================================================
 // GroomLink About Page (/about)
@@ -41,7 +42,7 @@ const values = [
     icon: 'diversity_3',
     title: 'Made for Ghana',
     body: "Mobile Money native. Twi-friendly support. Built on the realities of Accra traffic, power cuts, and small-salon hustle.",
-    tint: 'bg-blue-500/10 text-blue-600',
+    tint: 'bg-ghana-red/10 text-ghana-red',
   },
 ]
 
@@ -64,7 +65,7 @@ export default function About() {
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#CE1126]/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3" />
         <div className="section-container relative text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-6">
-            <span className="text-lg">🇬🇭</span>
+            <GhanaFlag className="w-5 h-3.5" />
             <span className="text-white text-sm font-medium">Built in Ghana, for Ghana</span>
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-5 leading-tight">

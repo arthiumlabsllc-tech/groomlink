@@ -6,6 +6,7 @@ import {
   appendLocationParams,
   type SavedLocation,
 } from '../hooks/useSavedLocation'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 
 interface Salon {
   id: string
@@ -103,7 +104,7 @@ export default function SearchBox({ variant = 'mobile', className = '' }: Search
         params.set('search', query)
         params.set('limit', '8')
         appendLocationParams(params, savedLocation)
-        const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         if (data.success && Array.isArray(data.data)) {

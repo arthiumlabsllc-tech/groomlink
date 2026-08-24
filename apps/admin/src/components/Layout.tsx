@@ -21,6 +21,7 @@ const pageIdToPath: Record<string, string> = {
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard', pageId: 'dashboard' },
+  { path: '/ai-accountant', label: 'AI Accountant', icon: 'calculate', pageId: 'dashboard' },
   { path: '/salons', label: 'Salons', icon: 'storefront', pageId: 'salons' },
   { path: '/users', label: 'Users', icon: 'group', pageId: 'users' },
   { path: '/transactions', label: 'Transactions', icon: 'credit_card', pageId: 'transactions' },

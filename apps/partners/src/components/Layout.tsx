@@ -215,6 +215,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         { name: 'Booking Page', path: '/branded-page' },
         { name: 'Verification', path: '/kyc' },
         { name: 'Subscription', path: '/subscription' },
+        { name: 'Sponsorship', path: '/sponsorship' },
         { name: 'Settings', path: '/settings' },
       ]
     },

@@ -5,6 +5,7 @@ import BottomNav from '../components/BottomNav'
 import LocationPicker from '../components/LocationPicker'
 import { useSavedLocation, appendLocationParams } from '../hooks/useSavedLocation'
 import { HaircutIcon, BarberIcon, NailsIcon, BraidingIcon, MassageIcon, DreadlocksIcon } from '../components/CategoryIcons'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 
 interface Salon {
   id: string
@@ -153,7 +154,7 @@ export default function Explore() {
       if (sortBy === 'rating') params.set('sort', 'rating')
       appendLocationParams(params, savedLocation)
 
-      const response = await fetch(`${API_BASE_URL}/salons?${params.toString()}`)
+      const response = await fetchWithTimeout(`${API_BASE_URL}/salons?${params.toString()}`)
       if (!response.ok) throw new Error('Failed to fetch salons')
       const data = await response.json()
 

@@ -20,6 +20,11 @@ input, textarea, select { color-scheme: light dark; }
   .bg-\[\#F8F9FA\] { background-color: #1A1F2E !important; }
   /* Brand text (used by headings) */
   .text-brand-text { color: #F3F4F6 !important; }
+  .text-brand-text\/70 { color: rgba(243, 244, 246, 0.75) !important; }
+  /* Brand green text/icons on light cards -> light green on dark surfaces */
+  .text-brand-secondary { color: #4ADE80 !important; }
+  .text-ghana-red { color: #F87171 !important; }
+  .text-brand-primary { color: #F87171 !important; }
   /* Text */
   .text-\[\#1A1A1A\], .text-\[\#1a1a1a\] { color: #F3F4F6 !important; }
   .text-gray-900 { color: #F3F4F6 !important; }
@@ -66,9 +71,14 @@ input, textarea, select { color-scheme: light dark; }
   /* Decorative blur blobs */
   .bg-\[\#006B3F\]\/5 { background-color: rgba(0, 107, 63, 0.1) !important; }
   .bg-\[\#CE1126\]\/5 { background-color: rgba(206, 17, 38, 0.1) !important; }
-  /* Trust badge */
+  /* Trust badge — keep green text on gold pills/badges (contrast), flip elsewhere */
   .bg-\[\#006B3F\]\/10 { background-color: rgba(0, 107, 63, 0.25) !important; }
-  .text-\[\#006B3F\] { color: #4ADE80 !important; }
+  .text-\[\#006B3F\]:not(.bg-\[\#FCD116\]) { color: #4ADE80 !important; }
+  /* Text on solid gold surfaces must stay dark (gold stays gold in dark mode) */
+  .bg-\[\#FCD116\].text-\[\#006B3F\], .bg-\[\#FCD116\].text-\[\#1A1A1A\] { color: #1A1A1A !important; }
+  .from-\[\#FCD116\] .text-gray-900, .from-\[\#FCD116\] .text-gray-800, .from-\[\#FCD116\] .text-gray-700 { color: #111827 !important; }
+  /* Same-element case (e.g. Download partners card gold header) */
+  .from-\[\#FCD116\].text-gray-900 { color: #111827 !important; }
   /* Green-50 backgrounds (payment providers, feature badges) */
   .bg-green-50 { background-color: rgba(0, 107, 63, 0.15) !important; }
   .border-green-100 { border-color: rgba(0, 107, 63, 0.3) !important; }
@@ -97,10 +107,6 @@ input, textarea, select { color-scheme: light dark; }
   svg [stroke="#006B3F"] { stroke: #4ADE80 !important; }
 
   /* ===== Legal/Info pages (Privacy, Terms, Delete Account) ===== */
-  /* Theme-aware logo: invert black logo to white in dark mode */
-  img[src*="logo-full-black"] {
-    filter: brightness(0) invert(1) !important;
-  }
   /* Sticky header background + border */
   .border-b.border-gray-100 {
     background-color: #1A1F2E !important;

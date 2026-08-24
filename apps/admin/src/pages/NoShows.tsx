@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import Icon from '../components/Icon';
 import { useNoShows, useResolveNoShow } from '../hooks';
 import { formatDate } from '../lib/utils';
@@ -388,7 +388,7 @@ function NoShowCard({
   onResolve
 }: { 
   noShow: NoShowRecord; 
-  getDisputedBadge: (noShow: NoShowRecord) => JSX.Element;
+  getDisputedBadge: (noShow: NoShowRecord) => ReactElement;
   onResolve: () => void;
 }) {
   return (

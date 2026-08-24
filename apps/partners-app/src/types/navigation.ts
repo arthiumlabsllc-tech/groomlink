@@ -19,6 +19,7 @@ export type MainStackParamList = {
   AddStaff: { staffId?: string; staff?: StaffMember } | undefined;
   QRScanner: { bookingId?: string } | undefined;
   Pricing: undefined;
+  Sponsorship: undefined;
   ProfileMain: undefined;
   PlatformFeedback: undefined;
   Notifications: undefined;

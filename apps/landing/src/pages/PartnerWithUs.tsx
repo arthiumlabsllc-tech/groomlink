@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import GhanaFlag from '../components/GhanaFlag'
 
 /* ─── Hooks ─── */
 function useScrollAnimation(threshold = 0.15) {
@@ -159,7 +160,7 @@ export default function PartnerWithUs() {
         <div className="relative z-10 section-container py-16 lg:py-24">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-5 py-2.5 mb-8">
-              <span className="text-[#FCD116] text-lg">🇬🇭</span>
+              <GhanaFlag className="w-5 h-3.5" />
               <span className="text-white text-sm font-semibold">Trusted by 500+ Ghanaian salons</span>
             </div>
 

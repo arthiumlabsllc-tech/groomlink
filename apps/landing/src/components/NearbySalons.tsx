@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Icon from './Icon'
 import { useDarkMode } from '../hooks/useDarkMode'
 import { useGeolocation, getDistanceKm, formatDistance } from '../hooks/useGeolocation'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 
 interface Salon {
   id: string
@@ -91,7 +92,7 @@ export default function NearbySalons() {
           radius: '10',
           limit: '12',
         })
-        const response = await fetch(`${API_BASE_URL}/salons/nearby?${params.toString()}`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons/nearby?${params.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch nearby salons')
         const result = await response.json()
         const raw = result.data || result.salons || []
@@ -118,7 +119,7 @@ export default function NearbySalons() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`${API_BASE_URL}/salons?limit=6`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons?limit=6`)
         if (!response.ok) throw new Error('Failed to fetch salons')
         const data = await response.json()
         const raw = data.data || []

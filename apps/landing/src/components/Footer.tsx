@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Icon from './Icon'
+import GhanaFlag from './GhanaFlag'
 
 import { API_BASE_URL } from '../config'
 
@@ -230,7 +231,7 @@ export default function Footer() {
             </p>
             <span className="hidden sm:inline text-gray-600">•</span>
             <p className="text-gray-400 flex items-center gap-1">
-              Made in Ghana <span className="text-lg">🇬🇭</span>
+              Made in Ghana <GhanaFlag className="w-4 h-3" />
             </p>
             <span className="hidden sm:inline text-gray-600">•</span>
             <a 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Icon from './Icon'
-import { useDarkMode } from '../hooks/useDarkMode'
 import RoleSelectorModal from './RoleSelectorModal'
+import BrandLogo from './BrandLogo'
 
 interface HeaderProps {
   scrolled: boolean
@@ -11,7 +11,6 @@ export default function Header({ scrolled }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [roleModalOpen, setRoleModalOpen] = useState(false)
-  const isDark = useDarkMode()
 
   const openRoleModal = () => {
     setRoleModalOpen(true)
@@ -71,11 +70,7 @@ export default function Header({ scrolled }: HeaderProps) {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <a href="/" className="flex items-center">
-            <img 
-              src={isDark ? '/logo-full-white.png' : '/logo-full-black.png'} 
-              alt="GroomLink" 
-              className="h-10 md:h-14 w-auto"
-            />
+            <BrandLogo className="h-10 md:h-14" wordmarkClassName="text-[8px] md:text-[11px]" />
           </a>
 
           {/* Desktop Navigation */}

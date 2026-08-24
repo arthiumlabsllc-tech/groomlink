@@ -27,10 +27,34 @@ export function isUserOnline(userId: string): boolean {
   return onlineUsers.has(userId);
 }
 
+/**
+ * Socket.IO CORS origin check.
+ * Allows our production domains (incl. subdomains), Vercel preview
+ * deployments, and localhost. Extra origins can be whitelisted via the
+ * CORS_ORIGIN env var (comma-separated). Mobile apps send no Origin header.
+ */
+function isAllowedSocketOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (process.env.CORS_ORIGIN) {
+    const explicit = process.env.CORS_ORIGIN.split(',').map((o) => o.trim());
+    if (explicit.includes(origin)) return true;
+  }
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      hostname === 'localhost' ||
+      hostname.endsWith('groomlinkgh.com') ||
+      hostname.endsWith('.vercel.app')
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function initializeSocket(server: HttpServer): SocketIOServer {
   io = new SocketIOServer(server, {
     cors: {
-      origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:8081'],
+      origin: (origin, callback) => callback(null, isAllowedSocketOrigin(origin)),
       credentials: true,
     },
   });

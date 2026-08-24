@@ -23,6 +23,7 @@ export interface Salon {
   rating: number;
   reviewCount: number;
   images: string[];
+  videos?: string[];
   coverImage: string | null;
   logo: string | null;
   // Business hours - server sends these fields

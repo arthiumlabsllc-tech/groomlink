@@ -1,109 +1,53 @@
-name: Deploy to Production
+name: CI (Production)
+
+# Deploys are fully automated outside GitHub Actions:
+#   - API (services/api)  -> Render auto-deploys from `main` (see render.yaml)
+#   - Web frontends       -> Vercel auto-deploys from `main` (see apps/*/vercel.json)
+# This workflow runs the test suite on every push to main and smoke-tests
+# the live API after Render finishes deploying.
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-    inputs:
-      confirm:
-        description: 'Type "deploy" to confirm production deployment'
-        required: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '20'
-        
+
     - name: Install dependencies
       run: |
         cd services/api
         npm ci
-        
+
     - name: Run tests
       run: |
         cd services/api
         npm test
-        
+
     - name: Type check
       run: |
         cd services/api
         npm run typecheck
 
-  deploy:
+  health-check:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event.inputs.confirm == 'deploy'
-    
+    # Give Render time to finish its auto-deploy before smoke-testing.
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
-        
-    - name: Add host to known hosts
+    - name: Wait for Render deploy
+      run: sleep 180
+
+    - name: Smoke-test live API
       run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
-        
-    - name: Deploy to Production Server
-      run: |
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
-          cd /opt/groomlink
-          git fetch origin
-          git checkout main
-          git pull origin main
-          
-          # Create env file from secrets
-          cat > .env.production << 'ENVFILE'
-          NODE_ENV=production
-          DB_USER=${{ secrets.PROD_DB_USER }}
-          DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
-          DB_NAME=${{ secrets.PROD_DB_NAME }}
-          REDIS_PASSWORD=${{ secrets.PROD_REDIS_PASSWORD }}
-          JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
-          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-          SMTP_HOST=${{ secrets.PROD_SMTP_HOST }}
-          SMTP_PORT=${{ secrets.PROD_SMTP_PORT }}
-          SMTP_USER=${{ secrets.PROD_SMTP_USER }}
-          SMTP_PASSWORD=${{ secrets.PROD_SMTP_PASSWORD }}
-          EMAIL_FROM=${{ secrets.PROD_EMAIL_FROM }}
-          DB_CONNECTION_POOL_SIZE=50
-          DB_CONNECTION_TIMEOUT=30000
-          DB_IDLE_TIMEOUT=60000
-          ENVFILE
-          
-          # Backup database before deployment
-          docker exec groomlink-postgres pg_dump -U ${{ secrets.PROD_DB_USER }} ${{ secrets.PROD_DB_NAME }} > backup-$(date +%Y%m%d-%H%M%S).sql
-          
-          # Deploy
-          ./deploy.sh production
-        EOF
-        
-    - name: Health Check
-      run: |
-        sleep 30
-        curl -f https://${{ secrets.PROD_HOST }}/api/health || exit 1
-        echo "Production deployment successful!"
-        
-    - name: Notify Slack
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        text: 'Production deployment completed!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      if: always()
+        curl -sf --max-time 30 https://api.groomlinkgh.com/api/health || exit 1
+        echo "API healthy after deploy!"

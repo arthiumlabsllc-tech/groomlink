@@ -68,8 +68,10 @@ const TIME_OPTIONS = (() => {
   return times;
 })();
 
-const MAX_GALLERY_IMAGES = 10;
+const MAX_GALLERY_IMAGES = 20;
+const MAX_GALLERY_VIDEOS = 5;
 const MAX_PICK_PER_BATCH = 5;
+const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
 interface FormErrors {
   businessName?: string;
@@ -131,10 +133,13 @@ export default function EditSalonScreen() {
 
   // Image state
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [galleryVideos, setGalleryVideos] = useState<string[]>([]);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [uploadingVideos, setUploadingVideos] = useState(false);
   const [deletingImage, setDeletingImage] = useState<string | null>(null);
+  const [deletingVideo, setDeletingVideo] = useState<string | null>(null);
 
   // Menu visibility
   const [openTimeMenus, setOpenTimeMenus] = useState<{ [key: string]: boolean }>({});
@@ -161,6 +166,7 @@ export default function EditSalonScreen() {
       setDescription(salon.description || '');
       setType(salon.type || 'BARBERSHOP');
       setGalleryImages(salon.images || []);
+      setGalleryVideos(salon.videos || []);
 
       // Initialize payout account fields
       const salonAny = salon as any;
@@ -227,6 +233,28 @@ export default function EditSalonScreen() {
     });
     if (result.canceled || !result.assets?.length) return [];
     return result.assets.map((a) => a.uri);
+  };
+
+  const pickVideos = async (remaining: number): Promise<{ uri: string; mimeType?: string }[]> => {
+    const limit = Math.min(remaining, MAX_PICK_PER_BATCH);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsMultipleSelection: true,
+      selectionLimit: limit,
+    });
+    if (result.canceled || !result.assets?.length) return [];
+
+    const valid = result.assets.filter((a) => {
+      if (a.fileSize && a.fileSize > MAX_VIDEO_SIZE_BYTES) {
+        Alert.alert(
+          'Video Too Large',
+          `One or more videos exceed the 50MB limit and were skipped.`
+        );
+        return false;
+      }
+      return true;
+    });
+    return valid.map((a) => ({ uri: a.uri, mimeType: a.mimeType }));
   };
 
   // --- Upload Handlers ---
@@ -308,6 +336,56 @@ export default function EditSalonScreen() {
               Alert.alert('Error', error.response?.data?.message || 'Failed to delete image');
             } finally {
               setDeletingImage(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleVideoAdd = async () => {
+    if (!salon) return;
+    const remaining = MAX_GALLERY_VIDEOS - galleryVideos.length;
+    if (remaining <= 0) {
+      Alert.alert('Limit Reached', `You can upload a maximum of ${MAX_GALLERY_VIDEOS} gallery videos.`);
+      return;
+    }
+
+    const videos = await pickVideos(remaining);
+    if (!videos.length) return;
+
+    setUploadingVideos(true);
+    try {
+      await salonApi.uploadGalleryVideos(salon.id, videos);
+      refreshSalon();
+      Alert.alert('Success', `${videos.length} video${videos.length > 1 ? 's' : ''} added to gallery`);
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.error?.message || error.response?.data?.message || 'Failed to upload videos');
+    } finally {
+      setUploadingVideos(false);
+    }
+  };
+
+  const handleVideoDelete = async (videoUrl: string) => {
+    if (!salon) return;
+
+    Alert.alert(
+      'Delete Video',
+      'Are you sure you want to remove this video from the gallery?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingVideo(videoUrl);
+            try {
+              await salonApi.deleteGalleryVideo(salon.id, videoUrl);
+              refreshSalon();
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.error?.message || error.response?.data?.message || 'Failed to delete video');
+            } finally {
+              setDeletingVideo(null);
             }
           },
         },
@@ -468,6 +546,7 @@ export default function EditSalonScreen() {
   }
 
   const remainingGallerySlots = MAX_GALLERY_IMAGES - galleryImages.length;
+  const remainingVideoSlots = MAX_GALLERY_VIDEOS - galleryVideos.length;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -602,6 +681,76 @@ export default function EditSalonScreen() {
                   {remainingGallerySlots > 0 && (
                     <Text style={styles.addPhotosRemaining}>
                       (up to {Math.min(remainingGallerySlots, MAX_PICK_PER_BATCH)} at a time)
+                    </Text>
+                  )}
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Videos subsection */}
+            <View style={styles.videosHeader}>
+              <Ionicons name="videocam" size={18} color="#006B3F" />
+              <Text style={styles.videosTitle}>Videos of Your Work</Text>
+              <Text style={styles.galleryCounter}>
+                {galleryVideos.length}/{MAX_GALLERY_VIDEOS}
+              </Text>
+            </View>
+
+            {galleryVideos.length > 0 && (
+              <View style={styles.galleryGrid}>
+                {galleryVideos.map((vid, idx) => (
+                  <View key={vid + idx} style={[styles.galleryItem, styles.videoTile]}>
+                    <Ionicons name="play-circle" size={36} color="#FFFFFF" />
+                    <Text style={styles.videoTileLabel} numberOfLines={1}>Video {idx + 1}</Text>
+                    {deletingVideo === vid ? (
+                      <View style={styles.galleryDeleteButton}>
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.galleryDeleteButton}
+                        onPress={() => handleVideoDelete(vid)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="close-circle" size={22} color="#EF4444" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {galleryVideos.length === 0 && (
+              <View style={styles.galleryEmpty}>
+                <Ionicons name="videocam-outline" size={40} color="#D1D5DB" />
+                <Text style={styles.galleryEmptyText}>No videos yet</Text>
+                <Text style={styles.galleryEmptySub}>Show customers your best work in action</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.addPhotosButton,
+                remainingVideoSlots <= 0 && styles.addPhotosButtonDisabled,
+              ]}
+              onPress={handleVideoAdd}
+              disabled={uploadingVideos || remainingVideoSlots <= 0}
+              activeOpacity={0.7}
+            >
+              {uploadingVideos ? (
+                <ActivityIndicator size="small" color="#006B3F" />
+              ) : (
+                <>
+                  <Ionicons name="add-circle-outline" size={20} color={remainingVideoSlots > 0 ? '#006B3F' : '#9CA3AF'} />
+                  <Text style={[
+                    styles.addPhotosButtonText,
+                    remainingVideoSlots <= 0 && styles.addPhotosButtonTextDisabled,
+                  ]}>
+                    Add Videos
+                  </Text>
+                  {remainingVideoSlots > 0 && (
+                    <Text style={styles.addPhotosRemaining}>
+                      (max 50MB each)
                     </Text>
                   )}
                 </>
@@ -1262,6 +1411,30 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  videoTile: {
+    backgroundColor: '#1F2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoTileLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#D1D5DB',
+    maxWidth: '90%',
+  },
+  videosHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  videosTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text,
   },
   galleryDeleteButton: {
     position: 'absolute',

@@ -24,6 +24,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { openDirections } from '../../utils/directions';
 import { salonApi } from '../../api/salon';
 import { reviewApi } from '../../api/review';
@@ -58,6 +59,29 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type SalonDetailRouteProp = RouteProp<MainStackParamList, 'SalonDetail'>;
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+// Single gallery video card with inline playback controls
+function GalleryVideoCard({ uri, width }: { uri: string; width: number }) {
+  const player = useVideoPlayer(uri, (player) => {
+    player.loop = false;
+  });
+
+  return (
+    <VideoView
+      player={player}
+      style={{
+        width,
+        height: Math.round((width * 9) / 16),
+        borderRadius: 12,
+        backgroundColor: '#000',
+      }}
+      contentFit="cover"
+      nativeControls
+      allowsFullscreen
+      allowsPictureInPicture
+    />
+  );
+}
 
 export default function SalonDetailScreen() {
   const navigation = useNavigation<any>();
@@ -607,6 +631,28 @@ export default function SalonDetailScreen() {
           </View>
         )}
 
+        {/* Videos Section */}
+        {salon.videos && salon.videos.length > 0 && (
+          <View style={styles.section}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>Videos</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.videosRow}
+            >
+              {salon.videos
+                .filter((video) => video && typeof video === 'string' && video.trim())
+                .map((video, index) => (
+                  <GalleryVideoCard
+                    key={`video-${index}`}
+                    uri={video}
+                    width={SCREEN_WIDTH - 64}
+                  />
+                ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Queue Section */}
         {salon?.acceptsWalkIns && (
           <View style={styles.queueSection}>
@@ -1055,6 +1101,9 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  videosRow: {
+    gap: 12,
   },
   galleryThumbnail: {
     width: (SCREEN_WIDTH - 48 - 16) / 3,

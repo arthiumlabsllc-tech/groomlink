@@ -91,6 +91,23 @@ export const mockPrisma = {
     delete: jest.fn(),
     aggregate: jest.fn(),
   },
+  sponsoredSalon: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
+  sponsorshipPackage: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  siteSettings: {
+    findUnique: jest.fn(),
+  },
   $transaction: jest.fn(),
   $disconnect: jest.fn(),
 };

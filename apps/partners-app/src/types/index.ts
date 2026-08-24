@@ -24,6 +24,7 @@ export interface Salon {
   rating: number;
   reviewCount: number;
   images: string[];
+  videos?: string[];
   logo: string | null;
   coverImage: string | null;
   // Business hours - server returns these fields

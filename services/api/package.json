@@ -40,6 +40,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.5",
+    "openai": "^7.4.0",
     "qrcode": "^1.5.4",
     "redlock": "5.0.0-beta.2",
     "socket.io": "^4.7.4",

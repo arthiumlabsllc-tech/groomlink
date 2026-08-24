@@ -17,6 +17,7 @@ import AddServiceScreen from '../screens/main/AddServiceScreen';
 import AddStaffScreen from '../screens/main/AddStaffScreen';
 import QRScannerScreen from '../screens/main/QRScannerScreen';
 import PricingScreen from '../screens/main/PricingScreen';
+import SponsorshipScreen from '../screens/main/SponsorshipScreen';
 import PlatformFeedbackScreen from '../screens/main/PlatformFeedbackScreen';
 import NotificationsListScreen from '../screens/main/NotificationsListScreen';
 import CompletionSettingsScreen from '../screens/main/CompletionSettingsScreen';
@@ -238,6 +239,11 @@ function ProfileStack() {
         name="Analytics"
         component={AnalyticsScreen}
         options={{ title: 'Analytics' }}
+      />
+      <Stack.Screen
+        name="Sponsorship"
+        component={SponsorshipScreen}
+        options={{ title: 'Get Sponsored' }}
       />
       <Stack.Screen
         name="KYC"

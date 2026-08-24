@@ -2,7 +2,9 @@ import apiClient from './client';
 
 export type SponsorType = 'paid' | 'featured' | 'promoted';
 export type DurationUnit = 'hours' | 'days' | 'months' | 'years';
-export type PaymentStatus = 'pending' | 'completed' | 'failed';
+// Backend values: 'pending' (unpaid self-service order), 'paid', 'expired'.
+// Legacy rows may still carry 'completed'/'failed'.
+export type PaymentStatus = 'pending' | 'paid' | 'expired' | 'completed' | 'failed';
 
 export interface SponsoredSalon {
   id: string;
@@ -142,6 +144,30 @@ export function getSponsorTypeColor(type: SponsorType): string {
     promoted: 'bg-orange-100 text-orange-800',
   };
   return colors[type] || 'bg-gray-100 text-gray-800';
+}
+
+// Format payment status for display
+export function formatPaymentStatus(status: PaymentStatus | string): string {
+  const labels: Record<string, string> = {
+    pending: 'Awaiting payment',
+    paid: 'Paid',
+    expired: 'Unpaid (expired)',
+    completed: 'Paid',
+    failed: 'Failed',
+  };
+  return labels[status] || status;
+}
+
+// Get payment status badge color
+export function getPaymentStatusColor(status: PaymentStatus | string): string {
+  const colors: Record<string, string> = {
+    pending: 'bg-amber-100 text-amber-800',
+    paid: 'bg-green-100 text-green-800',
+    completed: 'bg-green-100 text-green-800',
+    expired: 'bg-gray-100 text-gray-600',
+    failed: 'bg-red-100 text-red-800',
+  };
+  return colors[status] || 'bg-gray-100 text-gray-800';
 }
 
 // Backend `paginatedResponse` envelope: { success, data: [...], meta: {page,limit,total,totalPages} }.

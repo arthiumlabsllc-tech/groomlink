@@ -6,7 +6,9 @@ import * as Notifications from 'expo-notifications';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNotificationStore } from '../store/notificationStore';
 
-const SOCKET_URL = 'https://groomlinkgh.com';
+// Socket server origin. Sockets connect directly to the API host because the
+// Vercel-hosted landing domain cannot proxy WebSocket upgrades.
+const SOCKET_URL = 'https://api.groomlinkgh.com';
 
 interface UseSocketOptions {
   salonId?: string;
@@ -39,7 +41,7 @@ export function useSocket(options: UseSocketOptions = {}) {
       
       socketRef.current = io(SOCKET_URL, {
         auth: { token },
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,

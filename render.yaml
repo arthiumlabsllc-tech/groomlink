@@ -1,0 +1,91 @@
+# Render Blueprint — GroomLink API
+# Deploy via https://render.com → New → Blueprint → this repo.
+# Creates the API web service on the FREE plan (Docker runtime).
+# Docs: FREE_HOSTING_MIGRATION.md at the repo root.
+services:
+  - type: web
+    name: groomlink-api
+    runtime: docker
+    plan: free
+    rootDir: services/api
+    healthCheckPath: /api/health
+    autoDeploy: true
+    # Custom domain: add api.groomlinkgh.com in the Render dashboard
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: Africa/Accra
+      - key: CORS_ORIGIN
+        value: https://groomlinkgh.com,https://www.groomlinkgh.com,https://my.groomlinkgh.com,https://partners.groomlinkgh.com,https://dash.groomlinkgh.com,https://support.groomlinkgh.com
+      - key: FRONTEND_URL
+        value: https://groomlinkgh.com
+      - key: API_BASE_URL
+        value: https://api.groomlinkgh.com
+      - key: WS_BASE_URL
+        value: https://api.groomlinkgh.com
+      # --- Secrets: set these manually in the Render dashboard ---
+      - key: DATABASE_URL
+        sync: false # Neon pooled connection string
+      - key: REDIS_URL
+        sync: false # Upstash rediss:// URL
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: SMS_FROM
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: HUBTEL_API_ID
+        sync: false
+      - key: HUBTEL_API_SECRET
+        sync: false
+      - key: HUBTEL_MERCHANT_ACCOUNT_ID
+        sync: false
+      - key: HUBTEL_PAYMENT_WEBHOOK_URL
+        value: https://api.groomlinkgh.com/api/payments/webhook/hubtel
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        value: https://api.groomlinkgh.com/api/payments/callback/paystack
+      - key: SPONSORSHIP_WEBHOOK_URL
+        value: https://api.groomlinkgh.com/api/sponsorship/webhook/hubtel
+      - key: THETELLER_API_USER
+        sync: false
+      - key: THETELLER_API_KEY
+        sync: false
+      - key: THETELLER_MERCHANT_ID
+        sync: false
+      - key: THETELLER_WEBHOOK_URL
+        value: https://api.groomlinkgh.com/api/payments/webhook/theteller
+      - key: THETELLER_TEST_MODE
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        sync: false

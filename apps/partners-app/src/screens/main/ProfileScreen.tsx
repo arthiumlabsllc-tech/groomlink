@@ -669,6 +669,22 @@ export default function ProfileScreen() {
 
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={() => navigation.navigate('Sponsorship')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#FEF9E7' }]}>
+              <Ionicons name="megaphone-outline" size={20} color="#B45309" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Get Sponsored</Text>
+              <Text style={styles.menuSubtitle}>Boost your salon to the top of search</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Divider style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={() => navigation.navigate('StaffAvailability')}
           >
             <View style={[styles.menuIcon, { backgroundColor: '#EFF6FF' }]}>

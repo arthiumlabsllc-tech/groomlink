@@ -61,6 +61,16 @@ export const serviceStorage = new CloudinaryStorage({
   } as { folder: string; allowed_formats: string[]; transformation: object[]; resource_type: string },
 });
 
+// Storage for salon gallery videos
+export const salonVideoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'groomlink/salons/videos',
+    allowed_formats: ['mp4', 'mov', 'avi', 'webm'],
+    resource_type: 'video',
+  } as { folder: string; allowed_formats: string[]; resource_type: string },
+});
+
 // Storage for documents (business licenses, ID proofs)
 export const documentStorage = new CloudinaryStorage({
   cloudinary: cloudinary,

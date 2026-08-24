@@ -300,9 +300,9 @@ class UploadController {
         .filter(f => f.path)
         .map(f => f.path as string);
 
-      // Add to existing images (max 10)
+      // Add to existing images (max 20)
       const currentImages = salon.images || [];
-      const updatedImages = [...currentImages, ...newUrls].slice(0, 10);
+      const updatedImages = [...currentImages, ...newUrls].slice(0, 20);
 
       // Update salon images
       await prisma.salon.update({
@@ -471,6 +471,102 @@ class UploadController {
     } catch (error) {
       console.error('Delete gallery image error:', error);
       errorResponse(res, 'DELETE_FAILED', 'Failed to delete image', 500);
+    }
+  }
+
+  /**
+   * Upload salon gallery videos
+   * POST /api/uploads/salon/:salonId/gallery/videos
+   */
+  async uploadSalonGalleryVideo(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { salonId } = req.params;
+      const files = req.files as MulterFile[];
+
+      if (!files || files.length === 0) {
+        errorResponse(res, 'UPLOAD_FAILED', 'No files uploaded. Ensure the field name is "videos"', 400);
+        return;
+      }
+
+      // Verify ownership
+      const salon = await prisma.salon.findFirst({
+        where: { id: salonId, ownerId: req.user?.id },
+        select: { videos: true },
+      });
+
+      if (!salon) {
+        errorResponse(res, 'NOT_FOUND', 'Salon not found or unauthorized', 404);
+        return;
+      }
+
+      // Get URLs from uploaded files
+      const newUrls = files
+        .filter(f => f.path)
+        .map(f => f.path as string);
+
+      // Add to existing videos (max 5)
+      const currentVideos = salon.videos || [];
+      const updatedVideos = [...currentVideos, ...newUrls].slice(0, 5);
+
+      await prisma.salon.update({
+        where: { id: salonId },
+        data: { videos: updatedVideos },
+      });
+
+      successResponse(res, {
+        videos: newUrls,
+        totalVideos: updatedVideos.length,
+        message: 'Gallery videos uploaded successfully',
+      });
+    } catch (error) {
+      console.error('Upload salon gallery video error:', error);
+      errorResponse(res, 'UPLOAD_FAILED', 'Failed to upload gallery videos', 500);
+    }
+  }
+
+  /**
+   * Delete video from gallery
+   * DELETE /api/uploads/salon/:salonId/gallery/videos
+   */
+  async deleteGalleryVideo(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { salonId } = req.params;
+      const { videoUrl } = req.body;
+
+      if (!videoUrl) {
+        errorResponse(res, 'MISSING_PARAM', 'Video URL is required', 400);
+        return;
+      }
+
+      // Verify ownership
+      const salon = await prisma.salon.findFirst({
+        where: { id: salonId, ownerId: req.user?.id },
+        select: { videos: true },
+      });
+
+      if (!salon) {
+        errorResponse(res, 'NOT_FOUND', 'Salon not found or unauthorized', 404);
+        return;
+      }
+
+      // Remove video from array
+      const updatedVideos = (salon.videos || []).filter(vid => vid !== videoUrl);
+
+      await prisma.salon.update({
+        where: { id: salonId },
+        data: { videos: updatedVideos },
+      });
+
+      // Delete from Cloudinary
+      const publicId = uploadService.extractPublicId(videoUrl);
+      if (publicId) {
+        uploadService.deleteVideo(publicId).catch(() => {});
+      }
+
+      successResponse(res, { remainingVideos: updatedVideos.length, message: 'Video deleted successfully' });
+    } catch (error) {
+      console.error('Delete gallery video error:', error);
+      errorResponse(res, 'DELETE_FAILED', 'Failed to delete video', 500);
     }
   }
 }

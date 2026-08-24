@@ -7,7 +7,10 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'https://groomlinkgh.com';
+// Socket server origin. REST calls still use the shared api client; sockets
+// connect directly to the API host (the Vercel-hosted landing domain cannot
+// proxy WebSocket upgrades).
+const API_BASE_URL = 'https://api.groomlinkgh.com';
 
 // Socket event types
 export interface BookingNewEvent {

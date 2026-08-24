@@ -1,13 +1,6 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { Request } from 'express';
-
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads/avatars');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+import { avatarStorage } from '../config/cloudinary';
 
 // Allowed image mime types
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -25,22 +18,11 @@ const fileFilter = (
   }
 };
 
-// Storage configuration
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (_req, file, cb) => {
-    // Generate unique filename: timestamp-randomstring.ext
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${ext}`);
-  },
-});
-
-// Multer upload configuration
+// Avatars are stored on Cloudinary instead of the local disk so they
+// survive deploys/restarts on hosts with ephemeral filesystems (e.g. Render).
+// With multer-storage-cloudinary, `file.path` is the Cloudinary secure URL.
 const upload = multer({
-  storage,
+  storage: avatarStorage,
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max file size

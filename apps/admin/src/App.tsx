@@ -21,6 +21,7 @@ import { SubscriptionInvoices } from './pages/SubscriptionInvoices';
 import Feedback from './pages/Feedback';
 import { SalonReviews } from './pages/SalonReviews';
 import { Security } from './pages/Security';
+import { AiAccountant } from './pages/AiAccountant';
 import { Builds } from './pages/Builds';
 import { AccessDenied } from './pages/AccessDenied';
 import { Login } from './pages/Login';
@@ -254,6 +255,14 @@ function AppRoutes() {
           element={
             <PermissionGuard pageId="settings">
               <Builds />
+            </PermissionGuard>
+          } 
+        />
+        <Route 
+          path="ai-accountant" 
+          element={
+            <PermissionGuard pageId="dashboard">
+              <AiAccountant />
             </PermissionGuard>
           } 
         />

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 
 import { API_BASE_URL } from '../config'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 
 // Types
 interface Service {
@@ -154,7 +155,7 @@ export default function SalonDetail() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`${API_BASE_URL}/salons/${id}`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons/${id}`)
         const data: ApiResponse = await response.json()
         
         if (data.success) {
@@ -179,7 +180,7 @@ export default function SalonDetail() {
     const fetchReviews = async () => {
       setReviewsLoading(true)
       try {
-        const response = await fetch(`${API_BASE_URL}/salons/${id}/reviews?limit=5`)
+        const response = await fetchWithTimeout(`${API_BASE_URL}/salons/${id}/reviews?limit=5`)
         const data: ReviewsResponse = await response.json()
         
         if (data.success) {

@@ -20,9 +20,11 @@ import loyaltyRoutes from './loyalty.routes';
 import discoveryRoutes from './discovery.routes';
 import insightsRoutes from './insights.routes';
 import subscriptionRoutes from './subscription.routes';
+import sponsorshipRoutes from './sponsorship.routes';
 import platformRoutes from './platformFeedback';
 import configRoutes from './config';
 import customerChatRoutes from './customer-chat.routes';
+import aiAccountantRoutes from './ai-accountant.routes';
 
 const router: RouterType = Router();
 
@@ -48,6 +50,7 @@ router.use('/bookings', bookingRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin', adminRoutes);
+router.use('/admin/ai-accountant', aiAccountantRoutes);
 router.use('/support', supportRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/impersonation', impersonationRoutes);
@@ -59,6 +62,7 @@ router.use('/loyalty', loyaltyRoutes);
 router.use('/discover', discoveryRoutes);
 router.use('/insights', insightsRoutes);
 router.use('/subscription', subscriptionRoutes);
+router.use('/sponsorship', sponsorshipRoutes);
 router.use('/platform', platformRoutes);
 
 export default router;

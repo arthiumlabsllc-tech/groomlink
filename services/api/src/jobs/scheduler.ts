@@ -8,11 +8,12 @@ import { getIO } from '../config/socket';
 import { sendReminderSMS } from '../services/sms.service';
 import * as pushService from '../services/pushNotification.service';
 import { startAutoCompletionJob } from './autoComplete';
-import { checkExpiredSponsorships } from '../services/sponsorship.service';
+import { checkExpiredSponsorships, expireUnpaidSponsorshipOrders } from '../services/sponsorship.service';
 import { cleanupOrphanedPayments } from '../services/payment.service';
 import { initSubscriptionJobs } from './subscription.jobs';
 import { getPolicyValue } from '../services/escrow.service';
 import { checkAndApplyRestriction } from '../services/noshow.service';
+import { runAnomalyScan } from '../services/accounting-anomaly.service';
 
 /**
  * TIMEZONE NOTE: Ghana Time (Africa/Accra = GMT+0)
@@ -54,9 +55,10 @@ export function initScheduler(): void {
   // Job 5: Auto-completion with reminders - every 30 minutes
   startAutoCompletionJob();
 
-  // Job 6: Check expired sponsorships - every hour
+  // Job 6: Check expired sponsorships + expire unpaid sponsorship orders - every hour
   cron.schedule('0 * * * *', async () => {
     await checkExpiredSponsorships();
+    await expireUnpaidSponsorshipOrders();
   });
 
   // Job 7: Cleanup orphaned payments - every 15 minutes
@@ -77,7 +79,19 @@ export function initScheduler(): void {
     await detectAndHandleNoShows();
   });
 
-  logger.info('Background job scheduler initialized with 9 jobs');
+  // Job 10: AI Accountant anomaly scan - daily at 06:00 Ghana time
+  cron.schedule('0 6 * * *', async () => {
+    try {
+      const result = await runAnomalyScan();
+      logger.info('Daily AI Accountant anomaly scan completed', {
+        alertsCreated: result.alertsCreated,
+      });
+    } catch (error) {
+      logger.error('Daily AI Accountant anomaly scan failed:', error);
+    }
+  });
+
+  logger.info('Background job scheduler initialized with 10 jobs');
 }
 
 /**

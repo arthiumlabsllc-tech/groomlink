@@ -17,6 +17,7 @@ import Insights from './pages/Insights'
 import Earnings from './pages/Earnings'
 import PricingPage from './pages/PricingPage'
 import Subscription from './pages/Subscription'
+import Sponsorship from './pages/Sponsorship'
 import NotFound from './pages/NotFound'
 import { SalonProvider } from './store/SalonContext'
 import { SocketProvider } from './components/SocketProvider'
@@ -173,6 +174,13 @@ function App() {
                 <ProtectedRoute>
                   <SalonSetupWrapper>
                     <Subscription />
+                  </SalonSetupWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/sponsorship" element={
+                <ProtectedRoute>
+                  <SalonSetupWrapper>
+                    <Sponsorship />
                   </SalonSetupWrapper>
                 </ProtectedRoute>
               } />

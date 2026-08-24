@@ -207,6 +207,7 @@ export async function getBrandedPage(slug: string) {
             },
           },
           images: true,
+          videos: true,
         },
       },
     },

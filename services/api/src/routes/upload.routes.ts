@@ -2,7 +2,7 @@ import { Router, Router as RouterType } from 'express';
 import multer from 'multer';
 import { authenticateToken, requireRole } from '../middleware/auth';
 import uploadController from '../controllers/upload.controller';
-import { avatarStorage, salonStorage, workerStorage, serviceStorage } from '../config/cloudinary';
+import { avatarStorage, salonStorage, salonVideoStorage, workerStorage, serviceStorage } from '../config/cloudinary';
 import logger from '../config/logger';
 
 const router: RouterType = Router();
@@ -10,6 +10,7 @@ const router: RouterType = Router();
 // Configure multer for different upload types
 const uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 const uploadSalon = multer({ storage: salonStorage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
+const uploadSalonVideo = multer({ storage: salonVideoStorage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB
 const uploadWorker = multer({ storage: workerStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 const uploadService = multer({ storage: serviceStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 
@@ -27,7 +28,7 @@ const handleMulterError = (err: any, req: any, res: any, next: any) => {
     let message = 'File upload failed';
     switch (err.code) {
       case 'LIMIT_FILE_SIZE':
-        message = 'File is too large. Maximum size is 10MB.';
+        message = 'File exceeds the size limit for this upload type.';
         break;
       case 'LIMIT_FILE_COUNT':
         message = 'Too many files. Maximum is 5 files.';
@@ -155,6 +156,30 @@ router.delete(
   '/salon/:salonId/gallery',
   requireRole('SALON_OWNER', 'ADMIN'),
   uploadController.deleteGalleryImage.bind(uploadController)
+);
+
+/**
+ * @route POST /api/uploads/salon/:salonId/gallery/videos
+ * @desc Upload salon gallery videos (max 5 at once, 50MB each)
+ * @access Private (Salon owner only)
+ */
+router.post(
+  '/salon/:salonId/gallery/videos',
+  requireRole('SALON_OWNER', 'ADMIN'),
+  uploadSalonVideo.array('videos', 5),
+  handleMulterError,
+  uploadController.uploadSalonGalleryVideo.bind(uploadController)
+);
+
+/**
+ * @route DELETE /api/uploads/salon/:salonId/gallery/videos
+ * @desc Delete video from salon gallery
+ * @access Private (Salon owner only)
+ */
+router.delete(
+  '/salon/:salonId/gallery/videos',
+  requireRole('SALON_OWNER', 'ADMIN'),
+  uploadController.deleteGalleryVideo.bind(uploadController)
 );
 
 /**

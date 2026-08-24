@@ -168,6 +168,12 @@ hostinger-setup.md
 /*-screenshot.png
 /groomlink-*.png
 /chat-*.png
+# UI/UX audit evidence screenshots (local only)
+/audit-*.png
+/dark-audit-*.png
+/ux-audit-*.png
+/verify-*.png
+/dark-partners-card-check.png
 
 # Documentation files that shouldn't be in repo
 BABEL_PLUGIN_FIX.md

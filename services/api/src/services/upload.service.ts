@@ -37,6 +37,19 @@ class UploadService {
   }
 
   /**
+   * Delete a video from Cloudinary by public ID
+   */
+  async deleteVideo(publicId: string): Promise<boolean> {
+    try {
+      const result = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+      return result.result === 'ok';
+    } catch (error) {
+      logger.error('Failed to delete video from Cloudinary:', error);
+      return false;
+    }
+  }
+
+  /**
    * Generate a transformed URL for an image
    */
   getTransformedUrl(
