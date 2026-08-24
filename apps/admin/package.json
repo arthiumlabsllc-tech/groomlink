@@ -17,7 +17,7 @@
     "autoprefixer": "^10.4.17",
     "axios": "1.6.8",
     "clsx": "^2.1.0",
-    "lucide-react": "^0.378.0",
+    "lucide-react": "^0.475.0",
     "postcss": "^8.4.35",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
