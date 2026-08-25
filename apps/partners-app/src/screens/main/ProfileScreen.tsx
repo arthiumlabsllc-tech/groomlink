@@ -247,7 +247,7 @@ export default function ProfileScreen() {
             // Second confirmation step
             Alert.alert(
               'Final Confirmation',
-              'Type to confirm: This will permanently delete your account and all associated data. This cannot be reversed.',
+              'This will permanently delete your account, your salon(s), and all associated data (bookings, payout records, reviews). This cannot be reversed.',
               [
                 { text: 'Cancel', style: 'cancel' },
                 {

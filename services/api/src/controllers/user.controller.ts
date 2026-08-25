@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { revokeAllUserRefreshTokens } from '../utils/jwt';
 import { sendWelcomeEmail } from '../services/email.service';
 import * as noshowService from '../services/noshow.service';
+import { BookingStatus } from '@prisma/client';
 
 // Transaction client type for Prisma transactions
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -575,30 +576,75 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
 
     const userId = req.user.id;
 
-    // Check if user owns salons - prevent deletion if they do
+    // Partners own salons: their salons are cascade-deleted below. Deletion is
+    // only blocked while open financial obligations exist (Apple 5.1.1(v)).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        _count: {
-          select: {
-            salons: true,
-          },
-        },
-      },
+      include: { salons: { select: { id: true } } },
     });
+    const salonIds = (user?.salons ?? []).map((s) => s.id);
 
-    if (user && user._count.salons > 0) {
-      errorResponse(
-        res,
-        'DELETE_FAILED',
-        `Cannot delete account while you own ${user._count.salons} salon(s). Please transfer or delete your salons first.`,
-        400
-      );
-      return;
+    if (salonIds.length > 0) {
+      const [activeBookings, heldEscrows] = await Promise.all([
+        prisma.booking.count({
+          where: {
+            salonId: { in: salonIds },
+            status: {
+              in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
+            },
+          },
+        }),
+        prisma.escrowAccount.count({ where: { providerId: userId, status: 'held' } }),
+      ]);
+      if (activeBookings > 0 || heldEscrows > 0) {
+        errorResponse(
+          res,
+          'DELETE_FAILED',
+          'Cannot delete account with active bookings or unreleased payouts. Please complete or cancel pending bookings and release payouts first.',
+          400
+        );
+        return;
+      }
     }
 
     // Start a transaction to delete all user data
     await prisma.$transaction(async (tx: TransactionClient) => {
+      // Cascade-delete salons owned by the user (partner accounts)
+      if (salonIds.length > 0) {
+        await tx.escrowAccount.deleteMany({
+          where: { OR: [{ salonId: { in: salonIds } }, { customerId: userId }] },
+        });
+        for (const salonId of salonIds) {
+          const [workers, services, bookings] = await Promise.all([
+            tx.worker.findMany({ where: { salonId }, select: { id: true } }),
+            tx.service.findMany({ where: { salonId }, select: { id: true } }),
+            tx.booking.findMany({ where: { salonId }, select: { id: true } }),
+          ]);
+          const workerIds = workers.map((w) => w.id);
+          const serviceIds = services.map((s) => s.id);
+          const bookingIds = bookings.map((b) => b.id);
+
+          // Break the Salon -> SalonSubscription reference cycle
+          await tx.salon.update({ where: { id: salonId }, data: { subscriptionId: null } });
+
+          await tx.bookingGuest.deleteMany({
+            where: { OR: [{ staffId: { in: workerIds } }, { serviceId: { in: serviceIds } }] },
+          });
+          await tx.salonQueue.deleteMany({ where: { salonId } });
+          await tx.noShowRecord.deleteMany({ where: { bookingId: { in: bookingIds } } });
+          await tx.providerPenalty.deleteMany({ where: { bookingId: { in: bookingIds } } });
+          await tx.completionReminder.deleteMany({ where: { bookingId: { in: bookingIds } } });
+          await tx.booking.deleteMany({ where: { salonId } });
+          await tx.kycSubmission.deleteMany({ where: { salonId } });
+          await tx.subscriptionInvoice.deleteMany({ where: { salonId } });
+          await tx.featureUsage.deleteMany({ where: { salonId } });
+          await tx.salonSubscription.deleteMany({ where: { salonId } });
+          // Remaining children (workers, services, reviews, favorites, documents,
+          // waitlist, branded page, sponsorships) cascade at the DB level
+          await tx.salon.delete({ where: { id: salonId } });
+        }
+      }
+
       // Delete user's activities first
       await tx.userActivity.deleteMany({
         where: { userId },
