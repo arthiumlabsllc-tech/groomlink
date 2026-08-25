@@ -157,6 +157,10 @@ input, textarea, select { color-scheme: light dark; }
     color: #F9FAFB !important;
     border-color: #4B5563 !important;
   }
+  /* Keep intentionally transparent inputs (glass hero search bar) see-through */
+  input.bg-transparent, textarea.bg-transparent, select.bg-transparent {
+    background-color: transparent !important;
+  }
   input::placeholder, textarea::placeholder { color: #9CA3AF !important; }
   .placeholder-gray-400::placeholder, .placeholder-gray-500::placeholder { color: #9CA3AF !important; }
 }
