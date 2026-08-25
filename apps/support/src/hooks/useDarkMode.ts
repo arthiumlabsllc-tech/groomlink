@@ -16,6 +16,12 @@ function applyDarkClass(isDark: boolean) {
   } else {
     root.classList.remove('dark');
   }
+  // Keep the favicon in sync with the active theme (last icon link wins)
+  const links = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]');
+  const last = links[links.length - 1];
+  if (last) {
+    last.href = isDark ? '/logo-white.png' : '/logo-black.png';
+  }
 }
 
 export function useDarkMode() {

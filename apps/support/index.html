@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo-black.png" />
+    <link rel="icon" type="image/png" href="/logo-black.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" href="/logo-white.png" media="(prefers-color-scheme: dark)" />
     <link rel="apple-touch-icon" href="/logo-black.png" />
     <meta name="msapplication-TileImage" content="/logo-black.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,6 +20,12 @@
         var t = localStorage.getItem('theme');
         var d = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (d) document.documentElement.classList.add('dark');
+        // Sync favicon with the resolved theme (overrides the media-based links)
+        var l = document.createElement('link');
+        l.rel = 'icon';
+        l.type = 'image/png';
+        l.href = d ? '/logo-white.png' : '/logo-black.png';
+        document.head.appendChild(l);
       })();
     </script>
   </head>
