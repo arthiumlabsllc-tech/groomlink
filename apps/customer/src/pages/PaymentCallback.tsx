@@ -40,9 +40,9 @@ export default function PaymentCallback() {
       setStatus('success');
       setMessage(result.message || 'Your payment has been processed successfully!');
       
-      // Use the verify response data directly
-      if (result.data) {
-        const data = result.data;
+      // Use the verify response data directly (fields are top-level on result)
+      const data = result.data ?? result;
+      if (data && (data.amountPaid || data.serviceAmount)) {
         setPaymentDetails({
           reference: ref,
           amount: data.amountPaid || 0,
@@ -64,18 +64,18 @@ export default function PaymentCallback() {
           );
           
           if (matchingBooking) {
-            const finalAmount = matchingBooking.finalAmount || matchingBooking.totalAmount;
-            const totalPaid = matchingBooking.escrow?.amountHeld 
-              ? Number(matchingBooking.escrow.amountHeld) + Number(matchingBooking.escrow.platformFee)
-              : finalAmount;
-            const platformFee = matchingBooking.escrow?.platformFee 
+            // amountHeld is the total the customer paid (service + platform fee)
+            const totalPaid = matchingBooking.escrow?.amountHeld
+              ? Number(matchingBooking.escrow.amountHeld)
+              : Number(matchingBooking.finalAmount || matchingBooking.totalAmount);
+            const platformFee = matchingBooking.escrow?.platformFee
               ? Number(matchingBooking.escrow.platformFee)
-              : totalPaid - finalAmount;
+              : 0;
             
             setPaymentDetails({
               reference: ref,
               amount: totalPaid,
-              serviceAmount: finalAmount,
+              serviceAmount: totalPaid - platformFee,
               platformFee: platformFee,
               bookingReference: matchingBooking.reference,
               salonName: matchingBooking.salon?.businessName || 'Unknown Salon',

@@ -505,7 +505,7 @@ export const paymentApi = {
     const response = await apiClient.get(`/payments/${id}`);
     return response.data.data;
   },
-  getConfig: async (): Promise<{ platformFeePercentage: number }> => {
+  getConfig: async (): Promise<{ platformBookingFee: number; commissionPercentage: number }> => {
     const response = await apiClient.get('/payments/config');
     return response.data.data;
   },

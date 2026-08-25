@@ -5,6 +5,7 @@ import logger from '../config/logger';
 import { sendSMS } from '../services/sms.service';
 import { releaseEscrow } from '../services/escrow.service';
 import * as pushService from '../services/pushNotification.service';
+import * as notificationService from '../services/notification.service';
 import { emitToUser } from '../config/socket';
 
 /**
@@ -234,6 +235,15 @@ async function sendCustomerConfirmReminder(booking: {
     message: `Please confirm your service at ${booking.salon.businessName} to release payment.`,
   });
 
+  // In-app dashboard notification
+  notificationService.createNotification({
+    userId: booking.customer.id,
+    type: 'BOOKING_COMPLETED',
+    title: 'Please confirm your service',
+    message: `Was your service at ${booking.salon.businessName} completed satisfactorily? Open your bookings to confirm and release payment.`,
+    data: { bookingId: booking.id, action: 'confirm_completion' },
+  }).catch((err) => logger.error('Failed to create in-app reminder notification', { err }));
+
   // Notify salon owner that reminder was sent
   pushService.sendPushToSalon(
     booking.salon.id,
@@ -301,6 +311,15 @@ async function sendCustomerUrgentReminder(booking: {
     salonId: booking.salon.id,
     message: `URGENT: Confirm your service at ${booking.salon.businessName} or payment will auto-release in 24h.`,
   });
+
+  // In-app dashboard notification (urgent)
+  notificationService.createNotification({
+    userId: booking.customer.id,
+    type: 'BOOKING_COMPLETED',
+    title: 'Urgent: confirm your service',
+    message: `Payment for your service at ${booking.salon.businessName} will be auto-released in 24 hours if not confirmed or disputed.`,
+    data: { bookingId: booking.id, action: 'confirm_completion', urgent: true },
+  }).catch((err) => logger.error('Failed to create in-app urgent reminder notification', { err }));
 
   // Notify salon owner that urgent reminder was sent
   pushService.sendPushToSalon(
@@ -400,6 +419,15 @@ async function safetyNetRelease(
     salonId: booking.salon.id,
     message: `Payment for your service at ${booking.salon.businessName} has been auto-released (48h safety net).`,
   });
+
+  // In-app dashboard notification for the customer
+  notificationService.createNotification({
+    userId: booking.customer.id,
+    type: 'PAYMENT_RECEIVED',
+    title: 'Payment auto-released',
+    message: `Payment for your service at ${booking.salon.businessName} was automatically released after 48 hours without confirmation.`,
+    data: { bookingId: booking.id, action: 'auto_released' },
+  }).catch((err) => logger.error('Failed to create in-app auto-release notification', { err }));
 
   // Notify salon owner via push
   pushService.sendPushToSalon(

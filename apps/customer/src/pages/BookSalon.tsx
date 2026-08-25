@@ -169,21 +169,23 @@ export default function BookSalon() {
   const [guests, setGuests] = useState<BookingGuest[]>([]);
   const [totalPeople, setTotalPeople] = useState(1);
 
-  // Platform fee state
-  const [platformFeePercentage, setPlatformFeePercentage] = useState(5); // Default 5%
+  // Platform booking fee state (flat GHS fee, fetched from payment config)
+  const [platformBookingFee, setPlatformBookingFee] = useState(2); // Default GHS 2
 
   // Waitlist state
   const [myWaitlistEntries, setMyWaitlistEntries] = useState<WaitlistEntry[]>([]);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
-  // Fetch platform fee percentage
+  // Fetch flat platform booking fee
   useEffect(() => {
     const fetchPlatformFee = async () => {
       try {
         const config = await paymentApi.getConfig();
-        setPlatformFeePercentage(config.platformFeePercentage);
+        if (typeof config.platformBookingFee === 'number' && !isNaN(config.platformBookingFee)) {
+          setPlatformBookingFee(config.platformBookingFee);
+        }
       } catch (err) {
-        console.error('Failed to fetch platform fee percentage, using default 5%:', err);
+        console.error('Failed to fetch platform booking fee, using default GHS 2:', err);
       }
     };
 
@@ -1432,9 +1434,9 @@ export default function BookSalon() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 flex items-center gap-1">
                 Platform fee
-                <span className="text-xs text-gray-400">({platformFeePercentage}%)</span>
+                <span className="text-xs text-gray-400">(one-time)</span>
               </span>
-              <span className="text-gray-900">{formatPrice(totalPrice * (platformFeePercentage / 100))}</span>
+              <span className="text-gray-900">{formatPrice(platformBookingFee)}</span>
             </div>
           </div>
           
@@ -1446,7 +1448,7 @@ export default function BookSalon() {
                 <p className="text-xs text-gray-500">Combined billing for all services</p>
               )}
             </div>
-            <span className="text-2xl font-bold text-[#CE1126]">{formatPrice(totalPrice * (1 + platformFeePercentage / 100))}</span>
+            <span className="text-2xl font-bold text-[#CE1126]">{formatPrice(totalPrice + platformBookingFee)}</span>
           </div>
           
           {/* Security info */}

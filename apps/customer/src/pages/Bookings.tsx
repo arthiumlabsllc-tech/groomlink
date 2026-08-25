@@ -634,19 +634,26 @@ export default function Bookings() {
       // Close the completion modal first
       setShowCompletionModal(false)
 
-      // Update local state - move booking from upcoming to past
+      // Update local state - move booking from upcoming to past if it was there,
+      // otherwise update it in place (partner-marked-complete bookings live in past)
+      const confirmedBooking = { ...selectedBooking, serviceCompleted: true, customerConfirmed: true, completionMethod: 'CUSTOMER_CONFIRMED' as const }
+      const wasUpcoming = bookings.upcoming.some(b => b.id === selectedBooking.id)
       setBookings(prev => ({
         ...prev,
         upcoming: prev.upcoming.filter(b => b.id !== selectedBooking.id),
-        past: [{ ...selectedBooking, serviceCompleted: true, customerConfirmed: true, completionMethod: 'CUSTOMER_CONFIRMED' as const }, ...prev.past]
+        past: wasUpcoming
+          ? [confirmedBooking, ...prev.past]
+          : prev.past.map(b => (b.id === selectedBooking.id ? confirmedBooking : b))
       }))
 
-      // Update counts
-      setCounts(prev => ({
-        upcoming: Math.max(0, prev.upcoming - 1),
-        past: prev.past + 1,
-        cancelled: prev.cancelled
-      }))
+      // Update counts only when the booking actually moves tabs
+      if (wasUpcoming) {
+        setCounts(prev => ({
+          upcoming: Math.max(0, prev.upcoming - 1),
+          past: prev.past + 1,
+          cancelled: prev.cancelled
+        }))
+      }
 
       // Close the booking detail modal to return to the bookings list
       setSelectedBooking(null)
@@ -1075,9 +1082,16 @@ export default function Bookings() {
                   {selectedBooking.cancellationDeadline && (
                     <div className="flex justify-between pt-2 border-t border-gray-200">
                       <span className="text-gray-600">Cancel by</span>
-                      <span className="font-medium text-amber-600">
-                        {formatDate(selectedBooking.cancellationDeadline)}
-                      </span>
+                      {new Date(selectedBooking.cancellationDeadline).getTime() > Date.now() ? (
+                        <span className="font-medium text-amber-600">
+                          {formatDate(selectedBooking.cancellationDeadline)}{' '}
+                          {formatTime(new Date(selectedBooking.cancellationDeadline).toTimeString().slice(0, 5))}
+                        </span>
+                      ) : (
+                        <span className="font-medium text-gray-500">
+                          Free cancellation window has passed
+                        </span>
+                      )}
                     </div>
                   )}
                   {selectedBooking.customerNotes && (
@@ -1089,9 +1103,14 @@ export default function Bookings() {
                   <div className="flex justify-between pt-2 border-t border-gray-200">
                     <span className="text-gray-600">Total</span>
                     <span className="font-bold text-lg text-green-700">
-                      {formatPrice(selectedBooking.finalAmount || selectedBooking.totalAmount)}
+                      {formatPrice(selectedBooking.escrow?.amountHeld != null ? Number(selectedBooking.escrow.amountHeld) : (selectedBooking.finalAmount || selectedBooking.totalAmount))}
                     </span>
                   </div>
+                  {selectedBooking.escrow && selectedBooking.escrow.status?.toLowerCase() === 'held' && (
+                    <p className="text-xs text-gray-500 text-right -mt-1">
+                      Includes GH₵ {Number(selectedBooking.escrow.platformFee || 0).toFixed(2)} platform fee
+                    </p>
+                  )}
                 </div>
 
                 {/* Group Members Section */}
@@ -1151,21 +1170,21 @@ export default function Bookings() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Status</span>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                          selectedBooking.escrow.status === 'HELD' ? 'bg-amber-100 text-amber-700' :
-                          selectedBooking.escrow.status === 'RELEASED' ? 'bg-green-100 text-green-700' :
-                          selectedBooking.escrow.status === 'REFUNDED' ? 'bg-blue-100 text-blue-700' :
+                          selectedBooking.escrow.status?.toLowerCase() === 'held' ? 'bg-amber-100 text-amber-700' :
+                          selectedBooking.escrow.status?.toLowerCase() === 'released' ? 'bg-green-100 text-green-700' :
+                          selectedBooking.escrow.status?.toLowerCase() === 'refunded' ? 'bg-blue-100 text-blue-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
-                          {selectedBooking.escrow.status === 'HELD' && <Icon name="verified_user" size={12} />}
-                          {selectedBooking.escrow.status === 'RELEASED' && <Icon name="check_circle" size={12} />}
-                          {selectedBooking.escrow.status === 'REFUNDED' && <Icon name="block" size={12} />}
-                          {selectedBooking.escrow.status === 'HELD' ? 'Held in Escrow' :
-                           selectedBooking.escrow.status === 'RELEASED' ? 'Released to Provider' :
-                           selectedBooking.escrow.status === 'REFUNDED' ? 'Refunded' :
+                          {selectedBooking.escrow.status?.toLowerCase() === 'held' && <Icon name="verified_user" size={12} />}
+                          {selectedBooking.escrow.status?.toLowerCase() === 'released' && <Icon name="check_circle" size={12} />}
+                          {selectedBooking.escrow.status?.toLowerCase() === 'refunded' && <Icon name="block" size={12} />}
+                          {selectedBooking.escrow.status?.toLowerCase() === 'held' ? 'Held in Escrow' :
+                           selectedBooking.escrow.status?.toLowerCase() === 'released' ? 'Released to Provider' :
+                           selectedBooking.escrow.status?.toLowerCase() === 'refunded' ? 'Refunded' :
                            selectedBooking.escrow.status}
                         </span>
                       </div>
-                      {selectedBooking.escrow.status === 'HELD' && (
+                      {selectedBooking.escrow.status?.toLowerCase() === 'held' && (
                         <>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Amount Held</span>
@@ -1268,6 +1287,41 @@ export default function Bookings() {
                           {formatDate(selectedBooking.serviceCompletedAt)} at {formatTime(selectedBooking.serviceCompletedAt.split('T')[1]?.slice(0, 5) || '')}
                         </span>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Customer Confirmation Required - salon marked complete, awaiting customer */}
+                {selectedBooking.serviceCompleted && !selectedBooking.customerConfirmed && !selectedBooking.disputeRaised && selectedBooking.escrow?.status?.toLowerCase() === 'held' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon name="hourglass_top" size={20} className="text-amber-600" />
+                      <h4 className="font-semibold text-gray-900">Confirm your service to release payment</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {selectedBooking.salon?.businessName || 'The salon'} marked this service as complete.
+                      Your payment stays in escrow until you confirm. If you do nothing, it will be
+                      released automatically 48 hours after the salon marked it complete.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleConfirmCompletion}
+                        disabled={confirmingCompletion}
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                      >
+                        {confirmingCompletion ? (
+                          <Icon name="progress_activity" size={16} className="animate-spin" />
+                        ) : (
+                          <Icon name="check_circle" size={16} />
+                        )}
+                        Confirm & Release Payment
+                      </button>
+                      <button
+                        onClick={() => setShowDisputeModal(true)}
+                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Report an Issue
+                      </button>
                     </div>
                   </div>
                 )}

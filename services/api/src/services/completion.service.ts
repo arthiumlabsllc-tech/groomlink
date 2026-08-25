@@ -3,6 +3,7 @@ import redis from '../config/redis';
 import logger from '../config/logger';
 import { releaseEscrow, refundEscrow, getEscrowByBookingId } from './escrow.service';
 import * as smsService from './sms.service';
+import * as notificationService from './notification.service';
 import { emitBookingCompleted, emitToUser } from '../config/socket';
 import * as pushService from './pushNotification.service';
 import QRCode from 'qrcode';
@@ -103,6 +104,15 @@ export async function manualComplete(bookingId: string, completedById: string) {
         data: { type: 'service_completed', bookingId: booking.id },
       }
     ).catch((err) => logger.error('Failed to send push to customer for completion', { err }));
+
+    // Create in-app dashboard notification so the customer sees it in their notification center
+    notificationService.createNotification({
+      userId: booking.customerId,
+      type: 'BOOKING_COMPLETED',
+      title: 'Action needed: confirm your service',
+      message: `${booking.salon.businessName} marked your ${booking.service?.name || 'service'} as complete. Open your bookings to confirm and release payment of GH₵ ${Number(booking.escrow.amountHeld).toFixed(2)}.`,
+      data: { bookingId: booking.id, action: 'confirm_completion' },
+    }).catch((err) => logger.error('Failed to create in-app completion notification for customer', { err }));
 
     // Send push notification to salon owner confirming action
     pushService.sendPushToSalon(
