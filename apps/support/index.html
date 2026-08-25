@@ -25,7 +25,8 @@
   <body>
     <div id="app-loader">
       <div class="loader-content">
-        <img src="/logo-black.png" alt="GroomLink" class="loader-logo" />
+        <img src="/logo-black.png" alt="GroomLink" class="loader-logo loader-logo-light" />
+        <img src="/logo-white.png" alt="GroomLink" class="loader-logo loader-logo-dark" />
         <span class="loader-text">Loading...</span>
       </div>
     </div>
@@ -39,9 +40,6 @@
         position: relative;
         overflow: hidden;
       }
-      html.dark #app-loader {
-        background: #0F1419;
-      }
       #app-loader::before {
         content: '';
         position: absolute;
@@ -53,6 +51,19 @@
         background-repeat: repeat;
         opacity: 0.8;
         z-index: 0;
+      }
+      #app-loader::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1' opacity='0.1'%3E%3Cpath d='M20 30c5-5 10-5 15 0s5 10 0 15c-5 5-10 5-15 0s-5-10 0-15zM25 35v10M35 35v10'/%3E%3Cpath d='M120 20c0-3 2-5 5-5s5 2 5 5v15c0 3-2 5-5 5s-5-2-5-5V20zM125 40v8M125 52v8M125 64v6'/%3E%3Crect x='60' y='50' width='20' height='30' rx='2'/%3E%3Cpath d='M65 55h10M65 62h10M65 69h10M65 76h10'/%3E%3Cpath d='M160 80c-8 0-15 7-15 15s7 15 15 15 15-7 15-15-7-15-15-15zM160 90v20'/%3E%3Cpath d='M40 120l-5 20h10l-5-20zM40 125v10'/%3E%3Cpath d='M90 100h30M90 110h30M90 120h30M90 130h30'/%3E%3Cpath d='M170 140c0-5 4-10 10-10s10 10 10 10-4 10-10 10-10-5-10-10zM175 140h10'/%3E%3Cpath d='M10 160h25M10 165h25M10 170h25'/%3E%3Cpath d='M130 160l5-15 5 15M132 155h6'/%3E%3C/g%3E%3C/svg%3E");
+        background-repeat: repeat;
+        opacity: 0.5;
+        z-index: 0;
+        display: none;
       }
       .loader-content {
         display: flex;
@@ -67,6 +78,9 @@
         height: 64px;
         animation: logo-pulse 1.5s ease-in-out infinite;
       }
+      .loader-logo-dark {
+        display: none;
+      }
       .loader-text {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         font-size: 14px;
@@ -76,6 +90,24 @@
       @keyframes logo-pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.4; transform: scale(0.92); }
+      }
+      html.dark #app-loader {
+        background: #0F1419;
+      }
+      html.dark #app-loader::before {
+        display: none;
+      }
+      html.dark #app-loader::after {
+        display: block;
+      }
+      html.dark .loader-logo-light {
+        display: none;
+      }
+      html.dark .loader-logo-dark {
+        display: block;
+      }
+      html.dark .loader-text {
+        color: #6B7280;
       }
     </style>
     <div id="root"></div>
