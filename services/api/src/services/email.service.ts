@@ -109,7 +109,7 @@ export async function sendEmailOTP(email: string, otpCode: string): Promise<bool
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
-              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <img src="https://api.groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
               <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
@@ -283,7 +283,7 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
-              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <img src="https://api.groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
               <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
@@ -491,7 +491,7 @@ export async function sendBookingConfirmationEmail(
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
-              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <img src="https://api.groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
               <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
@@ -746,7 +746,7 @@ export async function sendNewBookingNotificationEmail(
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
-              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <img src="https://api.groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
               <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
@@ -941,7 +941,7 @@ export async function sendPaymentReceiptEmail(
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
-              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <img src="https://api.groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
               <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>
@@ -1119,7 +1119,7 @@ export async function sendPaymentReceivedNotificationEmail(
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #006B3F 0%, #004D2C 100%); padding: 32px 48px 24px 48px; text-align: center;">
-              <img src="https://groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
+              <img src="https://api.groomlinkgh.com/api/uploads/assets/email-logo.png" alt="GroomLink" width="180" style="display: block; margin: 0 auto 8px auto; max-width: 180px; height: auto;" />
               <p style="margin: 0; color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Ghana's Premier Salon Platform</p>
             </td>
           </tr>

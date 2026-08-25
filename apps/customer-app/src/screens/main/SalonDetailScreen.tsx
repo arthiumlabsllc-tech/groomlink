@@ -51,8 +51,8 @@ const createColors = (t: AppTheme) => ({
 });
 
 // Default GroomLink assets
-const DEFAULT_LOGO_ICON = 'https://groomlinkgh.com/api/uploads/assets/logo-icon.png';
-const DEFAULT_LOGO_WHITE = 'https://groomlinkgh.com/api/uploads/assets/email-logo.png';
+const DEFAULT_LOGO_ICON = 'https://api.groomlinkgh.com/api/uploads/assets/logo-icon.png';
+const DEFAULT_LOGO_WHITE = 'https://api.groomlinkgh.com/api/uploads/assets/email-logo.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

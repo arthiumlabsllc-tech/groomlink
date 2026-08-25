@@ -98,7 +98,7 @@ const formatDayName = (day: string): string => {
 }
 
 // Default GroomLink assets
-const DEFAULT_LOGO_WHITE = 'https://groomlinkgh.com/api/uploads/assets/email-logo.png'
+const DEFAULT_LOGO_WHITE = 'https://api.groomlinkgh.com/api/uploads/assets/email-logo.png'
 
 const getSalonCoverImage = (salon: Salon): string | null => {
   // Prefer cover image if available

@@ -279,7 +279,7 @@ export default function MapView(props: MapViewProps) {
 
   useEffect(() => {
     if (!apiKey) {
-      const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://groomlinkgh.com/api');
+      const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://api.groomlinkgh.com/api');
 
       // Try /api/config first (dedicated config endpoint)
       fetch(`${API_BASE}/config`)

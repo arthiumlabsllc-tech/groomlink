@@ -172,7 +172,7 @@ export async function subscribeToPlan(
 
     if (hubtelCredentials && amount > 0) {
       // Initiate payment via Hubtel
-      const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 'https://groomlinkgh.com/api/payments/webhook/hubtel';
+      const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 'https://api.groomlinkgh.com/api/payments/webhook/hubtel';
 
       // Ensure phone number has +233 prefix
       let customerMsisdn = phoneNumber;

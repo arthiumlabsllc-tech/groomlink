@@ -15,7 +15,7 @@ router.get('/', (req: Request, res: Response) => {
     googleMapsApiKey: process.env.GOOGLE_MAPS_WEB_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '',
     
     // API URLs
-    apiBaseUrl: process.env.API_BASE_URL || 'https://groomlinkgh.com/api',
+    apiBaseUrl: process.env.API_BASE_URL || 'https://api.groomlinkgh.com/api',
     wsBaseUrl: process.env.WS_BASE_URL || 'https://groomlinkgh.com',
     
     // App Metadata

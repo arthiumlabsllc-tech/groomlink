@@ -14,7 +14,7 @@ const API_BASE =
   import.meta.env?.VITE_API_URL ||
   (window.location.hostname === 'localhost'
     ? 'http://localhost:3001/api'
-    : 'https://groomlinkgh.com/api');
+    : 'https://api.groomlinkgh.com/api');
 
 const STORAGE_KEY = 'groomlink_chat_customer';
 

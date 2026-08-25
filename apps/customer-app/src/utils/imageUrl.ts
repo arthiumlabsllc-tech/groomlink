@@ -4,7 +4,7 @@
  * This utility prepends the domain so React Native Image can load them.
  */
 
-const API_DOMAIN = 'https://groomlinkgh.com/api';
+const API_DOMAIN = 'https://api.groomlinkgh.com/api';
 
 export function resolveImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;

@@ -1098,7 +1098,7 @@ export function Settings() {
                           <p className="font-medium mb-1">Paystack Setup Tips:</p>
                           <ul className="list-disc list-inside space-y-1 text-xs">
                             <li>Enable Mobile Money in your Paystack dashboard for Ghana</li>
-                            <li>Configure webhook URL: <code className="bg-blue-100 px-1 rounded">https://groomlinkgh.com/api/payments/webhook/paystack</code></li>
+                            <li>Configure webhook URL: <code className="bg-blue-100 px-1 rounded">https://api.groomlinkgh.com/api/payments/webhook/paystack</code></li>
                             <li>Use test keys (pk_test/sk_test) for development</li>
                             <li>Switch to live keys (pk_live/sk_live) when ready for production</li>
                           </ul>
@@ -1228,7 +1228,7 @@ export function Settings() {
                           <ul className="list-disc list-inside space-y-1 text-xs">
                             <li>Supports all Ghana mobile money networks (MTN, Vodafone, AirtelTigo, G-Money)</li>
                             <li>Accepts Visa, Mastercard, UnionPay, and Tela cards</li>
-                            <li>Configure webhook URL: <code className="bg-green-100 px-1 rounded">https://groomlinkgh.com/api/payments/webhook/theteller</code></li>
+                            <li>Configure webhook URL: <code className="bg-green-100 px-1 rounded">https://api.groomlinkgh.com/api/payments/webhook/theteller</code></li>
                             <li>Contact TheTeller support for test credentials</li>
                             <li>Lower fees than Paystack for mobile money transactions</li>
                           </ul>

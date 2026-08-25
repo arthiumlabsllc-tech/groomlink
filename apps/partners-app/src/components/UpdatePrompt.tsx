@@ -13,7 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useAppTheme } from '../theme/ThemeContext';
 
-const API_BASE = 'https://groomlinkgh.com/api';
+const API_BASE = 'https://api.groomlinkgh.com/api';
 
 interface VersionInfo {
   updateAvailable: boolean;

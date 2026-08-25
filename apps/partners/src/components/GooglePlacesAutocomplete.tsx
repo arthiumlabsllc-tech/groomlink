@@ -94,7 +94,7 @@ export default function GooglePlacesAutocomplete({
         let apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 
         if (!apiKey) {
-          const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://groomlinkgh.com/api')
+          const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://api.groomlinkgh.com/api')
           const res = await fetch(`${API_BASE}/config`)
           if (res.ok) {
             const data = await res.json()

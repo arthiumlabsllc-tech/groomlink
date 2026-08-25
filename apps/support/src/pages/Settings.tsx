@@ -92,7 +92,7 @@ export default function Settings() {
       formData.append('avatar', file);
 
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://groomlinkgh.com/api'}/uploads/avatar`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.groomlinkgh.com/api'}/uploads/avatar`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

@@ -13,7 +13,7 @@ import Constants from 'expo-constants';
 import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
 
-const API_BASE = 'https://groomlinkgh.com/api';
+const API_BASE = 'https://api.groomlinkgh.com/api';
 
 interface VersionInfo {
   updateAvailable: boolean;

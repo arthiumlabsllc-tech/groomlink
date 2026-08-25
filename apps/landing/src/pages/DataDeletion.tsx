@@ -45,7 +45,7 @@ export default function DataDeletion() {
 
     try {
       // Send deletion request to your API
-      const response = await fetch('https://groomlinkgh.com/api/users/request-deletion', {
+      const response = await fetch('https://api.groomlinkgh.com/api/users/request-deletion', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

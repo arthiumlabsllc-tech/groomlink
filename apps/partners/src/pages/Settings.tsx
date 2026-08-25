@@ -1284,7 +1284,7 @@ export default function Settings() {
                     ) : (
                       <>
                         <img 
-                          src="https://groomlinkgh.com/api/uploads/assets/logo-icon.png" 
+                          src="https://api.groomlinkgh.com/api/uploads/assets/logo-icon.png" 
                           alt="Default Logo" 
                           className="w-16 h-16 object-contain opacity-50"
                         />

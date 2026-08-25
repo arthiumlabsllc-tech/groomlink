@@ -466,7 +466,7 @@ async function initiateSponsorshipPayment(
   }
 
   const webhookUrl =
-    process.env.SPONSORSHIP_WEBHOOK_URL || 'https://groomlinkgh.com/api/sponsorship/webhook/hubtel';
+    process.env.SPONSORSHIP_WEBHOOK_URL || 'https://api.groomlinkgh.com/api/sponsorship/webhook/hubtel';
 
   // Ensure phone number has +233 prefix
   let customerMsisdn = ownerPhone;

@@ -439,7 +439,7 @@ class HubtelPaymentProvider {
         customerMsisdn = `+${customerMsisdn}`;
       }
 
-      const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 'https://groomlinkgh.com/api/payments/webhook/hubtel';
+      const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 'https://api.groomlinkgh.com/api/payments/webhook/hubtel';
 
       const requestBody = {
         CustomerName: email || 'Customer',
