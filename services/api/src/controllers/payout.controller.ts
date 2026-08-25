@@ -483,13 +483,15 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
       const amountHeld = Number(escrow.amountHeld);
       const bookingFee = Number(escrow.bookingFee || 0);
       const servicePrice = amountHeld - bookingFee;
-      const commission = Number(escrow.commission || servicePrice * 0.05);
+      const commission = Number(escrow.commission ?? servicePrice * (commissionRate / 100));
       const providerPayout = servicePrice - commission;
       const totalPlatformEarnings = bookingFee + commission;
 
       await prisma.$transaction(async (tx) => {
-        await tx.escrowAccount.update({
-          where: { id: escrow.id },
+        // Only claim escrows still 'held' — guards against a concurrent
+        // release (e.g. 48h safety net) causing a double payout.
+        const claimed = await tx.escrowAccount.updateMany({
+          where: { id: escrow.id, status: 'held' },
           data: {
             status: 'released',
             releasedAt: new Date(),
@@ -499,6 +501,11 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response): P
             payoutGateway: payoutGateway,
           },
         });
+
+        if (claimed.count === 0) {
+          logger.warn(`Escrow ${escrow.id} was already released by another payout — skipped`, { salonId });
+          return;
+        }
 
         await tx.escrowTransaction.create({
           data: {

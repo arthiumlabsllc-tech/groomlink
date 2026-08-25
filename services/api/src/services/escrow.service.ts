@@ -382,16 +382,30 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
     }
 
     if (!payoutRef) {
-      throw new Error(
-        `Failed to transfer funds via ${activeGateway} or Paystack. Please try again or contact support.`
-      );
+      // Payout could not be sent right now (gateway down / not configured).
+      // Do NOT block booking completion: leave the escrow 'held' so the
+      // partner can withdraw via the manual payout flow once the gateway
+      // recovers (or the 48h safety net retries it).
+      logger.error(`Escrow release payout failed for escrow ${escrowId} — escrow left held for manual payout`, {
+        escrowId,
+        activeGateway,
+        providerPayout,
+      });
+      pushService.pushPayoutFailed(
+        escrow.providerId,
+        providerPayout,
+        'Auto-payout failed. Your funds are safe and available for manual withdrawal in Earnings.'
+      ).catch((err) => logger.error('Failed to send payout failure notification', { err, escrowId }));
+      return escrow;
     }
     
     // Update escrow status, store final commission/platformFee, and create transaction
     const updatedEscrow = await prisma.$transaction(async (tx) => {
-      // Update escrow account with final commission values
-      const updated = await tx.escrowAccount.update({
-        where: { id: escrowId },
+      // Only claim the escrow if it is still 'held' — guards against a
+      // concurrent release (e.g. customer confirmation racing the 48h
+      // safety-net job) causing a ledger inconsistency.
+      const claimed = await tx.escrowAccount.updateMany({
+        where: { id: escrowId, status: 'held' },
         data: {
           status: 'released',
           releasedAt: new Date(),
@@ -400,9 +414,19 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
           commission: commission,             // 5% of service price
           hubtelPayoutReference: payoutGateway === 'hubtel' ? payoutRef : undefined,
           payoutGateway: payoutGateway,
-        }
+        },
       });
-      
+
+      if (claimed.count === 0) {
+        // A concurrent release won the race. This call already sent its
+        // transfer, so flag it loudly for manual reconciliation.
+        logger.error(
+          `POSSIBLE DOUBLE PAYOUT for escrow ${escrowId}: transfer ${payoutReference} was sent but the escrow was claimed by a concurrent release`,
+          { escrowId, payoutReference, payoutGateway }
+        );
+        return null;
+      }
+
       // Create release transaction
       await tx.escrowTransaction.create({
         data: {
@@ -413,9 +437,13 @@ export async function releaseEscrow(escrowId: string): Promise<EscrowAccount> {
           newBalance: 0,
         }
       });
-      
-      return updated;
+
+      return tx.escrowAccount.findUnique({ where: { id: escrowId } });
     });
+
+    if (!updatedEscrow) {
+      return escrow;
+    }
     
     logger.info(`Escrow released for booking ${escrow.bookingId}`, {
       escrowId,

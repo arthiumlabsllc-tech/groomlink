@@ -3,7 +3,7 @@ import logger from '../config/logger';
 import redis from '../config/redis';
 import { BookingStatus } from '@prisma/client';
 import * as smsService from './sms.service';
-import { getPolicyValue, refundEscrow } from './escrow.service';
+import { getPolicyValue, refundEscrow, detectMomoProviderFromPhone } from './escrow.service';
 import { emitSlotUpdated, emitBookingCancelled, emitToSalon } from '../config/socket';
 import * as pushService from './pushNotification.service';
 import { createNotification } from './notification.service';
@@ -1016,14 +1016,8 @@ async function paystackTransferRefund(booking: any, refundAmount: number): Promi
     const providerResult = await paymentProviderRegistry.getProvider('paystack');
     if (!providerResult) return undefined;
 
-    // Detect MoMo provider from phone prefix
-    const phonePrefix = customerPhone.replace(/[^0-9]/g, '').slice(0, 4);
-    let momoProvider = 'mtn';
-    if (phonePrefix === '0200' || phonePrefix === '0201' || customerPhone.startsWith('020')) {
-      momoProvider = 'vodafone';
-    } else if (customerPhone.startsWith('027') || customerPhone.startsWith('026')) {
-      momoProvider = 'airteltigo';
-    }
+    // Detect MoMo provider from phone prefix (full Ghana prefix map)
+    const momoProvider = detectMomoProviderFromPhone(customerPhone);
 
     const reference = `GROOMLINK-REFUND-${booking.reference || booking.id}-${Date.now()}`;
     const result = await providerResult.provider.sendPayout(

@@ -36,6 +36,18 @@ export interface PaystackCredentials extends PaymentCredentials {
   publicKey: string;
 }
 
+/**
+ * Normalize a Ghana phone number to the format Paystack expects for
+ * transfer recipients: 233XXXXXXXXX (international, without the '+').
+ */
+function normalizeGhanaPhoneForPaystack(phone: string): string {
+  const cleaned = phone.replace(/[\s-]/g, '');
+  if (cleaned.startsWith('+233')) return cleaned.slice(1);
+  if (cleaned.startsWith('233') && cleaned.length === 12) return cleaned;
+  if (cleaned.startsWith('0') && cleaned.length === 10) return `233${cleaned.slice(1)}`;
+  return cleaned;
+}
+
 export class PaystackProvider implements IPaymentProvider {
   private static BASE_URL = 'https://api.paystack.co';
 
@@ -337,19 +349,22 @@ export class PaystackProvider implements IPaymentProvider {
         };
       } else if (recipient.payoutType === 'mobile_money') {
         // Mobile money recipient
-        // Paystack Ghana mobile money bank codes
+        // Paystack Ghana mobile money bank codes (per Paystack docs:
+        // MTN -> 'MTN', Telecel/Vodafone -> 'VOD', AirtelTigo -> 'ATL')
         const providerMap: Record<string, string> = {
           mtn: 'MTN',
-          vod: 'VOD-MOMO',
-          vodafone: 'VOD-MOMO',
-          tgo: 'ATL-MOMO',
-          airteltigo: 'ATL-MOMO',
+          vod: 'VOD',
+          vodafone: 'VOD',
+          telecel: 'VOD',
+          atl: 'ATL',
+          tgo: 'ATL',
+          airteltigo: 'ATL',
         };
 
         recipientData = {
           type: 'mobile_money',
           name: recipient.name,
-          account_number: recipient.mobileMoneyNumber || '',
+          account_number: normalizeGhanaPhoneForPaystack(recipient.mobileMoneyNumber || ''),
           bank_code: providerMap[recipient.mobileMoneyProvider?.toLowerCase() || 'mtn'] || 'MTN',
           currency: 'GHS',
         };
