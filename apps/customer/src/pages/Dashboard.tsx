@@ -386,7 +386,7 @@ function NearbySalonsSection() {
     return (
       <div className="space-y-3">
         <SectionHeader title="Salons near you" />
-        <div className="bg-gradient-to-br from-green-50 to-red-50 border border-green-200 rounded-2xl p-5 text-center">
+        <div className="location-cta bg-gradient-to-br from-green-50 to-red-50 border border-green-200 rounded-2xl p-5 text-center">
           <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <Icon name="location_on" size={28} className="text-green-600" />
           </div>
