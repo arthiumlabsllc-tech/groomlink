@@ -312,3 +312,27 @@ body {
 .animate-pulse-slow {
   animation: pulse-slow 2s ease-in-out infinite;
 }
+
+/* Payment provider logos ("Pay securely with") — optical balance per theme.
+   Dark variants are horizontal/white artwork, so they get smaller heights. */
+.pay-logo {
+  width: auto;
+  object-fit: contain;
+  height: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .pay-logo { height: 3rem; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .pay-logo-mtn { height: 2rem; }
+  .pay-logo-telecel { height: 2.5rem; }
+  .pay-logo-airtel { height: 3rem; }
+}
+
+@media (prefers-color-scheme: dark) and (max-width: 639px) {
+  .pay-logo-mtn { height: 1.75rem; }
+  .pay-logo-telecel { height: 2rem; }
+  .pay-logo-airtel { height: 2.5rem; }
+}

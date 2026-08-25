@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 
-const paymentMethods = [
-  { name: 'MTN Mobile Money', color: '#006B3F' },
-  { name: 'Vodafone Cash', color: '#E60000' },
-  { name: 'AirtelTigo Money', color: '#0066CC' },
-  { name: 'Visa', color: '#1A1F71' },
-  { name: 'Mastercard', color: '#EB001B' },
+// Official payment artwork; the dark variants swap in automatically via
+// prefers-color-scheme (see <picture> below).
+const paymentLogos = [
+  // dark variants are horizontal/white artwork, so they get smaller heights
+  { light: '/pay-mtn-light.png', dark: '/pay-mtn-dark.png', alt: 'MTN Mobile Money', cls: 'pay-logo pay-logo-mtn' },
+  { light: '/pay-telecel-light.png', dark: '/pay-telecel-dark.png', alt: 'Telecel Cash', cls: 'pay-logo pay-logo-telecel' },
+  { light: '/pay-airtel-light.png', dark: '/pay-airtel-dark.png', alt: 'AirtelTigo Money', cls: 'pay-logo pay-logo-airtel' },
 ]
 
 const trustSignals = [
@@ -118,14 +119,16 @@ export default function TrustBadges() {
         {/* Payment Methods */}
         <div className={`text-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '400ms' }}>
           <p className="text-gray-500 text-sm mb-4">Pay securely with</p>
-          <div className="flex flex-wrap justify-center items-center gap-3">
-            {paymentMethods.map((method) => (
-              <div
-                key={method.name}
-                className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 border border-gray-200"
-              >
-                {method.name}
-              </div>
+          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-10">
+            {paymentLogos.map((logo) => (
+              <picture key={logo.alt}>
+                <source media="(prefers-color-scheme: dark)" srcSet={logo.dark} />
+                <img
+                  src={logo.light}
+                  alt={logo.alt}
+                  className={logo.cls}
+                />
+              </picture>
             ))}
           </div>
         </div>
