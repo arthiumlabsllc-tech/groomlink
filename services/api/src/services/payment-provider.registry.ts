@@ -10,9 +10,8 @@ import logger from '../config/logger';
 import { IPaymentProvider } from './payment-provider.interface';
 import { HubtelPaymentProvider } from './hubtel.provider';
 import { PaystackProvider } from './paystack.provider';
-import { TheTellerProvider } from './theteller.provider';
 
-export type ProviderName = 'hubtel' | 'paystack' | 'theteller';
+export type ProviderName = 'hubtel' | 'paystack';
 
 interface ProviderConfig {
   provider: IPaymentProvider;
@@ -99,27 +98,6 @@ class PaymentProviderRegistry {
         logger.warn('Paystack credentials not configured');
       }
 
-      // Register TheTeller provider
-      const thetellerApiKey = (settings as any).thetellerApiKey || process.env.THETELLER_API_KEY;
-      const thetellerApiUser = (settings as any).thetellerApiUser || process.env.THETELLER_API_USER;
-      const thetellerMerchantId = (settings as any).thetellerMerchantId || process.env.THETELLER_MERCHANT_ID;
-
-      if (thetellerApiKey && thetellerApiUser && thetellerMerchantId) {
-        this.providers.set('theteller', {
-          provider: new TheTellerProvider(),
-          isActive: activeGateway === 'theteller',
-          priority: 3,
-          credentials: {
-            apiKey: thetellerApiKey,
-            apiUser: thetellerApiUser,
-            merchantId: thetellerMerchantId,
-          },
-        });
-        logger.info('TheTeller provider registered', { isActive: activeGateway === 'theteller' });
-      } else {
-        logger.warn('TheTeller credentials not configured');
-      }
-
       this.initialized = true;
       logger.info('Payment provider registry initialized', {
         providersCount: this.providers.size,
@@ -143,10 +121,6 @@ class PaymentProviderRegistry {
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
     const paystackPublicKey = process.env.PAYSTACK_PUBLIC_KEY;
 
-    const thetellerApiKey = process.env.THETELLER_API_KEY;
-    const thetellerApiUser = process.env.THETELLER_API_USER;
-    const thetellerMerchantId = process.env.THETELLER_MERCHANT_ID;
-
     if (paystackSecretKey && paystackPublicKey) {
       this.providers.set('paystack', {
         provider: new PaystackProvider(),
@@ -168,19 +142,6 @@ class PaymentProviderRegistry {
           apiId: hubtelApiId,
           apiSecret: hubtelApiSecret,
           merchantAccountId: hubtelMerchantAccountId,
-        },
-      });
-    }
-
-    if (thetellerApiKey && thetellerApiUser && thetellerMerchantId) {
-      this.providers.set('theteller', {
-        provider: new TheTellerProvider(),
-        isActive: false, // TheTeller inactive by default unless explicitly selected
-        priority: 3,
-        credentials: {
-          apiKey: thetellerApiKey,
-          apiUser: thetellerApiUser,
-          merchantId: thetellerMerchantId,
         },
       });
     }
@@ -217,7 +178,7 @@ class PaymentProviderRegistry {
 
   /**
    * Get provider based on payment method (smart routing)
-   * Paystack is better for cards, Hubtel/TheTeller for mobile money
+   * Paystack is better for cards, Hubtel for mobile money
    */
   async getProviderForPaymentMethod(paymentMethod: 'card' | 'mobile_money' | 'bank_transfer'): Promise<{
     provider: IPaymentProvider;
@@ -230,7 +191,6 @@ class PaymentProviderRegistry {
 
     // Smart routing logic
     // Cards: ALWAYS route to Paystack when configured — Hubtel does not process cards.
-    // TheTeller also supports cards, so it's a fallback
     if (paymentMethod === 'card') {
       if (this.providers.has('paystack')) {
         const config = this.providers.get('paystack')!;
@@ -239,16 +199,6 @@ class PaymentProviderRegistry {
           provider: config.provider,
           credentials: config.credentials,
           name: 'paystack',
-        };
-      }
-      // Fallback to TheTeller for cards
-      if (this.providers.has('theteller')) {
-        const config = this.providers.get('theteller')!;
-        logger.info('Smart routing: Using TheTeller for card payment (fallback card provider)');
-        return {
-          provider: config.provider,
-          credentials: config.credentials,
-          name: 'theteller',
         };
       }
     }
@@ -261,7 +211,7 @@ class PaymentProviderRegistry {
         return active;
       }
       // Fallback to any configured mobile-money-capable provider
-      for (const name of ['hubtel', 'theteller', 'paystack'] as ProviderName[]) {
+      for (const name of ['hubtel', 'paystack'] as ProviderName[]) {
         if (this.providers.has(name)) {
           const config = this.providers.get(name)!;
           logger.info(`Smart routing: Using ${name} for mobile money payment (fallback)`);
@@ -274,7 +224,7 @@ class PaymentProviderRegistry {
       }
     }
 
-    // Bank transfer: ALWAYS Paystack — Hubtel/TheTeller do not process bank transfers.
+    // Bank transfer: ALWAYS Paystack — Hubtel does not process bank transfers.
     if (paymentMethod === 'bank_transfer' && this.providers.has('paystack')) {
       const config = this.providers.get('paystack')!;
       logger.info('Smart routing: Using Paystack for bank transfer (only bank-capable provider)');
@@ -294,7 +244,6 @@ class PaymentProviderRegistry {
    * Get provider for payouts (smart routing)
    * Hubtel supports 24/7 instant mobile money payouts
    * Paystack supports bank transfers but has weekday limitations
-   * TheTeller does not support payouts
    */
   async getProviderForPayout(payoutType: 'bank' | 'mobile_money'): Promise<{
     provider: IPaymentProvider;
@@ -307,7 +256,6 @@ class PaymentProviderRegistry {
 
     if (payoutType === 'mobile_money') {
       // Prefer the admin-selected active provider for mobile money payouts.
-      // TheTeller doesn't support payouts, so only hubtel/paystack are valid.
       const active = await this.getActiveProvider();
       if (active && (active.name === 'hubtel' || active.name === 'paystack')) {
         logger.info(`Smart routing: Using ${active.name} for mobile money payout (active gateway)`);
@@ -329,7 +277,7 @@ class PaymentProviderRegistry {
     }
 
     if (payoutType === 'bank') {
-      // Bank payouts: ALWAYS Paystack when configured — Hubtel/TheTeller do not support bank payouts.
+      // Bank payouts: ALWAYS Paystack when configured — Hubtel does not support bank payouts.
       if (this.providers.has('paystack')) {
         const config = this.providers.get('paystack')!;
         logger.info('Smart routing: Using Paystack for bank payout (only bank-capable provider)');

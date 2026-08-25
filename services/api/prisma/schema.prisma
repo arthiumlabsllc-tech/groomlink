@@ -825,9 +825,6 @@ model SiteSettings {
   hubtelApiId              String?  @map("hubtel_api_id")
   hubtelApiSecret          String?  @map("hubtel_api_secret")
   hubtelMerchantAccountId  String?  @map("hubtel_merchant_account_id")
-  thetellerApiKey          String?  @map("theteller_api_key")
-  thetellerApiUser         String?  @map("theteller_api_user")
-  thetellerMerchantId      String?  @map("theteller_merchant_id")
   isPaymentTestMode        Boolean  @default(true)
   transactionFeePercent    Decimal? @db.Decimal(5, 2)
   // App Version Management

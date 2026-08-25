@@ -243,7 +243,7 @@ GroomLink Ghana is a full-stack booking platform connecting customers with barbe
 | AccessDenied | Unauthorized access page |
 
 #### Key Features
-- **Payment gateway configuration** — switch between Paystack/Hubtel/TheTeller from settings
+- **Payment gateway configuration** — switch between Paystack/Hubtel from settings
 - **Salon approval workflow** — review and approve new salon registrations
 - **Featured salon management** — promote salons for paid placement
 - **Subscription management** — tiered pricing for salon subscriptions
@@ -306,7 +306,7 @@ GroomLink Ghana is a full-stack booking platform connecting customers with barbe
 |--------|-----------|-------------|
 | Auth | `/auth/*` | Email OTP login, registration, token refresh |
 | Bookings | `/bookings/*` | Create, confirm, cancel, reschedule, check-in, complete |
-| Payments | `/payments/*` | Initialize, verify, webhook handlers (Paystack/Hubtel/TheTeller) |
+| Payments | `/payments/*` | Initialize, verify, webhook handlers (Paystack/Hubtel) |
 | Salons | `/salons/*` | CRUD operations, search, nearby discovery |
 | Salon Owner | `/salon-owner/*` | Owner-specific booking management, earnings |
 | Queue | `/queue/*` | Queue position, service timer, floor management |
@@ -336,7 +336,7 @@ PENDING → CONFIRMED → CHECKED_IN → IN_PROGRESS → COMPLETED → (escrow r
 ### Payment Flow
 ```
 Customer selects service → Booking created (PENDING)
-    → Payment initialized (Paystack/Hubtel/TheTeller)
+    → Payment initialized (Paystack/Hubtel)
     → Payment verified → Escrow created (HELD)
     → Service completed → Escrow released to provider
     → OR cancelled → Refund to customer
@@ -352,7 +352,6 @@ Customer selects service → Booking created (PENDING)
 |---------|---------|--------|
 | **Paystack** | Card, Mobile Money (MTN, Vodafone, AirtelTigo) | Active (primary) |
 | **Hubtel** | Mobile Money | Designed (ready for API keys) |
-| **TheTeller** | Mobile Money | Designed (ready for API keys) |
 
 ### Payment Features
 - **Escrow system** — funds held securely until service completion
@@ -411,7 +410,7 @@ Customer selects service → Booking created (PENDING)
 | **Web Frontend** | React 18, Vite, Tailwind CSS |
 | **Backend** | Node.js, Express, TypeScript |
 | **Database** | PostgreSQL with Prisma ORM |
-| **Payments** | Paystack, Hubtel (ready), TheTeller (ready) |
+| **Payments** | Paystack, Hubtel (ready) |
 | **Maps** | Google Maps (react-native-maps) |
 | **Real-time** | Socket.IO |
 | **Push** | Expo Notifications |

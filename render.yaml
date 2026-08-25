@@ -75,16 +75,6 @@ services:
         value: https://api.groomlinkgh.com/api/payments/callback/paystack
       - key: SPONSORSHIP_WEBHOOK_URL
         value: https://api.groomlinkgh.com/api/sponsorship/webhook/hubtel
-      - key: THETELLER_API_USER
-        sync: false
-      - key: THETELLER_API_KEY
-        sync: false
-      - key: THETELLER_MERCHANT_ID
-        sync: false
-      - key: THETELLER_WEBHOOK_URL
-        value: https://api.groomlinkgh.com/api/payments/webhook/theteller
-      - key: THETELLER_TEST_MODE
-        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL

@@ -50,7 +50,7 @@ export function detectMomoProviderFromPhone(phone: string): 'mtn' | 'vodafone' |
  * Get the active payment gateway from SiteSettings (admin dashboard configuration).
  * Falls back to 'paystack' if not configured, since that's our primary gateway.
  */
-export async function getActivePaymentGateway(): Promise<'paystack' | 'hubtel' | 'theteller'> {
+export async function getActivePaymentGateway(): Promise<'paystack' | 'hubtel'> {
   try {
     const settings = await prisma.siteSettings.findUnique({
       where: { id: 'default' },

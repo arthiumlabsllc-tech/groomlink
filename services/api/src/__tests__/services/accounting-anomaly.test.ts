@@ -74,7 +74,7 @@ describe('Accounting Anomaly Evaluators', () => {
     });
 
     it('flags a CRITICAL alert when failures reach 50% or more', () => {
-      const result = evaluatePaymentFailureRate('theteller', 3, 7);
+      const result = evaluatePaymentFailureRate('paystack', 3, 7);
       expect(result).not.toBeNull();
       expect(result!.severity).toBe('CRITICAL');
     });

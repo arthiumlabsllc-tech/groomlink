@@ -706,7 +706,7 @@ PLATFORM BUSINESS MODEL (use this when interpreting data):
 - Escrow statuses: held (awaiting completion/release), released (paid out to salon), refunded (customer refunded), disputed.
 - Refunds: full refund if cancelled 24+ hours before the appointment, partial for late cancellations, full refund if the salon cancels.
 - Additional revenue streams: salon subscriptions (paid invoices) and sponsored salon placements.
-- Payment gateways in use: Paystack, Hubtel, TheTeller.
+- Payment gateways in use: Paystack, Hubtel.
 
 RULES:
 1. Base every figure strictly on the data returned by your tools. Never invent numbers.
