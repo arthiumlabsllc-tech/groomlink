@@ -1,17 +1,8 @@
 import { useEffect, useState } from 'react';
-
-const ILLUSTRATIONS = [
-  '/loading-barber-01.webp',
-  '/loading-barber-02.webp',
-  '/loading-salon-01.webp',
-  '/loading-salon-02.webp',
-  '/loading-salon-03.webp',
-];
+import { useDarkMode } from '../hooks/useDarkMode';
 
 export default function LoadingScreen() {
-  const [illustration] = useState(
-    () => ILLUSTRATIONS[Math.floor(Math.random() * ILLUSTRATIONS.length)]
-  );
+  const isDark = useDarkMode();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -21,21 +12,29 @@ export default function LoadingScreen() {
   }, []);
 
   return (
-    <div className={`relative min-h-screen transition-opacity duration-700 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+    <div
+      className={`auth-page-bg relative min-h-screen bg-gradient-to-br from-[#006B3F]/5 via-white to-[#FCD116]/10 flex items-center justify-center overflow-hidden transition-opacity duration-700 ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      {/* Faded GL mark as foreground watermark */}
       <img
-        src={illustration}
-        alt="GroomLink"
-        className="absolute inset-0 w-full h-full object-cover object-center"
+        src={isDark ? '/logo-white.png' : '/logo-black.png'}
+        alt=""
+        aria-hidden="true"
+        className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 object-contain select-none pointer-events-none ${
+          isDark ? 'opacity-[0.07]' : 'opacity-[0.06]'
+        }`}
       />
-      <div className="fade-sheet absolute bottom-0 left-0 right-0 flex flex-col items-center gap-3 px-5 pt-8 pb-16 bg-gradient-to-t from-white/95 via-white/80 to-transparent">
-        <p className="text-[#006B3F] text-lg font-bold tracking-wider">
-          Book Your Next Grooming
-        </p>
-        <div className="flex gap-3">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#CE1126] animate-bounce" style={{ animationDelay: '0ms' }} />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#CE1126] animate-bounce" style={{ animationDelay: '150ms' }} />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#CE1126] animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
+
+      {/* Full logo + animated barber-pole loader */}
+      <div className="relative flex flex-col items-center gap-8">
+        <img
+          src={isDark ? '/logo-full-white.png' : '/logo-full-black.png'}
+          alt="GroomLink"
+          className="h-14 w-auto"
+        />
+        <img src="/loading-barber-pole.svg" alt="Loading" className="h-3.5 w-auto" />
       </div>
     </div>
   );
