@@ -24,7 +24,7 @@ interface SiteSettings {
 
 const DEFAULT_SETTINGS: SiteSettings = {
   email: 'hello@groomlinkgh.com',
-  phoneNumber: '+233 24 123 4567',
+  phoneNumber: '+233 59 371 1285',
   whatsappNumber: '',
   backupPhoneNumber: '',
   address: 'Accra, Ghana',

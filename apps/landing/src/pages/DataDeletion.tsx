@@ -358,7 +358,7 @@ export default function DataDeletion() {
             </p>
             <div className="bg-ghana-green/5 p-4 rounded-lg border border-ghana-green/200">
               <p className="text-gray-700 mb-2"><strong>Email:</strong> privacy@groomlinkgh.com</p>
-              <p className="text-gray-700 mb-2"><strong>Phone:</strong> +233 59 371 1285 / +233 20 933 6689</p>
+              <p className="text-gray-700 mb-2"><strong>Phone:</strong> +233 59 371 1285</p>
               <p className="text-gray-700"><strong>Address:</strong> Accra, Greater Accra Region, Ghana</p>
             </div>
           </div>

@@ -501,7 +501,7 @@ async function main() {
   
   const admin = await prisma.user.create({
     data: {
-      phoneNumber: '+233200000000',
+      phoneNumber: '+233593711285',
       email: 'admin@groomlinkgh.com',
       firstName: 'Admin',
       lastName: 'User',
@@ -741,7 +741,7 @@ async function main() {
     update: {
       siteName: 'GroomLink',
       email: 'support@groomlink.com',
-      phoneNumber: '+233200000000',
+      phoneNumber: '+233 59 371 1285',
       address: 'Accra, Ghana',
       maintenanceMode: false,
       paymentGateway: 'paystack',
@@ -752,7 +752,7 @@ async function main() {
       id: 'default',
       siteName: 'GroomLink',
       email: 'support@groomlink.com',
-      phoneNumber: '+233200000000',
+      phoneNumber: '+233 59 371 1285',
       address: 'Accra, Ghana',
       maintenanceMode: false,
       paymentGateway: 'paystack',

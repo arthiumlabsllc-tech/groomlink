@@ -51,7 +51,7 @@ const socialLinks = [
 const DEFAULT_SETTINGS: SiteSettings = {
   siteName: 'GroomLink',
   email: 'hello@groomlinkgh.com',
-  phoneNumber: '+233 24 123 4567',
+  phoneNumber: '+233 59 371 1285',
   address: 'Accra, Ghana',
 }
 

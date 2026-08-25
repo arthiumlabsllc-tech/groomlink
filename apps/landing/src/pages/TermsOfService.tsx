@@ -169,7 +169,7 @@ export default function TermsOfService() {
               <p className="text-gray-700 mb-4">For questions about these Terms of Service, contact us:</p>
               <div className="bg-ghana-green/5 p-4 rounded-lg border border-ghana-green/20">
                 <p className="text-gray-700"><strong>Email:</strong> legal@groomlinkgh.com</p>
-                <p className="text-gray-700"><strong>Phone:</strong> +233 24 123 4567</p>
+                <p className="text-gray-700"><strong>Phone:</strong> +233 59 371 1285</p>
                 <p className="text-gray-700"><strong>Address:</strong> Accra, Ghana</p>
               </div>
             </section>

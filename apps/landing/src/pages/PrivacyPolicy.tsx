@@ -246,7 +246,7 @@ export default function PrivacyPolicy() {
               <p className="text-gray-700 mb-4">To exercise any of these rights, contact us at:</p>
               <div className="bg-ghana-green/5 p-4 rounded-lg border border-ghana-green/20 mb-4">
                 <p className="text-gray-700"><strong>Email:</strong> privacy@groomlinkgh.com</p>
-                <p className="text-gray-700"><strong>Phone:</strong> +233 59 371 1285 / +233 20 933 6689</p>
+                <p className="text-gray-700"><strong>Phone:</strong> +233 59 371 1285</p>
                 <p className="text-gray-700"><strong>Address:</strong> Accra, Greater Accra, Ghana</p>
               </div>
               <p className="text-gray-700">
@@ -364,7 +364,7 @@ export default function PrivacyPolicy() {
                 <p className="text-gray-700 mb-2"><strong>Company:</strong> GroomLink Ghana (Arthium Labs LLC)</p>
                 <p className="text-gray-700 mb-2"><strong>Email:</strong> privacy@groomlinkgh.com</p>
                 <p className="text-gray-700 mb-2"><strong>Support:</strong> support@groomlinkgh.com</p>
-                <p className="text-gray-700 mb-2"><strong>Phone:</strong> +233 59 371 1285 / +233 20 933 6689</p>
+                <p className="text-gray-700 mb-2"><strong>Phone:</strong> +233 59 371 1285</p>
                 <p className="text-gray-700 mb-2"><strong>Address:</strong> Accra, Greater Accra Region, Ghana</p>
                 <p className="text-gray-700"><strong>Website:</strong> <a href="https://groomlinkgh.com" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">https://groomlinkgh.com</a></p>
               </div>
