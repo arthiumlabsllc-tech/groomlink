@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import axios from 'axios';
 import logger from '../config/logger';
 import emailConfig, { validateEmailConfig } from '../config/email';
 
@@ -71,6 +72,10 @@ if (validateEmailConfig()) {
         user: emailConfig.auth.user,
         pass: emailConfig.auth.pass,
       },
+      // Fail fast (15s) instead of nodemailer's 2-minute default when the
+      // SMTP relay is unreachable (e.g. egress port blocked by the host)
+      connectionTimeout: 15000,
+      socketTimeout: 15000,
     });
     logger.info(`Email transporter initialized for ${emailConfig.host}:${emailConfig.port} (secure: ${emailConfig.secure})`);
   } catch (error) {
@@ -205,6 +210,31 @@ export async function sendTransactionalEmail(
     // In development mode, just log the message (don't send real email)
     if (process.env.NODE_ENV === 'development') {
       logger.info(`[DEV MODE] Email would be sent to ${to}: ${subject}`);
+      return true;
+    }
+
+    // Prefer Brevo HTTP API when configured — plain HTTPS (port 443), so it
+    // works even when the host blocks outbound SMTP ports (587/465).
+    if (process.env.BREVO_API_KEY) {
+      // Parse "GroomLink <no-reply@groomlinkgh.com>" into name + email
+      const fromMatch = emailConfig.from.match(/^(.*?)\s*<([^>]+)>$/);
+      const senderName = fromMatch ? fromMatch[1].trim() : 'GroomLink';
+      const senderEmail = fromMatch ? fromMatch[2].trim() : emailConfig.from;
+
+      const response = await axios.post(
+        'https://api.brevo.com/v3/smtp/email',
+        {
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+        },
+        {
+          headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' },
+          timeout: 15000,
+        }
+      );
+      logger.info(`Email sent via Brevo API to ${to}`, { messageId: response.data?.messageId });
       return true;
     }
 
