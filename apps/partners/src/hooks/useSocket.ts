@@ -79,8 +79,8 @@ export async function requestNotificationPermission(): Promise<boolean> {
 export function showBrowserNotification(title: string, options: NotificationOptions = {}) {
   if (Notification.permission === 'granted') {
     const notification = new Notification(title, {
-      icon: '/favicon.svg',
-      badge: '/favicon.svg',
+      icon: '/logo-black.png',
+      badge: '/logo-black.png',
       requireInteraction: false,
       ...options,
     });

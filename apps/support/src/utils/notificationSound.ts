@@ -111,7 +111,7 @@ export function fireDesktopNotification(title: string, body: string) {
   if (!settings.desktopNotifications) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
-    new Notification(title, { body, icon: '/logo.png' });
+    new Notification(title, { body, icon: '/logo-black.png' });
   } catch (e) {
     console.warn('Desktop notification failed:', e);
   }
