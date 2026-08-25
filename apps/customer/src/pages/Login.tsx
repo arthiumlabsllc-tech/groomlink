@@ -212,7 +212,7 @@ export default function Login() {
       {/* Right Panel - Form Side */}
       <div className="w-full md:w-[40%] bg-white md:bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
         {/* Mobile Background */}
-        <div className="absolute inset-0 md:hidden bg-gradient-to-br from-[#006B3F]/[0.03] via-white to-[#FCD116]/[0.06]" />
+        <div className="auth-page-bg absolute inset-0 md:hidden bg-gradient-to-br from-[#006B3F]/[0.03] via-white to-[#FCD116]/[0.06]" />
         
         {/* Mobile Logo */}
         <div className="md:hidden absolute top-8 left-0 right-0 flex justify-center z-10">

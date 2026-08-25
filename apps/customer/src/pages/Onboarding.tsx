@@ -476,12 +476,12 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-[#FCD116]/5 flex flex-col items-center justify-center px-4 py-8">
+    <div className="auth-page-bg min-h-screen bg-gradient-to-br from-white via-gray-50 to-[#FCD116]/5 flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         {/* Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#006B3F] to-[#005530] shadow-lg mb-3">
-            <span className="text-lg font-bold text-white">G</span>
+            <img src="/logo-white.png" alt="GroomLink" className="w-7 h-7 object-contain" />
           </div>
         </div>
 

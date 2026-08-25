@@ -1325,7 +1325,7 @@ export default function SalonDetail() {
 
       {/* Sticky Book Button - Mobile */}
       {showStickyBook && (
-        <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 bg-gradient-to-t from-white via-white to-transparent md:hidden animate-slide-up">
+        <div className="fade-sheet fixed bottom-0 left-0 right-0 z-[60] p-4 bg-gradient-to-t from-white via-white to-transparent md:hidden animate-slide-up">
           <button
             onClick={handleBookNow}
             className="w-full py-3.5 bg-[#CE1126] text-white font-semibold rounded-xl shadow-elevated flex items-center justify-center gap-2 hover:bg-[#CE1126]/90 transition-colors"
