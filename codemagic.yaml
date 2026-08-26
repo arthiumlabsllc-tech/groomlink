@@ -94,15 +94,59 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
-          if [ -z "$SCHEME" ]; then
-            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          # Expo prebuild names the scheme after the app display name (= workspace
+          # basename). Never pick the first scheme in the list — that can be a
+          # CocoaPods scheme like "boost".
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
+            echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
+
+          # Xcode 26 removed the "app-store" export method — generate our own
+          # ExportOptions.plist with "app-store-connect" so exportArchive succeeds.
+          TEAM_ID="4US64M3933"
+          PROFILE_NAME=""
+          for f in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+            BID=$(security cms -D -i "$f" 2>/dev/null | plutil -extract Entitlements.application-identifier raw - 2>/dev/null)
+            if [ "$BID" = "$TEAM_ID.$BUNDLE_ID" ]; then
+              PROFILE_NAME=$(security cms -D -i "$f" | plutil -extract Name raw -)
+            fi
+          done
+          if [ -z "$PROFILE_NAME" ]; then
+            echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
+          fi
+
+          cat > export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>destination</key>
+              <string>export</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$BUNDLE_ID</key>
+                  <string>$PROFILE_NAME</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
             --scheme "$SCHEME" \
-            --config Release
+            --config Release \
+            --export-options-plist export_options.plist
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -191,15 +235,59 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
-          if [ -z "$SCHEME" ]; then
-            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          # Expo prebuild names the scheme after the app display name (= workspace
+          # basename). Never pick the first scheme in the list — that can be a
+          # CocoaPods scheme like "boost".
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
+            echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
+
+          # Xcode 26 removed the "app-store" export method — generate our own
+          # ExportOptions.plist with "app-store-connect" so exportArchive succeeds.
+          TEAM_ID="4US64M3933"
+          PROFILE_NAME=""
+          for f in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+            BID=$(security cms -D -i "$f" 2>/dev/null | plutil -extract Entitlements.application-identifier raw - 2>/dev/null)
+            if [ "$BID" = "$TEAM_ID.$BUNDLE_ID" ]; then
+              PROFILE_NAME=$(security cms -D -i "$f" | plutil -extract Name raw -)
+            fi
+          done
+          if [ -z "$PROFILE_NAME" ]; then
+            echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
+          fi
+
+          cat > export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>destination</key>
+              <string>export</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$BUNDLE_ID</key>
+                  <string>$PROFILE_NAME</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
             --scheme "$SCHEME" \
-            --config Release
+            --config Release \
+            --export-options-plist export_options.plist
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -285,15 +373,59 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
-          if [ -z "$SCHEME" ]; then
-            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          # Expo prebuild names the scheme after the app display name (= workspace
+          # basename). Never pick the first scheme in the list — that can be a
+          # CocoaPods scheme like "boost".
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
+            echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
+
+          # Xcode 26 removed the "app-store" export method — generate our own
+          # ExportOptions.plist with "app-store-connect" so exportArchive succeeds.
+          TEAM_ID="4US64M3933"
+          PROFILE_NAME=""
+          for f in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+            BID=$(security cms -D -i "$f" 2>/dev/null | plutil -extract Entitlements.application-identifier raw - 2>/dev/null)
+            if [ "$BID" = "$TEAM_ID.$BUNDLE_ID" ]; then
+              PROFILE_NAME=$(security cms -D -i "$f" | plutil -extract Name raw -)
+            fi
+          done
+          if [ -z "$PROFILE_NAME" ]; then
+            echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
+          fi
+
+          cat > export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>destination</key>
+              <string>export</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$BUNDLE_ID</key>
+                  <string>$PROFILE_NAME</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
             --scheme "$SCHEME" \
-            --config Release
+            --config Release \
+            --export-options-plist export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -373,15 +505,59 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
-          if [ -z "$SCHEME" ]; then
-            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          # Expo prebuild names the scheme after the app display name (= workspace
+          # basename). Never pick the first scheme in the list — that can be a
+          # CocoaPods scheme like "boost".
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
+            echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
+
+          # Xcode 26 removed the "app-store" export method — generate our own
+          # ExportOptions.plist with "app-store-connect" so exportArchive succeeds.
+          TEAM_ID="4US64M3933"
+          PROFILE_NAME=""
+          for f in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+            BID=$(security cms -D -i "$f" 2>/dev/null | plutil -extract Entitlements.application-identifier raw - 2>/dev/null)
+            if [ "$BID" = "$TEAM_ID.$BUNDLE_ID" ]; then
+              PROFILE_NAME=$(security cms -D -i "$f" | plutil -extract Name raw -)
+            fi
+          done
+          if [ -z "$PROFILE_NAME" ]; then
+            echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
+          fi
+
+          cat > export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>destination</key>
+              <string>export</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$BUNDLE_ID</key>
+                  <string>$PROFILE_NAME</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
             --scheme "$SCHEME" \
-            --config Release
+            --config Release \
+            --export-options-plist export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
