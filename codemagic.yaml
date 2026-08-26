@@ -101,7 +101,18 @@ workflows:
           if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
             echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -showBuildSettings 2>/dev/null \
+            | grep -E '^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = ' | head -1 \
+            | sed -E 's/^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = //' | tr -d ' ')
+          if [ -z "$BUNDLE_ID" ]; then
+            # Fallback: read it straight from the app project (skip Pods)
+            PROJECT=$(ls -d *.xcodeproj 2>/dev/null | grep -v Pods | head -1)
+            BUNDLE_ID=$(grep -m1 'PRODUCT_BUNDLE_IDENTIFIER' "$PROJECT/project.pbxproj" 2>/dev/null \
+              | sed -E 's/.*PRODUCT_BUNDLE_IDENTIFIER = "?([^";]+)"?;.*/\1/' | tr -d ' ')
+          fi
+          if [ -z "$BUNDLE_ID" ]; then
+            echo "Could not determine PRODUCT_BUNDLE_IDENTIFIER"; exit 1
+          fi
           echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
 
           # Xcode 26 removed the "app-store" export method — generate our own
@@ -242,7 +253,18 @@ workflows:
           if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
             echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -showBuildSettings 2>/dev/null \
+            | grep -E '^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = ' | head -1 \
+            | sed -E 's/^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = //' | tr -d ' ')
+          if [ -z "$BUNDLE_ID" ]; then
+            # Fallback: read it straight from the app project (skip Pods)
+            PROJECT=$(ls -d *.xcodeproj 2>/dev/null | grep -v Pods | head -1)
+            BUNDLE_ID=$(grep -m1 'PRODUCT_BUNDLE_IDENTIFIER' "$PROJECT/project.pbxproj" 2>/dev/null \
+              | sed -E 's/.*PRODUCT_BUNDLE_IDENTIFIER = "?([^";]+)"?;.*/\1/' | tr -d ' ')
+          fi
+          if [ -z "$BUNDLE_ID" ]; then
+            echo "Could not determine PRODUCT_BUNDLE_IDENTIFIER"; exit 1
+          fi
           echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
 
           # Xcode 26 removed the "app-store" export method — generate our own
@@ -380,7 +402,18 @@ workflows:
           if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
             echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -showBuildSettings 2>/dev/null \
+            | grep -E '^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = ' | head -1 \
+            | sed -E 's/^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = //' | tr -d ' ')
+          if [ -z "$BUNDLE_ID" ]; then
+            # Fallback: read it straight from the app project (skip Pods)
+            PROJECT=$(ls -d *.xcodeproj 2>/dev/null | grep -v Pods | head -1)
+            BUNDLE_ID=$(grep -m1 'PRODUCT_BUNDLE_IDENTIFIER' "$PROJECT/project.pbxproj" 2>/dev/null \
+              | sed -E 's/.*PRODUCT_BUNDLE_IDENTIFIER = "?([^";]+)"?;.*/\1/' | tr -d ' ')
+          fi
+          if [ -z "$BUNDLE_ID" ]; then
+            echo "Could not determine PRODUCT_BUNDLE_IDENTIFIER"; exit 1
+          fi
           echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
 
           # Xcode 26 removed the "app-store" export method — generate our own
@@ -512,7 +545,18 @@ workflows:
           if ! xcodebuild -workspace "$WORKSPACE" -list | grep -qE "^[[:space:]]*$SCHEME[[:space:]]*$"; then
             echo "Scheme '$SCHEME' not found in:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
           fi
-          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -config Release -showBuildSettings 2>/dev/null | awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ {print $2; exit}' | tr -d ' ')
+          BUNDLE_ID=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -showBuildSettings 2>/dev/null \
+            | grep -E '^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = ' | head -1 \
+            | sed -E 's/^[[:space:]]+PRODUCT_BUNDLE_IDENTIFIER = //' | tr -d ' ')
+          if [ -z "$BUNDLE_ID" ]; then
+            # Fallback: read it straight from the app project (skip Pods)
+            PROJECT=$(ls -d *.xcodeproj 2>/dev/null | grep -v Pods | head -1)
+            BUNDLE_ID=$(grep -m1 'PRODUCT_BUNDLE_IDENTIFIER' "$PROJECT/project.pbxproj" 2>/dev/null \
+              | sed -E 's/.*PRODUCT_BUNDLE_IDENTIFIER = "?([^";]+)"?;.*/\1/' | tr -d ' ')
+          fi
+          if [ -z "$BUNDLE_ID" ]; then
+            echo "Could not determine PRODUCT_BUNDLE_IDENTIFIER"; exit 1
+          fi
           echo "Workspace: $WORKSPACE | Scheme: $SCHEME | Bundle: $BUNDLE_ID"
 
           # Xcode 26 removed the "app-store" export method — generate our own
