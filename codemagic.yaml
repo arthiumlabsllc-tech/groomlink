@@ -129,29 +129,18 @@ workflows:
             echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
           fi
 
-          cat > export_options.plist <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>destination</key>
-              <string>export</string>
-              <key>teamID</key>
-              <string>$TEAM_ID</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>$BUNDLE_ID</key>
-                  <string>$PROFILE_NAME</string>
-              </dict>
-          </dict>
-          </plist>
-          EOF
+          # Build the plist programmatically — always valid, self-verified by lint
+          rm -f export_options.plist
+          plutil -create xml1 export_options.plist
+          plutil -insert method -string "app-store-connect" export_options.plist
+          plutil -insert destination -string "export" export_options.plist
+          plutil -insert teamID -string "$TEAM_ID" export_options.plist
+          plutil -insert signingCertificate -string "Apple Distribution" export_options.plist
+          plutil -insert signingStyle -string "manual" export_options.plist
+          plutil -insert provisioningProfiles -xml "<dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>" export_options.plist
+          plutil -lint export_options.plist
+          echo "--- export_options.plist ---"
+          plutil -p export_options.plist
 
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
@@ -281,29 +270,18 @@ workflows:
             echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
           fi
 
-          cat > export_options.plist <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>destination</key>
-              <string>export</string>
-              <key>teamID</key>
-              <string>$TEAM_ID</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>$BUNDLE_ID</key>
-                  <string>$PROFILE_NAME</string>
-              </dict>
-          </dict>
-          </plist>
-          EOF
+          # Build the plist programmatically — always valid, self-verified by lint
+          rm -f export_options.plist
+          plutil -create xml1 export_options.plist
+          plutil -insert method -string "app-store-connect" export_options.plist
+          plutil -insert destination -string "export" export_options.plist
+          plutil -insert teamID -string "$TEAM_ID" export_options.plist
+          plutil -insert signingCertificate -string "Apple Distribution" export_options.plist
+          plutil -insert signingStyle -string "manual" export_options.plist
+          plutil -insert provisioningProfiles -xml "<dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>" export_options.plist
+          plutil -lint export_options.plist
+          echo "--- export_options.plist ---"
+          plutil -p export_options.plist
 
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
@@ -430,29 +408,18 @@ workflows:
             echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
           fi
 
-          cat > export_options.plist <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>destination</key>
-              <string>export</string>
-              <key>teamID</key>
-              <string>$TEAM_ID</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>$BUNDLE_ID</key>
-                  <string>$PROFILE_NAME</string>
-              </dict>
-          </dict>
-          </plist>
-          EOF
+          # Build the plist programmatically — always valid, self-verified by lint
+          rm -f export_options.plist
+          plutil -create xml1 export_options.plist
+          plutil -insert method -string "app-store-connect" export_options.plist
+          plutil -insert destination -string "export" export_options.plist
+          plutil -insert teamID -string "$TEAM_ID" export_options.plist
+          plutil -insert signingCertificate -string "Apple Distribution" export_options.plist
+          plutil -insert signingStyle -string "manual" export_options.plist
+          plutil -insert provisioningProfiles -xml "<dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>" export_options.plist
+          plutil -lint export_options.plist
+          echo "--- export_options.plist ---"
+          plutil -p export_options.plist
 
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
@@ -573,29 +540,18 @@ workflows:
             echo "No provisioning profile found for bundle $BUNDLE_ID"; exit 1
           fi
 
-          cat > export_options.plist <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>destination</key>
-              <string>export</string>
-              <key>teamID</key>
-              <string>$TEAM_ID</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>$BUNDLE_ID</key>
-                  <string>$PROFILE_NAME</string>
-              </dict>
-          </dict>
-          </plist>
-          EOF
+          # Build the plist programmatically — always valid, self-verified by lint
+          rm -f export_options.plist
+          plutil -create xml1 export_options.plist
+          plutil -insert method -string "app-store-connect" export_options.plist
+          plutil -insert destination -string "export" export_options.plist
+          plutil -insert teamID -string "$TEAM_ID" export_options.plist
+          plutil -insert signingCertificate -string "Apple Distribution" export_options.plist
+          plutil -insert signingStyle -string "manual" export_options.plist
+          plutil -insert provisioningProfiles -xml "<dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>" export_options.plist
+          plutil -lint export_options.plist
+          echo "--- export_options.plist ---"
+          plutil -p export_options.plist
 
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
