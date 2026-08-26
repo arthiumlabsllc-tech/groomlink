@@ -72,6 +72,11 @@ workflows:
         script: |
           npx expo prebuild --platform ios --clean
           
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+          
       - name: Set up code signing
         script: |
           xcode-project use-profiles
@@ -85,8 +90,13 @@ workflows:
       - name: Build iOS app
         script: |
           cd ios
+          WORKSPACE=$(ls -d *.xcworkspace 2>/dev/null | head -1)
+          if [ -z "$WORKSPACE" ]; then
+            echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE"
           xcode-project build-ipa \
-            --workspace "groomlinkcustomer.xcworkspace" \
+            --workspace "$WORKSPACE" \
             --scheme "groomlinkcustomer" \
             --config Release
     
@@ -155,6 +165,11 @@ workflows:
         script: |
           npx expo prebuild --platform ios --clean
           
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+          
       - name: Set up code signing
         script: |
           xcode-project use-profiles
@@ -168,8 +183,13 @@ workflows:
       - name: Build iOS app
         script: |
           cd ios
+          WORKSPACE=$(ls -d *.xcworkspace 2>/dev/null | head -1)
+          if [ -z "$WORKSPACE" ]; then
+            echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE"
           xcode-project build-ipa \
-            --workspace "groomlinkpartners.xcworkspace" \
+            --workspace "$WORKSPACE" \
             --scheme "groomlinkpartners" \
             --config Release
     
@@ -234,6 +254,11 @@ workflows:
       - name: Run Expo Prebuild (iOS)
         script: |
           npx expo prebuild --platform ios --clean
+          
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
 
       - name: Set up code signing
         script: |
@@ -248,8 +273,13 @@ workflows:
       - name: Build iOS app
         script: |
           cd ios
+          WORKSPACE=$(ls -d *.xcworkspace 2>/dev/null | head -1)
+          if [ -z "$WORKSPACE" ]; then
+            echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE"
           xcode-project build-ipa \
-            --workspace "groomlinkcustomer.xcworkspace" \
+            --workspace "$WORKSPACE" \
             --scheme "groomlinkcustomer" \
             --config Release
 
@@ -308,6 +338,11 @@ workflows:
       - name: Run Expo Prebuild (iOS)
         script: |
           npx expo prebuild --platform ios --clean
+          
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
 
       - name: Set up code signing
         script: |
@@ -322,8 +357,13 @@ workflows:
       - name: Build iOS app
         script: |
           cd ios
+          WORKSPACE=$(ls -d *.xcworkspace 2>/dev/null | head -1)
+          if [ -z "$WORKSPACE" ]; then
+            echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE"
           xcode-project build-ipa \
-            --workspace "groomlinkpartners.xcworkspace" \
+            --workspace "$WORKSPACE" \
             --scheme "groomlinkpartners" \
             --config Release
 
