@@ -1,11 +1,12 @@
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { authenticateToken, requireRole } from '../../middleware/auth';
+import { AuthenticatedRequest } from '../../types';
 import { generateTestToken } from '../helpers/auth';
-import { UserRole } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 
 describe('Auth Middleware', () => {
-  let mockReq: Partial<Request>;
+  let mockReq: Partial<AuthenticatedRequest>;
   let mockRes: Partial<Response>;
   let mockNext: NextFunction;
 
@@ -25,15 +26,15 @@ describe('Auth Middleware', () => {
       const token = generateTestToken('user-id', UserRole.CUSTOMER);
       mockReq.headers = { authorization: `Bearer ${token}` };
 
-      authenticateToken(mockReq as Request, mockRes as Response, mockNext);
+      authenticateToken(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockReq.user).toBeDefined();
-      expect(mockReq.user?.userId).toBe('user-id');
+      expect(mockReq.user?.id).toBe('user-id');
     });
 
     it('should return 401 without token', () => {
-      authenticateToken(mockReq as Request, mockRes as Response, mockNext);
+      authenticateToken(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
       expect(mockRes.json).toHaveBeenCalledWith(
@@ -44,7 +45,7 @@ describe('Auth Middleware', () => {
     it('should return 401 with invalid token', () => {
       mockReq.headers = { authorization: 'Bearer invalid-token' };
 
-      authenticateToken(mockReq as Request, mockRes as Response, mockNext);
+      authenticateToken(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
     });
@@ -52,7 +53,7 @@ describe('Auth Middleware', () => {
     it('should return 401 with malformed header', () => {
       mockReq.headers = { authorization: 'invalid-format' };
 
-      authenticateToken(mockReq as Request, mockRes as Response, mockNext);
+      authenticateToken(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
     });
@@ -60,28 +61,28 @@ describe('Auth Middleware', () => {
 
   describe('requireRole', () => {
     it('should call next() for authorized role', () => {
-      mockReq.user = { userId: 'user-id', role: UserRole.ADMIN };
+      mockReq.user = { id: 'user-id', phoneNumber: null, role: UserRole.ADMIN, status: UserStatus.ACTIVE };
 
       const middleware = requireRole(UserRole.ADMIN);
-      middleware(mockReq as Request, mockRes as Response, mockNext);
+      middleware(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
     });
 
     it('should call next() for multiple allowed roles', () => {
-      mockReq.user = { userId: 'user-id', role: UserRole.SALON_OWNER };
+      mockReq.user = { id: 'user-id', phoneNumber: null, role: UserRole.SALON_OWNER, status: UserStatus.ACTIVE };
 
       const middleware = requireRole(UserRole.ADMIN, UserRole.SALON_OWNER);
-      middleware(mockReq as Request, mockRes as Response, mockNext);
+      middleware(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
     });
 
     it('should return 403 for unauthorized role', () => {
-      mockReq.user = { userId: 'user-id', role: UserRole.CUSTOMER };
+      mockReq.user = { id: 'user-id', phoneNumber: null, role: UserRole.CUSTOMER, status: UserStatus.ACTIVE };
 
       const middleware = requireRole(UserRole.ADMIN);
-      middleware(mockReq as Request, mockRes as Response, mockNext);
+      middleware(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith(
@@ -89,11 +90,11 @@ describe('Auth Middleware', () => {
       );
     });
 
-    it('should return 403 without user', () => {
+    it('should return 401 without user', () => {
       const middleware = requireRole(UserRole.ADMIN);
-      middleware(mockReq as Request, mockRes as Response, mockNext);
+      middleware(mockReq as AuthenticatedRequest, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(403);
+      expect(mockRes.status).toHaveBeenCalledWith(401);
     });
   });
 });
