@@ -142,11 +142,23 @@ workflows:
           echo "--- export_options.plist ---"
           plutil -p export_options.plist
 
-          xcode-project build-ipa \
-            --workspace "$WORKSPACE" \
-            --scheme "$SCHEME" \
-            --config Release \
-            --export-options-plist export_options.plist
+          # Bypass xcode-project build-ipa: its validator rejects method
+          # "app-store-connect" (old enum), so call xcodebuild directly.
+          ARCHIVE_PATH="$CM_BUILD_DIR/ios/$SCHEME.xcarchive"
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            archive
+
+          mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportOptionsPlist export_options.plist \
+            -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
+            -allowProvisioningUpdates
+          ls -la "$CM_BUILD_DIR/build/ios/ipa"
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -283,11 +295,23 @@ workflows:
           echo "--- export_options.plist ---"
           plutil -p export_options.plist
 
-          xcode-project build-ipa \
-            --workspace "$WORKSPACE" \
-            --scheme "$SCHEME" \
-            --config Release \
-            --export-options-plist export_options.plist
+          # Bypass xcode-project build-ipa: its validator rejects method
+          # "app-store-connect" (old enum), so call xcodebuild directly.
+          ARCHIVE_PATH="$CM_BUILD_DIR/ios/$SCHEME.xcarchive"
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            archive
+
+          mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportOptionsPlist export_options.plist \
+            -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
+            -allowProvisioningUpdates
+          ls -la "$CM_BUILD_DIR/build/ios/ipa"
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -421,11 +445,23 @@ workflows:
           echo "--- export_options.plist ---"
           plutil -p export_options.plist
 
-          xcode-project build-ipa \
-            --workspace "$WORKSPACE" \
-            --scheme "$SCHEME" \
-            --config Release \
-            --export-options-plist export_options.plist
+          # Bypass xcode-project build-ipa: its validator rejects method
+          # "app-store-connect" (old enum), so call xcodebuild directly.
+          ARCHIVE_PATH="$CM_BUILD_DIR/ios/$SCHEME.xcarchive"
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            archive
+
+          mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportOptionsPlist export_options.plist \
+            -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
+            -allowProvisioningUpdates
+          ls -la "$CM_BUILD_DIR/build/ios/ipa"
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -553,11 +589,23 @@ workflows:
           echo "--- export_options.plist ---"
           plutil -p export_options.plist
 
-          xcode-project build-ipa \
-            --workspace "$WORKSPACE" \
-            --scheme "$SCHEME" \
-            --config Release \
-            --export-options-plist export_options.plist
+          # Bypass xcode-project build-ipa: its validator rejects method
+          # "app-store-connect" (old enum), so call xcodebuild directly.
+          ARCHIVE_PATH="$CM_BUILD_DIR/ios/$SCHEME.xcarchive"
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            archive
+
+          mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportOptionsPlist export_options.plist \
+            -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
+            -allowProvisioningUpdates
+          ls -la "$CM_BUILD_DIR/build/ios/ipa"
 
     artifacts:
       - build/ios/ipa/*.ipa
