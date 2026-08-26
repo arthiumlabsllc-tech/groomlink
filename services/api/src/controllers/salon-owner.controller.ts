@@ -869,6 +869,8 @@ export async function getEarnings(req: AuthenticatedRequest, res: Response): Pro
       paymentMethods,
       pendingPayments,
       refundedAmount,
+      escrowHeldResult,
+      releasedMonthResult,
     ] = await Promise.all([
       prisma.payment.aggregate({
         where: {
@@ -904,6 +906,22 @@ export async function getEarnings(req: AuthenticatedRequest, res: Response): Pro
         },
         _sum: { amount: true },
       }),
+      // Money currently held in escrow awaiting payout
+      prisma.escrowAccount.aggregate({
+        where: { salonId, status: 'held' },
+        _sum: { providerAmount: true },
+      }),
+      // Escrow released (paid out) this calendar month
+      prisma.escrowAccount.aggregate({
+        where: {
+          salonId,
+          status: 'released',
+          releasedAt: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          },
+        },
+        _sum: { providerAmount: true },
+      }),
     ]);
 
     successResponse(res, {
@@ -915,6 +933,10 @@ export async function getEarnings(req: AuthenticatedRequest, res: Response): Pro
         count: pendingPayments._count,
       },
       refundedAmount: refundedAmount._sum.amount || 0,
+      // Escrow-based fields consumed by the partners dashboard
+      escrowHeld: Number(escrowHeldResult._sum.providerAmount || 0),
+      releasedThisMonth: Number(releasedMonthResult._sum.providerAmount || 0),
+      pendingPenalties: 0, // provider penalties are visibility-based, not monetary
     });
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);

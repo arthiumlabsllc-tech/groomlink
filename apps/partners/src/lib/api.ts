@@ -339,9 +339,9 @@ class ApiClient {
     }
   }
 
-  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit = {}, timeoutMs = 10000): Promise<T> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -635,20 +635,24 @@ class ApiClient {
 
   // Payout balance summary
   async getPayoutBalance(salonId: string) {
-    return this.request<{ success: boolean; data: PayoutBalance }>(`/salons/${salonId}/payout-balance`);
+    // Longer timeout: Render Free cold starts can delay the first response
+    return this.request<{ success: boolean; data: PayoutBalance }>(`/salons/${salonId}/payout-balance`, {}, 30000);
   }
 
   // Payout history
   async getPayoutHistory(salonId: string, page = 1, limit = 20) {
-    return this.request<{ success: boolean; data: PayoutHistoryResponse }>(`/salons/${salonId}/payout-history?page=${page}&limit=${limit}`);
+    return this.request<{ success: boolean; data: PayoutHistoryResponse }>(`/salons/${salonId}/payout-history?page=${page}&limit=${limit}`, {}, 30000);
   }
 
   // Request manual payout
   async requestPayout(salonId: string, amount: number) {
+    // Paystack recipient creation + transfer can take a while (esp. Render
+    // Free cold starts) — a short timeout would abort a payout that is
+    // actually still processing server-side.
     return this.request<{ success: boolean; data: { message: string; payoutReference: string; gateway: string; amount: number } }>(`/salons/${salonId}/request-payout`, {
       method: 'POST',
       body: JSON.stringify({ amount }),
-    });
+    }, 60000);
   }
 
   // Dashboard

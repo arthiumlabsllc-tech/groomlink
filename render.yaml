@@ -19,7 +19,9 @@ services:
       - key: CORS_ORIGIN
         value: https://groomlinkgh.com,https://www.groomlinkgh.com,https://my.groomlinkgh.com,https://partners.groomlinkgh.com,https://dash.groomlinkgh.com,https://support.groomlinkgh.com
       - key: FRONTEND_URL
-        value: https://groomlinkgh.com
+        # Customer web app — Paystack redirects buyers back here after checkout
+        # (/payment/callback). Must be the customer app domain, NOT the landing.
+        value: https://my.groomlinkgh.com
       - key: API_BASE_URL
         value: https://api.groomlinkgh.com
       - key: WS_BASE_URL
