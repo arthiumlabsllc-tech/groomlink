@@ -4,22 +4,23 @@
 # and submits them to the Apple App Store via App Store Connect API.
 #
 # PREREQUISITES (set up in Codemagic dashboard):
-# 1. Apple Developer account connected
-# 2. App Store Connect API key uploaded (AuthKey_XXXXXX.p8)
-# 3. iOS code signing (automatic or manual)
-# 4. Environment variables configured (see below)
+# 1. App Store Connect integration named EXACTLY "GroomLink ASC"
+#    (Issuer ID + Key ID + contents of AuthKey_XXXXXX.p8)
+# 2. Code signing is AUTOMATIC: Codemagic fetches/creates the App Store
+#    distribution certificate and provisioning profile for each bundle
+#    identifier via the ASC integration. No manual certs required.
+# 3. Environment variable groups (exact names, see below)
 #
-# REQUIRED ENVIRONMENT VARIABLES (set in Codemagic UI):
-# - APP_STORE_CONNECT_ISSUER_ID: Your App Store Connect API Issuer ID
-# - APP_STORE_CONNECT_KEY_IDENTIFIER: Your API Key ID  
-# - APP_STORE_CONNECT_PRIVATE_KEY: Contents of your AuthKey.p8 file
-# - CERTIFICATE_PRIVATE_KEY: iOS distribution certificate private key
-# - GOOGLE_MAPS_API_KEY: Google Maps API key for customer-app
-# - EXPO_TOKEN: Your Expo access token (from expo.dev)
+# REQUIRED ENVIRONMENT VARIABLE GROUP (set in Codemagic UI):
+# - groomlink_credentials (mark as secure):
+#     GOOGLE_MAPS_API_KEY, EXPO_PUBLIC_API_URL, EXPO_PUBLIC_WS_URL
+#     (optional: EXPO_TOKEN from expo.dev if logging into Expo CLI)
+# - groomlink_ios_signing: keep for future manual signing; not required
+#   while automatic signing via the ASC integration is in use.
 #
-# APPLE APP IDs (from App Store Connect):
-# - Customer App: Set ASC_APP_ID_CUSTOMER in environment
-# - Partners App: Set ASC_APP_ID_PARTNERS in environment
+# APPLE APP IDs (from App Store Connect, already set in vars below):
+# - Customer App: 6741658620 (bundle com.arthiumlabsllc.groomlink)
+# - Partners App: 6778136462 (bundle com.arthiumlabsllc.partners)
 # ============================================================
 
 workflows:
@@ -36,7 +37,7 @@ workflows:
       app_store_connect: GroomLink ASC
     
     environment:
-      node: 18.19.0
+      node: 20.18.0
       xcode: latest
       cocoapods: default
       groups:
@@ -44,6 +45,8 @@ workflows:
         - groomlink_ios_signing
       vars:
         EXPO_NO_DOTENV: "1"
+        # App Store Connect numeric App ID (GroomLink customer)
+        IOS_APP_ID: "6741658620"
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.arthiumlabsllc.groomlink
@@ -72,6 +75,12 @@ workflows:
       - name: Set up code signing
         script: |
           xcode-project use-profiles
+          
+      - name: Increment build number
+        script: |
+          cd ios
+          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
           
       - name: Build iOS app
         script: |
@@ -111,7 +120,7 @@ workflows:
       app_store_connect: GroomLink ASC
     
     environment:
-      node: 18.19.0
+      node: 20.18.0
       xcode: latest
       cocoapods: default
       groups:
@@ -119,6 +128,8 @@ workflows:
         - groomlink_ios_signing
       vars:
         EXPO_NO_DOTENV: "1"
+        # App Store Connect numeric App ID (GroomLink Partners)
+        IOS_APP_ID: "6778136462"
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.arthiumlabsllc.partners
@@ -147,6 +158,12 @@ workflows:
       - name: Set up code signing
         script: |
           xcode-project use-profiles
+          
+      - name: Increment build number
+        script: |
+          cd ios
+          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
           
       - name: Build iOS app
         script: |
@@ -185,7 +202,7 @@ workflows:
       app_store_connect: GroomLink ASC
     
     environment:
-      node: 18.19.0
+      node: 20.18.0
       xcode: latest
       cocoapods: default
       groups:
@@ -193,6 +210,8 @@ workflows:
         - groomlink_ios_signing
       vars:
         EXPO_NO_DOTENV: "1"
+        ASC_APP_ID_CUSTOMER: "6741658620"
+        ASC_APP_ID_PARTNERS: "6778136462"
       ios_signing:
         distribution_type: app_store
         bundle_identifier:
@@ -213,7 +232,10 @@ workflows:
           cd apps/customer-app
           npm install
           npx expo prebuild --platform ios --clean
+          xcode-project use-profiles
           cd ios
+          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$ASC_APP_ID_CUSTOMER")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
           xcode-project build-ipa \
             --workspace "*.xcworkspace" \
             --scheme "groomlinkcustomer" \
@@ -225,7 +247,10 @@ workflows:
           cd apps/partners-app
           npm install
           npx expo prebuild --platform ios --clean
+          xcode-project use-profiles
           cd ios
+          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$ASC_APP_ID_PARTNERS")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
           xcode-project build-ipa \
             --workspace "*.xcworkspace" \
             --scheme "groomlinkpartners" \

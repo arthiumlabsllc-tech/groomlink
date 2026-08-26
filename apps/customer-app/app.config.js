@@ -26,6 +26,9 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.arthiumlabsllc.groomlink",
       buildNumber: "20000",
+      // Pins the Xcode project/scheme name so codemagic.yaml can target
+      // --scheme "groomlinkcustomer" deterministically after expo prebuild
+      projectName: "groomlinkcustomer",
       // Deep linking handled via top-level scheme property (SDK 53+)
       // urlSchemes removed — use scheme: "groomlink" at top level
       infoPlist: {

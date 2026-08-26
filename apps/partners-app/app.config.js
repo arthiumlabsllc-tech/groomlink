@@ -27,6 +27,9 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.arthiumlabsllc.partners",
       buildNumber: "1.0.0",
+      // Pins the Xcode project/scheme name so codemagic.yaml can target
+      // --scheme "groomlinkpartners" deterministically after expo prebuild
+      projectName: "groomlinkpartners",
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "GroomLink Partners uses your location for your salon address.",
         NSCameraUsageDescription: "GroomLink Partners needs camera access to scan QR codes and upload salon photos.",
