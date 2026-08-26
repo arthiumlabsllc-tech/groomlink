@@ -86,7 +86,7 @@ workflows:
         script: |
           cd ios
           xcode-project build-ipa \
-            --workspace "*.xcworkspace" \
+            --workspace "groomlinkcustomer.xcworkspace" \
             --scheme "groomlinkcustomer" \
             --config Release
     
@@ -169,7 +169,7 @@ workflows:
         script: |
           cd ios
           xcode-project build-ipa \
-            --workspace "*.xcworkspace" \
+            --workspace "groomlinkpartners.xcworkspace" \
             --scheme "groomlinkpartners" \
             --config Release
     
@@ -249,7 +249,7 @@ workflows:
         script: |
           cd ios
           xcode-project build-ipa \
-            --workspace "*.xcworkspace" \
+            --workspace "groomlinkcustomer.xcworkspace" \
             --scheme "groomlinkcustomer" \
             --config Release
 
@@ -323,7 +323,7 @@ workflows:
         script: |
           cd ios
           xcode-project build-ipa \
-            --workspace "*.xcworkspace" \
+            --workspace "groomlinkpartners.xcworkspace" \
             --scheme "groomlinkpartners" \
             --config Release
 
