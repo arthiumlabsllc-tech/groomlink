@@ -94,10 +94,14 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          echo "Building workspace: $WORKSPACE"
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
+          if [ -z "$SCHEME" ]; then
+            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
-            --scheme "groomlinkcustomer" \
+            --scheme "$SCHEME" \
             --config Release
     
     artifacts:
@@ -187,10 +191,14 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          echo "Building workspace: $WORKSPACE"
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
+          if [ -z "$SCHEME" ]; then
+            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
-            --scheme "groomlinkpartners" \
+            --scheme "$SCHEME" \
             --config Release
     
     artifacts:
@@ -277,10 +285,14 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          echo "Building workspace: $WORKSPACE"
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
+          if [ -z "$SCHEME" ]; then
+            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
-            --scheme "groomlinkcustomer" \
+            --scheme "$SCHEME" \
             --config Release
 
     artifacts:
@@ -361,10 +373,14 @@ workflows:
           if [ -z "$WORKSPACE" ]; then
             echo "No xcworkspace found in ios/ — contents:"; ls -la; exit 1
           fi
-          echo "Building workspace: $WORKSPACE"
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | sed -n '/Schemes:/,$p' | tail -n +2 | head -1 | xargs)
+          if [ -z "$SCHEME" ]; then
+            echo "No scheme found for $WORKSPACE:"; xcodebuild -workspace "$WORKSPACE" -list; exit 1
+          fi
+          echo "Building workspace: $WORKSPACE (scheme: $SCHEME)"
           xcode-project build-ipa \
             --workspace "$WORKSPACE" \
-            --scheme "groomlinkpartners" \
+            --scheme "$SCHEME" \
             --config Release
 
     artifacts:
