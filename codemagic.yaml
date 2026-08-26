@@ -191,16 +191,19 @@ workflows:
           failure: true
 
   # ============================================================
-  # BOTH APPS - Build & Submit (manual trigger)
+  # TAG RELEASES - both apps build on tags matching v*
+  # (split into one workflow per app because Codemagic's
+  #  ios_signing.bundle_identifier must be a single string)
   # ============================================================
-  all-ios-production:
-    name: GroomLink All Apps - iOS Production
-    max_build_duration: 90
+  release-customer-ios:
+    name: GroomLink Tag Release - Customer iOS
+    max_build_duration: 60
     instance_type: mac_mini_m2
-    
+    working_directory: apps/customer-app
+
     integrations:
       app_store_connect: GroomLink ASC
-    
+
     environment:
       node: 20.18.0
       xcode: latest
@@ -210,57 +213,124 @@ workflows:
         - groomlink_ios_signing
       vars:
         EXPO_NO_DOTENV: "1"
-        ASC_APP_ID_CUSTOMER: "6741658620"
-        ASC_APP_ID_PARTNERS: "6778136462"
+        # App Store Connect numeric App ID (GroomLink customer)
+        IOS_APP_ID: "6741658620"
       ios_signing:
         distribution_type: app_store
-        bundle_identifier:
-          - com.arthiumlabsllc.groomlink
-          - com.arthiumlabsllc.partners
-    
+        bundle_identifier: com.arthiumlabsllc.groomlink
+
     triggering:
       events:
         - tag
       tag_patterns:
         - pattern: "v*"
           include: true
-    
+
     scripts:
-      # --- Customer App ---
-      - name: Build Customer App
+      - name: Install dependencies
         script: |
-          cd apps/customer-app
           npm install
+
+      - name: Run Expo Prebuild (iOS)
+        script: |
           npx expo prebuild --platform ios --clean
+
+      - name: Set up code signing
+        script: |
           xcode-project use-profiles
+
+      - name: Increment build number
+        script: |
           cd ios
-          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$ASC_APP_ID_CUSTOMER")
+          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
           agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+
+      - name: Build iOS app
+        script: |
+          cd ios
           xcode-project build-ipa \
             --workspace "*.xcworkspace" \
             --scheme "groomlinkcustomer" \
             --config Release
-          
-      # --- Partners App ---
-      - name: Build Partners App
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+      email:
+        recipients:
+          - manuelgoodegreen@icloud.com
+        notify:
+          success: true
+          failure: true
+
+  release-partners-ios:
+    name: GroomLink Tag Release - Partners iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: apps/partners-app
+
+    integrations:
+      app_store_connect: GroomLink ASC
+
+    environment:
+      node: 20.18.0
+      xcode: latest
+      cocoapods: default
+      groups:
+        - groomlink_credentials
+        - groomlink_ios_signing
+      vars:
+        EXPO_NO_DOTENV: "1"
+        # App Store Connect numeric App ID (GroomLink Partners)
+        IOS_APP_ID: "6778136462"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.arthiumlabsllc.partners
+
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: "v*"
+          include: true
+
+    scripts:
+      - name: Install dependencies
         script: |
-          cd apps/partners-app
           npm install
+
+      - name: Run Expo Prebuild (iOS)
+        script: |
           npx expo prebuild --platform ios --clean
+
+      - name: Set up code signing
+        script: |
           xcode-project use-profiles
+
+      - name: Increment build number
+        script: |
           cd ios
-          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$ASC_APP_ID_PARTNERS")
+          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
           agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+
+      - name: Build iOS app
+        script: |
+          cd ios
           xcode-project build-ipa \
             --workspace "*.xcworkspace" \
             --scheme "groomlinkpartners" \
             --config Release
-    
+
     artifacts:
-      - apps/customer-app/build/ios/ipa/*.ipa
-      - apps/partners-app/build/ios/ipa/*.ipa
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      
+
     publishing:
       app_store_connect:
         auth: integration
