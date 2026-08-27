@@ -36,10 +36,10 @@ export interface EasProject {
 }
 
 export const EAS_PROJECTS: EasProject[] = [
-  { id: 'customer-android', name: 'Customer App (Android)', slug: 'groomlink-customer', accountName: 'gr3enink' },
-  { id: 'customer-ios', name: 'Customer App (iOS)', slug: 'groomlink-customer', accountName: 'gr3enink' },
-  { id: 'partners-android', name: 'Partners App (Android)', slug: 'groomlink-partners', accountName: 'gr3enink' },
-  { id: 'partners-ios', name: 'Partners App (iOS)', slug: 'groomlink-partners', accountName: 'gr3enink' },
+  { id: 'customer-android', name: 'Customer App (Android)', slug: 'groomlink-customer', accountName: 'arthiumlabsllcs-team' },
+  { id: 'customer-ios', name: 'Customer App (iOS)', slug: 'groomlink-customer', accountName: 'arthiumlabsllcs-team' },
+  { id: 'partners-android', name: 'Partners App (Android)', slug: 'groomlink-partners', accountName: 'arthiumlabsllcs-team' },
+  { id: 'partners-ios', name: 'Partners App (iOS)', slug: 'groomlink-partners', accountName: 'arthiumlabsllcs-team' },
 ];
 
 const EAS_TOKEN_KEY = 'eas_access_token';

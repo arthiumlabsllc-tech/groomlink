@@ -89,7 +89,7 @@ export default {
     },
     extra: {
       eas: {
-        projectId: "81417e23-6df9-4792-bf49-7829dd1d130e"
+        projectId: "c5932eab-b337-4f87-846e-f3dc5ed0b5cf"
       }
     },
     plugins: [
@@ -130,6 +130,6 @@ export default {
       "./plugins/expo-sdk-fix",
       "./plugins/ios-xcode-compat-fix"
     ],
-    owner: "gr3enink"
+    owner: "arthiumlabsllcs-team"
   }
 };
