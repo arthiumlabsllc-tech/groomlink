@@ -67,6 +67,7 @@ expo-env.d.ts
 *.orig.*
 google-play-key.json
 service-account-key.json
+keystore-credentials.txt
 android/
 ios/
 
