@@ -55,6 +55,39 @@ const updateSalonSchema = createSalonSchema.partial().extend({
   requiresCustomerConfirmation: z.boolean().optional(),
   completionReminderEnabled: z.boolean().optional(),
   qrCheckinEnabled: z.boolean().optional(),
+  // Payout account settings (must be whitelisted here or zod's .parse()
+  // silently strips them — the payout fields live on the Salon model)
+  payoutType: z.enum(['bank', 'mobile_money']).optional(),
+  bankCode: z.string().max(20).optional(),
+  bankAccountNumber: z.string().max(30).optional(),
+  bankAccountName: z.string().max(100).optional(),
+  momoProvider: z.enum(['mtn', 'vodafone', 'airteltigo', 'vod', 'tgo']).optional(),
+  momoNumber: z
+    .string()
+    .regex(/^(\+?233|0)\d{9}$/, 'Enter a valid Ghana phone number for Mobile Money')
+    .optional(),
+})
+.superRefine((data, ctx) => {
+  // A payout type without its account details would leave the salon unable
+  // to receive payouts, so reject incomplete submissions outright.
+  if (data.payoutType === 'bank') {
+    if (!data.bankCode || !data.bankAccountNumber?.trim() || !data.bankAccountName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Bank name, account number and account name are required for bank payouts',
+        path: ['payoutType'],
+      });
+    }
+  }
+  if (data.payoutType === 'mobile_money') {
+    if (!data.momoNumber?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Mobile Money number is required for Mobile Money payouts',
+        path: ['payoutType'],
+      });
+    }
+  }
 });
 
 export async function getSalons(req: Request, res: Response): Promise<void> {

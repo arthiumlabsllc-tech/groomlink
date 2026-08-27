@@ -36,6 +36,13 @@ export interface CreateSalonData {
 
 export interface UpdateSalonData extends Partial<CreateSalonData> {
   status?: SalonStatus;
+  // Payout account settings (persisted on the Salon model)
+  payoutType?: string;
+  bankCode?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+  momoProvider?: string;
+  momoNumber?: string;
 }
 
 export interface SalonFilters {
@@ -289,6 +296,19 @@ export async function updateSalon(id: string, ownerId: string, data: UpdateSalon
 
   // Prepare update data
   const updateData: any = { ...data };
+
+  // When the payout method changes, clear the unused method's account details
+  // so stale bank/MoMo data doesn't linger on the salon record.
+  if (data.payoutType && data.payoutType !== salon.payoutType) {
+    if (data.payoutType === 'bank') {
+      updateData.momoProvider = null;
+      updateData.momoNumber = null;
+    } else if (data.payoutType === 'mobile_money') {
+      updateData.bankCode = null;
+      updateData.bankAccountNumber = null;
+      updateData.bankAccountName = null;
+    }
+  }
 
   // If address is updated, try to geocode the new address
   if (isAddressUpdated && (data.address || salon.address)) {
