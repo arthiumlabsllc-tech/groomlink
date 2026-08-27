@@ -162,6 +162,14 @@ workflows:
             -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
             -allowProvisioningUpdates
           ls -la "$CM_BUILD_DIR/build/ios/ipa"
+
+      - name: Publish to App Store Connect (TestFlight)
+        script: |
+          # Upload the IPA straight from the build machine using the
+          # "GroomLink ASC" integration credentials, then submit to TestFlight.
+          app-store-connect publish \
+            --path "$CM_BUILD_DIR/build/ios/ipa/*.ipa" \
+            --testflight
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -169,10 +177,6 @@ workflows:
       - ios/build/Build/Products/*.app
       
     publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
       email:
         recipients:
           - manuelgoodegreen@icloud.com
@@ -318,6 +322,14 @@ workflows:
             -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
             -allowProvisioningUpdates
           ls -la "$CM_BUILD_DIR/build/ios/ipa"
+
+      - name: Publish to App Store Connect (TestFlight)
+        script: |
+          # Upload the IPA straight from the build machine using the
+          # "GroomLink ASC" integration credentials, then submit to TestFlight.
+          app-store-connect publish \
+            --path "$CM_BUILD_DIR/build/ios/ipa/*.ipa" \
+            --testflight
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -325,10 +337,6 @@ workflows:
       - ios/build/Build/Products/*.app
       
     publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
       email:
         recipients:
           - manuelgoodegreen@icloud.com
@@ -472,15 +480,19 @@ workflows:
             -allowProvisioningUpdates
           ls -la "$CM_BUILD_DIR/build/ios/ipa"
 
+      - name: Publish to App Store Connect (TestFlight)
+        script: |
+          # Upload the IPA straight from the build machine using the
+          # "GroomLink ASC" integration credentials, then submit to TestFlight.
+          app-store-connect publish \
+            --path "$CM_BUILD_DIR/build/ios/ipa/*.ipa" \
+            --testflight
+
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
       email:
         recipients:
           - manuelgoodegreen@icloud.com
@@ -619,15 +631,19 @@ workflows:
             -allowProvisioningUpdates
           ls -la "$CM_BUILD_DIR/build/ios/ipa"
 
+      - name: Publish to App Store Connect (TestFlight)
+        script: |
+          # Upload the IPA straight from the build machine using the
+          # "GroomLink ASC" integration credentials, then submit to TestFlight.
+          app-store-connect publish \
+            --path "$CM_BUILD_DIR/build/ios/ipa/*.ipa" \
+            --testflight
+
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
       email:
         recipients:
           - manuelgoodegreen@icloud.com
