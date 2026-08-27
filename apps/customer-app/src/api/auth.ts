@@ -111,9 +111,9 @@ export const authApi = {
 
   // Upload avatar image
   uploadAvatar: async (formData: FormData) => {
-    const response = await apiClient.post('/users/profile/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Let axios set the multipart boundary itself — hardcoding the
+    // Content-Type can strip the boundary and break parsing server-side
+    const response = await apiClient.post('/users/profile/avatar', formData);
     return response.data;
   },
 

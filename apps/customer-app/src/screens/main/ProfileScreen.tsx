@@ -169,9 +169,11 @@ export default function ProfileScreen() {
         // Upload to server
         try {
           const formData = new FormData();
+          const ext = uri.split('.').pop()?.toLowerCase();
+          const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
           formData.append('avatar', {
             uri: uri,
-            type: 'image/jpeg',
+            type: mimeType,
             name: 'avatar.jpg',
           } as any);
           

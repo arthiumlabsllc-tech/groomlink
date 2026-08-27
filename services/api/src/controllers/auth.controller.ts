@@ -137,7 +137,9 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
     }
 
     const result = await authService.refreshAccessToken(refreshToken);
-    successResponse(res, result);
+    // Return both shapes: mobile clients read `data.tokens` (matching the
+    // login responses) while older/web clients read the flat fields.
+    successResponse(res, { ...result, tokens: result });
   } catch (error) {
     errorResponse(res, 'REFRESH_FAILED', (error as Error).message, 401);
   }

@@ -202,13 +202,27 @@ function AppContent() {
       try {
         const profile = await authApi.getProfile();
         setUser(profile);
-      } catch (profileError) {
-        // Token is invalid or expired - clear everything and show login
-        console.log('Session validation failed, clearing tokens');
-        await SecureStore.deleteItemAsync('accessToken');
-        await SecureStore.deleteItemAsync('refreshToken');
-        await SecureStore.deleteItemAsync('user');
-        setLoading(false);
+      } catch (profileError: any) {
+        const status = profileError?.response?.status;
+        if (status === 401) {
+          // Session is genuinely dead (refresh already attempted by the
+          // interceptor) — clear everything and show login
+          console.log('Session validation failed with 401, clearing tokens');
+          await SecureStore.deleteItemAsync('accessToken');
+          await SecureStore.deleteItemAsync('refreshToken');
+          await SecureStore.deleteItemAsync('user');
+          setLoading(false);
+        } else {
+          // Transient failure (network / server error) — keep the session
+          // alive using the stored profile so the user stays logged in
+          console.log('Profile fetch failed transiently, restoring stored user');
+          const storedUser = await authApi.getStoredUser();
+          if (storedUser) {
+            setUser(storedUser);
+          } else {
+            setLoading(false);
+          }
+        }
       }
     } catch (error) {
       // Any unexpected error - ensure we show login screen
