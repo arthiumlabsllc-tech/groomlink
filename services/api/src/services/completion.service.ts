@@ -4,7 +4,7 @@ import logger from '../config/logger';
 import { releaseEscrow, refundEscrow, getEscrowByBookingId } from './escrow.service';
 import * as smsService from './sms.service';
 import * as notificationService from './notification.service';
-import { emitBookingCompleted, emitToUser } from '../config/socket';
+import { emitBookingCompleted, emitToUser, getIO } from '../config/socket';
 import * as pushService from './pushNotification.service';
 import QRCode from 'qrcode';
 
@@ -85,6 +85,32 @@ export async function manualComplete(bookingId: string, completedById: string) {
         escrow: true,
       },
     });
+
+    // Mark the customer's queue entry as completed so the salon's live
+    // queue moves on and the customer's queue view reflects the finished
+    // service. Escrow is NOT released here — it stays held until the
+    // customer confirms (or the 48h safety net releases it).
+    if (booking.queueEntryId) {
+      try {
+        const completedEntry = await prisma.salonQueue.update({
+          where: { id: booking.queueEntryId },
+          data: { status: 'COMPLETED', completedAt: new Date() },
+        });
+
+        await redis.zrem(`queue:${booking.salonId}`, booking.queueEntryId).catch(() => {});
+
+        const io = getIO();
+        io.to(`salon:${booking.salonId}`).emit('queue:completed', { entry: completedEntry });
+        io.to(`salon:${booking.salonId}`).emit('queue:updated', { salonId: booking.salonId });
+        io.to(`user:${booking.customerId}`).emit('queue:completed', { entry: completedEntry });
+      } catch (err) {
+        logger.error('Failed to complete queue entry during manual completion', {
+          err,
+          bookingId,
+          queueEntryId: booking.queueEntryId,
+        });
+      }
+    }
 
     // Send SMS to customer asking them to confirm
     if (booking.customer?.phoneNumber) {

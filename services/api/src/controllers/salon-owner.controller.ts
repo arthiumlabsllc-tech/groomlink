@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import prisma from '../config/database';
+import redis from '../config/redis';
+import logger from '../config/logger';
 import { AuthenticatedRequest } from '../types';
 import { z } from 'zod';
 
@@ -15,7 +17,21 @@ const addStaffSchema = z.object({
   avatar: z.string().url().optional(),
 });
 
-const updateStaffSchema = addStaffSchema.partial();
+const updateStaffSchema = addStaffSchema.partial().extend({
+  // Availability fields — these do NOT live on the Worker record; the
+  // controller syncs them into weekly Availability rows. They must be
+  // whitelisted here or zod's .parse() silently strips them, which made
+  // working-hours edits in the partners app disappear.
+  isActive: z.boolean().optional(),
+  isAvailable: z.boolean().optional(),
+  workingHours: z
+    .object({
+      start: z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d$/),
+      end: z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d$/),
+    })
+    .optional(),
+  workingDays: z.array(z.string()).optional(),
+});
 
 // Service Management Schemas
 const addServiceSchema = z.object({
@@ -90,7 +106,28 @@ export async function getStaff(req: AuthenticatedRequest, res: Response): Promis
       orderBy: { createdAt: 'desc' },
     });
 
-    successResponse(res, staff);
+    const NUMBER_TO_DAY_NAME = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // Derive display-friendly working hours from the weekly availability
+    // rows so the partners app shows what the booking engine actually uses
+    const staffWithHours = staff.map((member) => {
+      const activeRows = (member.availabilities || []).filter(
+        (row) => !row.isBreakSlot && !row.specificDate && row.isAvailable && !row.isClosed
+      );
+      const workingHours =
+        activeRows.length > 0
+          ? {
+              start: activeRows.map((row) => row.startTime).sort()[0],
+              end: activeRows.map((row) => row.endTime).sort().reverse()[0],
+            }
+          : null;
+      const workingDays = [
+        ...new Set(activeRows.map((row) => NUMBER_TO_DAY_NAME[row.dayOfWeek] || '')),
+      ].filter(Boolean);
+      return { ...member, workingHours, workingDays };
+    });
+
+    successResponse(res, staffWithHours);
   } catch (error) {
     errorResponse(res, 'FETCH_FAILED', (error as Error).message, 500);
   }
@@ -143,10 +180,25 @@ export async function updateStaff(req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
+    // Availability fields live on weekly Availability rows, not on the
+    // Worker record — separate them before the prisma update.
+    const { workingHours, workingDays, isAvailable, isActive, ...workerFields } = data;
+    const updateData: any = { ...workerFields };
+    if (isActive !== undefined || isAvailable !== undefined) {
+      updateData.isActive = isActive ?? isAvailable;
+    }
+
     const staff = await prisma.worker.update({
       where: { id: staffId, salonId },
-      data,
+      data: updateData,
     });
+
+    // Sync the worker's weekly working hours so the booking slot engine
+    // picks them up immediately
+    if (workingHours) {
+      await syncWorkerWeeklyHours(staffId, workingHours, workingDays);
+      await invalidateSalonAvailabilityCache(salonId);
+    }
 
     successResponse(res, staff);
   } catch (error) {
@@ -155,6 +207,103 @@ export async function updateStaff(req: AuthenticatedRequest, res: Response): Pro
       return;
     }
     errorResponse(res, 'UPDATE_FAILED', (error as Error).message, 500);
+  }
+}
+
+const DAY_NAME_TO_NUMBER: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+function parseWorkingDays(days?: string[]): number[] | null {
+  if (!days || days.length === 0) return null;
+  const nums = days
+    .map((day) => DAY_NAME_TO_NUMBER[String(day).toLowerCase()])
+    .filter((n): n is number => typeof n === 'number');
+  return nums.length > 0 ? nums : null;
+}
+
+/**
+ * Upsert a worker's weekly availability rows to match the working hours
+ * configured in the partners app. Days that already have rows get their
+ * times updated; days no longer worked are marked unavailable; missing
+ * days are created.
+ */
+async function syncWorkerWeeklyHours(
+  workerId: string,
+  hours: { start: string; end: string },
+  workingDays?: string[]
+): Promise<void> {
+  const activeDays = parseWorkingDays(workingDays);
+
+  const existing = await prisma.availability.findMany({
+    where: { workerId, specificDate: null, isBreakSlot: false },
+  });
+
+  const seenDays = new Set<number>();
+  for (const row of existing) {
+    seenDays.add(row.dayOfWeek);
+    const stillWorked = !activeDays || activeDays.includes(row.dayOfWeek);
+    if (stillWorked) {
+      if (
+        row.startTime !== hours.start ||
+        row.endTime !== hours.end ||
+        !row.isAvailable ||
+        row.isClosed
+      ) {
+        await prisma.availability.update({
+          where: { id: row.id },
+          data: { startTime: hours.start, endTime: hours.end, isAvailable: true, isClosed: false },
+        });
+      }
+    } else if (row.isAvailable) {
+      await prisma.availability.update({
+        where: { id: row.id },
+        data: { isAvailable: false },
+      });
+    }
+  }
+
+  // Default to Mon–Sat when no explicit working days were provided
+  const daysToCreate = activeDays ?? [1, 2, 3, 4, 5, 6];
+  for (const day of daysToCreate) {
+    if (seenDays.has(day)) continue;
+    await prisma.availability.create({
+      data: {
+        workerId,
+        dayOfWeek: day,
+        startTime: hours.start,
+        endTime: hours.end,
+        isAvailable: true,
+        isClosed: false,
+      },
+    });
+  }
+
+  logger.info(`Synced weekly working hours for worker ${workerId}`, { hours, days: daysToCreate });
+}
+
+/**
+ * Best-effort flush of cached availability for a salon across all dates so
+ * working-hours changes take effect immediately in the booking flow.
+ */
+async function invalidateSalonAvailabilityCache(salonId: string): Promise<void> {
+  try {
+    let cursor = '0';
+    do {
+      const [next, keys] = await redis.scan(cursor, 'MATCH', `availability:${salonId}:*`, 'COUNT', 100);
+      cursor = next;
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } while (cursor !== '0');
+  } catch (err) {
+    logger.error('Failed to invalidate availability cache after hours change', { err, salonId });
   }
 }
 

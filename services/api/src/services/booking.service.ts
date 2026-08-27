@@ -924,6 +924,7 @@ export async function getAvailableSlots(
       openingTime: true,
       closingTime: true,
       workingDays: true,
+      operatingHours: true,
       maxConcurrentClients: true,
       operatingModel: true,
     },
@@ -1002,8 +1003,58 @@ export async function getAvailableSlots(
 
   // Generate time slots based on service duration
   const slots: { startTime: string; endTime: string; available: boolean; remainingSpots: number; totalSpots: number; bookedSpots: number }[] = [];
-  const openMinutes = timeToMinutes(salon.openingTime);
-  const closeMinutes = timeToMinutes(salon.closingTime);
+
+  // Resolve working hours for THIS day. Partners manage per-day hours in
+  // the operatingHours JSON (keys: sunday..saturday, { isOpen, open, close });
+  // the flat openingTime/closingTime fields are the fallback envelope.
+  const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const operatingHours = (salon.operatingHours || {}) as Record<
+    string,
+    { isOpen?: boolean; open?: string; close?: string }
+  >;
+  const dayHours = operatingHours[dayKeys[dayOfWeek]];
+
+  // Explicitly closed for this day in the per-day schedule
+  if (dayHours && dayHours.isOpen === false) {
+    return [];
+  }
+
+  let openMinutes = timeToMinutes(dayHours?.open || salon.openingTime);
+  let closeMinutes = timeToMinutes(dayHours?.close || salon.closingTime);
+
+  // When booking a specific worker, use that worker's own working hours
+  // for this day (configured in the partners app). This lets staff extend
+  // or narrow the salon's default window. Workers without availability
+  // records fall back to the salon hours above.
+  if (workerId) {
+    const workerDayRows = await prisma.availability.findMany({
+      where: { workerId, dayOfWeek, specificDate: null },
+      select: {
+        startTime: true,
+        endTime: true,
+        isAvailable: true,
+        isClosed: true,
+        isBreakSlot: true,
+      },
+    });
+
+    if (workerDayRows.length > 0) {
+      const activeWindows = workerDayRows.filter(
+        (row) => row.isAvailable && !row.isClosed && !row.isBreakSlot
+      );
+      if (activeWindows.length === 0) {
+        // Worker is not scheduled on this day
+        return [];
+      }
+      openMinutes = Math.min(...activeWindows.map((row) => timeToMinutes(row.startTime)));
+      closeMinutes = Math.max(...activeWindows.map((row) => timeToMinutes(row.endTime)));
+    }
+  }
+
+  // Degenerate window (closed or inverted times)
+  if (openMinutes >= closeMinutes) {
+    return [];
+  }
 
   // Calculate walk-in reserved capacity
   const maxConcurrentClients = salon.maxConcurrentClients || 1;

@@ -447,15 +447,23 @@ export default function EditSalonScreen() {
     return days;
   };
 
-  // Get opening/closing time from first open day
+  // Get opening/closing time envelope across ALL open days. The flat
+  // openingTime/closingTime fields must span every working day — using
+  // only the first open day silently discarded overtime set on other days.
   const getOpeningTime = (hours: HoursState): string => {
-    const openDay = Object.values(hours).find(h => h.isOpen);
-    return openDay?.open || '09:00';
+    const openTimes = Object.values(hours)
+      .filter((h) => h.isOpen && h.open)
+      .map((h) => h.open);
+    if (openTimes.length === 0) return '09:00';
+    return openTimes.sort()[0];
   };
 
   const getClosingTime = (hours: HoursState): string => {
-    const openDay = Object.values(hours).find(h => h.isOpen);
-    return openDay?.close || '18:00';
+    const closeTimes = Object.values(hours)
+      .filter((h) => h.isOpen && h.close)
+      .map((h) => h.close);
+    if (closeTimes.length === 0) return '18:00';
+    return closeTimes.sort().reverse()[0];
   };
 
   // Handle save

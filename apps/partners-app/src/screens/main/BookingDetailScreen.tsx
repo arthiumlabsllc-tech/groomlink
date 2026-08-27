@@ -83,7 +83,10 @@ export default function BookingDetailScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
       queryClient.invalidateQueries({ queryKey: ['salonBookings'] });
-      Alert.alert('Success', 'Booking has been marked as completed.');
+      Alert.alert(
+        'Success',
+        'Service marked complete. The customer has been notified to confirm — payment will be released when they confirm, or automatically after 48 hours.'
+      );
     },
     onError: (error: any) => {
       const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to complete booking.';
@@ -198,7 +201,7 @@ export default function BookingDetailScreen() {
   const handleComplete = () => {
     Alert.alert(
       'Mark Service Complete',
-      'Are you sure you want to mark this service as complete? This will trigger the escrow release process.',
+      'Mark this service as complete? The customer will be notified to confirm completion. Payment is released when the customer confirms, or automatically after 48 hours.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
