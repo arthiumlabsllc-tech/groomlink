@@ -6,6 +6,11 @@ const OTP_EXPIRY_MINUTES = 10;
 const EMAIL_OTP_EXPIRY_MINUTES = 5; // Email OTP expires in 5 minutes
 const MAX_ATTEMPTS = 3;
 
+// Apple App Review demo account (customer app). The fixed code 123456 is
+// accepted for this email without any OTP being sent or stored.
+export const DEMO_REVIEW_EMAIL = 'demo@groomlinkgh.com';
+export const DEMO_REVIEW_CODE = '123456';
+
 export function generateOTP(): string {
   // In development, use mock OTP
   if (process.env.NODE_ENV === 'development' && process.env.MOCK_OTP) {

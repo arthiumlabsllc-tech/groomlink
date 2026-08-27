@@ -2,7 +2,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { generateToken, generateRefreshToken, verifyRefreshToken, rotateRefreshToken, revokeAllUserRefreshTokens } from '../utils/jwt';
 import { hashPassword, verifyPassword } from '../utils/password';
-import { createOTP, verifyOTP, createEmailOTP, verifyEmailOTP, isDemoOtpBypass } from '../utils/otp';
+import { createOTP, verifyOTP, createEmailOTP, verifyEmailOTP, isDemoOtpBypass, DEMO_REVIEW_EMAIL } from '../utils/otp';
 import { sendOTPSMS } from './sms.service';
 import { sendEmailOTP } from './email.service';
 import { UserRole, UserStatus } from '../middleware/auth';
@@ -357,6 +357,13 @@ export async function requestEmailOTP(email: string, requestedRole?: UserRole): 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(normalizedEmail)) {
     throw new Error('Invalid email format');
+  }
+
+  // App Review demo account: no email is sent; the fixed demo code is
+  // accepted directly by the verifyEmailOTP controller bypass.
+  if (normalizedEmail === DEMO_REVIEW_EMAIL) {
+    logger.info(`Demo review email OTP requested for ${normalizedEmail} - email delivery skipped`);
+    return;
   }
 
   // Check if user already exists with a different role

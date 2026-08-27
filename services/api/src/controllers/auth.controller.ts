@@ -6,6 +6,7 @@ import * as securityAlert from '../services/security-alert.service';
 import { z } from 'zod';
 import prisma from '../config/database';
 import { generateToken, generateRefreshToken } from '../utils/jwt';
+import { DEMO_REVIEW_EMAIL, DEMO_REVIEW_CODE } from '../utils/otp';
 
 const phoneSchema = z.object({
   phoneNumber: z.string().regex(/^\+233[0-9]{9}$/, 'Invalid phone number format. Use +233XXXXXXXXX'),
@@ -180,10 +181,10 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
     
     // Demo account bypass for App Store review
     // REMOVE AFTER APPROVAL: This allows Apple reviewers to login without email access
-    if (email === 'demo@groomlinkgh.com' && code === '123456') {
+    if (email.trim().toLowerCase() === DEMO_REVIEW_EMAIL && code === DEMO_REVIEW_CODE) {
       // Find the demo user
       const user = await prisma.user.findUnique({
-        where: { email: 'demo@groomlinkgh.com' },
+        where: { email: DEMO_REVIEW_EMAIL },
       });
       
       if (!user) {
