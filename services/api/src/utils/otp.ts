@@ -15,6 +15,22 @@ export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/**
+ * App Review demo bypass: when DEMO_OTP_ENABLED=true, the configured demo
+ * phone number accepts the configured fixed code and no SMS is sent.
+ * Used to let Apple's App Review sign in without a live SMS code.
+ * Disable (or unset) after the review is complete.
+ */
+export function isDemoOtpBypass(phoneNumber: string, code?: string): boolean {
+  if (process.env.DEMO_OTP_ENABLED !== 'true') return false;
+  const demoPhone = process.env.DEMO_PHONE_NUMBER;
+  const demoCode = process.env.DEMO_OTP_CODE;
+  if (!demoPhone || !demoCode) return false;
+  if (phoneNumber !== demoPhone) return false;
+  if (code === undefined) return true;
+  return code === demoCode;
+}
+
 export async function createOTP(phoneNumber: string): Promise<string> {
   const code = generateOTP();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -39,6 +55,12 @@ export async function createOTP(phoneNumber: string): Promise<string> {
 }
 
 export async function verifyOTP(phoneNumber: string, code: string): Promise<boolean> {
+  // App Review demo account: accept the fixed code without a stored OTP
+  if (isDemoOtpBypass(phoneNumber, code)) {
+    logger.info(`Demo OTP bypass accepted for ${phoneNumber}`);
+    return true;
+  }
+
   const otp = await prisma.otp.findFirst({
     where: {
       phoneNumber,

@@ -2,7 +2,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { generateToken, generateRefreshToken, verifyRefreshToken, rotateRefreshToken, revokeAllUserRefreshTokens } from '../utils/jwt';
 import { hashPassword, verifyPassword } from '../utils/password';
-import { createOTP, verifyOTP, createEmailOTP, verifyEmailOTP } from '../utils/otp';
+import { createOTP, verifyOTP, createEmailOTP, verifyEmailOTP, isDemoOtpBypass } from '../utils/otp';
 import { sendOTPSMS } from './sms.service';
 import { sendEmailOTP } from './email.service';
 import { UserRole, UserStatus } from '../middleware/auth';
@@ -45,6 +45,13 @@ export async function requestOTP(phoneNumber: string): Promise<void> {
 
   const otp = await createOTP(phoneNumber);
   logger.info(`OTP requested for ${phoneNumber}`);
+
+  // App Review demo account: no SMS is sent; the fixed DEMO_OTP_CODE is
+  // accepted at verification time (see isDemoOtpBypass in utils/otp).
+  if (isDemoOtpBypass(phoneNumber)) {
+    logger.info(`Demo OTP requested for ${phoneNumber} - SMS delivery skipped`);
+    return;
+  }
 
   // Send OTP via SMS - await to ensure delivery and propagate errors to client
   // OTP is already saved in database, so retry will work even if this request fails
