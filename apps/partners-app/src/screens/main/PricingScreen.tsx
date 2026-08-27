@@ -16,7 +16,7 @@ import {
 } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { subscriptionApi, Plan, SubscriptionStatus } from '../../api/subscription';
+import { subscriptionApi, Plan, PlanFeature, SubscriptionStatus } from '../../api/subscription';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
@@ -104,6 +104,32 @@ export default function PricingScreen() {
     }
   };
 
+  // Prisma Decimal fields arrive as strings — coerce defensively
+  const toNumber = (value: number | string | null | undefined): number => {
+    const parsed = typeof value === 'string' ? parseFloat(value) : value;
+    return typeof parsed === 'number' && isFinite(parsed) ? parsed : 0;
+  };
+
+  // The API sends `features` as a boolean map plus a pre-formatted
+  // `feature_list`; normalise both shapes so rendering never crashes.
+  const getFeatureItems = (plan: Plan | null | undefined): PlanFeature[] => {
+    if (!plan) return [];
+    if (Array.isArray(plan.feature_list)) return plan.feature_list;
+    if (Array.isArray(plan.features)) {
+      return plan.features.map((f) => ({ name: String(f), included: true }));
+    }
+    if (plan.features && typeof plan.features === 'object') {
+      return Object.entries(plan.features).map(([key, included]) => ({
+        name: key
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' '),
+        included: !!included,
+      }));
+    }
+    return [];
+  };
+
   const renderFeatureItem = (feature: string, included: boolean) => (
     <View key={feature} style={styles.featureItem}>
       <Ionicons
@@ -126,7 +152,10 @@ export default function PricingScreen() {
     if (!plan) return null;
     const current = isCurrentPlan(plan, currentSubscription, billingPeriod);
     const planColor = getPlanColor(plan?.slug || '');
-    const price = billingPeriod === 'MONTHLY' ? (plan?.monthlyPrice ?? 0) : (plan?.yearlyPrice ?? 0);
+    const price =
+      billingPeriod === 'MONTHLY'
+        ? toNumber(plan?.priceMonthlyGhs ?? plan?.monthlyPrice)
+        : toNumber(plan?.priceYearlyGhs ?? plan?.yearlyPrice);
     const periodLabel = billingPeriod === 'MONTHLY' ? '/month' : '/year';
 
     return (
@@ -180,7 +209,7 @@ export default function PricingScreen() {
           </View>
 
           <View style={styles.featuresContainer}>
-            {(plan?.features || []).map((feature) => renderFeatureItem(feature, true))}
+            {getFeatureItems(plan).map((item) => renderFeatureItem(item.name, item.included))}
           </View>
 
           <Button

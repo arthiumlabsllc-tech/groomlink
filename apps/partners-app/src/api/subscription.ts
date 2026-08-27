@@ -1,16 +1,28 @@
 import apiClient from './client';
 
+export interface PlanFeature {
+  name: string;
+  included: boolean;
+}
+
 export interface Plan {
   id: string;
   slug: string;
   name: string;
-  description: string | null;
-  monthlyPrice: number;
-  yearlyPrice: number;
+  description?: string | null;
+  // API price fields — Prisma Decimal columns serialize as strings in JSON
+  priceMonthlyGhs?: number | string | null;
+  priceYearlyGhs?: number | string | null;
+  // Legacy aliases some callers may still send
+  monthlyPrice?: number | string | null;
+  yearlyPrice?: number | string | null;
   maxStaff: number;
   maxLocations: number;
-  features: string[];
-  isPopular: boolean;
+  // The API returns `features` as a map ({ instant_payouts: true, ... })
+  // and a pre-formatted `feature_list` array for UI display.
+  features?: Record<string, boolean> | string[];
+  feature_list?: PlanFeature[];
+  isPopular?: boolean;
 }
 
 export interface SubscriptionStatus {
