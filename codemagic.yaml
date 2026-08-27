@@ -62,6 +62,9 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
+          # Metro requires the monorepo-root node_modules folder to exist
+          # (root package.json is discovered when walking up the tree)
+          mkdir -p "$CM_BUILD_DIR/node_modules"
           npm install
           
       - name: Set up Expo
@@ -150,7 +153,7 @@ workflows:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
-            archive
+            archive || { echo "** ARCHIVE FAILED — aborting before export **"; exit 1; }
 
           mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
           xcodebuild -exportArchive \
@@ -215,6 +218,9 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
+          # Metro requires the monorepo-root node_modules folder to exist
+          # (root package.json is discovered when walking up the tree)
+          mkdir -p "$CM_BUILD_DIR/node_modules"
           npm install
           
       - name: Set up Expo
@@ -303,7 +309,7 @@ workflows:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
-            archive
+            archive || { echo "** ARCHIVE FAILED — aborting before export **"; exit 1; }
 
           mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
           xcodebuild -exportArchive \
@@ -369,6 +375,9 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
+          # Metro requires the monorepo-root node_modules folder to exist
+          # (root package.json is discovered when walking up the tree)
+          mkdir -p "$CM_BUILD_DIR/node_modules"
           npm install
 
       - name: Run Expo Prebuild (iOS)
@@ -453,7 +462,7 @@ workflows:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
-            archive
+            archive || { echo "** ARCHIVE FAILED — aborting before export **"; exit 1; }
 
           mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
           xcodebuild -exportArchive \
@@ -513,6 +522,9 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
+          # Metro requires the monorepo-root node_modules folder to exist
+          # (root package.json is discovered when walking up the tree)
+          mkdir -p "$CM_BUILD_DIR/node_modules"
           npm install
 
       - name: Run Expo Prebuild (iOS)
@@ -597,7 +609,7 @@ workflows:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
-            archive
+            archive || { echo "** ARCHIVE FAILED — aborting before export **"; exit 1; }
 
           mkdir -p "$CM_BUILD_DIR/build/ios/ipa"
           xcodebuild -exportArchive \
