@@ -273,8 +273,25 @@ export default function BookingDetailScreen() {
     );
   };
 
-  const canCancel = booking && (booking.status === 'PENDING' || booking.status === 'CONFIRMED');
-  const canReschedule = booking && booking.status === 'CONFIRMED';
+  // After check-in the customer is at the salon: cancellation stays
+  // available only while still waiting in the queue. Once the service
+  // has started, the path forward is confirming completion (or disputing).
+  const waitingInQueue =
+    !!queuePositionData?.checkedIn && queuePositionData?.queueStatus === 'WAITING';
+  const canCancel =
+    booking &&
+    (booking.status === 'PENDING' || booking.status === 'CONFIRMED') &&
+    (!booking.checkedIn || waitingInQueue);
+  const canReschedule = booking && booking.status === 'CONFIRMED' && !booking.checkedIn;
+
+  // Primary CTA once checked in and the service is underway: the customer
+  // can confirm completion to release the escrowed payment to the salon
+  const canConfirmServiceDone =
+    !!booking &&
+    booking.checkedIn &&
+    !waitingInQueue &&
+    (booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') &&
+    !booking.disputeRaised;
 
   // Check if booking needs customer completion confirmation
   // After new flow: salon marks service done (status=COMPLETED, serviceCompleted=true)
@@ -1096,13 +1113,32 @@ export default function BookingDetailScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
+          {canConfirmServiceDone && (
+            <TouchableOpacity
+              style={[styles.confirmCompleteButton, { flex: 1 }]}
+              onPress={handleConfirmCompletion}
+              disabled={confirmCompletionMutation.isPending}
+            >
+              {confirmCompletionMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                  <Text style={styles.confirmCompleteButtonText}>Confirm Service Done</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
           {canCancel && (
             <TouchableOpacity 
               style={styles.cancelButton}
               onPress={handleCancelPress}
             >
               <Ionicons name="close-circle-outline" size={20} color={COLORS.accentRed} />
-              <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+              <Text style={styles.cancelButtonText}>
+                {waitingInQueue ? 'Leave Queue & Cancel' : 'Cancel Booking'}
+              </Text>
             </TouchableOpacity>
           )}
           

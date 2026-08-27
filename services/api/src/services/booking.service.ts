@@ -650,6 +650,25 @@ export async function cancelBooking(id: string, userId: string, userRole: string
     }
   }
 
+  // Checked-in customers are already at the salon: cancellation is only
+  // allowed while they are still waiting in the queue. Once the service
+  // has started (CALLED / IN_SERVICE or beyond), self-service cancellation
+  // is blocked — issues are handled via the dispute/support flow instead.
+  if (userRole === 'CUSTOMER' && booking.checkedIn) {
+    const queueEntry = booking.queueEntryId
+      ? await prisma.salonQueue.findUnique({
+          where: { id: booking.queueEntryId },
+          select: { status: true },
+        })
+      : null;
+
+    if (queueEntry && queueEntry.status !== 'WAITING') {
+      throw new Error(
+        'This booking can no longer be cancelled because your service has started. If there is a problem, please raise a dispute or contact support.'
+      );
+    }
+  }
+
   // If payment was made, mark for refund
   const payment = await prisma.payment.findFirst({
     where: { bookingId: id, status: PaymentStatus.SUCCESS },
@@ -670,6 +689,17 @@ export async function cancelBooking(id: string, userId: string, userRole: string
       salonNotes: reason || booking.salonNotes,
     },
   });
+
+  // If the customer cancels while sitting in the salon queue, remove
+  // them from it so the salon's queue view stays accurate
+  if (booking.queueEntryId) {
+    await prisma.salonQueue
+      .update({
+        where: { id: booking.queueEntryId },
+        data: { status: 'LEFT' },
+      })
+      .catch((err) => logger.error('Failed to mark queue entry as LEFT on cancellation', { err, bookingId: id }));
+  }
 
   logger.info(`Booking cancelled: ${id} by ${userRole}`);
 

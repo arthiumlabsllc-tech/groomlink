@@ -29,7 +29,7 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppTheme } from '../../theme/colors';
 import { useResponsiveColumns } from '../../hooks/useResponsiveColumns';
 import { a11yBookingLabel } from '../../hooks/useAccessibility';
-import { parseLocalDate, isToday } from '../../utils/dateUtils';
+import { parseLocalDate, isToday, buildAppointmentDateTime } from '../../utils/dateUtils';
 
 // Design System Colors - theme-aware factory
 const createColors = (t: AppTheme) => ({
@@ -110,12 +110,31 @@ export default function BookingsScreen() {
     setRefreshing(false);
   }, [refetch]);
 
+  // A booking counts as "past" once its appointment time is more than 2
+  // hours behind, even if the salon hasn't updated its status yet —
+  // otherwise stale appointments linger in the Upcoming tab forever.
+  const isPastByTime = useCallback((booking: Booking) => {
+    const appointment = buildAppointmentDateTime(
+      booking.scheduledDate || booking.date || '',
+      booking.scheduledTime || booking.startTime,
+    );
+    return Date.now() - appointment.getTime() > 2 * 60 * 60 * 1000;
+  }, []);
+
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
-    
-    const statusList = activeTab === 'upcoming' ? UPCOMING_STATUSES : PAST_STATUSES;
-    return bookings.filter(booking => statusList.includes(booking.status));
-  }, [bookings, activeTab]);
+
+    if (activeTab === 'upcoming') {
+      return bookings.filter(
+        (booking) => UPCOMING_STATUSES.includes(booking.status) && !isPastByTime(booking)
+      );
+    }
+    return bookings.filter(
+      (booking) =>
+        PAST_STATUSES.includes(booking.status) ||
+        (UPCOMING_STATUSES.includes(booking.status) && isPastByTime(booking))
+    );
+  }, [bookings, activeTab, isPastByTime]);
 
   // Staggered entrance animation
   useEffect(() => {
@@ -195,6 +214,36 @@ export default function BookingsScreen() {
               }
             } catch (err: any) {
               Alert.alert('Error', err.response?.data?.message || 'Could not cancel booking');
+            }
+          },
+        },
+      ]
+    );
+  }, [refetch]);
+
+  const handleConfirmCompletion = useCallback((booking: Booking) => {
+    Alert.alert(
+      'Confirm Service Completion',
+      'Is your service done? Confirming will release your payment to the salon.',
+      [
+        { text: 'Not Yet', style: 'cancel' },
+        {
+          text: 'Yes, Release Payment',
+          onPress: async () => {
+            try {
+              await bookingApi.confirmCompletion(booking.id);
+              refetch();
+              Alert.alert(
+                'Service Confirmed',
+                'Payment has been released to the salon. Thank you!'
+              );
+            } catch (err: any) {
+              Alert.alert(
+                'Error',
+                err.response?.data?.error?.message ||
+                  err.response?.data?.message ||
+                  'Could not confirm completion'
+              );
             }
           },
         },
@@ -347,7 +396,7 @@ export default function BookingsScreen() {
             <Text variant={isTablet ? "titleLarge" : "titleMedium"} style={[styles.totalAmount, isTablet && styles.totalAmountTablet]}>
               GH₵ {parseFloat(String(item.totalAmount)).toFixed(2)}
             </Text>
-            {(item.status === 'CONFIRMED' || item.status === 'PENDING') && (
+            {(item.status === 'CONFIRMED' || item.status === 'PENDING') && !item.checkedIn && (
               <View style={styles.cardActions}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -355,6 +404,27 @@ export default function BookingsScreen() {
                 >
                   <Ionicons name="close-circle-outline" size={16} color={COLORS.accentRed} />
                   <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.viewButton}
+                  onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
+                >
+                  <Text style={styles.viewButtonText}>Details</Text>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.primaryGreen} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {item.checkedIn &&
+              (item.status === 'CONFIRMED' || item.status === 'IN_PROGRESS') &&
+              !item.customerConfirmed &&
+              !item.disputeRaised && (
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={styles.completeCardButton}
+                  onPress={() => handleConfirmCompletion(item)}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={16} color={COLORS.primaryGreen} />
+                  <Text style={styles.completeCardButtonText}>Confirm Done</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.viewButton}
@@ -403,7 +473,7 @@ export default function BookingsScreen() {
       </Card>
       </Animated.View>
     );
-  }, [navigation, animatedValues, handleCancelBooking, handleRebook, isTablet, COLORS]);
+  }, [navigation, animatedValues, handleCancelBooking, handleConfirmCompletion, handleRebook, isTablet, COLORS]);
 
   const renderEmptyState = () => {
     if (isLoading) return null;
@@ -891,6 +961,20 @@ const createStyles = (COLORS: ReturnType<typeof createColors>) => StyleSheet.cre
   },
   cancelButtonText: {
     color: COLORS.accentRed,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  completeCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primaryGreen}10`,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  completeCardButtonText: {
+    color: COLORS.primaryGreen,
     fontWeight: '600',
     fontSize: 12,
   },

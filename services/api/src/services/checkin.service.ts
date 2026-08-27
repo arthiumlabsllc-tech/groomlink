@@ -415,6 +415,7 @@ interface CustomerQueuePositionResult {
   checkedInAt: Date | null;
   queuePosition: number | null;
   queueEntryId: string | null;
+  queueStatus: string | null;
   estimatedWaitMinutes: number | null;
   serviceDuration: number;
   peopleAhead: number;
@@ -450,6 +451,7 @@ export async function getCustomerQueuePosition(
       checkedInAt: null,
       queuePosition: null,
       queueEntryId: null,
+      queueStatus: null,
       estimatedWaitMinutes: null,
       serviceDuration: booking.service?.duration ?? 30,
       peopleAhead: 0,
@@ -459,12 +461,15 @@ export async function getCustomerQueuePosition(
   // Calculate estimated wait based on queue position
   let estimatedWaitMinutes: number | null = null;
   let peopleAhead = 0;
+  let queueStatus: string | null = null;
 
   if (booking.queueEntryId && booking.queuePosition) {
     // Get the queue entry for accurate position
     const queueEntry = await prisma.salonQueue.findUnique({
       where: { id: booking.queueEntryId },
     });
+
+    queueStatus = queueEntry?.status ?? null;
 
     if (queueEntry && queueEntry.status !== QueueStatus.COMPLETED && queueEntry.status !== QueueStatus.LEFT) {
       // Get all bookings ahead in queue
@@ -503,6 +508,7 @@ export async function getCustomerQueuePosition(
     checkedInAt: booking.checkedInAt,
     queuePosition: booking.queuePosition,
     queueEntryId: booking.queueEntryId,
+    queueStatus,
     estimatedWaitMinutes,
     serviceDuration: booking.service?.duration ?? 30,
     peopleAhead,

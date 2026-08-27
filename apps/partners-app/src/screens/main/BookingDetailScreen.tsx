@@ -290,8 +290,22 @@ export default function BookingDetailScreen() {
 
   const isAppointmentTimePassed = () => {
     if (!booking) return false;
-    const appointmentDateTime = new Date(`${booking.date}T${booking.endTime}`);
-    return new Date() >= appointmentDateTime;
+    // booking.date can be date-only or a full ISO timestamp — parse it
+    // first, then apply the scheduled end time locally. Concatenating
+    // `${booking.date}T${booking.endTime}` produced an invalid Date when
+    // the API returned a full ISO string, which hid the Complete button
+    // forever.
+    const base = parseISO(booking.date);
+    if (isNaN(base.getTime())) return false;
+    const appointmentEnd = new Date(base);
+    if (booking.endTime) {
+      const [hours, minutes] = booking.endTime.split(':').map(Number);
+      appointmentEnd.setHours(hours || 0, minutes || 0, 0, 0);
+    } else {
+      // No end time available — only allow completion after end of day
+      appointmentEnd.setHours(23, 59, 0, 0);
+    }
+    return new Date() >= appointmentEnd;
   };
 
   const getCompletionMethodLabel = (method: string) => {
@@ -358,11 +372,13 @@ export default function BookingDetailScreen() {
           </View>
         );
       case 'CONFIRMED':
+      case 'IN_PROGRESS': {
         const canComplete = isAppointmentTimePassed();
+        const isInProgress = booking.status === 'IN_PROGRESS';
         return (
           <View style={styles.actionButtons}>
-            {/* Check In Button - Show if not checked in */}
-            {!booking.checkedIn && (
+            {/* Check In Button - Show if not checked in (confirmed only) */}
+            {!isInProgress && !booking.checkedIn && (
               <Button
                 mode="contained"
                 onPress={handleCheckIn}
@@ -418,18 +434,20 @@ export default function BookingDetailScreen() {
                 </Text>
               </View>
             )}
-            {/* Mark as No-Show Button */}
-            <Button
-              mode="outlined"
-              onPress={handleMarkNoShow}
-              style={styles.noShowButton}
-              textColor="#F59E0B"
-              contentStyle={styles.buttonContent}
-              theme={{ roundness: 12 }}
-              icon="account-cancel"
-            >
-              Mark as No-Show
-            </Button>
+            {/* Mark as No-Show Button (not once service is in progress) */}
+            {!isInProgress && (
+              <Button
+                mode="outlined"
+                onPress={handleMarkNoShow}
+                style={styles.noShowButton}
+                textColor="#F59E0B"
+                contentStyle={styles.buttonContent}
+                theme={{ roundness: 12 }}
+                icon="account-cancel"
+              >
+                Mark as No-Show
+              </Button>
+            )}
             <Button
               mode="outlined"
               onPress={() => setCancelDialogVisible(true)}
@@ -442,6 +460,7 @@ export default function BookingDetailScreen() {
             </Button>
           </View>
         );
+      }
       case 'NO_SHOW':
         return (
           <View style={styles.noShowSection}>

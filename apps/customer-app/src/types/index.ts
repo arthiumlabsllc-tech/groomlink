@@ -206,6 +206,7 @@ export interface QueuePositionResponse {
   queuePosition: number | null;
   checkedIn: boolean;
   checkedInAt?: string;
+  queueStatus?: 'WAITING' | 'CALLED' | 'IN_SERVICE' | 'COMPLETED' | 'SKIPPED' | 'LEFT' | null;
   estimatedWaitMinutes?: number;
   peopleAhead?: number;
 }
