@@ -2,6 +2,8 @@
 # ============================================================
 # This config builds both the customer-app and partners-app for iOS
 # and submits them to the Apple App Store via App Store Connect API.
+# The customer-app is additionally built for Android via EAS Build
+# (AAB artifact only — no automatic Google Play submission).
 #
 # PREREQUISITES (set up in Codemagic dashboard):
 # 1. App Store Connect integration named EXACTLY "GroomLink ASC"
@@ -14,7 +16,8 @@
 # REQUIRED ENVIRONMENT VARIABLE GROUP (set in Codemagic UI):
 # - groomlink_credentials (mark as secure):
 #     GOOGLE_MAPS_API_KEY, EXPO_PUBLIC_API_URL, EXPO_PUBLIC_WS_URL
-#     (optional: EXPO_TOKEN from expo.dev if logging into Expo CLI)
+#     EXPO_TOKEN (REQUIRED for the Android EAS workflows — create an
+#     access token at expo.dev → Access Tokens)
 # - groomlink_ios_signing: keep for future manual signing; not required
 #   while automatic signing via the ASC integration is in use.
 #
@@ -344,6 +347,103 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
       - ios/build/Build/Products/*.app
       
+    publishing:
+      email:
+        recipients:
+          - manuelgoodegreen@icloud.com
+        notify:
+          success: true
+          failure: true
+
+  # ============================================================
+  # CUSTOMER APP - Android Production Build (EAS Build)
+  # ============================================================
+  # Builds the AAB on Expo's cloud via EAS and exposes it as a
+  # Codemagic artifact. Pushes to main are BUILD-ONLY (testing
+  # parity with iOS TestFlight). To publish a release to Google
+  # Play (e.g. the target-API-level compliance update), start this
+  # workflow manually from the Codemagic UI with SUBMIT_ANDROID=true.
+  #
+  # PREREQUISITE: EXPO_TOKEN must be set in the groomlink_credentials
+  # environment group (create one at expo.dev -> Access Tokens).
+  # ============================================================
+  customer-app-android:
+    name: GroomLink Customer - Android Production
+    max_build_duration: 90
+    instance_type: linux_x2
+    working_directory: apps/customer-app
+
+    environment:
+      node: 20.18.0
+      groups:
+        - groomlink_credentials
+      vars:
+        EXPO_NO_DOTENV: "1"
+        # Flip to "true" when starting a manual run to submit the
+        # finished build to the Play track configured in eas.json.
+        SUBMIT_ANDROID: "false"
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          # Config plugins (./plugins/*) resolve @expo/config-plugins
+          # at config-eval time; install app deps like iOS workflows.
+          mkdir -p "$CM_BUILD_DIR/node_modules"
+          npm install
+
+      - name: Install EAS CLI
+        script: |
+          npm install -g eas-cli
+          eas --version
+
+      - name: Verify Expo credentials
+        script: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is missing. Create an access token at expo.dev (Access Tokens) and add it to the groomlink_credentials env group in Codemagic."
+            exit 1
+          fi
+          eas whoami
+
+      - name: Build Android AAB (EAS cloud)
+        script: |
+          # --wait blocks until the EAS build finishes so Codemagic
+          # reflects the real outcome; --json emits build metadata.
+          set +e
+          eas build --platform android --profile production \
+            --non-interactive --wait --json > eas-build.json
+          STATUS=$?
+          set -e
+          cat eas-build.json || true
+          exit $STATUS
+
+      - name: Download AAB artifact
+        script: |
+          AAB_URL=$(node -e "const b=require('./eas-build.json');const e=Array.isArray(b)?b[0]:b;const u=e&&e.artifacts&&e.artifacts.buildUrl;if(!u){console.error('No artifact URL found');process.exit(1)}console.log(u)")
+          mkdir -p build/android
+          curl -fL -o build/android/groomlink-customer-release.aab "$AAB_URL"
+          ls -la build/android
+
+      - name: Submit to Google Play (manual runs only)
+        script: |
+          if [ "$SUBMIT_ANDROID" != "true" ]; then
+            echo "SUBMIT_ANDROID is not 'true' — skipping Play submission (build-only run)."
+            exit 0
+          fi
+          BUILD_ID=$(node -e "const b=require('./eas-build.json');const e=Array.isArray(b)?b[0]:b;console.log(e.id)")
+          eas submit --platform android --profile production --id "$BUILD_ID" --non-interactive
+
+    artifacts:
+      - build/android/*.aab
+      - eas-build.json
+
     publishing:
       email:
         recipients:
