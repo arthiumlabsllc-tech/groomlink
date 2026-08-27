@@ -2,7 +2,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { BookingStatus, QueueStatus } from '@prisma/client';
 import { joinQueue, QueueEntry } from './queue.service';
-import { emitBookingCheckin } from '../config/socket';
+import { emitBookingCheckin, emitToUser } from '../config/socket';
 import * as notificationService from './notification.service';
 
 /**
@@ -222,6 +222,15 @@ export async function scanAndCheckIn(
     bookingId: updatedBooking.id,
     customerName: `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`,
     serviceName: updatedBooking.service.name,
+    queuePosition: queueEntry.position,
+  });
+
+  // Emit to the customer's personal room so their app flips to
+  // "Checked In" in real time (booking detail + queue position refresh,
+  // plus the local "Checked In" notification).
+  emitToUser(booking.customerId, 'booking:checkin', {
+    bookingId: updatedBooking.id,
+    message: 'You have been checked in. Your service will begin shortly.',
     queuePosition: queueEntry.position,
   });
 

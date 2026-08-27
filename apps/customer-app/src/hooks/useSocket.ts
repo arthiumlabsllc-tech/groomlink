@@ -129,10 +129,13 @@ export function useSocket(options: UseSocketOptions = {}) {
         }
       });
 
-      // Booking check-in (emitted to salon room by backend)
+      // Booking check-in (emitted to salon and customer user rooms by backend)
       socketRef.current.on('booking:checkin', (data) => {
         queryClient.invalidateQueries({ queryKey: ['booking', data.bookingId] });
         queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        // The "Checked In" badge on the booking detail screen reads from
+        // the queue-position query — refresh it too
+        queryClient.invalidateQueries({ queryKey: ['queue-position', data.bookingId] });
 
         if (AppState.currentState === 'active') {
           Notifications.scheduleNotificationAsync({

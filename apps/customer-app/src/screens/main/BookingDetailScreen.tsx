@@ -67,11 +67,15 @@ export default function BookingDetailScreen() {
     queryFn: () => bookingApi.getBookingById(bookingId),
   });
 
-  // Fetch queue position for confirmed bookings
+  // Fetch queue position for confirmed bookings.
+  // Poll every 30s while waiting for check-in as a fallback — if the
+  // socket misses the check-in event, the badge still updates.
   const { data: queuePositionData } = useQuery({
     queryKey: ['queue-position', bookingId],
     queryFn: () => bookingApi.getQueuePosition(bookingId),
     enabled: booking?.status === 'CONFIRMED',
+    refetchInterval: (query) =>
+      query.state.data && !query.state.data.checkedIn ? 30000 : false,
   });
 
   const { data: refundPreview, isLoading: refundLoading } = useQuery({
