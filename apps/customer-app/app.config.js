@@ -38,8 +38,9 @@ export default {
         ITSAppUsesNonExemptEncryption: false,
         // Required: declare URL schemes the app queries (Apple Maps directions)
         LSApplicationQueriesSchemes: ["maps", "googlechromes", "comgooglemaps"],
-        // Privacy: declare that the app does not track users across apps/websites
-        NSUserTrackingUsageDescription: "GroomLink does not track you across other apps or websites.",
+        // NOTE: no NSUserTrackingUsageDescription — the app never calls the
+        // AppTrackingTransparency API, and shipping the key makes Apple treat
+        // the binary as tracking-capable (App Review rejection 5.1.2(i)).
         // Required for reliable push delivery when app is backgrounded or killed
         UIBackgroundModes: ['remote-notification']
       }
