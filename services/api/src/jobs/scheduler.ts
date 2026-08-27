@@ -316,11 +316,14 @@ async function detectAndHandleNoShows(): Promise<void> {
   try {
     const now = new Date();
 
-    // Candidates: CONFIRMED, not already flagged, appointment date is today or earlier
+    // Candidates: CONFIRMED, not already flagged, appointment date is today or earlier.
+    // checkedIn bookings are EXCLUDED — a checked-in customer is at the salon
+    // (waiting in queue or being served) and must never be auto-marked no-show.
     const candidates = await prisma.booking.findMany({
       where: {
         status: BookingStatus.CONFIRMED,
         noShowFlag: false,
+        checkedIn: false,
         date: {
           lte: now,
         },
@@ -372,7 +375,8 @@ async function detectAndHandleNoShows(): Promise<void> {
             if (
               !freshBooking ||
               freshBooking.status !== BookingStatus.CONFIRMED ||
-              freshBooking.noShowFlag
+              freshBooking.noShowFlag ||
+              freshBooking.checkedIn // checked in between selection and now → not a no-show
             ) {
               return; // Already handled by another process or manually
             }

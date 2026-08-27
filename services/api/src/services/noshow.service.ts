@@ -67,6 +67,11 @@ export async function recordNoShow(params: RecordNoShowParams): Promise<NoShowRe
       throw new Error(`Cannot mark booking as no-show: status is ${booking.status}`);
     }
 
+    // A checked-in customer has arrived at the salon — never a no-show
+    if (booking.checkedIn) {
+      throw new Error('Cannot mark booking as no-show: customer is already checked in');
+    }
+
     // Verify salon ownership: only the salon owner or ADMIN can mark no-show
     if (markedByRole !== 'ADMIN') {
       if (booking.salon?.ownerId !== markedById) {
