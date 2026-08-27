@@ -87,8 +87,12 @@ workflows:
       - name: Increment build number
         script: |
           cd ios
-          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
-          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+          # ASC requires a strictly increasing CFBundleVersion. Past uploads
+          # used mixed formats ("1.0.63", integers), which breaks fetch+increment;
+          # epoch seconds are always higher than any previous value and always increase.
+          NEXT_BUILD_NUMBER=$(date +%s)
+          echo "Setting CFBundleVersion to $NEXT_BUILD_NUMBER"
+          agvtool new-version -all "$NEXT_BUILD_NUMBER"
           
       - name: Build iOS app
         script: |
@@ -247,8 +251,12 @@ workflows:
       - name: Increment build number
         script: |
           cd ios
-          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
-          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+          # ASC requires a strictly increasing CFBundleVersion. Past uploads
+          # used mixed formats ("1.0.63", integers), which breaks fetch+increment;
+          # epoch seconds are always higher than any previous value and always increase.
+          NEXT_BUILD_NUMBER=$(date +%s)
+          echo "Setting CFBundleVersion to $NEXT_BUILD_NUMBER"
+          agvtool new-version -all "$NEXT_BUILD_NUMBER"
           
       - name: Build iOS app
         script: |
@@ -404,8 +412,12 @@ workflows:
       - name: Increment build number
         script: |
           cd ios
-          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
-          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+          # ASC requires a strictly increasing CFBundleVersion. Past uploads
+          # used mixed formats ("1.0.63", integers), which breaks fetch+increment;
+          # epoch seconds are always higher than any previous value and always increase.
+          NEXT_BUILD_NUMBER=$(date +%s)
+          echo "Setting CFBundleVersion to $NEXT_BUILD_NUMBER"
+          agvtool new-version -all "$NEXT_BUILD_NUMBER"
 
       - name: Build iOS app
         script: |
@@ -555,8 +567,12 @@ workflows:
       - name: Increment build number
         script: |
           cd ios
-          LATEST_BUILD_NUMBER=$(app-store-connect fetch-latest-app-store-build-number "$IOS_APP_ID")
-          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+          # ASC requires a strictly increasing CFBundleVersion. Past uploads
+          # used mixed formats ("1.0.63", integers), which breaks fetch+increment;
+          # epoch seconds are always higher than any previous value and always increase.
+          NEXT_BUILD_NUMBER=$(date +%s)
+          echo "Setting CFBundleVersion to $NEXT_BUILD_NUMBER"
+          agvtool new-version -all "$NEXT_BUILD_NUMBER"
 
       - name: Build iOS app
         script: |
