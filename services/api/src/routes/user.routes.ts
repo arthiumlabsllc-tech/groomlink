@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import * as userController from '../controllers/user.controller';
 import { authenticateToken, requireRole, requireAdminOrHigher } from '../middleware/auth';
 import { UserRole } from '../middleware/auth';
@@ -10,7 +11,32 @@ const router = Router();
 // Protected routes
 router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/profile', authenticateToken, userController.updateProfile);
-router.post('/profile/avatar', authenticateToken, upload.single('avatar'), userController.uploadAvatar);
+// Avatar upload with proper Multer error handling (malformed multipart,
+// size limits). The top-level `message` field keeps compatibility with
+// shipped app binaries that read response.data.message on failure.
+router.post(
+  '/profile/avatar',
+  authenticateToken,
+  (req, res, next) => {
+    upload.single('avatar')(req, res, (err) => {
+      if (err) {
+        const message =
+          err instanceof multer.MulterError
+            ? err.code === 'LIMIT_FILE_SIZE'
+              ? 'Image is too large. Please choose an image under 5MB.'
+              : `Upload failed: ${err.message}`
+            : 'Could not read the image. Please try again.';
+        return res.status(400).json({
+          success: false,
+          message,
+          error: { code: 'UPLOAD_FAILED', message },
+        });
+      }
+      next();
+    });
+  },
+  userController.uploadAvatar
+);
 router.put('/location', authenticateToken, userController.updateLocation);
 router.post('/push-token', authenticateToken, userController.registerPushToken);
 

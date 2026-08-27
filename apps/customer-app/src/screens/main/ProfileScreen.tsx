@@ -186,7 +186,17 @@ export default function ProfileScreen() {
           }
         } catch (error: any) {
           console.error('Failed to upload image:', error);
-          Alert.alert('Upload Failed', error.response?.data?.message || 'Failed to upload image. Please try again.');
+          // API errors carry the message under error.message; network
+          // timeouts have no response at all — handle both explicitly
+          const serverMessage =
+            error.response?.data?.error?.message || error.response?.data?.message;
+          Alert.alert(
+            'Upload Failed',
+            serverMessage ||
+              (error.code === 'ECONNABORTED'
+                ? 'The upload is taking too long. Please check your connection and try again.'
+                : 'Failed to upload image. Please try again.')
+          );
         }
       }
     } catch (error) {

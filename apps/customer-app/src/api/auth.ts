@@ -112,8 +112,12 @@ export const authApi = {
   // Upload avatar image
   uploadAvatar: async (formData: FormData) => {
     // Let axios set the multipart boundary itself — hardcoding the
-    // Content-Type can strip the boundary and break parsing server-side
-    const response = await apiClient.post('/users/profile/avatar', formData);
+    // Content-Type can strip the boundary and break parsing server-side.
+    // Long timeout: photo uploads on mobile networks easily exceed the
+    // default 30s, and an aborted request surfaces as a generic failure.
+    const response = await apiClient.post('/users/profile/avatar', formData, {
+      timeout: 120000,
+    });
     return response.data;
   },
 
