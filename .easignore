@@ -9,6 +9,13 @@ apps/mobile/
 apps/partners/
 apps/support/
 
+# Native projects are generated fresh by `expo prebuild` on EAS.
+# Never upload local copies — they go stale (old targetSdk/versionCode).
+apps/customer-app/android/
+apps/customer-app/ios/
+apps/partners-app/android/
+apps/partners-app/ios/
+
 # Backend (not needed for mobile builds)
 services/
 

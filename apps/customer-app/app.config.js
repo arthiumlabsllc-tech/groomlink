@@ -47,7 +47,8 @@ export default {
     },
     android: {
       package: "com.arthiumlabsllc.groomlink",
-      versionCode: 20000,
+      // Must stay higher than any versionCode ever uploaded to Play (last: 117).
+      versionCode: 20001,
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
