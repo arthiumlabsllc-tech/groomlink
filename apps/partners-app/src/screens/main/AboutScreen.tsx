@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Linking, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Linking, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Surface, Divider } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 const BUILD_NUMBER = Constants.expoConfig?.ios?.buildNumber || Constants.expoConfig?.android?.versionCode || '1';
 
 export default function AboutScreen() {
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
@@ -20,7 +20,13 @@ export default function AboutScreen() {
         {/* App Logo / Brand */}
         <View style={styles.brandSection}>
           <View style={styles.logoContainer}>
-            <Ionicons name="cut-outline" size={48} color="#006B3F" />
+            <Image
+              source={isDark
+                ? require('../../../assets/logo-full-white.png')
+                : require('../../../assets/logo-full-black.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.appName}>GroomLink Partners</Text>
           <Text style={styles.tagline}>Grow your business with GroomLink</Text>
@@ -121,14 +127,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
 
   brandSection: { alignItems: 'center', paddingVertical: 32 },
   logoContainer: {
-    width: 88,
-    height: 88,
-    borderRadius: 22,
-    backgroundColor: '#E8F5E9',
+    width: 220,
+    height: 86,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
+  logoImage: { width: 220, height: 86 },
   appName: { fontSize: 22, fontWeight: 'bold', color: theme.text, marginBottom: 4 },
   tagline: { fontSize: 14, color: theme.textSecondary },
 
