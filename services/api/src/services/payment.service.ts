@@ -1846,6 +1846,51 @@ export async function cleanupOrphanedPayments(): Promise<{
 }
 
 /**
+ * Verify a subscription payment (GL-SUB-*) directly with Paystack and, if
+ * successful, activate the corresponding SalonSubscription. Used by both the
+ * Paystack webhook and the post-checkout redirect callback, since subscription
+ * payments are not stored in the Payment table.
+ */
+export async function verifySubscriptionPayment(
+  reference: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
+    const paystackSecretKey = (settings as any)?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+
+    if (!paystackSecretKey) {
+      logger.error('Paystack secret key not configured (subscription verification)');
+      return { success: false, message: 'Paystack not configured' };
+    }
+
+    const { PaystackProvider } = await import('./paystack.provider');
+    const paystack = new PaystackProvider();
+
+    const verification = await paystack.verifyPayment(reference, {
+      secretKey: paystackSecretKey,
+      publicKey: (settings as any)?.paystackPublicKey || process.env.PAYSTACK_PUBLIC_KEY || '',
+    });
+
+    if (!verification.success) {
+      logger.warn('Subscription payment not confirmed by Paystack', {
+        reference,
+        status: verification.status,
+      });
+      return { success: false, message: 'Payment not confirmed' };
+    }
+
+    const subscriptionService = await import('./subscription.service');
+    await subscriptionService.activateSubscription(reference);
+
+    logger.info('Subscription payment verified and activated', { reference });
+    return { success: true, message: 'Subscription activated' };
+  } catch (error) {
+    logger.error('verifySubscriptionPayment error:', error);
+    return { success: false, message: (error as Error).message };
+  }
+}
+
+/**
  * Handle Paystack webhook events
  */
 export async function handlePaystackWebhook(
@@ -1952,6 +1997,11 @@ export async function handlePaystackWebhook(
         });
 
         if (!payment) {
+          // Subscription payments (GL-SUB-*) live in SalonSubscription, not Payment
+          if (reference?.startsWith('GL-SUB-')) {
+            const subResult = await verifySubscriptionPayment(reference);
+            return { success: subResult.success, message: subResult.message };
+          }
           logger.warn('Payment not found for Paystack webhook', { reference });
           return { success: false, message: 'Payment not found' };
         }

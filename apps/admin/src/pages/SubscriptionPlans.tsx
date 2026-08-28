@@ -34,9 +34,22 @@ const initialFormData: PlanFormData = {
 };
 
 export function SubscriptionPlans() {
-  const { data: plans, isLoading } = useSubscriptionPlans();
+  const { data: plansData, isLoading } = useSubscriptionPlans();
   const updatePlan = useUpdatePlan();
   const createPlan = useCreatePlan();
+
+  // Defensive normalization: a malformed plan (null features / prices) must
+  // never crash the page (previously rendered a blank screen).
+  const plans = (plansData ?? []).map((plan) => ({
+    ...plan,
+    monthlyPrice: Number(plan.monthlyPrice) || 0,
+    yearlyPrice: Number(plan.yearlyPrice) || 0,
+    platformFeePercent: Number(plan.platformFeePercent) || 0,
+    maxStaff: Number(plan.maxStaff) || 0,
+    maxLocations: Number(plan.maxLocations) || 0,
+    features: Array.isArray(plan.features) ? plan.features : [],
+    isActive: Boolean(plan.isActive),
+  }));
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

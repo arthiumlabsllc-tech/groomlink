@@ -145,9 +145,9 @@ export const subscriptionApi = {
     return response.data;
   },
 
-  // Get subscription plans
+  // Get subscription plans (admin endpoint returns all plans incl. inactive)
   getPlans: async (): Promise<SubscriptionPlan[]> => {
-    const response = await apiClient.get('/subscription/plans');
+    const response = await apiClient.get('/admin/subscriptions/plans');
     return response.data.data;
   },
 

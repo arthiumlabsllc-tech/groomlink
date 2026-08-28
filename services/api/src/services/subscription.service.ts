@@ -49,6 +49,71 @@ function getHubtelAuthHeader(apiId: string, apiSecret: string) {
   return { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/json' };
 }
 
+// ---------------------------------------------------------------------------
+// Paystack (primary gateway) for subscription payments
+// ---------------------------------------------------------------------------
+
+interface SubscriptionPaymentRequest {
+  salonId: string;
+  planName: string;
+  billingPeriod: BillingPeriod;
+  amount: number;
+  customerEmail: string;
+  phoneNumber?: string | null;
+  paymentReference: string;
+}
+
+async function initPaystackSubscriptionPayment(
+  req: SubscriptionPaymentRequest
+): Promise<{ checkoutUrl?: string }> {
+  try {
+    const settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
+    const secretKey = (settings as any)?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+    const publicKey = (settings as any)?.paystackPublicKey || process.env.PAYSTACK_PUBLIC_KEY;
+
+    if (!secretKey || !publicKey) {
+      logger.warn('Paystack credentials not configured — skipping Paystack subscription init');
+      return {};
+    }
+
+    const { PaystackProvider } = await import('./paystack.provider');
+    const provider = new PaystackProvider();
+
+    const result = await provider.initializePayment(
+      {
+        amount: req.amount,
+        email: req.customerEmail,
+        phoneNumber: req.phoneNumber || undefined,
+        reference: req.paymentReference,
+        bookingId: '', // subscription payment — no booking involved
+        metadata: {
+          purpose: 'subscription',
+          plan_name: req.planName,
+          billing_period: req.billingPeriod,
+        },
+      },
+      { secretKey, publicKey }
+    );
+
+    if (!result.success || !result.authorizationUrl) {
+      logger.error('Paystack subscription init failed', {
+        reference: req.paymentReference,
+        message: result.message,
+      });
+      return {};
+    }
+
+    logger.info(`Paystack subscription payment initialized: ${req.paymentReference}`, {
+      salonId: req.salonId,
+      amount: req.amount,
+    });
+    return { checkoutUrl: result.authorizationUrl };
+  } catch (error) {
+    logger.error('Paystack subscription init error:', error);
+    return {};
+  }
+}
+
 // Free plan defaults
 const FREE_PLAN = {
   id: 'free',
@@ -148,67 +213,19 @@ export async function subscribeToPlan(
       logger.info(`Salon ${salonId} has existing subscription, creating new one for upgrade`);
     }
 
-    // Get salon owner's phone number if user phone not provided
-    let phoneNumber = user.phoneNumber;
-    if (!phoneNumber) {
-      const salon = await prisma.salon.findUnique({
-        where: { id: salonId },
-        include: { owner: { select: { phoneNumber: true } } },
-      });
-      phoneNumber = salon?.owner?.phoneNumber || salon?.phoneNumber;
-    }
+    // Contact details for the payer (Paystack needs an email, SMS uses phone)
+    const salonWithOwner = await prisma.salon.findUnique({
+      where: { id: salonId },
+      include: { owner: { select: { phoneNumber: true, email: true } } },
+    });
+    const phoneNumber = user.phoneNumber || salonWithOwner?.owner?.phoneNumber || salonWithOwner?.phoneNumber;
+    const customerEmail =
+      salonWithOwner?.email || salonWithOwner?.owner?.email || `salon-${salonId}@groomlinkgh.com`;
 
-    if (!phoneNumber) {
-      throw new Error('Phone number required for payment');
-    }
+    // Generate payment reference ("GL-SUB-PS-" marks Paystack-paid subscriptions)
+    const paymentReference = `GL-SUB-PS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Generate payment reference
-    const paymentReference = `GL-SUB-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-    // Get Hubtel credentials
-    const hubtelCredentials = await getHubtelCredentials();
-
-    let checkoutUrl: string | undefined;
-
-    if (hubtelCredentials && amount > 0) {
-      // Initiate payment via Hubtel
-      const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 'https://api.groomlinkgh.com/api/payments/webhook/hubtel';
-
-      // Ensure phone number has +233 prefix
-      let customerMsisdn = phoneNumber;
-      if (!customerMsisdn.startsWith('+')) {
-        if (customerMsisdn.startsWith('0')) {
-          customerMsisdn = `+233${customerMsisdn.substring(1)}`;
-        } else {
-          customerMsisdn = `+${customerMsisdn}`;
-        }
-      }
-
-      const requestBody = {
-        CustomerName: `Salon ${salonId}`,
-        CustomerEmail: `salon-${salonId}@groomlink.temp`,
-        CustomerMsisdn: customerMsisdn,
-        Channel: 'mtn-gh', // Default to MTN
-        Amount: amount,
-        ClientReference: paymentReference,
-        Description: `GroomLink Subscription - ${plan.name} (${billingPeriod})`,
-        PrimaryCallbackUrl: webhookUrl,
-        SecondaryCallbackUrl: webhookUrl,
-      };
-
-      const response = await axios.post(
-        'https://api.hubtel.com/v1/receivemoney/receive',
-        requestBody,
-        {
-          headers: getHubtelAuthHeader(hubtelCredentials.apiId, hubtelCredentials.apiSecret),
-        }
-      );
-
-      checkoutUrl = response.data?.checkoutUrl || response.data?.redirectUrl;
-      logger.info(`Hubtel subscription payment initialized: ${paymentReference}`, { salonId, planId: plan.id });
-    }
-
-    // Create SalonSubscription record with status PENDING_PAYMENT
+    // Create the subscription record first (PENDING_PAYMENT until paid)
     const subscription = await prisma.salonSubscription.create({
       data: {
         salonId,
@@ -221,14 +238,86 @@ export async function subscribeToPlan(
       },
     });
 
+    // Free plan: activate immediately, no payment flow
+    if (amount <= 0) {
+      await activateSubscription(paymentReference);
+      return {
+        subscriptionId: subscription.id,
+        paymentReference,
+        checkoutUrl: undefined,
+        amount: 0,
+        message: 'Free plan activated',
+      };
+    }
+
+    // Paid plans: Paystack first (primary gateway), Hubtel as fallback
+    let checkoutUrl: string | undefined;
+
+    const paystackResult = await initPaystackSubscriptionPayment({
+      salonId,
+      planName: plan.name,
+      billingPeriod,
+      amount,
+      customerEmail,
+      phoneNumber,
+      paymentReference,
+    });
+    checkoutUrl = paystackResult.checkoutUrl;
+
+    if (!checkoutUrl) {
+      // Fallback to Hubtel if Paystack is not configured or failed
+      const hubtelCredentials = await getHubtelCredentials();
+      if (hubtelCredentials && phoneNumber) {
+        const webhookUrl = process.env.HUBTEL_PAYMENT_WEBHOOK_URL || 'https://api.groomlinkgh.com/api/payments/webhook/hubtel';
+
+        // Ensure phone number has +233 prefix
+        let customerMsisdn = phoneNumber;
+        if (!customerMsisdn.startsWith('+')) {
+          if (customerMsisdn.startsWith('0')) {
+            customerMsisdn = `+233${customerMsisdn.substring(1)}`;
+          } else {
+            customerMsisdn = `+${customerMsisdn}`;
+          }
+        }
+
+        const requestBody = {
+          CustomerName: `Salon ${salonId}`,
+          CustomerEmail: customerEmail,
+          CustomerMsisdn: customerMsisdn,
+          Channel: 'mtn-gh', // Default to MTN
+          Amount: amount,
+          ClientReference: paymentReference,
+          Description: `GroomLink Subscription - ${plan.name} (${billingPeriod})`,
+          PrimaryCallbackUrl: webhookUrl,
+          SecondaryCallbackUrl: webhookUrl,
+        };
+
+        try {
+          const response = await axios.post(
+            'https://api.hubtel.com/v1/receivemoney/receive',
+            requestBody,
+            {
+              headers: getHubtelAuthHeader(hubtelCredentials.apiId, hubtelCredentials.apiSecret),
+            }
+          );
+          checkoutUrl = response.data?.checkoutUrl || response.data?.redirectUrl;
+          logger.info(`Hubtel subscription payment initialized: ${paymentReference}`, { salonId, planId: plan.id });
+        } catch (error) {
+          logger.error('Hubtel subscription init failed:', error);
+        }
+      }
+    }
+
+    if (!checkoutUrl) {
+      throw new Error('Payment gateway is not configured. Please contact support.');
+    }
+
     return {
       subscriptionId: subscription.id,
       paymentReference,
       checkoutUrl,
       amount,
-      message: amount === 0
-        ? 'Free plan activated'
-        : 'Payment initiated. Please complete payment on your phone.',
+      message: 'Payment initiated. Please complete payment to activate your plan.',
     };
   } catch (error) {
     logger.error('Error subscribing to plan:', error);

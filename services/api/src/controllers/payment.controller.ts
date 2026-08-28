@@ -270,6 +270,18 @@ export async function handlePaystackCallback(req: AuthenticatedRequest | Request
     const payment = await paymentService.findPaymentByReference(paymentReference);
     
     if (!payment) {
+      // Subscription payments (GL-SUB-*) are not stored in the Payment table —
+      // verify with Paystack and activate, then send the owner back to pricing.
+      if (paymentReference.startsWith('GL-SUB-')) {
+        const subResult = await paymentService.verifySubscriptionPayment(paymentReference);
+        const partnersUrl = process.env.PARTNERS_WEB_URL || 'https://partners.groomlinkgh.com';
+        if (subResult.success) {
+          res.redirect(`${partnersUrl}/pricing?subscription=success&reference=${paymentReference}`);
+        } else {
+          res.redirect(`${partnersUrl}/pricing?subscription=failed&reference=${paymentReference}`);
+        }
+        return;
+      }
       res.redirect(`${process.env.FRONTEND_URL || 'https://groomlinkgh.com'}/payment/callback?error=payment_not_found&reference=${paymentReference}`);
       return;
     }
