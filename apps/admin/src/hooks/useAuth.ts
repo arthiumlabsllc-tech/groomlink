@@ -126,6 +126,12 @@ export function useAuth() {
     },
   });
 
+  // Change password mutation
+  const changePassword = useMutation({
+    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
+      authApi.changePassword(currentPassword, newPassword),
+  });
+
   // Logout mutation
   const logout = useMutation({
     mutationFn: authApi.logout,
@@ -148,6 +154,7 @@ export function useAuth() {
     verifyEmailOTP,
     adminLogin,
     verifyAdmin2FA,
+    changePassword,
     logout,
   };
 }

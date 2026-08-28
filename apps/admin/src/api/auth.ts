@@ -138,6 +138,11 @@ export const authApi = {
     return response.data;
   },
 
+  // Change admin password
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await apiClient.post('/auth/admin/change-password', { currentPassword, newPassword });
+  },
+
   // Logout
   logout: async () => {
     try {

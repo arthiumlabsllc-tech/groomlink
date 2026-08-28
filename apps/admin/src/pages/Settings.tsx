@@ -4,6 +4,7 @@ import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePay
 import { settingsApi } from '../api/settings';
 import LoadingScreen from '../components/LoadingScreen';
 import TwoFactorSetup from '../components/TwoFactorSetup';
+import PasswordChange from '../components/PasswordChange';
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
@@ -1277,7 +1278,10 @@ export function Settings() {
           </div>
           {/* Account Security Section */}
           <div className={settingsTab !== 'security' ? 'hidden' : ''}>
-            <TwoFactorSetup />
+            <div className="space-y-4 sm:space-y-6">
+              <PasswordChange />
+              <TwoFactorSetup />
+            </div>
           </div>
         </div>
 

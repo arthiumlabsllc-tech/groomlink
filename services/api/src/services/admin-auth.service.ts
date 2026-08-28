@@ -9,7 +9,7 @@ import {
   generateAdmin2faPendingToken,
   verifyAdmin2faPendingToken,
 } from '../utils/jwt';
-import { verifyPassword } from '../utils/password';
+import { verifyPassword, hashPassword } from '../utils/password';
 import {
   generateTotpSecret,
   verifyTotpToken,
@@ -242,4 +242,27 @@ export async function disableTwoFactor(userId: string, code: string): Promise<vo
     data: { twoFactorEnabled: false, twoFactorSecret: null, twoFactorBackupCodes: Prisma.JsonNull },
   });
   logger.info(`2FA disabled for admin user: ${userId}`);
+}
+
+/** Change admin password after verifying the current password. */
+export async function changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error('User not found');
+  if (!ADMIN_ROLES.includes(user.role)) throw new Error('Unauthorized');
+
+  if (!user.password) {
+    throw new Error('No password is set for this account. Contact a super admin to set one.');
+  }
+
+  const isValid = await verifyPassword(currentPassword, user.password);
+  if (!isValid) {
+    throw new Error('Current password is incorrect');
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedPassword },
+  });
+  logger.info(\Password changed for admin user: \);
 }

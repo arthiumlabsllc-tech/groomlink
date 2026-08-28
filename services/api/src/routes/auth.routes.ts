@@ -24,6 +24,7 @@ router.get('/admin/2fa/status', authenticateToken, requireAdminOrHigher, adminAu
 router.post('/admin/2fa/setup', authenticateToken, requireAdminOrHigher, adminAuthController.setupTwoFactor);
 router.post('/admin/2fa/enable', authenticateToken, requireAdminOrHigher, adminAuthController.enableTwoFactor);
 router.post('/admin/2fa/disable', authenticateToken, requireAdminOrHigher, adminAuthController.disableTwoFactor);
+router.post('/admin/change-password', authenticateToken, requireAdminOrHigher, adminAuthController.changePassword);
 
 // Protected routes
 router.post('/logout', authenticateToken, authController.logout);

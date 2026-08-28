@@ -18,6 +18,11 @@ const codeSchema = z.object({
   code: z.string().trim().min(6).max(16),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
 function getAuthUserId(req: Request): string | null {
   return (req as any).user?.id ?? null;
 }
@@ -129,5 +134,25 @@ export async function disableTwoFactor(req: Request, res: Response): Promise<voi
       return;
     }
     errorResponse(res, 'DISABLE_FAILED', (error as Error).message, 400);
+  }
+}
+
+/** POST /auth/admin/change-password — change admin password. */
+export async function changePassword(req: Request, res: Response): Promise<void> {
+  const userId = getAuthUserId(req);
+  if (!userId) {
+    errorResponse(res, 'UNAUTHORIZED', 'Authentication required', 401);
+    return;
+  }
+  try {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+    await adminAuthService.changePassword(userId, currentPassword, newPassword);
+    successResponse(res, { message: 'Password changed successfully' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errorResponse(res, 'VALIDATION_ERROR', error.errors[0].message, 400);
+      return;
+    }
+    errorResponse(res, 'PASSWORD_CHANGE_FAILED', (error as Error).message, 400);
   }
 }
