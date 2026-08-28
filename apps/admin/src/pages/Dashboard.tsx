@@ -66,9 +66,10 @@ function useGreeting() {
 }
 
 // Hook for fade-section IntersectionObserver
+// Uses MutationObserver to handle elements that appear after async data loads
 function useFadeSection() {
   useEffect(() => {
-    const observer = new IntersectionObserver(
+    const intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
@@ -79,10 +80,28 @@ function useFadeSection() {
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     );
 
-    const sections = document.querySelectorAll('.fade-section');
-    sections.forEach((section) => observer.observe(section));
+    const observeSections = () => {
+      const sections = document.querySelectorAll('.fade-section');
+      sections.forEach((section) => intersectionObserver.observe(section));
+    };
 
-    return () => observer.disconnect();
+    // Observe any fade-sections already in the DOM
+    observeSections();
+
+    // Watch for new fade-section elements added after async data loads
+    const mutationObserver = new MutationObserver(() => {
+      observeSections();
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      intersectionObserver.disconnect();
+      mutationObserver.disconnect();
+    };
   }, []);
 }
 
