@@ -12,6 +12,7 @@ export interface AdminUser {
   firstName: string;
   lastName: string;
   email: string | null;
+  avatar: string | null;
   role: 'ADMIN' | 'SUPER_ADMIN' | 'SUPPORT' | 'SALON_OWNER' | 'CUSTOMER';
   isVerified: boolean;
   permissions?: {
@@ -136,6 +137,22 @@ export const authApi = {
   getProfile: async () => {
     const response = await apiClient.get('/users/profile');
     return response.data;
+  },
+
+  // Update admin profile (name, email)
+  updateProfile: async (data: { firstName?: string; lastName?: string; email?: string }): Promise<any> => {
+    const response = await apiClient.put('/users/profile', data);
+    return response.data;
+  },
+
+  // Upload admin avatar
+  uploadAvatar: async (file: File): Promise<{ avatarUrl: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await apiClient.post('/users/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
   },
 
   // Change admin password

@@ -126,6 +126,23 @@ export function useAuth() {
     },
   });
 
+  // Update profile mutation
+  const updateProfile = useMutation({
+    mutationFn: ({ firstName, lastName, email }: { firstName?: string; lastName?: string; email?: string }) =>
+      authApi.updateProfile({ firstName, lastName, email }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [AUTH_KEY, 'user'] });
+    },
+  });
+
+  // Upload avatar mutation
+  const uploadAvatar = useMutation({
+    mutationFn: ({ file }: { file: File }) => authApi.uploadAvatar(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [AUTH_KEY, 'user'] });
+    },
+  });
+
   // Change password mutation
   const changePassword = useMutation({
     mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
@@ -155,6 +172,8 @@ export function useAuth() {
     adminLogin,
     verifyAdmin2FA,
     changePassword,
+    updateProfile,
+    uploadAvatar,
     logout,
   };
 }

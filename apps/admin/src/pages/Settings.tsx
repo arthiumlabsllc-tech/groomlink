@@ -5,6 +5,7 @@ import { settingsApi } from '../api/settings';
 import LoadingScreen from '../components/LoadingScreen';
 import TwoFactorSetup from '../components/TwoFactorSetup';
 import PasswordChange from '../components/PasswordChange';
+import AdminProfile from '../components/AdminProfile';
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
@@ -73,7 +74,7 @@ export function Settings() {
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
   const [showLiveConfirmDialog, setShowLiveConfirmDialog] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [settingsTab, setSettingsTab] = useState<'general' | 'maintenance' | 'payment' | 'security' | 'health' | 'app-updates'>('general');
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'general' | 'maintenance' | 'payment' | 'security' | 'health' | 'app-updates'>('profile');
 
   // App version settings state
   const [versionFormData, setVersionFormData] = useState({
@@ -328,6 +329,7 @@ export function Settings() {
       {/* Tab Navigation */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {[
+          { key: 'profile', label: 'Profile', icon: 'account_circle' },
           { key: 'general', label: 'General', icon: 'public' },
           { key: 'maintenance', label: 'Maintenance', icon: 'power_settings_new' },
           { key: 'payment', label: 'Payment', icon: 'credit_card' },
@@ -351,6 +353,11 @@ export function Settings() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Left Column - Settings */}
         <div className="space-y-4 sm:space-y-6">
+          {/* Admin Profile Section */}
+          <div className={settingsTab !== 'profile' ? 'hidden' : ''}>
+            <AdminProfile />
+          </div>
+
           {/* General Info Section */}
           <div className={`card-v2 overflow-hidden ${settingsTab !== 'general' ? 'hidden' : ''}`}>
             <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50">
