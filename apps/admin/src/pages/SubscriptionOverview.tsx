@@ -186,14 +186,17 @@ export function SubscriptionOverview() {
               {tierData.map((tier) => (
                 <div key={tier.name} className="flex items-center gap-4">
                   <div className="w-20 text-sm font-medium text-gray-700">{tier.name}</div>
-                  <div className="flex-1">
-                    <div className="w-full bg-gray-200 rounded-full h-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                       <div
                         className="h-4 rounded-full transition-all duration-500"
                         style={{
-                          width: `${Math.max(
-                            (tier.value / Math.max(overview?.totalSubscribers || 1, 1)) * 100,
-                            5
+                          width: `${Math.min(
+                            Math.max(
+                              (tier.value / Math.max(overview?.totalSubscribers || 1, 1)) * 100,
+                              tier.value > 0 ? 5 : 0
+                            ),
+                            100
                           )}%`,
                           backgroundColor: tier.color,
                         }}
