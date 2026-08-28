@@ -264,5 +264,5 @@ export async function changePassword(userId: string, currentPassword: string, ne
     where: { id: userId },
     data: { password: hashedPassword },
   });
-  logger.info(\Password changed for admin user: \);
+  logger.info(`Password changed for admin user: ${userId}`);
 }
