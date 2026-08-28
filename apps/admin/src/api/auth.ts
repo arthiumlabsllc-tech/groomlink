@@ -149,8 +149,10 @@ export const authApi = {
   uploadAvatar: async (file: File): Promise<{ avatarUrl: string }> => {
     const formData = new FormData();
     formData.append('avatar', file);
+    // Let the browser set Content-Type with the correct boundary for multipart
     const response = await apiClient.post('/users/profile/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
+      timeout: 120000, // 2 minutes for large image uploads
     });
     return response.data.data;
   },
