@@ -149,10 +149,15 @@ export const authApi = {
   uploadAvatar: async (file: File): Promise<{ avatarUrl: string }> => {
     const formData = new FormData();
     formData.append('avatar', file);
-    // Let the browser set Content-Type with the correct boundary for multipart
+    // Do NOT set Content-Type – let the browser set it with the correct
+    // multipart boundary. Override the instance default (application/json)
+    // by explicitly deleting the header so axios doesn't send it.
     const response = await apiClient.post('/users/profile/avatar', formData, {
-      headers: { 'Content-Type': undefined },
       timeout: 120000, // 2 minutes for large image uploads
+      transformRequest: [(data: FormData, headers: any) => {
+        delete headers['Content-Type'];
+        return data;
+      }],
     });
     return response.data.data;
   },

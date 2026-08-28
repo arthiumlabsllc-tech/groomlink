@@ -138,7 +138,16 @@ export function useAuth() {
   // Upload avatar mutation
   const uploadAvatar = useMutation({
     mutationFn: ({ file }: { file: File }) => authApi.uploadAvatar(file),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Immediately update the cached user with the new avatar URL
+      // so the UI reflects the change without waiting for a refetch
+      queryClient.setQueryData([AUTH_KEY, 'user'], (old: AdminUser | null) => {
+        if (!old) return old;
+        const updated = { ...old, avatar: data.avatarUrl };
+        localStorage.setItem('admin_user', JSON.stringify(updated));
+        return updated;
+      });
+      // Also invalidate to ensure full user data is eventually consistent
       queryClient.invalidateQueries({ queryKey: [AUTH_KEY, 'user'] });
     },
   });
