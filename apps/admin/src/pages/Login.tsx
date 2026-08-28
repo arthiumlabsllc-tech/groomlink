@@ -5,46 +5,61 @@ import { useDarkMode } from '../hooks/useDarkMode';
 
 export function Login() {
   const isDark = useDarkMode();
-  const [step, setStep] = useState<'email' | 'otp'>('email');
+  const [step, setStep] = useState<'credentials' | 'twofactor'>('credentials');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [backupCode, setBackupCode] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
-  const { requestEmailOTP, verifyEmailOTP } = useAuth();
 
-  const handleRequestOTP = async (e: React.FormEvent) => {
+  const { adminLogin, verifyAdmin2FA } = useAuth();
+
+  const handleCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      await requestEmailOTP.mutateAsync(email);
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setStep('otp');
-        setIsTransitioning(false);
-      }, 200);
+      const response = await adminLogin.mutateAsync({ email, password });
+      if (response.success && 'requiresTwoFactor' in response.data) {
+        setTwoFactorToken(response.data.twoFactorToken);
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setStep('twofactor');
+          setIsTransitioning(false);
+          otpInputRefs.current[0]?.focus();
+        }, 200);
+      }
+      // Direct login (2FA not configured) is handled in the mutation onSuccess
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || 'Failed to send OTP. Please check your email address.';
+      const errorMessage = err?.response?.data?.message || 'Invalid email or password. Please try again.';
       setError(errorMessage);
     }
   };
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
+  const handleVerify2FA = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const code = otp.join('');
+    const code = useBackupCode ? backupCode : otp.join('');
 
-    if (code.length !== 6) {
+    if (useBackupCode) {
+      if (code.replace(/[\s-]/g, '').length !== 8) {
+        setError('Backup codes are 8 characters (e.g. 1234-5678)');
+        return;
+      }
+    } else if (code.length !== 6) {
       setError('Please enter all 6 digits');
       return;
     }
 
     try {
-      await verifyEmailOTP.mutateAsync({ email, code });
+      await verifyAdmin2FA.mutateAsync({ twoFactorToken, code });
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || 'Invalid or expired OTP. Please try again.';
+      const errorMessage = err?.response?.data?.message || 'Invalid code. Please try again.';
       setError(errorMessage);
     }
   };
@@ -81,17 +96,20 @@ export function Login() {
     }
   };
 
-  const handleChangeEmail = () => {
+  const handleBackToCredentials = () => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setStep('email');
+      setStep('credentials');
       setOtp(['', '', '', '', '', '']);
+      setBackupCode('');
+      setUseBackupCode(false);
+      setTwoFactorToken('');
       setIsTransitioning(false);
     }, 200);
   };
 
-  const isLoading = requestEmailOTP.isPending || verifyEmailOTP.isPending;
-  const stepNumber = step === 'email' ? 1 : 2;
+  const isLoading = adminLogin.isPending || verifyAdmin2FA.isPending;
+  const stepNumber = step === 'credentials' ? 1 : 2;
 
   return (
     <div className="min-h-screen flex page-enter">
@@ -203,17 +221,17 @@ export function Login() {
 
             {/* Form Content with Transition */}
             <div className={`transition-all duration-200 ${isTransitioning ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
-              {/* Email Step */}
-              {step === 'email' && (
-                <form onSubmit={handleRequestOTP} className="space-y-5">
+              {/* Credentials Step */}
+              {step === 'credentials' && (
+                <form onSubmit={handleCredentials} className="space-y-5">
                   <div>
                     <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">Admin Sign In</h2>
-                    <p className="text-gray-500">Enter your admin email to continue</p>
+                    <p className="text-gray-500">Enter your credentials to continue</p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Admin Email
+                      Email
                     </label>
                     <div className="relative">
                       <Icon name="mail" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -222,10 +240,39 @@ export function Login() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-11 pr-4 py-3.5 text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-0 focus:border-[#006B3F] transition-all placeholder-gray-400"
-                        placeholder="admin@groomlinkgh.com"
+                        placeholder="name@company.com"
+                        autoComplete="username"
                         required
                         disabled={isLoading}
                       />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Icon name="lock" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-11 pr-12 py-3.5 text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-0 focus:border-[#006B3F] transition-all placeholder-gray-400"
+                        placeholder="••••••••••"
+                        autoComplete="current-password"
+                        required
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={18} />
+                      </button>
                     </div>
                   </div>
 
@@ -234,14 +281,14 @@ export function Login() {
                     disabled={isLoading}
                     className="w-full btn-ripple bg-gradient-to-r from-[#006B3F] to-[#006B3F]/90 text-white py-3.5 rounded-xl font-semibold hover:from-[#005a35] hover:to-[#005a35] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg shadow-[#006B3F]/25 flex items-center justify-center gap-2 active:scale-[0.98]"
                   >
-                    {requestEmailOTP.isPending ? (
+                    {adminLogin.isPending ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Sending OTP...
+                        Signing in...
                       </>
                     ) : (
                       <>
-                        Send OTP
+                        Sign In
                         <Icon name="arrow_forward" size={18} />
                       </>
                     )}
@@ -249,48 +296,69 @@ export function Login() {
                 </form>
               )}
 
-              {/* OTP Step */}
-              {step === 'otp' && (
-                <form onSubmit={handleVerifyOTP} className="space-y-5">
+              {/* 2FA Step */}
+              {step === 'twofactor' && (
+                <form onSubmit={handleVerify2FA} className="space-y-5">
                   <div>
-                    <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">Verify OTP</h2>
+                    <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">Two-Factor Authentication</h2>
                     <p className="text-gray-500">
-                      Enter the 6-digit code sent to <span className="font-medium text-[#1A1A1A]">{email}</span>
+                      {useBackupCode
+                        ? 'Enter one of your backup codes'
+                        : 'Enter the 6-digit code from your authenticator app'}
                     </p>
                   </div>
 
-                  {/* Modern 6-box OTP Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      OTP Code
-                    </label>
-                    <div className="flex gap-2 justify-center">
-                      {otp.map((digit, index) => (
-                        <input
-                          key={index}
-                          ref={(el) => { otpInputRefs.current[index] = el; }}
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={6}
-                          value={digit}
-                          onChange={(e) => handleOtpChange(index, e.target.value)}
-                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                          className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold bg-gray-50 border-2 border-gray-200 rounded-xl text-[#1A1A1A] focus:border-[#006B3F] focus:ring-0 outline-none transition-all focus:scale-105 disabled:opacity-50"
-                          disabled={isLoading}
-                        />
-                      ))}
+                  {!useBackupCode ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Authenticator Code
+                      </label>
+                      <div className="flex gap-2 justify-center">
+                        {otp.map((digit, index) => (
+                          <input
+                            key={index}
+                            ref={(el) => { otpInputRefs.current[index] = el; }}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={digit}
+                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                            className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold bg-gray-50 border-2 border-gray-200 rounded-xl text-[#1A1A1A] focus:border-[#006B3F] focus:ring-0 outline-none transition-all focus:scale-105 disabled:opacity-50"
+                            disabled={isLoading}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-3 text-center">
+                        Open your authenticator app to get the current code
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-3 text-center">
-                      Check your email for the verification code
-                    </p>
-                  </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Backup Code
+                      </label>
+                      <input
+                        type="text"
+                        value={backupCode}
+                        onChange={(e) => setBackupCode(e.target.value)}
+                        className="w-full px-4 py-3.5 text-base text-center font-mono tracking-widest bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-0 focus:border-[#006B3F] transition-all placeholder-gray-400 uppercase"
+                        placeholder="1234-5678"
+                        autoFocus
+                        disabled={isLoading}
+                      />
+                      <p className="text-xs text-gray-500 mt-3 text-center">
+                        Each backup code can only be used once
+                      </p>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
                     disabled={isLoading}
                     className="w-full btn-ripple bg-gradient-to-r from-[#006B3F] to-[#006B3F]/90 text-white py-3.5 rounded-xl font-semibold hover:from-[#005a35] hover:to-[#005a35] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg shadow-[#006B3F]/25 flex items-center justify-center gap-2 active:scale-[0.98]"
                   >
-                    {verifyEmailOTP.isPending ? (
+                    {verifyAdmin2FA.isPending ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Verifying...
@@ -303,25 +371,25 @@ export function Login() {
                     )}
                   </button>
 
-                  {/* Resend & Change Email */}
+                  {/* Backup code toggle & back */}
                   <div className="text-center space-y-3">
                     <button
                       type="button"
-                      onClick={handleRequestOTP}
-                      disabled={requestEmailOTP.isPending}
+                      onClick={() => setUseBackupCode((v) => !v)}
+                      disabled={isLoading}
                       className="text-sm text-[#006B3F] hover:text-[#005a35] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      Resend OTP
+                      {useBackupCode ? 'Use authenticator code instead' : 'Use a backup code instead'}
                     </button>
-                    
+
                     <div>
                       <button
                         type="button"
-                        onClick={handleChangeEmail}
+                        onClick={handleBackToCredentials}
                         className="text-sm text-gray-500 hover:text-[#1A1A1A] font-medium transition-colors flex items-center justify-center gap-1 mx-auto"
                       >
                         <Icon name="arrow_back" size={14} />
-                        Change email
+                        Back to sign in
                       </button>
                     </div>
                   </div>

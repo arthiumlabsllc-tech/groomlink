@@ -81,6 +81,36 @@ export function useAuth() {
     mutationFn: authApi.requestEmailOTP,
   });
 
+  // Admin login (email + password); may complete directly or require 2FA
+  const adminLogin = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      authApi.adminLogin(email, password),
+    onSuccess: (response) => {
+      if (response.success && !('requiresTwoFactor' in response.data)) {
+        localStorage.setItem('admin_token', response.data.tokens.accessToken);
+        localStorage.setItem('admin_refresh_token', response.data.tokens.refreshToken);
+        localStorage.setItem('admin_user', JSON.stringify(response.data.user));
+        queryClient.setQueryData([AUTH_KEY, 'user'], response.data.user);
+        navigate('/dashboard');
+      }
+    },
+  });
+
+  // Admin login step 2: verify TOTP / backup code
+  const verifyAdmin2FA = useMutation({
+    mutationFn: ({ twoFactorToken, code }: { twoFactorToken: string; code: string }) =>
+      authApi.verifyAdmin2FA(twoFactorToken, code),
+    onSuccess: (response) => {
+      if (response.success) {
+        localStorage.setItem('admin_token', response.data.tokens.accessToken);
+        localStorage.setItem('admin_refresh_token', response.data.tokens.refreshToken);
+        localStorage.setItem('admin_user', JSON.stringify(response.data.user));
+        queryClient.setQueryData([AUTH_KEY, 'user'], response.data.user);
+        navigate('/dashboard');
+      }
+    },
+  });
+
   // Verify Email OTP mutation
   const verifyEmailOTP = useMutation({
     mutationFn: ({ email, code }: { email: string; code: string }) =>
@@ -116,6 +146,8 @@ export function useAuth() {
     verifyOTP,
     requestEmailOTP,
     verifyEmailOTP,
+    adminLogin,
+    verifyAdmin2FA,
     logout,
   };
 }

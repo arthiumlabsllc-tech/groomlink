@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import { useSettings, useUpdateSettings, useToggleMaintenance, useHealth, usePaymentSettings, useUpdatePaymentSettings, useTestPaymentConnection, usePaymentProviderStatus, useAppVersionSettings, useUpdateAppVersionSettings } from '../hooks';
 import { settingsApi } from '../api/settings';
 import LoadingScreen from '../components/LoadingScreen';
+import TwoFactorSetup from '../components/TwoFactorSetup';
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
@@ -71,7 +72,7 @@ export function Settings() {
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
   const [showLiveConfirmDialog, setShowLiveConfirmDialog] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [settingsTab, setSettingsTab] = useState<'general' | 'maintenance' | 'payment' | 'health' | 'app-updates'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'maintenance' | 'payment' | 'security' | 'health' | 'app-updates'>('general');
 
   // App version settings state
   const [versionFormData, setVersionFormData] = useState({
@@ -329,6 +330,7 @@ export function Settings() {
           { key: 'general', label: 'General', icon: 'public' },
           { key: 'maintenance', label: 'Maintenance', icon: 'power_settings_new' },
           { key: 'payment', label: 'Payment', icon: 'credit_card' },
+          { key: 'security', label: 'Security', icon: 'verified_user' },
           { key: 'app-updates', label: 'App Updates', icon: 'system_update' },
           { key: 'health', label: 'System Health', icon: 'monitoring' },
         ].map((tab) => (
@@ -1272,6 +1274,10 @@ export function Settings() {
                 </button>
               </div>
             </form>
+          </div>
+          {/* Account Security Section */}
+          <div className={settingsTab !== 'security' ? 'hidden' : ''}>
+            <TwoFactorSetup />
           </div>
         </div>
 

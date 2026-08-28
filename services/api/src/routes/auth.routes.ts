@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
-import { authenticateToken, authenticateRegistrationToken } from '../middleware/auth';
+import * as adminAuthController from '../controllers/admin-auth.controller';
+import { authenticateToken, authenticateRegistrationToken, requireAdminOrHigher } from '../middleware/auth';
 import { authValidations } from '../middleware/validation';
 import { loginBruteForceLimiter } from '../middleware/brute-force.middleware';
 
@@ -15,6 +16,14 @@ router.post('/complete-registration', authenticateRegistrationToken, authControl
 router.post('/login', loginBruteForceLimiter, authController.login);
 router.post('/register', authController.register);
 router.post('/refresh', authController.refreshToken);
+
+// Admin portal login: email + password + TOTP 2FA
+router.post('/admin/login', loginBruteForceLimiter, adminAuthController.adminLogin);
+router.post('/admin/2fa/verify', loginBruteForceLimiter, adminAuthController.verifyAdminTwoFactor);
+router.get('/admin/2fa/status', authenticateToken, requireAdminOrHigher, adminAuthController.twoFactorStatus);
+router.post('/admin/2fa/setup', authenticateToken, requireAdminOrHigher, adminAuthController.setupTwoFactor);
+router.post('/admin/2fa/enable', authenticateToken, requireAdminOrHigher, adminAuthController.enableTwoFactor);
+router.post('/admin/2fa/disable', authenticateToken, requireAdminOrHigher, adminAuthController.disableTwoFactor);
 
 // Protected routes
 router.post('/logout', authenticateToken, authController.logout);

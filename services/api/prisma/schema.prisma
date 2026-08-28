@@ -162,6 +162,11 @@ model User {
   accountRestricted Boolean   @default(false) @map("account_restricted")
   restrictedUntil   DateTime? @map("restricted_until")
 
+  // Two-factor authentication (TOTP authenticator app, admin login)
+  twoFactorSecret      String?  @map("two_factor_secret")
+  twoFactorEnabled     Boolean  @default(false) @map("two_factor_enabled")
+  twoFactorBackupCodes Json?    @map("two_factor_backup_codes") // bcrypt-hashed one-time backup codes
+
   // Preferences & Onboarding
   preferredCategories String[] @map("preferred_categories")
   onboardingComplete  Boolean  @default(false) @map("onboarding_complete")

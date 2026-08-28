@@ -40,11 +40,66 @@ export interface AuthResponse {
   };
 }
 
+/** Admin login can complete immediately or require a 2FA step. */
+export interface AdminLoginResponse {
+  success: boolean;
+  data:
+    | { requiresTwoFactor: true; twoFactorToken: string }
+    | {
+        user: AdminUser;
+        tokens: {
+          accessToken: string;
+          refreshToken: string;
+        };
+      };
+}
+
+export interface TwoFactorSetupResponse {
+  secret: string;
+  otpauthUrl: string;
+  qrCode: string;
+}
+
 export const authApi = {
   // Login with phone and password
   login: async (phoneNumber: string, password: string): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/login', { phoneNumber, password });
     return response.data;
+  },
+
+  // Admin login step 1: email + password
+  adminLogin: async (email: string, password: string): Promise<AdminLoginResponse> => {
+    const response = await apiClient.post('/auth/admin/login', { email, password });
+    return response.data;
+  },
+
+  // Admin login step 2: TOTP / backup code
+  verifyAdmin2FA: async (twoFactorToken: string, code: string): Promise<AuthResponse> => {
+    const response = await apiClient.post('/auth/admin/2fa/verify', { twoFactorToken, code });
+    return response.data;
+  },
+
+  // 2FA status for the signed-in admin
+  getTwoFactorStatus: async (): Promise<{ enabled: boolean; backupCodesRemaining: number }> => {
+    const response = await apiClient.get('/auth/admin/2fa/status');
+    return response.data.data;
+  },
+
+  // Begin 2FA enrollment (secret + QR)
+  setupTwoFactor: async (): Promise<TwoFactorSetupResponse> => {
+    const response = await apiClient.post('/auth/admin/2fa/setup');
+    return response.data.data;
+  },
+
+  // Confirm enrollment with an authenticator code
+  enableTwoFactor: async (code: string): Promise<{ backupCodes: string[] }> => {
+    const response = await apiClient.post('/auth/admin/2fa/enable', { code });
+    return response.data.data;
+  },
+
+  // Disable 2FA (requires current code)
+  disableTwoFactor: async (code: string): Promise<void> => {
+    await apiClient.post('/auth/admin/2fa/disable', { code });
   },
 
   // Request OTP for login
