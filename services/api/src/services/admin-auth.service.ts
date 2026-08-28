@@ -28,6 +28,7 @@ interface AdminAuthResponse {
     firstName: string;
     lastName: string;
     email: string | null;
+    avatar: string | null;
     role: string;
     isVerified: boolean;
   };
@@ -55,6 +56,7 @@ async function buildAuthResponse(user: User): Promise<AdminAuthResponse> {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      avatar: user.avatar,
       role: user.role,
       isVerified: user.isVerified,
     },

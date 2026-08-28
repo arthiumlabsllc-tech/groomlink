@@ -220,6 +220,7 @@ export async function verifyEmailOTP(req: Request, res: Response): Promise<void>
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
+          avatar: user.avatar,
           role: user.role,
           isVerified: user.isVerified,
         },

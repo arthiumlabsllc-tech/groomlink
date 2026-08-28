@@ -107,7 +107,10 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_refresh_token');
         localStorage.removeItem('admin_user');
-        window.location.href = '/login';
+        // Only redirect if we're not already on the login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

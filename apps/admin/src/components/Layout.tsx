@@ -310,9 +310,13 @@ export function Layout() {
         <div className="p-4 border-t border-gray-700/50">
           {isSidebarOpen && user && (
             <div className="flex items-center gap-3 mb-4 px-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-md">
-                {user?.firstName?.[0] || 'A'}
-              </div>
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover shadow-md ring-2 ring-[#006B3F]/30" />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-md">
+                  {user?.firstName?.[0] || 'A'}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
                   {user?.firstName} {user?.lastName}
@@ -492,9 +496,13 @@ export function Layout() {
         <div className="p-4 border-t border-gray-700/50">
           {user && (
             <div className="flex items-center gap-3 mb-4 px-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-md">
-                {user?.firstName?.[0] || 'A'}
-              </div>
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover shadow-md ring-2 ring-[#006B3F]/30" />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-md">
+                  {user?.firstName?.[0] || 'A'}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
                   {user?.firstName} {user?.lastName}
@@ -547,9 +555,13 @@ export function Layout() {
             <span className="text-sm text-gray-600 hidden sm:inline font-medium">
               {user?.firstName} {user?.lastName}
             </span>
-            <div className="w-9 h-9 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
-              {user?.firstName?.[0] || 'A'}
-            </div>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" className="w-9 h-9 rounded-full object-cover shadow-sm ring-2 ring-[#006B3F]/20" />
+            ) : (
+              <div className="w-9 h-9 bg-gradient-to-br from-[#006B3F] to-[#006B3F]/70 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+                {user?.firstName?.[0] || 'A'}
+              </div>
+            )}
           </div>
         </header>
 
