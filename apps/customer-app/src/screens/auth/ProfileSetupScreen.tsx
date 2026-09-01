@@ -200,11 +200,7 @@ export default function ProfileSetupScreen() {
       setError('Last name is required');
       return;
     }
-    if (!phoneNumber.trim()) {
-      setError('Phone number is required');
-      return;
-    }
-    if (!validatePhoneNumber(phoneNumber)) {
+    if (phoneNumber.trim() && !validatePhoneNumber(phoneNumber)) {
       setError('Please enter a valid Ghana phone number (e.g., 024 123 4567 or 24 123 4567)');
       return;
     }
@@ -378,7 +374,7 @@ export default function ProfileSetupScreen() {
                 <Text style={styles.phonePrefixText}>+233</Text>
               </View>
               <TextInput
-                label="Phone Number *"
+                label="Phone Number"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
@@ -392,7 +388,7 @@ export default function ProfileSetupScreen() {
                 maxLength={12}
               />
             </View>
-            <Text style={styles.phoneHint}>Enter your Ghana phone number</Text>
+            <Text style={styles.phoneHint}>Optional — for booking confirmations and updates</Text>
           </View>
 
           {/* Location Section */}
@@ -449,7 +445,7 @@ export default function ProfileSetupScreen() {
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
-            disabled={loading || !firstName || !lastName || !phoneNumber}
+            disabled={loading || !firstName || !lastName}
             style={styles.button}
             contentStyle={styles.buttonContent}
             buttonColor={COLORS.primaryGreen}
