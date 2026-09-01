@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, Button } from 'react-native-paper';
@@ -24,22 +25,9 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ProviderCat
 
 const CATEGORIES = [
   {
-    value: 'BUSINESS',
-    title: 'Business Owner',
-    subtitle: 'Salon, Barbershop or Beauty Studio',
-    description: 'I have a registered business with a physical shop where customers come for services.',
-    icon: 'storefront' as const,
-    emoji: '🏪',
-    features: [
-      'Physical shop location',
-      'Multiple staff members',
-      'Walk-in & appointments',
-    ],
-  },
-  {
     value: 'FREELANCER',
-    title: 'Freelancer',
-    subtitle: 'Independent Barber or Hairdresser',
+    title: 'Independent Professional',
+    subtitle: 'Freelance Barber or Hairdresser',
     description: 'I work independently and can provide services at my location or travel to clients.',
     icon: 'person' as const,
     emoji: '✂️',
@@ -111,7 +99,7 @@ export default function ProviderCategoryScreen() {
         </View>
         <Text style={styles.title}>How do you work?</Text>
         <Text style={styles.subtitle}>
-          Choose the option that best describes your business model
+          Choose the option that best describes your work style
         </Text>
       </View>
 
@@ -164,6 +152,19 @@ export default function ProviderCategoryScreen() {
             </TouchableOpacity>
           );
         })}
+      </View>
+
+      {/* Business Owner Web Redirect */}
+      <View style={styles.businessRedirectContainer}>
+        <View style={styles.businessRedirectCard}>
+          <Ionicons name="storefront-outline" size={20} color={theme.textSecondary} />
+          <Text style={styles.businessRedirectText}>
+            Own a salon or barbershop? Register your business on our web portal.
+          </Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://partners.groomlinkgh.com/register')}>
+            <Text style={styles.businessRedirectLink}>Register Business →</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Continue Button */}
@@ -378,6 +379,30 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   featureTextSelected: {
     color: theme.text,
     fontWeight: '500',
+  },
+  // Business redirect
+  businessRedirectContainer: {
+    marginBottom: 12,
+  },
+  businessRedirectCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: theme.surfaceVariant,
+    borderRadius: 12,
+    padding: 14,
+    flexWrap: 'wrap',
+  },
+  businessRedirectText: {
+    flex: 1,
+    fontSize: 13,
+    color: theme.textSecondary,
+    lineHeight: 18,
+  },
+  businessRedirectLink: {
+    fontSize: 13,
+    color: '#006B3F',
+    fontWeight: '600',
   },
   // Bottom
   bottomSection: {

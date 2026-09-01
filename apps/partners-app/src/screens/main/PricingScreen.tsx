@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
   Chip,
 } from 'react-native-paper';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { subscriptionApi, Plan, PlanFeature, SubscriptionStatus } from '../../api/subscription';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,10 +37,9 @@ const createColors = (t: AppTheme) => ({
 
 export default function PricingScreen() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('MONTHLY');
-  const queryClient = useQueryClient();
   const { theme } = useAppTheme();
   const COLORS = useMemo(() => createColors(theme), [theme]);
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const styles = useMemo(() => createStyles(COLORS), [theme]);
 
   const { data: plans, isLoading: plansLoading, isError: plansError } = useQuery({
     queryKey: ['subscriptionPlans'],
@@ -52,30 +51,20 @@ export default function PricingScreen() {
     queryFn: subscriptionApi.getCurrentPlan,
   });
 
-  const upgradeMutation = useMutation({
-    mutationFn: ({ planSlug, period }: { planSlug: string; period: BillingPeriod }) =>
-      subscriptionApi.upgradeToPlan(planSlug, period),
-    onSuccess: (data) => {
-      if (data.paymentUrl) {
-        Linking.openURL(data.paymentUrl);
-      }
-    },
-    onError: (error: any) => {
-      Alert.alert(
-        'Upgrade Failed',
-        error?.response?.data?.message || 'Something went wrong. Please try again.'
-      );
-    },
-  });
-
   const isLoading = plansLoading || subscriptionLoading;
 
   const handleUpgrade = (plan: Plan) => {
-    if (!plan || !plan.slug) return;
-    if (isCurrentPlan(plan, currentSubscription, billingPeriod)) {
-      return;
-    }
-    upgradeMutation.mutate({ planSlug: plan.slug, period: billingPeriod });
+    Alert.alert(
+      'Subscribe on Web',
+      'To subscribe or upgrade your plan, please visit partners.groomlinkgh.com on your web browser. This ensures you get the best experience with all payment methods available.',
+      [
+        { text: 'Later', style: 'cancel' },
+        {
+          text: 'Open Website',
+          onPress: () => Linking.openURL('https://partners.groomlinkgh.com/pricing'),
+        },
+      ]
+    );
   };
 
   const isCurrentPlan = (
@@ -215,8 +204,7 @@ export default function PricingScreen() {
           <Button
             mode={current ? 'outlined' : 'contained'}
             onPress={() => handleUpgrade(plan)}
-            loading={upgradeMutation.isPending}
-            disabled={current || upgradeMutation.isPending}
+            disabled={current}
             style={[
               styles.upgradeButton,
               current && styles.currentButton,
@@ -224,7 +212,7 @@ export default function PricingScreen() {
             buttonColor={current ? undefined : planColor}
             textColor={current ? planColor : COLORS.white}
           >
-            {current ? 'Current Plan' : 'Upgrade'}
+            {current ? 'Current Plan' : 'Subscribe on Web'}
           </Button>
         </Card.Content>
       </Card>
@@ -321,9 +309,9 @@ export default function PricingScreen() {
 
         {/* Footer Note */}
         <View style={styles.footer}>
-          <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.gray} />
+          <Ionicons name="information-circle-outline" size={20} color={COLORS.gray} />
           <Text style={styles.footerText}>
-            Secure payment powered by Paystack. Cancel anytime.
+            Subscriptions are managed via our web portal for the best experience.
           </Text>
         </View>
       </ScrollView>

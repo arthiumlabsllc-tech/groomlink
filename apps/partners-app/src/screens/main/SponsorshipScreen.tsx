@@ -12,7 +12,7 @@ import {
   Card,
   ActivityIndicator,
 } from 'react-native-paper';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -64,56 +64,17 @@ export default function SponsorshipScreen() {
     queryClient.invalidateQueries({ queryKey: ['sponsorshipStatus'] });
   };
 
-  const purchaseMutation = useMutation({
-    mutationFn: (packageId: string) => sponsorshipApi.purchase(packageId),
-    onSuccess: (data) => {
-      if (data.checkoutUrl) {
-        Linking.openURL(data.checkoutUrl);
-      } else {
-        Alert.alert('Payment', data.message || 'Payment will be activated once confirmed.');
-      }
-      refreshStatus();
-    },
-    onError: (error: any) => {
-      Alert.alert(
-        'Purchase Failed',
-        error?.response?.data?.error?.message ||
-          error?.response?.data?.message ||
-          'Something went wrong. Please try again.'
-      );
-    },
-  });
-
-  const resumeMutation = useMutation({
-    mutationFn: (sponsoredSalonId: string) => sponsorshipApi.resumePayment(sponsoredSalonId),
-    onSuccess: (data) => {
-      if (data.checkoutUrl) {
-        Linking.openURL(data.checkoutUrl);
-      } else {
-        Alert.alert('Payment', data.message || 'Unable to reopen checkout. Please try again.');
-      }
-    },
-    onError: (error: any) => {
-      Alert.alert(
-        'Resume Payment Failed',
-        error?.response?.data?.error?.message ||
-          error?.response?.data?.message ||
-          'Something went wrong. Please try again.'
-      );
-    },
-  });
-
   const isLoading = packagesLoading || statusLoading;
 
-  const handlePurchase = (pkg: SponsorshipPackage) => {
+  const handlePurchase = (_pkg: SponsorshipPackage) => {
     Alert.alert(
-      'Get Sponsored',
-      `Purchase "${pkg.packageName}" for GH₵${Number(pkg.priceGhs).toFixed(2)} (${formatPackageDuration(pkg.durationType, pkg.durationValue)})? You will be redirected to complete payment.`,
+      'Sponsorship — Web Only',
+      'Sponsorship packages can be purchased on our web portal. Visit partners.groomlinkgh.com to get sponsored.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Later', style: 'cancel' },
         {
-          text: 'Pay Now',
-          onPress: () => purchaseMutation.mutate(pkg.id),
+          text: 'Open Website',
+          onPress: () => Linking.openURL('https://partners.groomlinkgh.com/sponsorship'),
         },
       ]
     );
@@ -157,7 +118,6 @@ export default function SponsorshipScreen() {
 
   const renderPendingCard = () => {
     if (!status?.pending) return null;
-    const pending = status.pending;
     return (
       <Card style={[styles.statusCard, { backgroundColor: '#FEF9E7', borderColor: COLORS.gold }]}>
         <Card.Content>
@@ -166,21 +126,18 @@ export default function SponsorshipScreen() {
             <Text style={[styles.statusTitle, { color: '#B45309' }]}>Payment Pending</Text>
           </View>
           <Text style={styles.statusDetail}>
-            Complete your payment to activate sponsorship
-            {pending.amountPaid != null ? ` (GH₵${Number(pending.amountPaid).toFixed(2)})` : ''}.
+            Complete your payment on our web portal to activate sponsorship.
           </Text>
           <View style={styles.pendingActions}>
             <Button
               mode="contained"
               buttonColor="#B45309"
               textColor={COLORS.white}
-              onPress={() => resumeMutation.mutate(pending.id)}
-              loading={resumeMutation.isPending}
-              disabled={resumeMutation.isPending}
+              onPress={() => Linking.openURL('https://partners.groomlinkgh.com/sponsorship')}
               style={styles.pendingButton}
-              icon="credit-card-outline"
+              icon="open-outline"
             >
-              Resume Payment
+              Complete on Web
             </Button>
             <Button
               mode="outlined"
@@ -189,7 +146,7 @@ export default function SponsorshipScreen() {
               style={styles.pendingButton}
               icon="refresh"
             >
-              I've Paid
+              Refresh Status
             </Button>
           </View>
         </Card.Content>
@@ -198,7 +155,7 @@ export default function SponsorshipScreen() {
   };
 
   const renderPackageCard = (pkg: SponsorshipPackage) => {
-    const disabled = !!status?.active || !!status?.pending || purchaseMutation.isPending;
+    const disabled = !!status?.active || !!status?.pending;
     return (
       <Card key={pkg.id} style={styles.packageCard}>
         <Card.Content>
@@ -228,7 +185,6 @@ export default function SponsorshipScreen() {
             textColor={COLORS.white}
             onPress={() => handlePurchase(pkg)}
             disabled={disabled}
-            loading={purchaseMutation.isPending}
             style={styles.purchaseButton}
             icon="megaphone-outline"
           >
