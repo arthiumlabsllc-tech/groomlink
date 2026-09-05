@@ -40,7 +40,7 @@ export default {
     },
     android: {
       package: "com.arthiumlabsllc.partners",
-      versionCode: 6,
+      versionCode: 60,
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
